@@ -1,29 +1,37 @@
 {
   "name": "fuck-smithery",
   "version": "1.0.0",
-  "description": "",
+  "description": "MCP-Init: A toolkit for building Model Context Protocol servers with best-in-class DX",
   "main": "index.js",
+  "workspaces": [
+    "cli-core",
+    "scan",
+    "wizard", 
+    "dev-loop",
+    "deploy",
+    "analytics",
+    "playground"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "dev": "cd cli-core && npm run dev",
+    "clean": "npm run clean --workspaces && rimraf node_modules",
+    "install:all": "npm install && npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kazumah1/fuck-smithery.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["mcp", "model-context-protocol", "cli", "ai", "llm"],
+  "author": "Charlie & Kazuma",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/kazumah1/fuck-smithery/issues"
   },
   "homepage": "https://github.com/kazumah1/fuck-smithery#readme",
-  "dependencies": {
-    "@oclif/core": "^4.4.0",
-    "@oclif/plugin-help": "^6.2.29",
-    "@oclif/plugin-plugins": "^5.4.42",
-    "oclif": "^4.20.1"
-  },
   "devDependencies": {
     "@types/node": "^24.0.3",
     "@typescript-eslint/eslint-plugin": "^8.35.0",

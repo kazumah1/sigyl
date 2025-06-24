@@ -3,12 +3,34 @@
 
 ---
 
+## Project Structure (Monorepo Workspace)
+
+The project is organized as a monorepo with the following packages:
+
+- **`cli-core`** - Main CLI commands (`init`, `dev`, `deploy`, `test`, `lint`)
+- **`scan`** - AST scanner for TypeScript/OpenAPI detection
+- **`wizard`** - Ink-based TUI wizard for configuration
+- **`dev-loop`** - Development file watcher and hot reload
+- **`deploy`** - Deployment logic for Fly.io & Cloudflare Workers
+- **`analytics`** - Metrics collection and dashboard
+- **`playground`** - React/Vite web interface for testing
+
+Root directory serves as workspace orchestrator with shared tooling and scripts.
+
+---
+
 ## Week 1: Core CLI & Scaffolding
 
 ### Day 1
-- Scaffold project with `oclif`/`commander` (both)  
-- Define commands: `init`, `dev`, `deploy`, `test`, `lint` (both)
+- ✅ Scaffold project with `oclif`/`commander` (both)  
+- ✅ Define commands: `init`, `dev`, `deploy`, `test`, `lint` (both)
 - ✅ **RESOLVED**: Fixed TypeScript compilation errors by removing Jest dependencies from root project (cli-core uses Mocha)
+- ✅ **COMPLETED**: Defined comprehensive CLI command interfaces with flags and examples:
+  - `init`: Project initialization with scan, wizard, and template options
+  - `dev`: Development mode with hot reload, playground, and build options  
+  - `deploy`: Cloud deployment with tier, platform, and environment options
+  - `test`: Testing with fixture generation, coverage, and harness options
+  - `lint`: Linting with security checks, auto-fix, and output options
 
 ### Day 2
 - Implement AST scanner for TypeScript using `ts-morph` (Kazuma)  
@@ -107,10 +129,11 @@
 
 ## Collaboration & Structure
 
-- **Monorepo with workspaces**: define packages for `cli-core`, `scan`, `wizard`, `dev-loop`, `deploy`, `analytics` to enable parallel work  
+- **Monorepo with workspaces**: ✅ Configured packages for `cli-core`, `scan`, `wizard`, `dev-loop`, `deploy`, `analytics`, `playground` to enable parallel work  
 - **Command interface definition on Day 1**: Charlie and Kazuma agree on flags and outputs so each can integrate independently  
 - **Feature branches & PRs**: keep PRs small, merge after passing lint & tests  
 - **Daily stand-ups (15 min)**: sync on blockers, handoffs, and coordinate shared tasks
+- **Shared tooling**: Root package.json provides workspace scripts for building, testing, and linting across all packages
 
 ---
 
