@@ -26,6 +26,21 @@ This launches an interactive menu with clear, focused testing options.
   npm run demo:dev       # Demo in development mode
   ```
 
+### 🔧 Create Template
+- **Command**: `npm run init` or `tsx src/index.ts init`
+- **Purpose**: Create a template MCP server with sample tools
+- **What it does**: Generates a complete MCP server with sample tools (say_hello, search_web, get_weather)
+- **Options**:
+  - `--out <directory>` - Output directory (default: .mcp-generated)
+  - `--server-language <language>` - TypeScript or JavaScript (default: typescript)
+  - `--name <name>` - Server name (default: my-mcp-server)
+- **Examples**:
+  ```bash
+  npm run init           # Create TypeScript template
+  npm run init:js        # Create JavaScript template
+  npm run init --name my-server --out ./my-mcp
+  ```
+
 ### 🔍 Scan Real App
 - **Command**: `npm run scan` or `tsx src/index.ts scan [directory]`
 - **Purpose**: Scan your own Express app and generate MCP server
@@ -59,6 +74,10 @@ npm run demo:js         # Demo with JavaScript app
 npm run demo:ts         # Demo with TypeScript app
 npm run demo:dev        # Demo in development mode
 
+# Template commands
+npm run init            # Create TypeScript template
+npm run init:js         # Create JavaScript template
+
 # Main commands
 npm run scan            # Scan your Express app
 npm run dev-mode        # Start development mode
@@ -72,10 +91,11 @@ npm run test            # Launch test menu
 ## Typical Workflow
 
 1. **Start with demo**: `npm run demo` to see it working
-2. **Scan your app**: `npm run scan` to generate MCP server
-3. **Test with Inspector**: `npm run inspect` to test your server
-4. **Development mode**: `npm run dev-mode` for hot reload development
-5. **Clean up**: `npm run clean` when switching contexts
+2. **Create template**: `npm run init` to start from scratch with sample tools
+3. **Scan your app**: `npm run scan` to generate MCP server from Express app
+4. **Test with Inspector**: `npm run inspect` to test your server
+5. **Development mode**: `npm run dev-mode` for hot reload development
+6. **Clean up**: `npm run clean` when switching contexts
 
 ## Background Processes
 
