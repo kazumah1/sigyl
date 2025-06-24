@@ -244,3 +244,4 @@ temp/
 # smithery-cli-reference/
 
 fastmcp/
+*.mcp-generated/
