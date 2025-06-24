@@ -56,21 +56,22 @@ export class ExpressScanner {
 	async scanForEndpoints(framework?: string): Promise<ExpressEndpoint[]> {
 		verboseLog(`Scanning directory: ${this.directory}`)
 		
-		// First, collect all type definitions
+		// First, collect all type definitions and add source files
 		await this.collectTypes()
 		
-		// Then scan for routes
-		const sourceFiles = this.findSourceFiles()
+		// Then scan for routes using already-added source files
 		let allEndpoints: ExpressEndpoint[] = []
 		
-		for (const filePath of sourceFiles) {
+		// Get all source files that were already added during type collection
+		const sourceFiles = this.project.getSourceFiles()
+		
+		for (const sourceFile of sourceFiles) {
 			try {
-				const sourceFile = this.project.addSourceFileAtPath(filePath)
 				const endpoints = this.scanFileForRoutes(sourceFile)
 				allEndpoints.push(...endpoints)
-				verboseLog(`Found ${endpoints.length} endpoints in ${filePath}`)
+				verboseLog(`Found ${endpoints.length} endpoints in ${sourceFile.getFilePath()}`)
 			} catch (error) {
-				console.warn(chalk.yellow(`Warning: Could not parse ${filePath}: ${error}`))
+				console.warn(chalk.yellow(`Warning: Could not parse ${sourceFile.getFilePath()}: ${error}`))
 			}
 		}
 		
@@ -82,7 +83,12 @@ export class ExpressScanner {
 		
 		for (const filePath of sourceFiles) {
 			try {
-				const sourceFile = this.project.addSourceFileAtPath(filePath)
+				// Check if source file is already added to avoid duplicates
+				let sourceFile = this.project.getSourceFile(filePath)
+				if (!sourceFile) {
+					sourceFile = this.project.addSourceFileAtPath(filePath)
+				}
+				
 				this.extractTypesFromFile(sourceFile)
 				this.extractImportsFromFile(sourceFile)
 			} catch (error) {
@@ -363,8 +369,10 @@ export class ExpressScanner {
 		// Look for variable declarations with type annotations
 		handlerNode.forEachDescendant((node: any) => {
 			if (node.getKind() === SyntaxKind.VariableStatement) {
-				const varDecl = node.getDeclarationList().getDeclarations()[0]
-				if (varDecl) {
+				const declarations = node.getDeclarationList().getDeclarations()
+				
+				// Handle each variable declaration in the statement
+				declarations.forEach((varDecl: any) => {
 					const varName = varDecl.getName()
 					const varType = varDecl.getType()
 					const initializer = varDecl.getInitializer()
@@ -380,7 +388,22 @@ export class ExpressScanner {
 							this.analyzeTypedParamsUsage(endpoint, varType, varName)
 						}
 					}
-				}
+					
+					// Handle destructuring assignments
+					const nameNode = varDecl.getNameNode()
+					if (nameNode && nameNode.getKind() === SyntaxKind.ObjectBindingPattern && initializer) {
+						const initText = initializer.getText()
+						
+						// Check if destructuring from req.query, req.body, or req.params
+						if (initText.includes(`${reqName}.query`)) {
+							this.analyzeDestructuredQuery(endpoint, nameNode)
+						} else if (initText.includes(`${reqName}.body`)) {
+							this.analyzeDestructuredBody(endpoint, nameNode)
+						} else if (initText.includes(`${reqName}.params`)) {
+							this.analyzeDestructuredParams(endpoint, nameNode)
+						}
+					}
+				})
 			}
 		})
 		
@@ -406,6 +429,127 @@ export class ExpressScanner {
 				}
 			}
 		})
+	}
+
+	private analyzeDestructuredQuery(endpoint: ExpressEndpoint, bindingPattern: any): void {
+		// Extract property names from destructuring pattern like { limit, offset, search }
+		const elements = bindingPattern.getElements()
+		
+		endpoint.parameters = endpoint.parameters || []
+		
+		elements.forEach((element: any) => {
+			if (element.getKind() === SyntaxKind.BindingElement) {
+				const propName = element.getName()
+				
+				// Check if this parameter already exists (avoid duplicates)
+				const existingParam = endpoint.parameters?.find(p => p.name === propName && p.location === "query")
+				if (!existingParam) {
+					// Default to string type for JavaScript, but try to infer better types
+					let paramType = "string"
+					
+					// Look for type conversion patterns in the same function
+					const parentFunction = this.findParentFunction(element)
+					if (parentFunction) {
+						paramType = this.inferParameterType(parentFunction, propName)
+					}
+					
+					endpoint.parameters!.push({
+						name: propName,
+						type: paramType,
+						required: false, // Query parameters are typically optional
+						location: "query",
+						description: `Query parameter: ${propName}`
+					})
+				}
+			}
+		})
+	}
+
+	private analyzeDestructuredBody(endpoint: ExpressEndpoint, bindingPattern: any): void {
+		// Extract property names from destructuring pattern like { name, email }
+		const elements = bindingPattern.getElements()
+		
+		const properties: Record<string, any> = {}
+		const required: string[] = []
+		
+		elements.forEach((element: any) => {
+			if (element.getKind() === SyntaxKind.BindingElement) {
+				const propName = element.getName()
+				
+				properties[propName] = {
+					type: "string", // Default type for JavaScript
+					description: `Body parameter: ${propName}`
+				}
+				
+				// Assume destructured body properties are required
+				required.push(propName)
+			}
+		})
+		
+		if (Object.keys(properties).length > 0) {
+			endpoint.requestBody = {
+				type: "object",
+				properties,
+				required
+			}
+		}
+	}
+
+	private analyzeDestructuredParams(endpoint: ExpressEndpoint, bindingPattern: any): void {
+		// Extract property names from destructuring pattern
+		const elements = bindingPattern.getElements()
+		
+		endpoint.parameters = endpoint.parameters || []
+		
+		elements.forEach((element: any) => {
+			if (element.getKind() === SyntaxKind.BindingElement) {
+				const propName = element.getName()
+				
+				// Check if this parameter already exists (avoid duplicates)
+				const existingParam = endpoint.parameters?.find(p => p.name === propName && p.location === "path")
+				if (!existingParam) {
+					endpoint.parameters!.push({
+						name: propName,
+						type: "string", // Path parameters are typically strings
+						required: true,
+						location: "path",
+						description: `Path parameter: ${propName}`
+					})
+				}
+			}
+		})
+	}
+
+	private inferParameterType(functionNode: any, paramName: string): string {
+		// Look for type conversion patterns like parseInt(paramName) or Number(paramName)
+		let inferredType = "string" // Default
+		
+		functionNode.forEachDescendant((node: any) => {
+			if (node.getKind() === SyntaxKind.CallExpression) {
+				const callExpr = node
+				const expression = callExpr.getExpression()
+				const args = callExpr.getArguments()
+				
+				if (args.length > 0) {
+					const firstArg = args[0]
+					const argText = firstArg.getText()
+					
+					// Check if the argument references our parameter
+					if (argText.includes(paramName)) {
+						const functionName = expression.getText()
+						
+						// Common type conversion patterns
+						if (functionName === "parseInt" || functionName === "Number" || functionName === "parseFloat") {
+							inferredType = "number"
+						} else if (functionName === "Boolean") {
+							inferredType = "boolean"
+						}
+					}
+				}
+			}
+		})
+		
+		return inferredType
 	}
 
 	private analyzeTypedBodyUsage(endpoint: ExpressEndpoint, varType: any, varName: string): void {

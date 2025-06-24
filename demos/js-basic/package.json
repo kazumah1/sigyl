@@ -1,0 +1,13 @@
+{
+  "name": "demo-js-basic",
+  "version": "1.0.0",
+  "description": "Basic JavaScript Express app for MCP CLI testing",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+} 
