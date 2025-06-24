@@ -1,0 +1,43 @@
+{
+  "name": "fuck-smithery",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kazumah1/fuck-smithery.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kazumah1/fuck-smithery/issues"
+  },
+  "homepage": "https://github.com/kazumah1/fuck-smithery#readme",
+  "dependencies": {
+    "@oclif/core": "^4.4.0",
+    "@oclif/plugin-help": "^6.2.29",
+    "@oclif/plugin-plugins": "^5.4.42",
+    "oclif": "^4.20.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.29.0",
+    "husky": "^9.1.7",
+    "jest": "^30.0.2",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.0",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
