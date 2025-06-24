@@ -1,112 +1,96 @@
 # MCP CLI Test Suite
 
-Interactive testing and development tool for the MCP CLI project.
+Simplified testing and development tool for the MCP CLI project.
 
 ## Quick Start
 
 ```bash
-npm run test-cli
+npm run test
 ```
 
-This launches an interactive menu with all available testing options.
+This launches an interactive menu with clear, focused testing options.
 
-## Available Tests
+## Available Commands
 
-### 🔍 Quick Scan Test
-- **Command**: `tsx src/index.ts scan ../demo`
-- **Purpose**: Test the core scanning functionality
-- **What it does**: Scans the demo Express app and generates MCP server files
+### 🎯 Demo Mode
+- **Command**: `npm run demo` or `tsx src/index.ts demo`
+- **Purpose**: Quick demo with included Express apps
+- **What it does**: Scans demo apps (JS/TS) and generates MCP server
+- **Options**: 
+  - `--app js|ts` - Choose JavaScript or TypeScript demo
+  - `--mode scan|dev|build` - Choose demo mode
+- **Examples**:
+  ```bash
+  npm run demo:js        # Demo with JavaScript app
+  npm run demo:ts        # Demo with TypeScript app  
+  npm run demo:dev       # Demo in development mode
+  ```
+
+### 🔍 Scan Real App
+- **Command**: `npm run scan` or `tsx src/index.ts scan [directory]`
+- **Purpose**: Scan your own Express app and generate MCP server
+- **What it does**: Analyzes your Express routes and generates MCP server files
 - **Output**: `.mcp-generated/` directory with server files
 
 ### 🚀 Development Mode
-- **Command**: `tsx src/index.ts dev ../demo`  
-- **Purpose**: Test the full development workflow
+- **Command**: `npm run dev-mode` or `tsx src/index.ts dev [directory]`
+- **Purpose**: Start development mode with hot reload and MCP Inspector
 - **What it does**: Starts Express app + MCP server with hot reload
 - **Background**: Runs in background, press Ctrl+C to return to menu
 
-### 🏗️ Build Test
-- **Command**: `tsx src/index.ts build ../demo`
-- **Purpose**: Test production build generation
-- **What it does**: Generates optimized MCP server for production
-
-### ✅ Full Pipeline Test
-- **Command**: `npm run test:full`
-- **Purpose**: Test the complete end-to-end workflow
-- **What it does**: Clean → Scan → Install deps → Build generated server
-- **Cleanup**: Automatically cleans previous generated files
-
-### 🧪 Generated Server Test
-- **Command**: `npm run test:generated`
-- **Purpose**: Test the generated MCP server builds correctly
-- **What it does**: Installs dependencies and builds the generated TypeScript
-- **Prerequisite**: Must run scan test first
+### 🕵️ Open Inspector
+- **Command**: `npm run inspect` or `tsx src/index.ts inspect`
+- **Purpose**: Launch MCP Inspector UI to test your generated server
+- **What it does**: Opens web UI to test MCP server tools
 
 ### 🧹 Clean Generated Files
-- **Command**: `npm run test:clean`
-- **Purpose**: Clean up test artifacts
-- **What it does**: Removes `.mcp-generated/` directory
-
-### 📊 Project Status
-- **Command**: Built-in status checker
-- **Purpose**: Show current state of all components
-- **What it shows**:
-  - Demo app status
-  - Generated files status
-  - Build status
-  - File-by-file breakdown
-
-### 🔧 Interactive Setup Wizard
-- **Command**: Placeholder for future wizard
-- **Purpose**: Guide users through MCP CLI setup
-- **Status**: Coming soon
+- **Command**: `npm run clean` or `tsx src/index.ts clean`
+- **Purpose**: Remove generated MCP server files
+- **What it does**: Deletes `.mcp-generated/` directory
 
 ## Individual NPM Scripts
 
-You can also run tests individually:
+You can also run commands directly:
 
 ```bash
-# Quick tests
-npm run test:scan      # Scan only
-npm run test:dev       # Dev mode only  
-npm run test:build     # Build only
+# Demo commands
+npm run demo            # Quick demo (defaults to JS app)
+npm run demo:js         # Demo with JavaScript app
+npm run demo:ts         # Demo with TypeScript app
+npm run demo:dev        # Demo in development mode
 
-# Pipeline tests
-npm run test:full      # Full pipeline
-npm run test:generated # Test generated server
-npm run test:clean     # Clean up
+# Main commands
+npm run scan            # Scan your Express app
+npm run dev-mode        # Start development mode
+npm run inspect         # Open MCP Inspector
+npm run clean           # Clean generated files
 
 # Interactive
-npm run test-cli       # Launch test menu
+npm run test            # Launch test menu
 ```
 
-## Typical Development Workflow
+## Typical Workflow
 
-1. **Start with status check**: See what's already generated
-2. **Run full pipeline test**: Verify end-to-end functionality
-3. **Use dev mode**: Test hot reload and development experience
-4. **Clean up**: Remove generated files when switching contexts
+1. **Start with demo**: `npm run demo` to see it working
+2. **Scan your app**: `npm run scan` to generate MCP server
+3. **Test with Inspector**: `npm run inspect` to test your server
+4. **Development mode**: `npm run dev-mode` for hot reload development
+5. **Clean up**: `npm run clean` when switching contexts
 
 ## Background Processes
 
-Some tests (like dev mode) run in the background:
+Some commands (like dev mode) run in the background:
 - Press **Ctrl+C** to stop and return to menu
 - The test CLI handles cleanup automatically
 - Express and MCP servers are properly terminated
 
-## Error Handling
-
-- Failed tests show detailed error messages
-- Option to continue with other tests after failures
-- Automatic cleanup of partial state
-- Graceful handling of Ctrl+C interrupts
-
-## File Structure After Tests
+## File Structure After Generation
 
 ```
 ts-cli/
 ├── .mcp-generated/          # Generated MCP server
 │   ├── server.ts           # TypeScript MCP server
-│   ├── server.js           # Built JavaScript (after test:generated)
+│   ├── server.js           # Built JavaScript (after build)
 │   ├── mcp.yaml           # MCP configuration
 │   ├── package.json       # Server dependencies
 │   └── tools/             # Individual tool handlers
@@ -119,8 +103,9 @@ ts-cli/
 
 ## Tips
 
-- Use **Project Status** to understand current state
-- **Full Pipeline Test** is great for CI/regression testing  
-- **Dev Mode** is perfect for iterating on the development experience
-- **Clean** between tests to ensure fresh state
-- Check the demo app is working: `cd ../demo && npm start` 
+- Use **Demo Mode** to quickly see the tool in action
+- **Scan Real App** when you want to process your own Express app
+- **Development Mode** is perfect for iterating on your app
+- **Inspector** helps you test the generated MCP server
+- **Clean** between different apps to ensure fresh state
+- Check demo apps are working: `cd ../demo && npm start` or `cd ../demo-ts && npm start` 

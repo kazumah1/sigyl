@@ -14,16 +14,17 @@
     "build": "tsc && node build.mjs && chmod +x dist/index.js",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts dev",
-    "test-cli": "tsx src/test-cli.ts",
-    "test:scan": "tsx src/index.ts scan ../demo",
-    "test:dev": "tsx src/index.ts dev ../demo",
-    "test:build": "tsx src/index.ts build ../demo",
-    "test:generated": "cd .mcp-generated && npm install && npm run build",
-    "test:clean": "rm -rf .mcp-generated || rmdir /s .mcp-generated 2>nul || true",
-    "test:full": "npm run test:clean && npm run test:scan && npm run test:generated",
+    "test": "tsx src/test-cli.ts",
+    "demo": "tsx src/index.ts demo",
+    "demo:js": "tsx src/index.ts demo --app js",
+    "demo:ts": "tsx src/index.ts demo --app ts",
+    "demo:dev": "tsx src/index.ts demo --mode dev",
+    "scan": "tsx src/index.ts scan",
+    "dev-mode": "tsx src/index.ts dev",
+    "inspect": "tsx src/index.ts inspect",
+    "clean": "tsx src/index.ts clean",
     "prepare": "npm run build",
-    "check": "npx @biomejs/biome check --write --unsafe",
-    "test": "jest"
+    "check": "npx @biomejs/biome check --write --unsafe"
   },
   "bin": {
     "mcp-scan": "dist/index.js"

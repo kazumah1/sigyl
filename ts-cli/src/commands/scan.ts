@@ -10,7 +10,7 @@ export interface ScanOptions {
 	port?: string
 	framework?: string
 	outDir: string
-	serverLanguage: "typescript" | "python"
+	serverLanguage: "typescript" | "javascript" | "python"
 	config?: Record<string, unknown>
 }
 

@@ -58,9 +58,7 @@ export function launchMCPInspector(
 	inspectorArgs: string[] = []
 ) {
 	// Minimal, clear message before launching
-	console.log("\x1b[36m\n================ MCP Inspector Launch ================\x1b[0m")
-	console.log("The Inspector UI link will be shown below. Click it to open the Inspector in your browser.\n")
-	console.log("======================================================\n")
+	console.log("\x1b[36m\n================ MCP Inspector ================\x1b[0m")
 
 	const args = [
 		"@modelcontextprotocol/inspector",
