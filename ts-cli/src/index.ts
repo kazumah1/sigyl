@@ -6,6 +6,8 @@ import inquirer from "inquirer"
 import { scanAndGenerate } from "./commands/scan"
 import { dev } from "./commands/dev"
 import { build } from "./commands/build"
+import { createDemoCommand } from "./commands/demo"
+import { createInstallCommand } from "./commands/install"
 import { setVerbose, setDebug } from "./logger"
 import inspectCommand from "./commands/inspect"
 
@@ -67,74 +69,9 @@ program
 		}
 	})
 
-// Demo command - quick test with demo apps
-program
-	.command("demo")
-	.description("Run a quick demo with the included Express apps")
-	.option("--app <app>", "Demo app to use (js, ts)")
-	.option("--mode <mode>", "Demo mode (scan, dev, build)", "scan")
-	.action(async (options) => {
-		try {
-			let app = options.app
-			if (!app) {
-				const { selectedApp } = await inquirer.prompt([
-					{
-						type: "list",
-						name: "selectedApp",
-						message: "Which demo app would you like to use?",
-						choices: [
-							{ name: "JavaScript", value: "js" },
-							{ name: "TypeScript", value: "ts" }
-						],
-						default: "js"
-					}
-				])
-				app = selectedApp
-			}
-			app = String(app).toLowerCase().trim()
-			let appDir = app === "ts" ? "../demo-ts" : "../demo"
-			let language: 'typescript' | 'javascript' = app === "ts" ? "typescript" : "javascript"
-			const { existsSync } = await import("node:fs")
-			if (!existsSync(appDir)) {
-				console.log(chalk.yellow(`⚠️  App directory ${appDir} not found, falling back to ../demo`))
-				appDir = "../demo"
-				language = "javascript"
-			}
-			console.log(chalk.blue(`[DEBUG] app: ${app}, appDir: ${appDir}, language: ${language}`))
-			console.log(chalk.blue(`🎯 Running demo with ${app.toUpperCase()} app in ${options.mode} mode`))
-			
-			if (options.mode === "dev") {
-				await dev({
-					directory: appDir,
-					port: "8181",
-					appPort: undefined,
-					open: true,
-					inspectorUrl: undefined,
-					serverLanguage: language
-				})
-			} else if (options.mode === "build") {
-				await build({
-					directory: appDir,
-					outDir: ".mcp-generated",
-					serverLanguage: language,
-					transport: "http"
-				})
-			} else {
-				// Default scan mode
-				await scanAndGenerate(appDir, {
-					port: undefined,
-					framework: undefined,
-					outDir: ".mcp-generated",
-					serverLanguage: language,
-					config: undefined
-				})
-			}
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			console.error(chalk.red(`❌ Demo failed: ${errorMessage}`))
-			process.exit(1)
-		}
-	})
+// Add the new demo command
+program.addCommand(createDemoCommand())
+program.addCommand(createInstallCommand())
 
 // Init command - create template MCP server from scratch
 program

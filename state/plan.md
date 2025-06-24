@@ -1,10 +1,7 @@
-# MCP CLI Project Plan
+# MCP CLI Enhancement Plan
 
 ## Project Overview
-
-**Goal**: Build a CLI tool that scans Express/Node.js applications and automatically generates Model Context Protocol (MCP) servers from their endpoints.
-
-**Core Value Proposition**: Convert existing Express APIs into MCP tools with zero manual configuration, enabling AI assistants to directly interact with web services.
+Enhance the existing MCP CLI tool to make testing different demo scenarios easier and provide complete end-to-end workflow from Express app scanning to Claude Desktop integration.
 
 ## Architecture
 
@@ -116,14 +113,6 @@
 - [x] **Implemented proper import path resolution** for complex TypeScript imports
 - [x] **Enhanced JSON Schema generation** with detailed properties and validation
 - [x] **Added automatic type inference** for common patterns (e.g., parseInt for numbers)
-
-**Framework Simplification** (Day 10-11)
-- [x] **Refactored to use modern McpServer pattern** with `server.tool()` method
-- [x] **Eliminated verbose switch statements** and separate tool handler files
-- [x] **Improved code organization** with clear section headers and comments
-- [x] **Added comprehensive documentation** to generated files
-- [x] **Included manual tool template** for easy custom tool addition
-- [x] **Enhanced file structure** with better segmentation and organization
 
 ### 🔄 In Progress
 
