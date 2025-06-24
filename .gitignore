@@ -238,3 +238,7 @@ temp/
 # Cursor
 .cursorignore
 .cursorindexingignore
+
+# Project specific
+fastmcp-reference/
+smithery-cli-reference/

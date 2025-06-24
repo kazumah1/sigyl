@@ -1,0 +1,52 @@
+name: generated-mcp-server
+description: Auto-generated MCP server from Express endpoints
+version: 1.0.0
+tools:
+  - name: getApiUsers
+    description: GET /api/users
+    inputSchema:
+      type: object
+      properties: {}
+      required: []
+  - name: getApiUsersById
+    description: GET /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: path parameter
+      required:
+        - id
+  - name: postApiUsers
+    description: POST /api/users
+    inputSchema:
+      type: object
+      properties:
+        body:
+          type: object
+          description: Request body data
+      required: []
+  - name: putApiUsersById
+    description: PUT /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: path parameter
+        body:
+          type: object
+          description: Request body data
+      required:
+        - id
+  - name: deleteApiUsersById
+    description: DELETE /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: path parameter
+      required:
+        - id

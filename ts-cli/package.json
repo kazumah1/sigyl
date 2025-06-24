@@ -1,17 +1,77 @@
 {
-  "name": "ts-cli",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "@mcp-scan/cli",
+  "version": "0.1.0",
   "type": "commonjs",
+  "private": false,
+  "homepage": "https://github.com/your-org/mcp-scan-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/mcp-scan-cli.git"
+  },
+  "description": "Scan Express/Node.js applications and generate MCP servers from their endpoints",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && node build.mjs && chmod +x dist/index.js",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts dev",
+    "test-cli": "tsx src/test-cli.ts",
+    "test:scan": "tsx src/index.ts scan ../demo",
+    "test:dev": "tsx src/index.ts dev ../demo",
+    "test:build": "tsx src/index.ts build ../demo",
+    "test:generated": "cd .mcp-generated && npm install && npm run build",
+    "test:clean": "rm -rf .mcp-generated || rmdir /s .mcp-generated 2>nul || true",
+    "test:full": "npm run test:clean && npm run test:scan && npm run test:generated",
+    "prepare": "npm run build",
+    "check": "npx @biomejs/biome check --write --unsafe",
+    "test": "jest"
+  },
+  "bin": {
+    "mcp-scan": "dist/index.js"
+  },
   "dependencies": {
-    "ts-morph": "^26.0.0",
-    "yaml": "^2.8.0"
+    "@modelcontextprotocol/sdk": "^1.10.1",
+    "chalk": "^4.1.2",
+    "commander": "^14.0.0",
+    "cors": "^2.8.5",
+    "cross-fetch": "^4.1.0",
+    "esbuild": "^0.25.5",
+    "express": "^5.1.0",
+    "inquirer": "^8.2.4",
+    "inquirer-autocomplete-prompt": "^2.0.0",
+    "lodash": "^4.17.21",
+    "ora": "^8.2.0",
+    "ts-morph": "^21.0.1",
+    "uuid": "^11.1.0",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.5.3",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/inquirer": "^8.2.4",
+    "@types/inquirer-autocomplete-prompt": "^3.0.3",
+    "@types/jest": "^29.5.12",
+    "@types/json-schema": "^7.0.15",
+    "@types/lodash": "^4.17.14",
+    "@types/node": "^14.18.63",
+    "dotenv": "^16.4.7",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

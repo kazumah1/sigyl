@@ -1,407 +1,161 @@
-* ✅ **Day 1: Python MVP** — usable CLI tool that supports OpenAI, LangChain, and Claude-style formats
-* 🟡 **Day 2: TypeScript version** — replicates the same functionality using TypeScript + `ts-morph` or native parsing
+# MCP CLI Project Plan
+
+## Project Overview
+
+**Goal**: Build a CLI tool that scans Express/Node.js applications and automatically generates Model Context Protocol (MCP) servers from their endpoints.
+
+**Core Value Proposition**: Convert existing Express APIs into MCP tools with zero manual configuration, enabling AI assistants to directly interact with web services.
+
+## Architecture
+
+### Monorepo Structure
+```
+├── ts-cli/                 # Main TypeScript CLI implementation
+│   ├── src/
+│   │   ├── index.ts        # CLI entry point with commander
+│   │   ├── commands/       # Command implementations
+│   │   └── lib/           # Core libraries
+│   └── package.json       # CLI dependencies and scripts
+├── demo/                  # Demo Express app for testing
+├── state/                 # Project documentation and plans
+└── package.json          # Workspace coordinator
+```
+
+### Key Components
+
+1. **Express Scanner** (`lib/express-scanner.ts`)
+   - Uses ts-morph for AST parsing of Express applications
+   - Detects route definitions and extracts metadata
+   - Supports multiple Express patterns (app.get, router.use, etc.)
+
+2. **MCP Generator** (`lib/mcp-generator.ts`)
+   - Converts Express endpoints to MCP tool definitions
+   - Generates TypeScript MCP servers with SDK integration
+   - Creates individual tool handlers for each endpoint
+
+3. **CLI Commands**
+   - `scan`: One-time generation of MCP server from Express app
+   - `dev`: Development mode with hot reload and MCP Inspector
+   - `build`: Production build of generated MCP server
+
+## Development Approach
+
+**Strategy**: Borrow proven patterns from Smithery's open-source CLI rather than building from scratch.
+
+**Key Borrowed Components**:
+- CLI architecture using commander.js
+- Development server with subprocess management  
+- Build system integration with esbuild
+- Hot reload functionality
+- Configuration management patterns
+
+**Estimated Time Savings**: 10-15 days by reusing battle-tested infrastructure.
+
+## Implementation Status
+
+### ✅ Completed
+
+**Core CLI Framework** (Day 1-2)
+- [x] TypeScript CLI setup with commander.js
+- [x] Package.json workspace configuration
+- [x] Build system with esbuild integration
+- [x] Basic command structure (scan, dev, build)
+
+**Express Scanning Engine** (Day 3-4)
+- [x] AST parsing with ts-morph
+- [x] Route detection for common Express patterns
+- [x] Parameter extraction (path, query, body)
+- [x] Endpoint metadata collection
+
+**MCP Server Generation** (Day 5-6)
+- [x] MCP configuration (mcp.yaml) generation
+- [x] TypeScript server generation with MCP SDK
+- [x] Individual tool handler generation
+- [x] HTTP client integration for endpoint calls
+
+**Testing & Validation** (Day 7)
+- [x] Demo Express app with 5 endpoints
+- [x] End-to-end scanning and generation workflow
+- [x] TypeScript compilation verification
+- [x] Command argument parsing fixes
+
+**Bug Fixes** (Day 8)
+- [x] Fixed npm script command routing issue
+- [x] Fixed HTTP method template string bug in tool handlers
+- [x] Fixed subprocess working directory for Express app startup
+- [x] Verified generated code compiles and runs correctly
+- [x] Verified development workflow starts Express app correctly
+
+**Developer Experience** (Day 8)
+- [x] Built comprehensive interactive test CLI (`npm run test-cli`)
+- [x] Added individual test scripts for all major workflows
+- [x] Created project status checker and file structure validation
+- [x] Implemented background process management for dev mode testing
+- [x] Added automatic cleanup and error recovery
+- [x] Created test CLI documentation (TEST-CLI.md)
+
+### 🔄 In Progress
+
+**Development Workflow** (Day 8-9)
+- [x] Express app subprocess management
+- [x] Development mode with hot reload framework
+- [x] Interactive testing infrastructure
+- [ ] MCP Inspector integration testing
+- [ ] End-to-end development workflow validation
+- [ ] File watching for hot reload implementation
+
+### 📋 Next Steps
+
+**Phase 1: Core Functionality** (Days 9-12)
+- [ ] Test actual MCP tool execution with Claude/clients
+- [ ] Improve error handling and edge case coverage
+- [ ] Add support for middleware detection
+- [ ] Enhance parameter type inference
+
+**Phase 2: Advanced Features** (Days 13-16)
+- [ ] Add Python server generation option
+- [ ] Support for authentication/authorization patterns
+- [ ] Configuration file support (.mcprc)
+- [ ] Plugin system for custom transformations
+
+**Phase 3: Production Readiness** (Days 17-20)
+- [ ] Comprehensive test suite
+- [ ] Documentation and examples
+- [ ] CI/CD pipeline setup
+- [ ] NPM package publication
+
+## Technical Decisions
+
+### Language Choice
+- **TypeScript**: Primary implementation language
+- **Rationale**: Best tooling for Express AST parsing, strong typing for MCP SDK integration
+
+### AST Parsing
+- **Tool**: ts-morph (TypeScript compiler wrapper)
+- **Rationale**: More maintainable than regex parsing, handles complex Express patterns
+
+### MCP Integration
+- **Approach**: Generate servers using official MCP SDK
+- **Rationale**: Ensures compatibility and leverages official tools
+
+### Development Experience
+- **Pattern**: Borrow from successful CLI tools (Smithery)
+- **Focus**: Developer ergonomics and fast iteration cycles
+
+## Success Metrics
+
+1. **Functionality**: Successfully convert 90%+ of common Express patterns
+2. **Performance**: Sub-5 second generation for typical Express apps  
+3. **Developer Experience**: Single command to go from Express app to working MCP server
+4. **Reliability**: Generated servers work correctly with MCP Inspector and Claude
+
+## Risk Mitigation
+
+1. **Complex Express Patterns**: Focus on 80/20 rule - handle most common patterns first
+2. **MCP Compatibility**: Use official SDK and test with multiple MCP clients
+3. **Maintenance Burden**: Automated testing for generated code quality
+4. **Performance**: Implement caching and incremental builds for large applications
 
 ---
 
-# ✅ Day 1 – Python MVP Implementation Guide
-
-## 🎯 Goal
-
-Create a Python CLI tool (`mcp-wrap`) that:
-
-* Accepts tool definitions in **OpenAI SDK**, **LangChain**, or **Claude** format
-* Converts them to **MCP-compatible YAML**
-* Detects format automatically
-* (Optionally) generates stub handler files
-
----
-
-## 📁 Folder Structure
-
-```
-mcp_wrap/
-├── mcp_wrap.py            # CLI entrypoint
-├── formats/
-│   ├── openai.py          # OpenAI function spec support
-│   ├── langchain.py       # LangChain Tool support
-│   └── claude.py          # Claude-style input_schema support
-├── schema_writer.py       # YAML output logic
-├── utils.py               # Format detection
-└── demo/
-    ├── openai_tools.py
-    ├── langchain_tools.py
-    └── claude_tools.json
-```
-
----
-
-## ✅ Implementation Status
-
-**COMPLETED** - The Python MVP has been successfully implemented and tested:
-
-### ✅ What's Working:
-- **CLI Entrypoint**: `mcp_wrap.py` with proper argument parsing
-- **Format Detection**: `utils.py` correctly identifies OpenAI, LangChain, and Claude formats
-- **OpenAI Support**: `formats/openai.py` loads `functions` arrays from Python files
-- **LangChain Support**: `formats/langchain.py` detects and extracts `Tool` objects
-- **Claude Support**: `formats/claude.py` parses JSON files with `input_schema`
-- **YAML Output**: `schema_writer.py` generates clean MCP-compatible YAML
-- **Demo Files**: All three format examples work correctly
-- **Dependencies**: Virtual environment with `pyyaml`, `langchain`, `pydantic`
-- **🚀 NEW: Server Generation**: `server_generator.py` creates ready-to-use MCP servers from YAML config
-
-### ✅ Test Results:
-```bash
-# All formats successfully convert to YAML:
-python mcp_wrap.py demo/openai_tools.py --out test_openai.yaml
-python mcp_wrap.py demo/langchain_tools.py --out test_langchain.yaml  
-python mcp_wrap.py demo/claude_tools.json --out test_claude.yaml
-
-# Comprehensive demos with multiple complex tools:
-python mcp_wrap.py demo/openai_tools.py --out results/comprehensive_openai.yaml
-python mcp_wrap.py demo/langchain_tools.py --out results/comprehensive_langchain.yaml
-python mcp_wrap.py demo/claude_tools.json --out results/comprehensive_claude.yaml
-
-# 🚀 NEW: Server generation from YAML config:
-python mcp_wrap.py demo/openai_tools.py --generate-server --server-language python
-python mcp_wrap.py demo/openai_tools.py --generate-server --server-language typescript
-```
-
-### 🔧 Minor Improvements Made:
-- Fixed LangChain detection pattern from `Tool.from_function` to `Tool.fromFunction`
-- Added proper error handling for missing dependencies
-- Generated clean, properly formatted YAML output
-- **Enhanced demo files** with comprehensive examples:
-  - **Multiple tools per file** (4 tools each)
-  - **Complex parameters**: arrays, nested objects, enums, validation
-  - **Realistic use cases**: web search, sentiment analysis, database queries, meeting scheduling
-  - **Advanced features**: Pydantic models with Field validation, nested schemas, optional parameters
-- **🚀 NEW: MCP Server Generation**:
-  - **YAML as source of truth**: Server config loads directly from converted YAML
-  - **Python & TypeScript support**: Generate servers in both languages
-  - **Automatic tool registration**: Creates `server.tool()` calls for each tool
-  - **Handler stub generation**: Placeholder functions ready for implementation
-  - **Schema validation**: Converts JSON Schema to appropriate validation (Zod for TS)
-  - **FastMCP for Python**: Uses the proper `fastmcp` library for Python MCP servers
-
-### 📋 Next Steps:
-- Add requirements.txt file for easier dependency management
-- Consider adding validation for JSON Schema compatibility
-- Add support for more complex tool definitions
-- Consider adding handler stub generation
-
----
-
-## 🕐 Hour-by-Hour Breakdown
-
-### 🕐 Hour 1 – Project Bootstrap
-
-```bash
-mkdir mcp_wrap && cd mcp_wrap
-python3 -m venv .venv && source .venv/bin/activate
-pip install pyyaml langchain pydantic
-```
-
-Create initial files: `touch mcp_wrap.py formats/openai.py formats/langchain.py formats/claude.py schema_writer.py utils.py`
-
----
-
-### 🕑 Hour 2 – CLI Entrypoint (`mcp_wrap.py`)
-
-```python
-import argparse
-from formats import openai, langchain, claude
-from schema_writer import write_yaml
-from utils import detect_format
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("path", help="Path to tools file (.py or .json)")
-    parser.add_argument("--out", default="tools.yaml")
-    args = parser.parse_args()
-
-    fmt = detect_format(args.path)
-    if fmt == "openai":
-        tools = openai.load_tools(args.path)
-    elif fmt == "langchain":
-        tools = langchain.load_tools(args.path)
-    elif fmt == "claude":
-        tools = claude.load_tools(args.path)
-    else:
-        raise Exception("Unsupported tool format")
-
-    write_yaml(tools, args.out)
-
-if __name__ == "__main__":
-    main()
-```
-
----
-
-### 🕒 Hour 3 – OpenAI Format (`formats/openai.py`)
-
-```python
-import importlib.util
-
-def load_tools(path):
-    spec = importlib.util.spec_from_file_location("mod", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    tool_list = getattr(mod, "functions", [])
-
-    return [
-        {
-            "name": t["name"],
-            "description": t.get("description", ""),
-            "parameters": t["parameters"]
-        }
-        for t in tool_list
-    ]
-```
-
----
-
-### 🕓 Hour 4 – LangChain Format (`formats/langchain.py`)
-
-```python
-import importlib.util
-from langchain.tools import Tool
-
-def load_tools(path):
-    spec = importlib.util.spec_from_file_location("mod", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    tools = []
-    for name in dir(mod):
-        obj = getattr(mod, name)
-        if isinstance(obj, Tool):
-            tools.append({
-                "name": obj.name,
-                "description": obj.description,
-                "parameters": obj.args_schema.schema()
-            })
-    return tools
-```
-
----
-
-### 🕔 Hour 5 – Claude Format (`formats/claude.py`)
-
-```python
-import json
-
-def load_tools(path):
-    with open(path) as f:
-        data = json.load(f)
-
-    return [
-        {
-            "name": t["name"],
-            "description": t.get("description", ""),
-            "parameters": t["input_schema"]
-        }
-        for t in data
-    ]
-```
-
----
-
-### 🕕 Hour 6 – Format Detection (`utils.py`)
-
-```python
-import os
-
-def detect_format(path):
-    ext = os.path.splitext(path)[1]
-    if ext == ".json":
-        return "claude"
-    if ext == ".py":
-        with open(path) as f:
-            content = f.read()
-            if "Tool.from_function" in content:
-                return "langchain"
-            elif "functions =" in content:
-                return "openai"
-    return "unknown"
-```
-
----
-
-### 🕖 Hour 7 – YAML Output Writer (`schema_writer.py`)
-
-```python
-import yaml
-
-def write_yaml(tools, path):
-    with open(path, "w") as f:
-        yaml.dump(tools, f, sort_keys=False)
-```
-
----
-
-### 🕗 Hour 8 – Testing + Demo Files
-
-#### `demo/openai_tools.py`
-
-```python
-functions = [
-    {
-        "name": "search",
-        "description": "Search the web",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": { "type": "string" }
-            },
-            "required": ["query"]
-        }
-    }
-]
-```
-
-#### `demo/langchain_tools.py`
-
-```python
-from langchain.tools import Tool
-from pydantic import BaseModel
-
-class SearchInput(BaseModel):
-    query: str
-
-def search_func(query: str) -> str:
-    return f"Searching for {query}"
-
-search_tool = Tool.from_function(
-    func=search_func,
-    name="search",
-    description="Search the web",
-    args_schema=SearchInput
-)
-```
-
-#### `demo/claude_tools.json`
-
-```json
-[
-  {
-    "name": "summarize",
-    "description": "Summarize content",
-    "input_schema": {
-      "type": "object",
-      "properties": {
-        "url": { "type": "string" }
-      },
-      "required": ["url"]
-    }
-  }
-]
-```
-
----
-
-# 🟡 Day 2 – TypeScript Version Implementation Guide
-
-## 🎯 Goal
-
-Replicate the Python CLI in **TypeScript**, using:
-
-* `ts-node` or `esbuild` for CLI execution
-* `ts-morph` to parse and analyze `.ts` files
-* Outputs MCP-compatible **YAML or JSON**
-
----
-
-## 📁 Folder Structure
-
-```
-mcp-wrap-ts/
-├── cli.ts
-├── formats/
-│   ├── openai.ts
-│   ├── langchain.ts
-│   └── claude.ts
-├── schemaWriter.ts
-├── utils.ts
-└── demo/
-    ├── openaiTools.ts
-    ├── langchainTools.ts
-    └── claudeTools.json
-```
-
----
-
-## 🛠️ Tooling Setup
-
-```bash
-npm init -y
-npm install ts-morph yaml
-```
-
-Run via:
-
-```bash
-npx ts-node cli.ts path/to/file.ts
-```
-
----
-
-## Key Logic
-
-### ✅ Format Detection (`utils.ts`)
-
-```ts
-import fs from "fs";
-
-export function detectFormat(path: string): "openai" | "langchain" | "claude" | "unknown" {
-  if (path.endsWith(".json")) return "claude";
-  const content = fs.readFileSync(path, "utf-8");
-  if (content.includes("Tool.fromFunction")) return "langchain";
-  if (content.includes("const functions =")) return "openai";
-  return "unknown";
-}
-```
-
-### ✅ Schema Output (`schemaWriter.ts`)
-
-```ts
-import fs from "fs";
-import yaml from "yaml";
-
-export function writeYaml(tools: any[], outPath: string) {
-  fs.writeFileSync(outPath, yaml.stringify(tools));
-}
-```
-
-### ✅ OpenAI Tools Parser (`formats/openai.ts`)
-
-```ts
-import { Project } from "ts-morph";
-
-export function loadOpenAITools(filePath: string) {
-  const project = new Project();
-  const source = project.addSourceFileAtPath(filePath);
-  const tools = source.getVariableDeclaration("functions")?.getInitializerIfKindOrThrow(ts.SyntaxKind.ArrayLiteralExpression);
-  return tools?.getElements().map(el => JSON.parse(el.getText()));
-}
-```
-
----
-
-## ⏳ Stretch Goals (Day 3+)
-
-* Autogenerate `tool_handlers/*.ts` or `.py`
-* Validate schemas against JSON Schema Draft 7
-* Add CLI args for format override
-* Build a web UI for uploading + converting tool files
-
----
-
-## ✅ Summary
-
-| Day       | Output                                                    |
-| --------- | --------------------------------------------------------- |
-| **Day 1** | ✅ Python CLI that handles OpenAI, LangChain, Claude         |
-| **Day 2** | 🟡 TypeScript CLI that mirrors Python logic using `ts-morph` |
-
-Let me know if you'd like the starter code zipped or pushed to a GitHub repo.
+*Last Updated: 2025-06-24 - Fixed npm script routing and HTTP method template bugs*
