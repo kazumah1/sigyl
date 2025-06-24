@@ -15,7 +15,7 @@ interface TestOption {
 	background?: boolean
 }
 
-const testOptions: TestOption[] = [
+const preGenOptions: TestOption[] = [
 	{
 		name: "🔍 Quick Scan Test",
 		value: "scan",
@@ -46,13 +46,6 @@ const testOptions: TestOption[] = [
 		cleanup: true
 	},
 	{
-		name: "🧪 Generated Server Test",
-		value: "generated",
-		description: "Install and build the generated MCP server",
-		command: "npm run test:generated",
-		cleanup: false
-	},
-	{
 		name: "🧹 Clean Generated Files",
 		value: "clean",
 		description: "Remove .mcp-generated directory",
@@ -71,6 +64,24 @@ const testOptions: TestOption[] = [
 		value: "wizard",
 		description: "Run the setup wizard (when implemented)",
 		command: "wizard",
+		cleanup: false
+	}
+]
+
+const postGenOptions: TestOption[] = [
+	...preGenOptions,
+	{
+		name: "🧪 Generated Server Test",
+		value: "generated",
+		description: "Install and build the generated MCP server",
+		command: "npm run test:generated",
+		cleanup: false
+	},
+	{
+		name: "🕵️  Inspector UI",
+		value: "inspect",
+		description: "Launch the MCP Inspector UI for the generated server",
+		command: "tsx src/index.ts inspect",
 		cleanup: false
 	}
 ]
@@ -171,13 +182,19 @@ async function main(): Promise<void> {
 
 	while (true) {
 		try {
+			const generatedServerExists = existsSync(join(".mcp-generated", "server.ts"))
+			const menuOptions = generatedServerExists ? postGenOptions : preGenOptions
+			const menuPrompt = generatedServerExists
+				? "What would you like to test? (MCP server detected)"
+				: "What would you like to do? (No MCP server detected)"
+
 			const { selectedTest } = await inquirer.prompt([
 				{
 					type: "list",
 					name: "selectedTest",
-					message: "What would you like to test?",
+					message: menuPrompt,
 					choices: [
-						...testOptions.map(option => ({
+						...menuOptions.map(option => ({
 							name: `${option.name} - ${chalk.gray(option.description)}`,
 							value: option.value
 						})),
@@ -195,21 +212,23 @@ async function main(): Promise<void> {
 				process.exit(0)
 			}
 
-			const testOption = testOptions.find(opt => opt.value === selectedTest)
-			
+			const testOption = [...menuOptions, ...postGenOptions].find(opt => opt.value === selectedTest)
 			if (!testOption) {
 				console.log(chalk.red("❌ Invalid test option"))
 				continue
 			}
 
-			// Handle special commands
-			if (testOption.command === "status") {
+			if (testOption.value === "status") {
 				await showStatus()
 				continue
 			}
-
-			if (testOption.command === "wizard") {
+			if (testOption.value === "wizard") {
 				await runWizard()
+				continue
+			}
+			// Inspector UI option
+			if (testOption.value === "inspect") {
+				await runCommand(testOption.command, false)
 				continue
 			}
 

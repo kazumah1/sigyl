@@ -6,6 +6,7 @@ import { scanAndGenerate } from "./commands/scan"
 import { dev } from "./commands/dev"
 import { build } from "./commands/build"
 import { setVerbose, setDebug } from "./logger"
+import inspectCommand from "./commands/inspect"
 
 const program = new Command()
 
@@ -94,6 +95,20 @@ program
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			console.error(chalk.red(`❌ Build failed: ${errorMessage}`))
+			process.exit(1)
+		}
+	})
+
+// Inspect command - launch the MCP Inspector UI for the generated server
+program
+	.command("inspect [args...]")
+	.description("Launch the official MCP Inspector UI for the generated server")
+	.action(async (args) => {
+		try {
+			await inspectCommand(args)
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			console.error(chalk.red(`❌ Inspector failed: ${errorMessage}`))
 			process.exit(1)
 		}
 	})
