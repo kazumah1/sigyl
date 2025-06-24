@@ -1,41 +1,29 @@
-// Tool handler for GET /api/users
-export async function getApiUsers(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+// Tool handler for POST /api/users
+
+export async function postApiUsers(args) {
 	try {
-		// Construct URL for the Express endpoint
 		const baseUrl = "http://localhost:3000"
 		let url = "/api/users"
 		
-		// Replace path parameters
-		
-		
-		// Add query parameters
 		const queryParams = new URLSearchParams()
-		
 		
 		if (queryParams.toString()) {
 			url += "?" + queryParams.toString()
 		}
-		
 		const fullUrl = baseUrl + url
-		
-		// Make HTTP request to Express app
-		const options: RequestInit = {
-			method: "GET",
+		const options = {
+			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
 		}
-		
-		// Add body for POST/PUT requests
-		if (["POST", "PUT", "PATCH"].includes("GET") && args.body) {
+		if (["POST", "PUT", "PATCH"].includes("POST") && args.body) {
 			options.body = JSON.stringify(args.body)
 		}
-		
 		const response = await fetch(fullUrl, options)
 		const result = await response.text()
-		
 		return {
-			content: [
+			content
 				{
 					type: "text",
 					text: `Request: ${options.method} ${fullUrl}\nResponse: ${result}`
@@ -44,10 +32,10 @@ export async function getApiUsers(args: any): Promise<{ content: Array<{ type: s
 		}
 	} catch (error) {
 		return {
-			content: [
+			content
 				{
 					type: "text",
-					text: `Error calling GET /api/users: ${error}`
+					text: `Error calling POST /api/users: ${error}`
 				}
 			]
 		}

@@ -3,7 +3,7 @@ import chalk from "chalk"
 export interface BuildOptions {
 	directory: string
 	outDir: string
-	serverLanguage: "typescript" | "python"
+	serverLanguage: "typescript" | "javascript" | "python"
 	transport: "http" | "stdio"
 }
 

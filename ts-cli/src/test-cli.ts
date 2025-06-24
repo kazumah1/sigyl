@@ -11,78 +11,40 @@ interface TestOption {
 	value: string
 	description: string
 	command: string
-	cleanup?: boolean
 	background?: boolean
 }
 
-const preGenOptions: TestOption[] = [
+const testOptions: TestOption[] = [
 	{
-		name: "🔍 Quick Scan Test",
+		name: "🎯 Demo Mode",
+		value: "demo",
+		description: "Quick demo with included Express apps (JS/TS)",
+		command: "tsx src/index.ts demo"
+	},
+	{
+		name: "🔍 Scan Real App",
 		value: "scan",
-		description: "Scan demo app and generate MCP server",
-		command: "tsx src/index.ts scan ../demo",
-		cleanup: false
+		description: "Scan your own Express app and generate MCP server",
+		command: "tsx src/index.ts scan"
 	},
 	{
 		name: "🚀 Development Mode",
 		value: "dev",
-		description: "Start dev mode with Express app and MCP server",
-		command: "tsx src/index.ts dev ../demo",
-		cleanup: false,
+		description: "Start dev mode with hot reload and MCP Inspector",
+		command: "tsx src/index.ts dev",
 		background: true
 	},
 	{
-		name: "🏗️  Build Test",
-		value: "build",
-		description: "Build production MCP server",
-		command: "tsx src/index.ts build ../demo",
-		cleanup: false
-	},
-	{
-		name: "✅ Full Pipeline Test",
-		value: "full",
-		description: "Clean → Scan → Install → Build generated server",
-		command: "npm run test:full",
-		cleanup: true
+		name: "🕵️  Open Inspector",
+		value: "inspect",
+		description: "Launch MCP Inspector UI to test your server",
+		command: "tsx src/index.ts inspect"
 	},
 	{
 		name: "🧹 Clean Generated Files",
 		value: "clean",
 		description: "Remove .mcp-generated directory",
-		command: "npm run test:clean",
-		cleanup: true
-	},
-	{
-		name: "📊 Project Status",
-		value: "status",
-		description: "Show current project status and generated files",
-		command: "status",
-		cleanup: false
-	},
-	{
-		name: "🔧 Interactive Setup Wizard",
-		value: "wizard",
-		description: "Run the setup wizard (when implemented)",
-		command: "wizard",
-		cleanup: false
-	}
-]
-
-const postGenOptions: TestOption[] = [
-	...preGenOptions,
-	{
-		name: "🧪 Generated Server Test",
-		value: "generated",
-		description: "Install and build the generated MCP server",
-		command: "npm run test:generated",
-		cleanup: false
-	},
-	{
-		name: "🕵️  Inspector UI",
-		value: "inspect",
-		description: "Launch the MCP Inspector UI for the generated server",
-		command: "tsx src/index.ts inspect",
-		cleanup: false
+		command: "tsx src/index.ts clean"
 	}
 ]
 
@@ -131,11 +93,7 @@ async function runCommand(command: string, background = false): Promise<void> {
 }
 
 async function showStatus(): Promise<void> {
-	console.log(chalk.blue("\n📊 MCP CLI Project Status\n"))
-	
-	// Check demo app
-	const demoExists = existsSync("../demo/package.json")
-	console.log(`Demo App: ${demoExists ? chalk.green("✅ Found") : chalk.red("❌ Missing")}`)
+	console.log(chalk.blue("\n📊 MCP CLI Status\n"))
 	
 	// Check generated files
 	const generatedDir = ".mcp-generated"
@@ -144,61 +102,49 @@ async function showStatus(): Promise<void> {
 	
 	if (generatedExists) {
 		const serverTs = existsSync(join(generatedDir, "server.ts"))
+		const serverJs = existsSync(join(generatedDir, "server.js"))
 		const mcpYaml = existsSync(join(generatedDir, "mcp.yaml"))
 		const toolsDir = existsSync(join(generatedDir, "tools"))
 		const packageJson = existsSync(join(generatedDir, "package.json"))
 		
 		console.log(`  - server.ts: ${serverTs ? chalk.green("✅") : chalk.red("❌")}`)
+		console.log(`  - server.js: ${serverJs ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - mcp.yaml: ${mcpYaml ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - tools/: ${toolsDir ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - package.json: ${packageJson ? chalk.green("✅") : chalk.red("❌")}`)
-		
-		// Check if built
-		const serverJs = existsSync(join(generatedDir, "server.js"))
-		console.log(`  - Built (server.js): ${serverJs ? chalk.green("✅ Built") : chalk.yellow("⚠️  Not built")}`)
 	}
 	
-	// Check CLI build
-	const cliBuilt = existsSync("dist/index.js")
-	console.log(`CLI Built: ${cliBuilt ? chalk.green("✅ Built") : chalk.yellow("⚠️  Not built")}`)
+	// Check demo apps
+	const demoJs = existsSync("../demo/package.json")
+	const demoTs = existsSync("../demo-ts/package.json")
+	console.log(`Demo Apps:`)
+	console.log(`  - JavaScript: ${demoJs ? chalk.green("✅") : chalk.red("❌")}`)
+	console.log(`  - TypeScript: ${demoTs ? chalk.green("✅") : chalk.red("❌")}`)
 	
 	console.log()
 }
 
-async function runWizard(): Promise<void> {
-	console.log(chalk.blue("\n🔧 Setup Wizard\n"))
-	console.log(chalk.yellow("This would guide users through:"))
-	console.log("• Selecting their Express app directory")
-	console.log("• Configuring port settings")
-	console.log("• Choosing server language (TypeScript/Python)")
-	console.log("• Setting up MCP Inspector integration")
-	console.log("• Customizing tool generation options")
-	console.log(chalk.gray("\nWizard implementation coming soon...\n"))
-}
-
 async function main(): Promise<void> {
 	console.log(chalk.bold.blue("🧪 MCP CLI Test Suite"))
-	console.log(chalk.gray("Interactive testing and development tool\n"))
+	console.log(chalk.gray("Simplified testing and development tool\n"))
 
 	while (true) {
 		try {
-			const generatedServerExists = existsSync(join(".mcp-generated", "server.ts"))
-			const menuOptions = generatedServerExists ? postGenOptions : preGenOptions
-			const menuPrompt = generatedServerExists
-				? "What would you like to test? (MCP server detected)"
-				: "What would you like to do? (No MCP server detected)"
-
 			const { selectedTest } = await inquirer.prompt([
 				{
 					type: "list",
 					name: "selectedTest",
-					message: menuPrompt,
+					message: "What would you like to do?",
 					choices: [
-						...menuOptions.map(option => ({
+						...testOptions.map(option => ({
 							name: `${option.name} - ${chalk.gray(option.description)}`,
 							value: option.value
 						})),
 						new inquirer.Separator(),
+						{
+							name: "📊 Show Status",
+							value: "status"
+						},
 						{
 							name: "🚪 Exit",
 							value: "exit"
@@ -212,34 +158,15 @@ async function main(): Promise<void> {
 				process.exit(0)
 			}
 
-			const testOption = [...menuOptions, ...postGenOptions].find(opt => opt.value === selectedTest)
-			if (!testOption) {
-				console.log(chalk.red("❌ Invalid test option"))
-				continue
-			}
-
-			if (testOption.value === "status") {
+			if (selectedTest === "status") {
 				await showStatus()
 				continue
 			}
-			if (testOption.value === "wizard") {
-				await runWizard()
-				continue
-			}
-			// Inspector UI option
-			if (testOption.value === "inspect") {
-				await runCommand(testOption.command, false)
-				continue
-			}
 
-			// Clean up before running if needed
-			if (testOption.cleanup && existsSync(".mcp-generated")) {
-				console.log(chalk.yellow("🧹 Cleaning up previous generated files..."))
-				try {
-					rmSync(".mcp-generated", { recursive: true, force: true })
-				} catch (error) {
-					console.log(chalk.yellow("⚠️  Could not clean all files, continuing..."))
-				}
+			const testOption = testOptions.find(opt => opt.value === selectedTest)
+			if (!testOption) {
+				console.log(chalk.red("❌ Invalid test option"))
+				continue
 			}
 
 			// Run the command

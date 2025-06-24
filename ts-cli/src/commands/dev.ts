@@ -14,6 +14,7 @@ interface DevOptions {
 	appPort?: string
 	open?: boolean
 	inspectorUrl?: string
+	serverLanguage?: 'typescript' | 'javascript'
 }
 
 export async function dev(options: DevOptions): Promise<void> {
@@ -37,7 +38,7 @@ export async function dev(options: DevOptions): Promise<void> {
 				
 				if (endpoints.length > 0) {
 					verboseLog(`Found ${endpoints.length} endpoints, generating MCP server...`)
-					const generator = new MCPGenerator(outDir, "typescript")
+					const generator = new MCPGenerator(outDir, options.serverLanguage || "typescript")
 					await generator.generateFromEndpoints(endpoints, {
 						appPort: options.appPort
 					})

@@ -1,0 +1,209 @@
+name: generated-mcp-server
+description: Auto-generated MCP server from Express endpoints
+version: 1.0.0
+tools:
+  - name: getApiUsers
+    description: GET /api/users
+    inputSchema:
+      type: object
+      properties:
+        limit:
+          type: number
+          description: "Query parameter: limit"
+        offset:
+          type: number
+          description: "Query parameter: offset"
+        search:
+          type: string
+          description: "Query parameter: search"
+      required: []
+    outputSchema:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: number
+            description: "Response property: id"
+          name:
+            type: string
+            description: "Response property: name"
+          email:
+            type: string
+            description: "Response property: email"
+        required:
+          - id
+          - name
+          - email
+  - name: getApiUsersById
+    description: GET /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+      required:
+        - id
+    outputSchema:
+      type: object
+      properties: &a1
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+      required: &a2
+        - id
+        - name
+        - email
+  - name: postApiUsers
+    description: POST /api/users
+    inputSchema:
+      type: object
+      properties:
+        body:
+          type: object
+          description: Request body data
+          properties:
+            name:
+              type: string
+              description: "Property: name"
+            email:
+              type: string
+              description: "Property: email"
+          required:
+            - name
+            - email
+      required: []
+  - name: putApiUsersById
+    description: PUT /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+        body:
+          type: object
+          description: Request body data
+          properties:
+            name:
+              type: string
+              description: "Property: name"
+            email:
+              type: string
+              description: "Property: email"
+      required:
+        - id
+    outputSchema:
+      type: object
+      properties: *a1
+      required: *a2
+  - name: deleteApiUsersById
+    description: DELETE /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+      required:
+        - id
+    outputSchema:
+      type: object
+      properties:
+        message:
+          type: object
+          description: "Response property: message"
+      required:
+        - message
+  - name: getApiUsers
+    description: GET /api/users
+    inputSchema:
+      type: object
+      properties: {}
+      required: []
+    outputSchema:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: number
+            description: "Response property: id"
+          name:
+            type: string
+            description: "Response property: name"
+          email:
+            type: string
+            description: "Response property: email"
+        required:
+          - id
+          - name
+          - email
+  - name: getApiUsersById
+    description: GET /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+      required:
+        - id
+    outputSchema:
+      type: object
+      description: Response from GET /api/users/:id
+  - name: postApiUsers
+    description: POST /api/users
+    inputSchema:
+      type: object
+      properties:
+        body:
+          type: object
+          description: Request body data
+      required: []
+  - name: putApiUsersById
+    description: PUT /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+        body:
+          type: object
+          description: Request body data
+      required:
+        - id
+    outputSchema:
+      type: object
+      description: Response from PUT /api/users/:id
+  - name: deleteApiUsersById
+    description: DELETE /api/users/:id
+    inputSchema:
+      type: object
+      properties:
+        id:
+          type: number
+          description: "Path parameter: id"
+          required: true
+      required:
+        - id
+    outputSchema:
+      type: object
+      properties:
+        message:
+          type: object
+          description: "Response property: message"
+      required:
+        - message
