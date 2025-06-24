@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "demo-server": {
+      "command": "node",
+      "args": [
+        "server.js"
+      ],
+      "cwd": "/Users/charliemartin/Desktop/SigilStuff/fuck-smithery/ts-cli/.mcp-generated"
+    }
+  }
+}

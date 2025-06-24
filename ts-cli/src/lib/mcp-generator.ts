@@ -453,20 +453,42 @@ main().catch((error) => {
 
 		writeFileSync(join(this.outDir, "package.json"), packageJsonWithComments)
 		verboseLog("Generated package.json");
+
+		// Generate tsconfig.json for TypeScript compilation
+		const tsConfig = {
+			compilerOptions: {
+				target: "ES2020",
+				module: "ESNext",
+				moduleResolution: "node",
+				allowSyntheticDefaultImports: true,
+				esModuleInterop: true,
+				allowJs: true,
+				outDir: "./",
+				rootDir: "./",
+				strict: true,
+				skipLibCheck: true,
+				forceConsistentCasingInFileNames: true
+			},
+			include: ["*.ts", "tools/*.ts"],
+			exclude: ["node_modules", "*.js"]
+		};
+
+		writeFileSync(join(this.outDir, "tsconfig.json"), JSON.stringify(tsConfig, null, 2));
+		verboseLog("Generated tsconfig.json");
 	}
 
 	private async generateJavaScriptServer(
 		endpoints: ExpressEndpoint[],
 		options: MCPGenerationOptions
 	): Promise<void> {
-		const serverCode = `const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
-const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
-const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
+		const serverCode = `import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 // Tool handlers
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
-	return `const { ${toolName} } = require("./tools/${toolName}.js");`
+	return `import { ${toolName} } from "./tools/${toolName}.js";`
 }).join('\n')}
 
 const server = new Server(
@@ -509,7 +531,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
 	return `		case "${toolName}":
-			return await ${toolName}(args);`
+			return await ${toolName}(args || {});`
 }).join('\n')}
 		default:
 			throw new Error("Unknown tool: " + name);
@@ -559,6 +581,7 @@ main().catch((error) => {
 	private generateToolName(endpoint: ExpressEndpoint): string {
 		// Convert path and method to camelCase tool name
 		// e.g., GET /api/users/:id -> getApiUsersById
+		// e.g., GET /api/users/advanced-search -> getApiUsersAdvancedSearch
 		const method = endpoint.method.toLowerCase()
 		const pathParts = endpoint.path
 			.split('/')
@@ -568,7 +591,12 @@ main().catch((error) => {
 				if (part.startsWith(':')) {
 					return 'By' + part.slice(1).charAt(0).toUpperCase() + part.slice(2)
 				}
-				return part.charAt(0).toUpperCase() + part.slice(1)
+				// Handle hyphens and other special characters
+				return part
+					.replace(/[-_]/g, ' ') // Replace hyphens and underscores with spaces
+					.split(' ')
+					.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+					.join('')
 			})
 
 		return method + pathParts.join('')
@@ -666,10 +694,14 @@ main().catch((error) => {
 			// Generate TypeScript interface for the tool arguments
 			const argInterface = this.generateToolArgInterface(endpoint)
 			
+			// Check if we have required parameters (path params are always required)
+			const hasRequiredParams = endpoint.parameters?.some(p => p.required || p.location === "path") || false
+			const defaultValue = hasRequiredParams ? "" : " = {}"
+			
 			return `// Tool handler for ${endpoint.method} ${endpoint.path}
 ${argInterface}
 
-export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise<{ content: Array<{ type: string; text: string }> }> {
 	try {
 		// Construct URL for the Express endpoint
 		const baseUrl = "http://localhost:${appPort}"
@@ -677,13 +709,13 @@ export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Arr
 		
 		// Replace path parameters
 		${endpoint.parameters?.filter(p => p.location === "path").map(param => 
-			`url = url.replace(":${param.name}", args.${param.name} || "")`
+			`url = url.replace(":${param.name}", String(args.${param.name} || ""))`
 		).join('\n\t\t') || ''}
 		
 		// Add query parameters
 		const queryParams = new URLSearchParams()
 		${endpoint.parameters?.filter(p => p.location === "query").map(param => 
-			`if (args.${param.name}) queryParams.append("${param.name}", args.${param.name})`
+			`if (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}))`
 		).join('\n\t\t') || ''}
 		
 		if (queryParams.toString()) {
@@ -701,8 +733,9 @@ export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Arr
 		}
 		
 		// Add body for POST/PUT/PATCH requests
-		if (["POST", "PUT", "PATCH"].includes("${endpoint.method}") && args.body) {
-			options.body = JSON.stringify(args.body)
+		${['POST', 'PUT', 'PATCH'].includes(endpoint.method) ? 
+			`if (args.body) {\n\t\t\toptions.body = JSON.stringify(args.body)\n\t\t}` : 
+			'// No body for GET requests'
 		}
 		
 		const response = await fetch(fullUrl, options)
@@ -712,7 +745,7 @@ export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Arr
 			content: [
 				{
 					type: "text",
-					text: \`Request: \${options.method} \${fullUrl}\\nResponse: \${result}\`
+					text: "Request: " + options.method + " " + fullUrl + "\\nResponse: " + result
 				}
 			]
 		}
@@ -721,7 +754,7 @@ export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Arr
 			content: [
 				{
 					type: "text",
-					text: \`Error calling ${endpoint.method} ${endpoint.path}: \${error}\`
+					text: "Error calling ${endpoint.method} ${endpoint.path}: " + error
 				}
 			]
 		}
@@ -730,22 +763,34 @@ export async function ${toolName}(args: ${toolName}Args): Promise<{ content: Arr
 `
 		} else if (this.language === "javascript") {
 			// Generate plain JS handler (no types)
+			const pathReplacements = endpoint.parameters?.filter(p => p.location === "path").map(param => 
+				`\t\turl = url.replace(":${param.name}", String(args.${param.name} || ""))`
+			).join('\n') || ''
+			
+			const queryParams = endpoint.parameters?.filter(p => p.location === "query").map(param => 
+				`\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}))`
+			).join('\n') || ''
+			
+			const bodyHandling = ['POST', 'PUT', 'PATCH'].includes(endpoint.method) ? 
+				`\t\tif (args.body) {\n\t\t\toptions.body = JSON.stringify(args.body)\n\t\t}` : 
+				'\t\t// No body for GET requests'
+			
 			return `// Tool handler for ${endpoint.method} ${endpoint.path}
 
-export async function ${toolName}(args) {
+export async function ${toolName}(args = {}) {
 	try {
 		const baseUrl = "http://localhost:${appPort}"
 		let url = "${endpoint.path}"
-		${endpoint.parameters?.filter(p => p.location === "path").map(param => 
-			`url = url.replace(":${param.name}", args.${param.name} || "")`
-		).join('\n\t\t') || ''}
+		
+${pathReplacements}
+		
 		const queryParams = new URLSearchParams()
-		${endpoint.parameters?.filter(p => p.location === "query").map(param => 
-			`if (args.${param.name}) queryParams.append("${param.name}", args.${param.name})`
-		).join('\n\t\t') || ''}
+${queryParams}
+		
 		if (queryParams.toString()) {
 			url += "?" + queryParams.toString()
 		}
+		
 		const fullUrl = baseUrl + url
 		const options = {
 			method: "${endpoint.method}",
@@ -753,16 +798,17 @@ export async function ${toolName}(args) {
 				"Content-Type": "application/json",
 			},
 		}
-		if (["POST", "PUT", "PATCH"].includes("${endpoint.method}") && args.body) {
-			options.body = JSON.stringify(args.body)
-		}
+		
+${bodyHandling}
+		
 		const response = await fetch(fullUrl, options)
 		const result = await response.text()
+		
 		return {
 			content: [
 				{
 					type: "text",
-					text: \`Request: \${options.method} \${fullUrl}\\nResponse: \${result}\`
+					text: "Request: " + options.method + " " + fullUrl + "\\nResponse: " + result
 				}
 			]
 		}
@@ -771,7 +817,7 @@ export async function ${toolName}(args) {
 			content: [
 				{
 					type: "text",
-					text: \`Error calling ${endpoint.method} ${endpoint.path}: \${error}\`
+					text: "Error calling ${endpoint.method} ${endpoint.path}: " + error
 				}
 			]
 		}
@@ -790,12 +836,15 @@ async def ${toolName}(args):
 	private generateToolArgInterface(endpoint: ExpressEndpoint): string {
 		const toolName = this.generateToolName(endpoint)
 		const properties: string[] = []
+		let hasRequiredParams = false
 		
 		// Add path and query parameters
 		if (endpoint.parameters) {
 			for (const param of endpoint.parameters) {
 				const tsType = this.mapTypeToTypeScript(param.type)
-				const optional = param.required ? "" : "?"
+				const isRequired = param.required || param.location === "path" // Path params are always required
+				const optional = isRequired ? "" : "?"
+				if (isRequired) hasRequiredParams = true
 				properties.push(`\t${param.name}${optional}: ${tsType}`)
 			}
 		}
@@ -821,9 +870,13 @@ async def ${toolName}(args):
 			return `interface ${toolName}Args {}`
 		}
 		
-		return `interface ${toolName}Args {
+		// Generate the interface
+		const interfaceCode = `interface ${toolName}Args {
 ${properties.join('\n')}
 }`
+		
+		// Also return whether we have required params for function signature
+		return interfaceCode
 	}
 
 	private mapTypeToTypeScript(type: string): string {
