@@ -115,7 +115,7 @@ public
 # Build outputs
 dist/
 build/
-lib/
+# lib/
 out/
 
 # Logs
@@ -240,5 +240,5 @@ temp/
 .cursorindexingignore
 
 # Project specific
-fastmcp-reference/
-smithery-cli-reference/
+# fastmcp-reference/
+# smithery-cli-reference/
