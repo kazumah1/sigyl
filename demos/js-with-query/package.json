@@ -1,0 +1,13 @@
+{
+  "name": "demo-js-with-query",
+  "version": "1.0.0",
+  "description": "JavaScript Express app with query parameters for MCP CLI testing",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+} 
