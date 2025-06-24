@@ -19,6 +19,8 @@
     "demo:js": "tsx src/index.ts demo --app js",
     "demo:ts": "tsx src/index.ts demo --app ts",
     "demo:dev": "tsx src/index.ts demo --mode dev",
+    "init": "tsx src/index.ts init",
+    "init:js": "tsx src/index.ts init --server-language javascript",
     "scan": "tsx src/index.ts scan",
     "dev-mode": "tsx src/index.ts dev",
     "inspect": "tsx src/index.ts inspect",

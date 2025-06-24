@@ -22,7 +22,13 @@ const testOptions: TestOption[] = [
 		command: "tsx src/index.ts demo"
 	},
 	{
-		name: "🔍 Scan Real App",
+		name: "Create Blank Template",
+		value: "init",
+		description: "Create a template MCP server with sample tools",
+		command: "tsx src/index.ts init"
+	},
+	{
+		name: "Create from Existing App",
 		value: "scan",
 		description: "Scan your own Express app and generate MCP server",
 		command: "tsx src/index.ts scan"
