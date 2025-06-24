@@ -1,140 +1,350 @@
-# MCP-Init MVP Roadmap  
-**3-Week Plan for Charlie & Kazuma**
+* ✅ **Day 1: Python MVP** — usable CLI tool that supports OpenAI, LangChain, and Claude-style formats
+* 🟡 **Day 2: TypeScript version** — replicates the same functionality using TypeScript + `ts-morph` or native parsing
 
 ---
 
-## Project Structure (Monorepo Workspace)
+# ✅ Day 1 – Python MVP Implementation Guide
 
-The project is organized as a monorepo with the following packages:
+## 🎯 Goal
 
-- **`cli-core`** - Main CLI commands (`init`, `dev`, `deploy`, `test`, `lint`)
-- **`scan`** - AST scanner for TypeScript/OpenAPI detection
-- **`wizard`** - Ink-based TUI wizard for configuration
-- **`dev-loop`** - Development file watcher and hot reload
-- **`deploy`** - Deployment logic for Fly.io & Cloudflare Workers
-- **`analytics`** - Metrics collection and dashboard
-- **`playground`** - React/Vite web interface for testing
+Create a Python CLI tool (`mcp-wrap`) that:
 
-Root directory serves as workspace orchestrator with shared tooling and scripts.
+* Accepts tool definitions in **OpenAI SDK**, **LangChain**, or **Claude** format
+* Converts them to **MCP-compatible YAML**
+* Detects format automatically
+* (Optionally) generates stub handler files
 
 ---
 
-## Week 1: Core CLI & Scaffolding
+## 📁 Folder Structure
 
-### Day 1
-- ✅ Scaffold project with `oclif`/`commander` (both)  
-- ✅ Define commands: `init`, `dev`, `deploy`, `test`, `lint` (both)
-- ✅ **RESOLVED**: Fixed TypeScript compilation errors by removing Jest dependencies from root project (cli-core uses Mocha)
-- ✅ **COMPLETED**: Defined comprehensive CLI command interfaces with flags and examples:
-  - `init`: Project initialization with scan, wizard, and template options
-  - `dev`: Development mode with hot reload, playground, and build options  
-  - `deploy`: Cloud deployment with tier, platform, and environment options
-  - `test`: Testing with fixture generation, coverage, and harness options
-  - `lint`: Linting with security checks, auto-fix, and output options
-
-### Day 2
-- Implement AST scanner for TypeScript using `ts-morph` (Kazuma)  
-- Extend scanner to import OpenAPI specs if present (Kazuma)  
-- Build LLM wrapper for endpoint naming/descriptions using GPT-4-o (Charlie)  
-- Integrate LLM call into `init --scan` command (Charlie)
-
-### Day 3
-- Create Ink-based TUI wizard for confirming tool names, auth, rate-limits (Charlie)  
-- Generate initial YAML and JSON-Schema stubs (Charlie)  
-- Integrate Zod (TypeScript) / Pydantic (Python) for schema validation (Kazuma)  
-- Scaffold handler stubs under `src/tools/` (Kazuma)
-
-### Day 4
-- Set up golden JSON fixtures directory (Kazuma)  
-- Add `--generate-fixtures` flag to CLI to produce sample JSON (Kazuma)  
-- Implement `mcp test` harness running sample tool calls (Charlie)
-
-### Day 5
-- Create default "Hello World" tool scaffold (Charlie)  
-- Detect existing LangChain/OpenAI function metadata for conversion (ChatGPT)  
-- Test conversion logic on a sample repo and write smoke tests (Kazuma)
-
-### Day 6
-- Implement security linter rules for prompt injection and output size (Charlie)  
-- Add `--oauth google` template middleware generator (Charlie)  
-- Add mTLS certificate generator CLI subcommand (Kazuma)  
-- Scaffold rate-limit logic using `express-rate-limit` / `slowapi` (Kazuma)
+```
+mcp_wrap/
+├── mcp_wrap.py            # CLI entrypoint
+├── formats/
+│   ├── openai.py          # OpenAI function spec support
+│   ├── langchain.py       # LangChain Tool support
+│   └── claude.py          # Claude-style input_schema support
+├── schema_writer.py       # YAML output logic
+├── utils.py               # Format detection
+└── demo/
+    ├── openai_tools.py
+    ├── langchain_tools.py
+    └── claude_tools.json
+```
 
 ---
 
-## Week 2: Dev Loop & DX Enhancements
+## 🕐 Hour-by-Hour Breakdown
 
-### Day 7
-- Implement `mcp dev` file watcher using `esbuild.context()` (<150ms rebuild) (Charlie)  
-- Forward logs and errors to console (Charlie)  
-- Set up Python auto-reload with `uvicorn --reload` or equivalent (Kazuma)
+### 🕐 Hour 1 – Project Bootstrap
 
-### Day 8
-- Scaffold React/Vite playground app under `playground/` (Charlie)  
-- Display generated schema and sample GPT prompt in playground (Charlie)  
-- Serve playground assets with `mcp dev --playground` (Kazuma)
+```bash
+mkdir mcp_wrap && cd mcp_wrap
+python3 -m venv .venv && source .venv/bin/activate
+pip install pyyaml langchain pydantic
+```
 
-### Day 9
-- Create format adapters: Langchain Tool, OpenAI function spec, Anthropic JSON (Kazuma)  
-- Write unit tests for each adapter with mock schemas (Kazuma)
-
-### Day 10
-- Add `mcp lint` command with exit codes (Charlie)  
-- Provide GitHub Actions workflow for lint and test (Charlie)  
-- Create `.github/workflows/mcp.yml` sample (Kazuma)
-
-### Day 11
-- Auto-generate `README.md` with CLI usage examples (Charlie)  
-- Prepare Homebrew formula (`formula/mcp-init.rb`) (Charlie)  
-- Configure `package.json` for npm publish (Kazuma)  
-- Write `scripts/publish.sh` for npm and brew (Kazuma)
-
-### Day 12
-- Implement `--registry` flag for multiple registries (smithery, glama, pipedream) (Charlie)  
-- Integrate CLI calls to each registry's publish API (Kazuma)  
-- Test publish flow against mocked registry endpoints (Kazuma)
+Create initial files: `touch mcp_wrap.py formats/openai.py formats/langchain.py formats/claude.py schema_writer.py utils.py`
 
 ---
 
-## Week 3: Deployment, Analytics & Hosting
+### 🕑 Hour 2 – CLI Entrypoint (`mcp_wrap.py`)
 
-### Day 13
-- Implement `mcp deploy --tier preview|shared|dedicated` for Fly.io & Cloudflare Workers (Charlie)  
-- Integrate Doppler / Vault for secrets management (Kazuma)
+```python
+import argparse
+from formats import openai, langchain, claude
+from schema_writer import write_yaml
+from utils import detect_format
 
-### Day 14
-- Define analytics metrics: invocations, latency, errors (Charlie)  
-- Add `mcp analytics` CLI stub (Charlie)  
-- Build metrics collector using InfluxDB or Redis (Kazuma)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", help="Path to tools file (.py or .json)")
+    parser.add_argument("--out", default="tools.yaml")
+    args = parser.parse_args()
 
-### Day 15
-- Extend playground UI with metrics dashboard tab (Charlie)  
-- Expose metrics API endpoints for dashboard data (Kazuma)
+    fmt = detect_format(args.path)
+    if fmt == "openai":
+        tools = openai.load_tools(args.path)
+    elif fmt == "langchain":
+        tools = langchain.load_tools(args.path)
+    elif fmt == "claude":
+        tools = claude.load_tools(args.path)
+    else:
+        raise Exception("Unsupported tool format")
 
-### Day 16
-- Finalize versioning: `npm version`, `git tag`, GitHub release (Charlie)  
-- Publish Homebrew formula to tap repo (Charlie)  
-- Publish `mcp-init` to npm registry (Kazuma)  
-- Verify `brew install` and `npm install` succeed (Kazuma)
+    write_yaml(tools, args.out)
 
-### Day 17
-- Dogfood on sample repos (Express, FastAPI, Go) and fix integration issues (both)  
-- Record 90-second demo GIF for marketing (both)
-
-### Day 18
-- Update website and documentation, draft blog post announcement (Charlie)  
-- Run end-to-end CI tests and finalize launch checklist (Kazuma)
-
----
-
-## Collaboration & Structure
-
-- **Monorepo with workspaces**: ✅ Configured packages for `cli-core`, `scan`, `wizard`, `dev-loop`, `deploy`, `analytics`, `playground` to enable parallel work  
-- **Command interface definition on Day 1**: Charlie and Kazuma agree on flags and outputs so each can integrate independently  
-- **Feature branches & PRs**: keep PRs small, merge after passing lint & tests  
-- **Daily stand-ups (15 min)**: sync on blockers, handoffs, and coordinate shared tasks
-- **Shared tooling**: Root package.json provides workspace scripts for building, testing, and linting across all packages
+if __name__ == "__main__":
+    main()
+```
 
 ---
 
-By following this roadmap, **Charlie and Kazuma** will deliver a full-featured, cross-language, security-minded **MCP toolkit** with best-in-class DX, playground, CI integration, analytics, and 1-click hosting in **three weeks**.
+### 🕒 Hour 3 – OpenAI Format (`formats/openai.py`)
+
+```python
+import importlib.util
+
+def load_tools(path):
+    spec = importlib.util.spec_from_file_location("mod", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    tool_list = getattr(mod, "functions", [])
+
+    return [
+        {
+            "name": t["name"],
+            "description": t.get("description", ""),
+            "parameters": t["parameters"]
+        }
+        for t in tool_list
+    ]
+```
+
+---
+
+### 🕓 Hour 4 – LangChain Format (`formats/langchain.py`)
+
+```python
+import importlib.util
+from langchain.tools import Tool
+
+def load_tools(path):
+    spec = importlib.util.spec_from_file_location("mod", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    tools = []
+    for name in dir(mod):
+        obj = getattr(mod, name)
+        if isinstance(obj, Tool):
+            tools.append({
+                "name": obj.name,
+                "description": obj.description,
+                "parameters": obj.args_schema.schema()
+            })
+    return tools
+```
+
+---
+
+### 🕔 Hour 5 – Claude Format (`formats/claude.py`)
+
+```python
+import json
+
+def load_tools(path):
+    with open(path) as f:
+        data = json.load(f)
+
+    return [
+        {
+            "name": t["name"],
+            "description": t.get("description", ""),
+            "parameters": t["input_schema"]
+        }
+        for t in data
+    ]
+```
+
+---
+
+### 🕕 Hour 6 – Format Detection (`utils.py`)
+
+```python
+import os
+
+def detect_format(path):
+    ext = os.path.splitext(path)[1]
+    if ext == ".json":
+        return "claude"
+    if ext == ".py":
+        with open(path) as f:
+            content = f.read()
+            if "Tool.from_function" in content:
+                return "langchain"
+            elif "functions =" in content:
+                return "openai"
+    return "unknown"
+```
+
+---
+
+### 🕖 Hour 7 – YAML Output Writer (`schema_writer.py`)
+
+```python
+import yaml
+
+def write_yaml(tools, path):
+    with open(path, "w") as f:
+        yaml.dump(tools, f, sort_keys=False)
+```
+
+---
+
+### 🕗 Hour 8 – Testing + Demo Files
+
+#### `demo/openai_tools.py`
+
+```python
+functions = [
+    {
+        "name": "search",
+        "description": "Search the web",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": { "type": "string" }
+            },
+            "required": ["query"]
+        }
+    }
+]
+```
+
+#### `demo/langchain_tools.py`
+
+```python
+from langchain.tools import Tool
+from pydantic import BaseModel
+
+class SearchInput(BaseModel):
+    query: str
+
+def search_func(query: str) -> str:
+    return f"Searching for {query}"
+
+search_tool = Tool.from_function(
+    func=search_func,
+    name="search",
+    description="Search the web",
+    args_schema=SearchInput
+)
+```
+
+#### `demo/claude_tools.json`
+
+```json
+[
+  {
+    "name": "summarize",
+    "description": "Summarize content",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" }
+      },
+      "required": ["url"]
+    }
+  }
+]
+```
+
+---
+
+# 🟡 Day 2 – TypeScript Version Implementation Guide
+
+## 🎯 Goal
+
+Replicate the Python CLI in **TypeScript**, using:
+
+* `ts-node` or `esbuild` for CLI execution
+* `ts-morph` to parse and analyze `.ts` files
+* Outputs MCP-compatible **YAML or JSON**
+
+---
+
+## 📁 Folder Structure
+
+```
+mcp-wrap-ts/
+├── cli.ts
+├── formats/
+│   ├── openai.ts
+│   ├── langchain.ts
+│   └── claude.ts
+├── schemaWriter.ts
+├── utils.ts
+└── demo/
+    ├── openaiTools.ts
+    ├── langchainTools.ts
+    └── claudeTools.json
+```
+
+---
+
+## 🛠️ Tooling Setup
+
+```bash
+npm init -y
+npm install ts-morph yaml
+```
+
+Run via:
+
+```bash
+npx ts-node cli.ts path/to/file.ts
+```
+
+---
+
+## Key Logic
+
+### ✅ Format Detection (`utils.ts`)
+
+```ts
+import fs from "fs";
+
+export function detectFormat(path: string): "openai" | "langchain" | "claude" | "unknown" {
+  if (path.endsWith(".json")) return "claude";
+  const content = fs.readFileSync(path, "utf-8");
+  if (content.includes("Tool.fromFunction")) return "langchain";
+  if (content.includes("const functions =")) return "openai";
+  return "unknown";
+}
+```
+
+### ✅ Schema Output (`schemaWriter.ts`)
+
+```ts
+import fs from "fs";
+import yaml from "yaml";
+
+export function writeYaml(tools: any[], outPath: string) {
+  fs.writeFileSync(outPath, yaml.stringify(tools));
+}
+```
+
+### ✅ OpenAI Tools Parser (`formats/openai.ts`)
+
+```ts
+import { Project } from "ts-morph";
+
+export function loadOpenAITools(filePath: string) {
+  const project = new Project();
+  const source = project.addSourceFileAtPath(filePath);
+  const tools = source.getVariableDeclaration("functions")?.getInitializerIfKindOrThrow(ts.SyntaxKind.ArrayLiteralExpression);
+  return tools?.getElements().map(el => JSON.parse(el.getText()));
+}
+```
+
+---
+
+## ⏳ Stretch Goals (Day 3+)
+
+* Autogenerate `tool_handlers/*.ts` or `.py`
+* Validate schemas against JSON Schema Draft 7
+* Add CLI args for format override
+* Build a web UI for uploading + converting tool files
+
+---
+
+## ✅ Summary
+
+| Day       | Output                                                    |
+| --------- | --------------------------------------------------------- |
+| **Day 1** | Python CLI that handles OpenAI, LangChain, Claude         |
+| **Day 2** | TypeScript CLI that mirrors Python logic using `ts-morph` |
+
+Let me know if you'd like the starter code zipped or pushed to a GitHub repo.
