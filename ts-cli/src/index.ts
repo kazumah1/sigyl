@@ -73,6 +73,28 @@ program
 program.addCommand(createDemoCommand())
 program.addCommand(createInstallCommand())
 
+// Init command - create template MCP server from scratch
+program
+	.command("init")
+	.description("Create a template MCP server with sample tools")
+	.option("--out <directory>", "Output directory for generated MCP server", ".mcp-generated")
+	.option("--server-language <language>", "Language for generated server (typescript, javascript)", "typescript")
+	.option("--name <name>", "Name for the MCP server", "my-mcp-server")
+	.action(async (options) => {
+		try {
+			const { initTemplate } = await import("./commands/init")
+			await initTemplate({
+				outDir: options.out,
+				serverLanguage: options.serverLanguage || "typescript",
+				name: options.name
+			})
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			console.error(chalk.red(`❌ Init failed: ${errorMessage}`))
+			process.exit(1)
+		}
+	})
+
 // Scan command - scan real Express app
 program
 	.command("scan [directory]")
