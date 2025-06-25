@@ -11,8 +11,15 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3001',
+  'http://localhost:8080', 
+  'http://localhost:5173',
+  process.env.CORS_ORIGIN
+].filter((origin): origin is string => Boolean(origin));
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+  origin: allowedOrigins,
   credentials: true
 }));
 

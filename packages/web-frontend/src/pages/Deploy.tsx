@@ -11,14 +11,15 @@ import { InteractiveBackground } from "@/components/InteractiveBackground";
 import { OpeningAnimation } from "@/components/OpeningAnimation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { UserProfile } from "@/components/UserProfile";
+import DeployWizard from "@/components/DeployWizard";
 import { useAuth } from "@/contexts/AuthContext";
-import { Rocket, Code, Settings, Zap, Server, Database, Globe, Cpu } from "lucide-react";
+import { Rocket, Code, Settings, Zap, Server, Database, Globe, Cpu, Github } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Deploy = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [deploymentType, setDeploymentType] = useState("template");
+  const [deploymentType, setDeploymentType] = useState("github");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -145,7 +146,11 @@ const Deploy = () => {
         <section className="px-6 pb-20">
           <div className="max-w-6xl mx-auto">
             <Tabs value={deploymentType} onValueChange={setDeploymentType} className="w-full">
-              <TabsList className={`grid w-full grid-cols-3 mb-8 ${currentTheme.card} backdrop-blur-sm border`}>
+              <TabsList className={`grid w-full grid-cols-4 mb-8 ${currentTheme.card} backdrop-blur-sm border`}>
+                <TabsTrigger value="github" className="flex items-center space-x-2 font-bold tracking-tight">
+                  <Github className="w-4 h-4" />
+                  <span>GitHub</span>
+                </TabsTrigger>
                 <TabsTrigger value="template" className="flex items-center space-x-2 font-bold tracking-tight">
                   <Zap className="w-4 h-4" />
                   <span>Templates</span>
@@ -159,6 +164,19 @@ const Deploy = () => {
                   <span>Custom Code</span>
                 </TabsTrigger>
               </TabsList>
+
+              {/* GitHub Repository Tab */}
+              <TabsContent value="github" className="space-y-6">
+                <div className="text-center mb-8 animate-fade-in delay-600">
+                  <h2 className={`text-3xl font-bold ${currentTheme.text} mb-4 tracking-tight`}>Deploy from GitHub</h2>
+                  <p className={`${currentTheme.text} opacity-70`}>Connect your GitHub repository and deploy your MCP server in minutes</p>
+                </div>
+                
+                <DeployWizard onDeploy={(deployment) => {
+                  console.log('Deploying:', deployment);
+                  // TODO: Implement actual deployment logic
+                }} />
+              </TabsContent>
 
               {/* Template Selection */}
               <TabsContent value="template" className="space-y-6">
