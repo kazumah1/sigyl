@@ -245,3 +245,4 @@ temp/
 
 fastmcp/
 *.mcp-generated/
+python-sdk/

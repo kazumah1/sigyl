@@ -38,9 +38,6 @@ export class MCPGenerator {
 		} else {
 			await this.generatePythonServer(endpoints, options)
 		}
-
-		// Generate tool handlers
-		await this.generateToolHandlers(endpoints, options)
 	}
 
 	private async generateMCPConfig(
@@ -76,8 +73,122 @@ export class MCPGenerator {
 			})
 		}
 
-		const yamlContent = yaml.stringify(config, { indent: 2 })
-		writeFileSync(join(this.outDir, "mcp.yaml"), yamlContent)
+		// Create YAML content with proper comments
+		const yamlHeader = `# Auto-generated MCP Server Configuration
+# 
+# This file defines the tools available in your MCP server.
+# Each tool corresponds to an endpoint in your Express application.
+# 
+# To add a new tool manually:
+# 1. Add a new entry to the tools array below
+# 2. Define the inputSchema with your tool's parameters
+# 3. Optionally define outputSchema for the expected response
+# 4. Update the corresponding tool handler in server.ts
+
+`
+		const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 })
+		
+		// Add section comments to the YAML content
+		const toolsSectionComment = `
+# ============================================================================
+# AUTO-GENERATED TOOLS FROM EXPRESS ENDPOINTS
+# ============================================================================
+# These tools were automatically generated from your Express application.
+# Each tool corresponds to an endpoint in your Express app.
+`
+		const templateSectionComment = `
+# ============================================================================
+# MANUAL TOOL TEMPLATE
+# ============================================================================
+# To add a new tool manually, uncomment and modify the template below:
+/*
+// ===== CUSTOM TOOL NAME =====
+server.tool(
+	"myCustomTool",
+	"Description of what this tool does",
+	z.object({
+		// ===== INPUT PARAMETERS =====
+		// Define your tool's input parameters here
+		param1: z.string().describe("Description of param1"),
+		param2: z.number().optional().describe("Optional numeric parameter"),
+		// For complex objects:
+		// body: z.object({
+		//     field1: z.string(),
+		//     field2: z.number()
+		// }).optional()
+	}),
+	async (args) => {
+		// ===== REQUEST CONFIGURATION =====
+		const url = "https://api.example.com/endpoint";
+		const method = "POST";
+		
+		// Build request options
+		const requestOptions: any = {
+			method,
+			headers: {
+				"Content-Type": "application/json",
+			},
+		};
+
+		// ===== PARAMETER HANDLING =====
+		const queryParams = new URLSearchParams();
+		const bodyParams: any = {};
+		// Example: Add query parameters
+		// if (args.param1) queryParams.append("param1", args.param1);
+		// Example: Add body parameters
+		// if (args.body) Object.assign(bodyParams, args.body);
+
+		// ===== URL CONSTRUCTION =====
+		if (queryParams.toString()) {
+			const separator = url.includes('?') ? '&' : '?';
+			requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
+		} else {
+			requestOptions.url = url;
+		}
+		if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
+			requestOptions.body = JSON.stringify(bodyParams);
+		}
+
+		// ===== CUSTOM LOGIC & HTTP REQUEST =====
+		try {
+			// Example: Make an HTTP request
+			// const response = await fetch(requestOptions.url, requestOptions);
+			// const data = await response.json();
+			// Example: Custom logic without HTTP request
+			const result = {
+				message: "Custom tool executed successfully",
+				parameters: args,
+				timestamp: new Date().toISOString()
+			};
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(result, null, 2)
+					}
+				]
+			};
+		} catch (error) {
+			return {
+				content: [
+					{
+						type: "text",
+						text: \`Error in custom tool: \${error.message}\`
+					}
+				]
+			};
+		}
+	}
+);
+*/
+`
+
+		// Insert the section comments at the right places
+		let finalYamlContent = yamlContent
+		finalYamlContent = finalYamlContent.replace('tools:', 'tools:' + toolsSectionComment)
+		finalYamlContent = finalYamlContent + templateSectionComment
+
+		writeFileSync(join(this.outDir, "mcp.yaml"), finalYamlContent)
 		verboseLog("Generated mcp.yaml configuration")
 	}
 
@@ -85,75 +196,212 @@ export class MCPGenerator {
 		endpoints: ExpressEndpoint[],
 		options: MCPGenerationOptions
 	): Promise<void> {
-		const serverCode = `import { Server } from "@modelcontextprotocol/sdk/server/index.js"
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import {
-	CallToolRequestSchema,
-	ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js"
+		const serverCode = `/**
+ * Auto-generated MCP Server from Express endpoints
+ * 
+ * This server provides tools that map to your Express API endpoints.
+ * Each tool makes HTTP requests to your Express application and returns the responses.
+ * 
+ * To add a new tool manually, follow the template at the bottom of this file.
+ */
 
-// Tool handlers
-${endpoints.map(endpoint => {
-	const toolName = this.generateToolName(endpoint)
-	return `import { ${toolName} } from "./tools/${toolName}.js";`
-}).join('\n')}
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { z } from "zod"
 
-const server = new Server(
-	{
+// ============================================================================
+// SERVER CONFIGURATION
+// ============================================================================
+
+export default function createStatelessServer({
+	config,
+}: {
+	config: any;
+}) {
+	const server = new McpServer({
 		name: "generated-mcp-server",
 		version: "1.0.0",
-	},
-	{
-		capabilities: {
-			tools: {},
-		},
-	}
-);
+	});
 
-// List available tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-	return {
-		tools: [
+	// ============================================================================
+	// AUTO-GENERATED TOOLS FROM EXPRESS ENDPOINTS
+	// ============================================================================
+	// These tools were automatically generated from your Express application.
+	// Each tool corresponds to an endpoint in your Express app.
+
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
-	return `{
-		name: "${toolName}",
-		description: "${endpoint.description || `${endpoint.method} ${endpoint.path}`}",
-		inputSchema: {
-			type: "object",
-			properties: ${JSON.stringify(this.generateToolSchema(endpoint))},
-			required: ${JSON.stringify(endpoint.parameters?.filter(p => p.required).map(p => p.name) || [])}
+	const schema = this.generateZodSchema(endpoint)
+	const description = endpoint.description || `${endpoint.method} ${endpoint.path}`
+	
+	return `	// ===== ${endpoint.method.toUpperCase()} ${endpoint.path} =====
+	server.tool(
+		"${toolName}",
+		"${description}",
+		${schema},
+		async (args) => {
+			// ===== REQUEST CONFIGURATION =====
+			const url = \`http://localhost:\${config.appPort || 3000}${endpoint.path}\`;
+			const method = "${endpoint.method.toUpperCase()}";
+			
+			// Build request options
+			const requestOptions: any = {
+				method,
+				headers: {
+					"Content-Type": "application/json",
+				},
+			};
+
+			// ===== PARAMETER HANDLING =====
+			const queryParams = new URLSearchParams();
+			const bodyParams: any = {};
+			
+			${this.generateParameterHandling(endpoint)}
+			
+			// ===== URL CONSTRUCTION =====
+			// Add query parameters to URL
+			if (queryParams.toString()) {
+				const separator = url.includes('?') ? '&' : '?';
+				requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
+			} else {
+				requestOptions.url = url;
+			}
+			
+			// Add body for POST/PUT/PATCH requests
+			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
+				requestOptions.body = JSON.stringify(bodyParams);
+			}
+
+			// ===== HTTP REQUEST & RESPONSE =====
+			try {
+				const response = await fetch(requestOptions.url, requestOptions);
+				const data = await response.json();
+				
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(data, null, 2)
+						}
+					]
+				};
+			} catch (error) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: \`Error calling \${method} ${endpoint.path}: \${error.message}\`
+						}
+					]
+				};
+			}
 		}
-	}`
-}).join(',\n')}
-		]
-	};
-});
+	);`
+}).join('\n\n')}
 
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-	const { name, arguments: args } = request.params;
+	// ============================================================================
+	// MANUAL TOOL TEMPLATE
+	// ============================================================================
+	// To add a new tool manually, uncomment and modify the template below:
+	/*
+	server.tool(
+		"myCustomTool",
+		"Description of what this tool does",
+		z.object({
+			// ===== INPUT PARAMETERS =====
+			// Define your tool's input parameters here
+			param1: z.string().describe("Description of param1"),
+			param2: z.number().optional().describe("Optional numeric parameter"),
+			// For complex objects:
+			// body: z.object({
+			//     field1: z.string(),
+			//     field2: z.number()
+			// }).optional()
+		}),
+		async (args) => {
+			// ===== REQUEST CONFIGURATION =====
+			const url = "https://api.example.com/endpoint";
+			const method = "POST";
+			
+			// Build request options
+			const requestOptions: any = {
+				method,
+				headers: {
+					"Content-Type": "application/json",
+				},
+			};
 
-	switch (name) {
-${endpoints.map(endpoint => {
-	const toolName = this.generateToolName(endpoint)
-	const hasRequiredParams = endpoint.parameters?.some(p => p.required || p.location === "path") || false
-	const argsParam = hasRequiredParams ? "(args || {}) as any" : "args"
-	return `		case "${toolName}":
-			return await ${toolName}(${argsParam});`
-}).join('\n')}
-		default:
-			throw new Error("Unknown tool: " + name);
-	}
-});
+			// ===== PARAMETER HANDLING =====
+			const queryParams = new URLSearchParams();
+			const bodyParams: any = {};
+			// Example: Add query parameters
+			// if (args.param1) queryParams.append("param1", args.param1);
+			// Example: Add body parameters
+			// if (args.body) Object.assign(bodyParams, args.body);
+
+			// ===== URL CONSTRUCTION =====
+			if (queryParams.toString()) {
+				const separator = url.includes('?') ? '&' : '?';
+				requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
+			} else {
+				requestOptions.url = url;
+			}
+			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
+				requestOptions.body = JSON.stringify(bodyParams);
+			}
+
+			// ===== CUSTOM LOGIC & HTTP REQUEST =====
+			try {
+				// Example: Make an HTTP request
+				// const response = await fetch(requestOptions.url, requestOptions);
+				// const data = await response.json();
+				// Example: Custom logic without HTTP request
+				const result = {
+					message: "Custom tool executed successfully",
+					parameters: args,
+					timestamp: new Date().toISOString()
+				};
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(result, null, 2)
+						}
+					]
+				};
+			} catch (error) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: \`Error in custom tool: \${error.message}\`
+						}
+					]
+				};
+			}
+		}
+	);
+	*/
+
+	return server.server;
+}
+
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 async function main() {
+	const server = createStatelessServer({ config: { appPort: "${options.appPort || 3000}" } });
+	console.log("🚀 MCP Server starting...");
+	console.log("📡 Connecting to Express app on port ${options.appPort || 3000}");
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
+	console.log("✅ MCP Server connected and ready");
 }
 
 main().catch((error) => {
-	console.error("Server error:", error);
+	console.error("❌ Server error:", error);
 	process.exit(1);
 });
 `;
@@ -167,12 +415,14 @@ main().catch((error) => {
 			version: "1.0.0",
 			type: "module",
 			main: "server.js",
+			description: "Auto-generated MCP server from Express endpoints",
 			scripts: {
 				build: "tsc",
 				start: "node server.js"
 			},
 			dependencies: {
 				"@modelcontextprotocol/sdk": "^1.10.1",
+				"zod": "^3.22.0"
 			},
 			devDependencies: {
 				"typescript": "^5.0.0",
@@ -180,7 +430,28 @@ main().catch((error) => {
 			}
 		};
 
-		writeFileSync(join(this.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
+		// Add comments to package.json by converting to string with comments
+		const packageJsonWithComments = `{
+  "name": "generated-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "description": "Auto-generated MCP server from Express endpoints",
+  "scripts": {
+    "build": "tsc",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.1",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}`
+
+		writeFileSync(join(this.outDir, "package.json"), packageJsonWithComments)
 		verboseLog("Generated package.json");
 
 		// Generate tsconfig.json for TypeScript compilation
@@ -305,36 +576,6 @@ main().catch((error) => {
 	): Promise<void> {
 		// TODO: Implement Python server generation
 		verboseLog("Python server generation not yet implemented")
-	}
-
-	private async generateToolHandlers(
-		endpoints: ExpressEndpoint[],
-		options: MCPGenerationOptions
-	): Promise<void> {
-		const toolsDir = join(this.outDir, "tools")
-		if (!existsSync(toolsDir)) {
-			mkdirSync(toolsDir, { recursive: true })
-		}
-
-		for (const endpoint of endpoints) {
-			const toolName = this.generateToolName(endpoint)
-			let handlerCode = this.generateToolHandler(endpoint, options)
-			if (this.language === "typescript") {
-				writeFileSync(join(toolsDir, `${toolName}.ts`), handlerCode)
-			} else if (this.language === "javascript") {
-				// Strip types for JS output
-				handlerCode = handlerCode.replace(/interface [^{]+{[^}]+}/g, "")
-				// Only remove type annotations in function parameters and return types, not object properties
-				handlerCode = handlerCode.replace(/\(args: [^)]+\)/g, "(args = {})")
-				handlerCode = handlerCode.replace(/: Promise<[^>]+>/g, "")
-				handlerCode = handlerCode.replace(/: RequestInit/g, "")
-				writeFileSync(join(toolsDir, `${toolName}.js`), handlerCode)
-			} else {
-				writeFileSync(join(toolsDir, `${toolName}.py`), handlerCode)
-			}
-		}
-
-		verboseLog(`Generated ${endpoints.length} tool handlers`)
 	}
 
 	private generateToolName(endpoint: ExpressEndpoint): string {
@@ -651,5 +892,86 @@ ${properties.join('\n')}
 			case "unknown": return "any"
 			default: return "any" // Default for custom types
 		}
+	}
+
+	private generateZodSchema(endpoint: ExpressEndpoint): string {
+		const properties: string[] = []
+		
+		// Add path and query parameters
+		if (endpoint.parameters) {
+			for (const param of endpoint.parameters) {
+				const zodType = this.mapTypeToZod(param.type)
+				const optional = param.required ? "" : ".optional()"
+				properties.push(`\t\t${param.name}: z.${zodType}()${optional}`)
+			}
+		}
+		
+		// Add request body for POST/PUT/PATCH requests
+		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+			if (endpoint.requestBody && endpoint.requestBody.properties) {
+				const bodyProperties = Object.entries(endpoint.requestBody.properties)
+					.map(([key, value]) => {
+						const zodType = this.mapTypeToZod(value.type)
+						const optional = endpoint.requestBody?.required?.includes(key) ? "" : ".optional()"
+						return `\t\t\t${key}: z.${zodType}()${optional}`
+					})
+					.join(',\n')
+				
+				properties.push(`\t\tbody: z.object({\n${bodyProperties}\n\t\t}).optional()`)
+			} else {
+				properties.push(`\t\tbody: z.any().optional()`)
+			}
+		}
+		
+		if (properties.length === 0) {
+			return `z.object({})`
+		}
+		
+		return `z.object({
+${properties.join(',\n')}
+\t})`
+	}
+
+	private mapTypeToZod(type: string): string {
+		// Map JSON Schema types to Zod types
+		switch (type.toLowerCase()) {
+			case "string": return "string"
+			case "number": return "number"
+			case "boolean": return "boolean"
+			case "array": return "array"
+			case "object": return "object"
+			case "date": return "string"
+			case "any": return "any"
+			case "unknown": return "any"
+			default: return "any" // Default for custom types
+		}
+	}
+
+	private generateParameterHandling(endpoint: ExpressEndpoint): string {
+		const lines: string[] = []
+		
+		// Handle path parameters
+		if (endpoint.parameters) {
+			for (const param of endpoint.parameters) {
+				if (param.location === "path") {
+					lines.push(`\t\t\t// Replace path parameter :${param.name}`)
+					lines.push(`\t\t\trequestOptions.url = requestOptions.url.replace(":${param.name}", args.${param.name} || "");`)
+				} else if (param.location === "query") {
+					lines.push(`\t\t\t// Add query parameter ${param.name}`)
+					lines.push(`\t\t\tif (args.${param.name}) queryParams.append("${param.name}", args.${param.name});`)
+				} else if (param.location === "body") {
+					lines.push(`\t\t\t// Add body parameter ${param.name}`)
+					lines.push(`\t\t\tif (args.${param.name}) bodyParams.${param.name} = args.${param.name};`)
+				}
+			}
+		}
+		
+		// Handle request body for POST/PUT/PATCH requests
+		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+			lines.push(`\t\t\t// Add request body`)
+			lines.push(`\t\t\tif (args.body) Object.assign(bodyParams, args.body);`)
+		}
+		
+		return lines.join('\n')
 	}
 } 
