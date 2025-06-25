@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 const AuthCallback = () => {
@@ -14,34 +13,37 @@ const AuthCallback = () => {
         setStatus('loading')
         setMessage('Processing authentication...')
 
-        const { data, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          throw error
-        }
+        // Parse code and installation_id from URL
+        const params = new URLSearchParams(window.location.search)
+        const code = params.get('code')
+        const installation_id = params.get('installation_id')
+        if (!code || !installation_id) throw new Error('Missing code or installation_id')
 
-        if (data.session) {
-          setStatus('success')
-          setMessage('Authentication successful! Redirecting...')
-          
-          // Redirect to the intended page or home
-          setTimeout(() => {
-            navigate('/deploy', { replace: true })
-          }, 1500)
-        } else {
-          throw new Error('No session found')
-        }
+        // Call backend to exchange code and get user/install info
+        const res = await fetch(`/api/v1/github/callback?code=${encodeURIComponent(code)}&installation_id=${encodeURIComponent(installation_id)}`)
+        if (!res.ok) throw new Error('Failed to authenticate with GitHub')
+        const data = await res.json()
+
+        // Store user and installation info in localStorage
+        localStorage.setItem('github_user', JSON.stringify(data.user))
+        localStorage.setItem('github_installation_id', data.installationId)
+        localStorage.setItem('github_access_token', data.access_token)
+        localStorage.setItem('github_repos', JSON.stringify(data.repos))
+
+        setStatus('success')
+        setMessage('Authentication successful! Redirecting...')
+        setTimeout(() => {
+          navigate('/deploy', { replace: true })
+        }, 1500)
       } catch (error) {
         console.error('Auth callback error:', error)
         setStatus('error')
         setMessage('Authentication failed. Please try again.')
-        
         setTimeout(() => {
           navigate('/deploy', { replace: true })
         }, 3000)
       }
     }
-
     handleAuthCallback()
   }, [navigate])
 

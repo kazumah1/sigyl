@@ -1,20 +1,37 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, User, Settings, Github } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 const UserProfile: React.FC = () => {
   const { user, signOut } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const { toast } = useToast()
+  const navigate = useNavigate()
 
   const handleSignOut = async () => {
+    if (isSigningOut) return // Prevent multiple clicks
+    
     setIsSigningOut(true)
     try {
       await signOut()
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      })
+      // Redirect to home page after successful sign out
+      navigate('/', { replace: true })
     } catch (error) {
       console.error('Error signing out:', error)
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing you out. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSigningOut(false)
     }
@@ -66,7 +83,7 @@ const UserProfile: React.FC = () => {
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-gray-800" />
         <DropdownMenuItem 
-          className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
+          className={`${isSigningOut ? 'text-gray-500 cursor-not-allowed' : 'text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer'}`}
           onClick={handleSignOut}
           disabled={isSigningOut}
         >

@@ -90,32 +90,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const signInWithGitHub = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'read:user user:email repo',
-        }
-      })
-
-      if (error) {
-        throw error
-      }
-    } catch (error) {
-      console.error('Error signing in with GitHub:', error)
-      throw error
-    }
+    // Redirect to GitHub App install+OAuth flow
+    const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
+    const state = Math.random().toString(36).substring(2, 15); // for CSRF protection if needed
+    const installUrl = `https://github.com/apps/${appName}/installations/new?request_oauth_on_install=true&state=${state}`;
+    window.location.href = installUrl;
   }
 
   const signOut = async () => {
     try {
+      // Clear local state first
+      setUser(null)
+      setSession(null)
+      
+      // Call Supabase sign out
       const { error } = await supabase.auth.signOut()
       if (error) {
         throw error
       }
+      
+      // Force clear any remaining session data
+      await supabase.auth.refreshSession()
+      
     } catch (error) {
       console.error('Error signing out:', error)
+      // Revert state if sign out failed
+      const { data: { session } } = await supabase.auth.getSession()
+      setSession(session)
+      setUser(session?.user ?? null)
       throw error
     }
   }

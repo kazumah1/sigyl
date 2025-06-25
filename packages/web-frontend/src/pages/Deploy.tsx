@@ -11,9 +11,9 @@ import { InteractiveBackground } from "@/components/InteractiveBackground";
 import { OpeningAnimation } from "@/components/OpeningAnimation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { UserProfile } from "@/components/UserProfile";
-import DeployWizard from "@/components/DeployWizard";
+import DeployWizardWithGitHubApp from "@/components/DeployWizardWithGitHubApp";
 import { useAuth } from "@/contexts/AuthContext";
-import { Rocket, Code, Settings, Zap, Server, Database, Globe, Cpu, Github } from "lucide-react";
+import { Rocket, Code, Settings, Zap, Server, Database, Globe, Cpu, Github, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Deploy = () => {
@@ -169,11 +169,15 @@ const Deploy = () => {
               <TabsContent value="github" className="space-y-6">
                 <div className="text-center mb-8 animate-fade-in delay-600">
                   <h2 className={`text-3xl font-bold ${currentTheme.text} mb-4 tracking-tight`}>Deploy from GitHub</h2>
-                  <p className={`${currentTheme.text} opacity-70`}>Connect your GitHub repository and deploy your MCP server in minutes</p>
+                  <p className={`${currentTheme.text} opacity-70`}>Install the GitHub App for secure, granular repository access</p>
+                  <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-400">
+                    <Shield className="w-4 h-4" />
+                    <span>Secure repository access with GitHub App</span>
+                  </div>
                 </div>
                 
-                <DeployWizard onDeploy={(deployment) => {
-                  console.log('Deploying:', deployment);
+                <DeployWizardWithGitHubApp onDeploy={(deployment) => {
+                  console.log('Deploying with GitHub App:', deployment);
                   // TODO: Implement actual deployment logic
                 }} />
               </TabsContent>

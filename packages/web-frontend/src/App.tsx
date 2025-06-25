@@ -11,6 +11,7 @@ import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ThemeToggle from './components/ThemeToggle';
+import { Toaster } from './components/ui/toaster';
 import './index.css';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
             <ThemeToggle />
+            <Toaster />
           </div>
         </Router>
       </AuthProvider>
