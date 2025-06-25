@@ -8,7 +8,9 @@ router.get('/github/callback', async (req, res) => {
   try {
     const installationId = Number(req.query.installation_id);
     const code = req.query.code as string;
-    if (!installationId || !code) return res.status(400).json({ error: 'Missing installation_id or code' });
+    if (!installationId || !code) {
+      return res.status(400).json({ error: 'Missing installation_id or code' });
+    }
 
     // Exchange code for OAuth access token
     const clientId = process.env.GITHUB_APP_ID;
@@ -23,7 +25,9 @@ router.get('/github/callback', async (req, res) => {
       })
     });
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData });
+    if (!tokenData.access_token) {
+      return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData });
+    }
 
     // Get user info
     const userRes = await fetch('https://api.github.com/user', {
@@ -38,7 +42,7 @@ router.get('/github/callback', async (req, res) => {
 
     // Optionally associate install with your user system here
 
-    res.json({
+    return res.json({
       installationId,
       user,
       repos,
@@ -46,7 +50,7 @@ router.get('/github/callback', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'GitHub App callback failed' });
+    return res.status(500).json({ error: 'GitHub App callback failed' });
   }
 });
 
