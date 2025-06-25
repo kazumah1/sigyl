@@ -16,4 +16,3 @@ export interface MCPMetadata {
     port: number
     tools: MCPTool[]
 }
-  

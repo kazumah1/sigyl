@@ -23,6 +23,17 @@ router.post('/deploy', async (req: Request, res: Response) => {
       throw new Error('Deployment URL not found in Render response');
     }
 
+    // Simple health check before registry insert
+    try {
+      // Note: fetch does not support timeout natively; can be added with AbortController if needed
+      const healthRes = await fetch(`${deploymentUrl}/health`);
+      if (!healthRes.ok) {
+        throw new Error(`Health check failed with status ${healthRes.status}`);
+      }
+    } catch (err) {
+      throw new Error(`Deployment health check failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     // Register the package in the registry
     const registered = await packageService.createPackage({
       ...metadata
