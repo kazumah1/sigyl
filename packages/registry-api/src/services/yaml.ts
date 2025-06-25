@@ -1,8 +1,6 @@
 import { Octokit } from 'octokit'
 import yaml from 'js-yaml'
 import { z } from 'zod'
-// Use relative import for shared types
-import type { MCPTool, MCPMetadata } from '../../../shared/types'
 
 // Zod schema matching the CLI's mcp.yaml output
 const MCPToolSchema = z.object({

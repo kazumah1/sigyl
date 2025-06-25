@@ -18,13 +18,14 @@
 | CLI | oclif (TypeScript) | 🟡 **MOSTLY COMPLETE** (missing deploy) |
 | Container Hosting | Docker + Railway | 🚧 **IN PROGRESS** (partner working on it) |
 | Frontend | React + Tailwind (Vite) | ✅ **GITHUB INTEGRATION COMPLETE** |
+| **GitHub App** | **JWT + Installation Tokens** | ✅ **IMPLEMENTED** |
 
 ## 📁 Project Structure
 ```
 mcp-platform/
 ├── packages/
 │   ├── cli/                    # CLI tool (oclif) 🟡 MOSTLY COMPLETE
-│   ├── registry-api/           # Registry backend service ✅ OPERATIONAL
+│   ├── registry-api/           # Registry backend service ✅ OPERATIONAL + GITHUB APP
 │   ├── container-builder/      # Docker build service 🚧 IN PROGRESS
 │   ├── web-frontend/          # Discovery website ✅ GITHUB INTEGRATION COMPLETE
 │   └── shared/                # Shared types/utilities 📋 PENDING
@@ -46,6 +47,7 @@ mcp-platform/
 ### STEP 1: DB Schema (Supabase) - **COMPLETE**
 - ✅ PostgreSQL schema deployed to Supabase
 - ✅ Tables: `mcp_packages`, `mcp_deployments`, `mcp_tools`
+- ✅ **NEW: GitHub App tables** (`github_installations`, `github_repositories`)
 - ✅ Proper relationships and constraints in place
 
 ### STEP 2: Registry API (Express) - **COMPLETE & OPERATIONAL** ✅
@@ -59,6 +61,11 @@ mcp-platform/
   - `GET /api/v1/packages/search` → Search with filters
   - `GET /api/v1/packages/:name` → Get package details
   - `GET /api/v1/packages` → List all packages
+- ✅ **NEW: GitHub App API endpoints**:
+  - `GET /api/v1/github/installations/:id/repositories` → List repos with MCP status
+  - `GET /api/v1/github/installations/:id/repositories/:owner/:repo/mcp` → Get MCP config
+  - `GET /api/v1/github/installations/:id` → Get installation info
+  - `POST /api/v1/github/installations/:id/deploy` → Deploy MCP from repo
 - ✅ Health check endpoint (`/health`) - tested with Postman
 - ✅ Input validation with Zod
 - ✅ Error handling and consistent API responses
@@ -72,17 +79,42 @@ mcp-platform/
 - ✅ Server running on port 3000
 - ✅ Ready for integration with other components
 
-### STEP 3: Container Builder - **IN PROGRESS** 🚧
+### STEP 3: GitHub App Integration - **IMPLEMENTED** ✅
+**Status:** GitHub App authentication flow implemented
+
+**✅ Implemented Components:**
+- ✅ **GitHubAppService**: JWT signing, installation token generation
+- ✅ **InstallationService**: Database management for installations and repos
+- ✅ **GitHub App Routes**: Complete API endpoints for app integration
+- ✅ **Database Schema**: Tables for storing installation and repository data
+- ✅ **Environment Configuration**: GitHub App credentials setup
+
+**✅ GitHub App Features:**
+- ✅ JWT-based authentication with GitHub App
+- ✅ Installation token generation and management
+- ✅ Repository listing with MCP file detection
+- ✅ Secure access to private repositories
+- ✅ Database storage of installation and repository metadata
+- ✅ MCP configuration file retrieval
+
+**🔧 Technical Implementation:**
+- **Authentication Flow**: JWT signing with RSA private key
+- **Installation Management**: Store and retrieve installation data
+- **Repository Access**: List and access repositories with proper permissions
+- **MCP Detection**: Check multiple common MCP file locations
+- **Database Integration**: Supabase tables for persistence
+
+### STEP 4: Container Builder - **IN PROGRESS** 🚧
 - 🚧 Partner dev is working on this in parallel
 - 📋 Docker containerization for MCP servers
 - 📋 Integration with Railway deployment
 
-### STEP 4: CLI Tool - **MOSTLY COMPLETE** 🟡
+### STEP 5: CLI Tool - **MOSTLY COMPLETE** 🟡
 - ✅ CLI structure and commands implemented
 - ❌ **Missing: Deploy command** (needs Container Builder integration)
 - 🎯 **Ready to integrate with Registry API once Container Builder is ready**
 
-### STEP 5: Web Frontend - **GITHUB INTEGRATION COMPLETE** ✅
+### STEP 6: Web Frontend - **GITHUB INTEGRATION COMPLETE** ✅
 **Status:** Hours 2-4 GitHub OAuth + Repository Selector COMPLETE
 
 **✅ Already Implemented:**
@@ -124,59 +156,83 @@ mcp-platform/
 - **Private repository MCP detection working properly**
 - **End-to-end deployment flow working with registry registration**
 
-### STEP 6: Integration Testing - **PENDING**
+### STEP 7: Integration Testing - **PENDING**
 - End-to-end flow testing
 
 ## 🚀 NEXT IMMEDIATE STEPS
 
-With Registry API fully operational and GitHub integration complete:
+With Registry API fully operational, GitHub integration complete, and GitHub App implemented:
 
-### Option 1: Real Hosting Integration (Hours 4-6)
+### Option 1: GitHub App Setup & Testing (Hours 1-2)
+- Create GitHub App in GitHub settings
+- Configure environment variables with App credentials
+- Test GitHub App authentication flow
+- **Advantage:** Complete secure repository access
+
+### Option 2: Frontend GitHub App Integration (Hours 2-4)
+- Update frontend to use GitHub App instead of OAuth
+- Implement installation flow in UI
+- Add repository selection with GitHub App permissions
+- **Advantage:** More secure and scalable approach
+
+### Option 3: Real Hosting Integration (Hours 4-6)
 - Replace simulated deployment with actual hosting platform
 - Connect to Railway or other hosting provider APIs
 - Add deployment monitoring and logs
 - **Advantage:** Complete production-ready flow
 
-### Option 2: Marketplace Enhancement (Alternative)
-- Build marketplace browsing with Registry API
-- Add package discovery and search
-- User-generated content and ratings
-- **Advantage:** Rich user experience for discovery
-
-### Option 3: CLI Integration
-- Complete CLI deploy command with Container Builder
-- Test end-to-end CLI workflow
-- **Advantage:** Developer-focused workflow complete
-
 ## 🔄 Updated Implementation Order
 
 1. ✅ **Registry API** - COMPLETE & OPERATIONAL
 2. ✅ **GitHub Integration** - COMPLETE (Hours 2-4)
-3. 🎯 **Real Hosting Integration** - NEXT (Hours 4-6)
-4. 🚧 **Container Builder** - IN PROGRESS (partner)
-5. **CLI Deploy Command** - Ready to implement once Container Builder is ready
-6. **Marketplace Frontend** - Can start with operational API
-7. **API Gateway** - Production routing and scaling
-8. **Integration Testing** - End-to-end validation
+3. ✅ **GitHub App Backend** - IMPLEMENTED
+4. 🎯 **GitHub App Setup & Testing** - NEXT (Hours 1-2)
+5. 🎯 **Frontend GitHub App Integration** - NEXT (Hours 2-4)
+6. 🚧 **Container Builder** - IN PROGRESS (partner)
+7. **CLI Deploy Command** - Ready to implement once Container Builder is ready
+8. **Marketplace Frontend** - Can start with operational API
+9. **API Gateway** - Production routing and scaling
+10. **Integration Testing** - End-to-end validation
 
-## 📋 Issues Resolved
+## 📋 GitHub App Setup Instructions
 
-### GitHub API Private Repository Access
-**Issue:** 403 Forbidden errors when detecting MCP files in private repositories
-**Root Cause:** GitHub Search API has stricter permissions for private repos
-**Solution:** 
-- Implemented comprehensive path checking without relying on search API
-- Added support for common MCP file locations (`mcp.yaml`, `mcp.yml`, nested directories)
-- Separate handling for public vs private repositories
-- Enhanced error handling for permission issues
+### 1. Create GitHub App
+**📍 Go to:** https://github.com/settings/apps → "New GitHub App"
 
-### Registry API CORS Integration
-**Issue:** CORS policy blocking frontend requests to registry API
-**Root Cause:** Registry API only allowed localhost:3001, frontend running on localhost:8080
-**Solution:**
-- Updated CORS configuration to allow multiple origins
-- Added proper TypeScript filtering for undefined origins
-- Confirmed successful deployment registration (201 Created responses)
+**Configuration:**
+- **Name:** MCP Deployer
+- **Homepage URL:** https://yourdomain.com (or localhost for development)
+- **Callback URL:** Optional (for OAuth if needed)
+
+**Permissions:**
+- **Contents (Read-only)** → to fetch mcp.yaml files
+- **Metadata (Read-only)** → to list repository details
+
+**Installation:**
+- **Where can this GitHub App be installed?** → Any account
+
+**Save and get:**
+- App ID
+- Private key (.pem file)
+
+### 2. Configure Environment Variables
+Add to your `.env` file:
+```env
+GITHUB_APP_ID=your-app-id
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nYOUR_PRIVATE_KEY_CONTENT\n-----END RSA PRIVATE KEY-----"
+GITHUB_WEBHOOK_SECRET=your-webhook-secret-optional
+```
+
+### 3. Run Database Migration
+Execute the SQL migration in Supabase:
+```sql
+-- Run the contents of packages/registry-api/migrations/github_app_tables.sql
+```
+
+### 4. Test GitHub App Integration
+Use the new API endpoints:
+- `GET /api/v1/github/installations/{installation_id}/repositories`
+- `GET /api/v1/github/installations/{installation_id}/repositories/{owner}/{repo}/mcp`
 
 ## 📊 Progress Tracking
 - [x] Database schema design and deployment
@@ -185,7 +241,10 @@ With Registry API fully operational and GitHub integration complete:
 - [x] **GitHub OAuth + Repository Selector** ← **COMPLETE** ✅
 - [x] **Private repository MCP detection** ← **FIXED** ✅
 - [x] **Registry API integration** ← **WORKING** ✅
-- [ ] Real hosting platform integration ← **NEXT TARGET (Hours 4-6)**
+- [x] **GitHub App backend implementation** ← **COMPLETE** ✅
+- [ ] **GitHub App setup and testing** ← **NEXT TARGET (Hours 1-2)**
+- [ ] **Frontend GitHub App integration** ← **NEXT TARGET (Hours 2-4)**
+- [ ] Real hosting platform integration
 - [ ] Docker container builder ← **IN PROGRESS**
 - [ ] CLI deploy command completion
 - [ ] Marketplace frontend development
@@ -194,18 +253,21 @@ With Registry API fully operational and GitHub integration complete:
 
 ## 🧪 System Status
 
-**Registry API:** `http://localhost:3000` ✅ **OPERATIONAL**
+**Registry API:** `http://localhost:3000` ✅ **OPERATIONAL + GITHUB APP**
 **Web Frontend:** `http://localhost:8080` ✅ **GITHUB INTEGRATION COMPLETE**
 **GitHub OAuth:** ✅ **WORKING WITH PRIVATE REPO SUPPORT**
+**GitHub App:** ✅ **BACKEND IMPLEMENTED - READY FOR SETUP**
 **MCP Detection:** ✅ **WORKING FOR ALL REPOSITORY TYPES**
 **Registry Integration:** ✅ **WORKING - DEPLOYMENTS BEING REGISTERED**
 
 **Ready for:**
+- GitHub App setup and testing
+- Frontend GitHub App integration
 - Real hosting platform integration
 - CLI integration (when Container Builder ready)
 - Marketplace development
 - Production deployment
 
 ---
-*Last Updated: GitHub integration complete with private repository support and working registry integration*
-*Next Review: After real hosting integration (Hours 4-6) or Container Builder completion*
+*Last Updated: GitHub App backend implementation complete*
+*Next Review: After GitHub App setup and testing (Hours 1-2)*
