@@ -12,7 +12,25 @@ This version is tailored for **speed**, **clarity**, and **alignment with your m
 
 ### 🧱 Assumes your monorepo structure:
 
-
+```mcp-platform/
+├── packages/
+│   ├── cli/                    # Your existing ts-cli (moved here)
+│   ├── registry-api/           # Registry backend service
+│   ├── container-builder/      # Docker build service
+│   ├── web-frontend/          # Discovery website
+│   └── shared/                # Shared types/utilities
+├── apps/
+│   ├── api/                   # Main API gateway
+│   └── docs/                  # Documentation site
+├── infrastructure/
+│   ├── docker/                # Dockerfile templates
+│   ├── k8s/                   # Kubernetes manifests
+│   └── terraform/             # Infrastructure as code
+└── examples/
+    ├── express-demo/
+    ├── fastapi-demo/
+    └── generated-mcps/
+```
 
 ---
 
