@@ -1,0 +1,114 @@
+# Sigil MCP Registry & Hosting MVP Implementation Plan
+
+## 🎯 Project Overview
+**Startup:** Sigil  
+**Goal:** Build an end-to-end functional MVP for MCP Registry & Hosting
+
+### Core Components:
+- MCP Registry API (Express + PostgreSQL)
+- Docker-based MCP deploys (hosted via Railway)
+- CLI tool (mcp publish) that auto-generates, deploys, and registers
+- Minimal web frontend (React + Vite) for discovery
+
+## 📦 Tech Stack
+| Component | Stack | Status |
+|-----------|-------|--------|
+| Registry DB | Supabase (PostgreSQL) | ✅ **COMPLETE** |
+| API Layer | Express (TypeScript) | 🚧 **NEXT STEP** |
+| CLI | oclif (TypeScript) | 🟡 **MOSTLY COMPLETE** (missing deploy) |
+| Container Hosting | Docker + Railway | 📋 **PENDING** |
+| Frontend | React + Tailwind (Vite) | 📋 **PENDING** |
+
+## 📁 Project Structure
+```
+mcp-platform/
+├── packages/
+│   ├── cli/                    # CLI tool (oclif) 🟡 MOSTLY COMPLETE
+│   ├── registry-api/           # Registry backend service 🚧 NEXT STEP
+│   ├── container-builder/      # Docker build service 📋 PENDING
+│   ├── web-frontend/          # Discovery website 📋 PENDING
+│   └── shared/                # Shared types/utilities 📋 PENDING
+├── apps/
+│   ├── api/                   # Main API gateway 📋 PENDING
+│   └── docs/                  # Documentation site 📋 PENDING
+├── infrastructure/
+│   ├── docker/                # Dockerfile templates 📋 PENDING
+│   ├── k8s/                   # Kubernetes manifests 📋 PENDING
+│   └── terraform/             # Infrastructure as code 📋 PENDING
+└── examples/
+    ├── express-demo/          # Example MCP servers 📋 PENDING
+    ├── fastapi-demo/          # Example MCP servers 📋 PENDING
+    └── generated-mcps/        # Generated MCP examples 📋 PENDING
+```
+
+## ✅ Current Status
+
+### STEP 1: DB Schema (Supabase) - **COMPLETE**
+- ✅ PostgreSQL schema deployed to Supabase
+- ✅ Tables: `mcp_packages`, `mcp_deployments`, `mcp_tools`
+- ✅ Proper relationships and constraints in place
+
+### STEP 2: Registry API (Express) - **NEXT STEP** 🎯
+**This is our immediate priority**
+
+Required endpoints:
+- `POST /api/v1/packages` → Validate + Register + Deploy
+- `GET /api/v1/packages/search` → Full-text query
+- `GET /api/v1/packages/:name` → Detailed view
+
+### STEP 3: Docker Builder - **PENDING**
+- Docker containerization for MCP servers
+- Integration with Railway deployment
+
+### STEP 4: CLI Tool - **MOSTLY COMPLETE** 🟡
+- ✅ CLI structure and commands implemented
+- ✅ Most functionality working
+- ❌ **Missing: Deploy command** (needs Registry API + Container Builder)
+
+### STEP 5: Web Frontend - **PENDING**
+- React + Vite + Tailwind
+- Search and discovery interface
+
+### STEP 6: Integration Testing - **PENDING**
+- End-to-end flow testing
+
+## 🚀 IMMEDIATE FIRST STEP: Registry API Implementation
+
+Since the database is set up and CLI is mostly complete, our **first implementation step** is to build the Registry API in `packages/registry-api/`.
+
+### Key Implementation Points:
+1. Set up Express server with TypeScript
+2. Connect to Supabase database
+3. Implement core API endpoints
+4. Add proper error handling and validation
+5. Set up Railway deployment configuration
+
+### Expected Outcome:
+- Working API that can register and search MCP packages
+- Foundation for CLI deploy command completion
+- Ready for Container Builder integration
+
+## 🔄 Updated Implementation Order
+
+Given the CLI is mostly complete, the optimal order is:
+
+1. **Registry API** (packages/registry-api/) - Enables CLI deploy command
+2. **Container Builder** (packages/container-builder/) - Enables Docker deployment
+3. **CLI Deploy Command** (packages/cli/) - Complete the missing piece
+4. **Web Frontend** (packages/web-frontend/) - User-facing discovery
+5. **API Gateway** (apps/api/) - Production routing and scaling
+6. **Integration Testing** - End-to-end validation
+
+## 📊 Progress Tracking
+- [x] Database schema design and deployment
+- [x] CLI tool core functionality (missing deploy only)
+- [ ] Registry API core functionality ← **CURRENT FOCUS**
+- [ ] Docker container builder
+- [ ] CLI deploy command completion
+- [ ] Web frontend
+- [ ] API gateway setup
+- [ ] End-to-end integration
+
+---
+*Last Updated: $(date)*
+*Next Review: After Registry API completion*
