@@ -155,6 +155,7 @@ Examples:
   mcp-scan dev ./my-fastapi-app           # Development mode with hot reload
   mcp-scan inspect                        # Launch MCP Inspector
   mcp-scan clean                          # Remove generated files
+  mcp-scan                                # Interactive mode
         """
     )
     
@@ -187,11 +188,12 @@ Examples:
     
     args = parser.parse_args()
     
-    if not args.command:
-        parser.print_help()
-        return
-    
     cli = MCPCLI()
+    
+    # If no command provided, run interactive mode
+    if not args.command:
+        interactive_mode(cli)
+        return
     
     try:
         if args.command == "scan":
@@ -204,11 +206,138 @@ Examples:
             cli.inspect(args.out)
         elif args.command == "clean":
             cli.clean(args.out)
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Operation cancelled by user[/yellow]")
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
         sys.exit(1)
+
+def interactive_mode(cli: MCPCLI):
+    """Interactive CLI mode with menu options"""
+    console.print(Panel.fit(
+        "[bold blue]MCP CLI - FastAPI to MCP Server Generator[/bold blue]\n"
+        "[dim]Interactive Mode[/dim]",
+        border_style="blue"
+    ))
+    
+    while True:
+        console.print("\n[bold]Available options:[/bold]")
+        options = [
+            ("1", "Scan FastAPI app and generate MCP server"),
+            ("2", "Create blank MCP server template"),
+            ("3", "Development mode with hot reload"),
+            ("4", "Launch MCP Inspector"),
+            ("5", "Clean generated files"),
+            ("q", "Quit")
+        ]
+        
+        for key, description in options:
+            console.print(f"  [cyan]{key}[/cyan] - {description}")
+        
+        choice = Prompt.ask("\n[bold]Choose an option[/bold]", choices=["1", "2", "3", "4", "5", "q"])
+        
+        if choice == "q":
+            console.print("[yellow]Goodbye![/yellow]")
+            break
+        elif choice == "1":
+            handle_scan(cli)
+        elif choice == "2":
+            handle_init(cli)
+        elif choice == "3":
+            handle_dev(cli)
+        elif choice == "4":
+            handle_inspect(cli)
+        elif choice == "5":
+            handle_clean(cli)
+
+def handle_scan(cli: MCPCLI):
+    """Handle scan option in interactive mode"""
+    console.print("\n[bold blue]🔍 Scan FastAPI App[/bold blue]")
+    
+    # Get FastAPI app path
+    app_path = Prompt.ask("Enter path to FastAPI application directory")
+    if not os.path.exists(app_path):
+        console.print(f"[red]❌ Directory not found: {app_path}[/red]")
+        return
+    
+    # Get output directory
+    out_dir = Prompt.ask("Enter output directory", default="my-server")
+    
+    # Get port
+    port_str = Prompt.ask("Enter FastAPI app port", default="8000")
+    try:
+        port = int(port_str)
+    except ValueError:
+        console.print("[red]❌ Invalid port number[/red]")
+        return
+    
+    try:
+        cli.scan(app_path, out_dir, port)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+def handle_init(cli: MCPCLI):
+    """Handle init option in interactive mode"""
+    console.print("\n[bold blue]🎯 Create Blank MCP Server[/bold blue]")
+    
+    # Get output directory
+    out_dir = Prompt.ask("Enter output directory", default="my-blank-server")
+    
+    # Get server name
+    name = Prompt.ask("Enter server name", default="my-mcp-server")
+    
+    try:
+        cli.init(out_dir, name)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+def handle_dev(cli: MCPCLI):
+    """Handle dev option in interactive mode"""
+    console.print("\n[bold blue]🚀 Development Mode[/bold blue]")
+    
+    # Get FastAPI app path
+    app_path = Prompt.ask("Enter path to FastAPI application directory")
+    if not os.path.exists(app_path):
+        console.print(f"[red]❌ Directory not found: {app_path}[/red]")
+        return
+    
+    # Get output directory
+    out_dir = Prompt.ask("Enter output directory", default=".mcp-generated")
+    
+    # Get port
+    port_str = Prompt.ask("Enter FastAPI app port", default="8000")
+    try:
+        port = int(port_str)
+    except ValueError:
+        console.print("[red]❌ Invalid port number[/red]")
+        return
+    
+    try:
+        cli.dev(app_path, out_dir, port)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+def handle_inspect(cli: MCPCLI):
+    """Handle inspect option in interactive mode"""
+    console.print("\n[bold blue]🕵️  MCP Inspector[/bold blue]")
+    
+    # Get server directory
+    out_dir = Prompt.ask("Enter MCP server directory", default=".mcp-generated")
+    
+    try:
+        cli.inspect(out_dir)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+def handle_clean(cli: MCPCLI):
+    """Handle clean option in interactive mode"""
+    console.print("\n[bold blue]🧹 Clean Generated Files[/bold blue]")
+    
+    # Get directory to clean
+    out_dir = Prompt.ask("Enter directory to remove", default=".mcp-generated")
+    
+    try:
+        cli.clean(out_dir)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
 
 if __name__ == "__main__":
     main() 
