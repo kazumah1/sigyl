@@ -21,6 +21,7 @@ const MCPMetadataSchema = z.object({
   name: z.string(),
   description: z.string(),
   version: z.string(),
+  port: z.number(),
   tools: z.array(MCPToolSchema),
 })
 

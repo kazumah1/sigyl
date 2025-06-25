@@ -1,4 +1,4 @@
-Absolutely — here’s your updated **Smithery-style one-click deploy implementation timeline**, now including:
+Absolutely — here's your updated **Smithery-style one-click deploy implementation timeline**, now including:
 
 * ⏱ Hour-by-hour breakdown
 * 🗂 Where each task lives in your monorepo
@@ -323,3 +323,21 @@ if (!isHealthy) throw new Error("Deployment not healthy")
 ---
 
 Let me know which file or step you want to generate next — I can fill it out in full for you.
+
+# Example mcp.yaml
+
+```yaml
+name: my-mcp
+version: 0.1.0
+description: Example MCP
+port: 8080
+# ...
+```
+
+> **Note:** Add a `port` field to your `mcp.yaml` (e.g., `port: 8080`). This is required for deployment.
+
+---
+
+## 🚧 Future Improvement: Private Repo Support
+
+Currently, if a user tries to deploy a private repo and the Render GitHub App is not installed, the deploy will fail with an error. In the future, implement a flow to guide users to install the Render GitHub App on their repo/org (after GitHub OAuth). For now, show a user-facing error message if the repo is private or inaccessible.

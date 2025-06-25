@@ -13,6 +13,7 @@ export interface MCPMetadata {
     name: string
     description: string
     version: string
+    port: number
     tools: MCPTool[]
 }
   
