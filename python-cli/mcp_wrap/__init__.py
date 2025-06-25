@@ -1,26 +1,24 @@
 """
-MCP Wrap - Convert tool definitions to MCP format and generate servers
+MCP Wrap - Convert FastAPI applications to MCP servers
 
-A Python CLI tool that converts tool definitions from various formats 
-(OpenAI, LangChain, Claude) to MCP-compatible YAML and generates MCP servers.
+A Python CLI tool that scans FastAPI applications and generates MCP servers
+with tools that map to your FastAPI endpoints.
 """
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__version__ = "0.2.0"
+__author__ = "MCP CLI Team"
+__email__ = "mcp-cli@example.com"
 
-from .mcp_wrap import main
-from .server_generator import MCPServerGenerator
-from .formats import openai, langchain, claude
-from .schema_writer import write_yaml
-from .utils import detect_format
+from .cli import main, MCPCLI
+from .fastapi_scanner import FastAPIScanner, FastAPIEndpoint
+from .mcp_generator import MCPGenerator
+from .inspector import MCPInspector
 
 __all__ = [
     "main",
-    "MCPServerGenerator", 
-    "openai",
-    "langchain", 
-    "claude",
-    "write_yaml",
-    "detect_format",
+    "MCPCLI",
+    "FastAPIScanner", 
+    "FastAPIEndpoint",
+    "MCPGenerator",
+    "MCPInspector",
 ] 

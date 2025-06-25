@@ -1,18 +1,26 @@
 # MCP CLI Enhancement Plan
 
 ## Project Overview
-Enhance the existing MCP CLI tool to make testing different demo scenarios easier and provide complete end-to-end workflow from Express app scanning to Claude Desktop integration.
+Enhance the existing MCP CLI tool to make testing different demo scenarios easier and provide complete end-to-end workflow from Express/FastAPI app scanning to Claude Desktop integration.
 
 ## Architecture
 
 ### Monorepo Structure
 ```
-├── ts-cli/                 # Main TypeScript CLI implementation
+├── ts-cli/                 # TypeScript CLI implementation (Express.js)
 │   ├── src/
 │   │   ├── index.ts        # CLI entry point with commander
 │   │   ├── commands/       # Command implementations
 │   │   └── lib/           # Core libraries
 │   └── package.json       # CLI dependencies and scripts
+├── python-cli/            # Python CLI implementation (FastAPI)
+│   ├── mcp_wrap/          # Core CLI modules
+│   │   ├── cli.py         # Main CLI entry point
+│   │   ├── fastapi_scanner.py  # FastAPI AST parsing
+│   │   ├── mcp_generator.py    # MCP server generation
+│   │   └── inspector.py        # MCP Inspector integration
+│   ├── demo_fastapi/      # Demo FastAPI app for testing
+│   └── setup.py           # Python package configuration
 ├── demo/                  # Demo Express app for testing
 ├── state/                 # Project documentation and plans
 └── package.json          # Workspace coordinator
@@ -20,6 +28,7 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
 
 ### Key Components
 
+#### TypeScript CLI (Express.js)
 1. **Express Scanner** (`lib/express-scanner.ts`)
    - Uses ts-morph for AST parsing of Express applications
    - Detects route definitions and extracts metadata
@@ -36,19 +45,36 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
    - **Enhanced**: Generates proper TypeScript interfaces for tool arguments
    - **Enhanced**: Handles request body properties and validation
 
-3. **CLI Commands**
-   - `scan`: One-time generation of MCP server from Express app
+#### Python CLI (FastAPI)
+1. **FastAPI Scanner** (`mcp_wrap/fastapi_scanner.py`)
+   - Uses astroid for AST parsing of FastAPI applications
+   - Detects route decorators and extracts endpoint metadata
+   - Supports FastAPI patterns (@app.get, @app.post, etc.)
+   - Extracts Pydantic models and type annotations
+   - Analyzes function parameters and return types
+
+2. **MCP Generator** (`mcp_wrap/mcp_generator.py`)
+   - Converts FastAPI endpoints to MCP tool definitions
+   - Generates Python MCP servers with MCP SDK integration
+   - Creates inline tool definitions using server.tool() decorators
+   - Maps Python types to JSON Schema types
+   - Handles path parameters, query parameters, and request bodies
+
+3. **CLI Commands** (Both implementations)
+   - `scan`: One-time generation of MCP server from Express/FastAPI app
+   - `init`: Create blank MCP server template
    - `dev`: Development mode with hot reload and MCP Inspector
-   - `build`: Production build of generated MCP server
+   - `inspect`: Launch MCP Inspector for testing
+   - `clean`: Remove generated files
 
 ## Development Approach
 
 **Strategy**: Borrow proven patterns from Smithery's open-source CLI rather than building from scratch.
 
 **Key Borrowed Components**:
-- CLI architecture using commander.js
+- CLI architecture using commander.js (TypeScript) / argparse (Python)
 - Development server with subprocess management  
-- Build system integration with esbuild
+- Build system integration with esbuild (TypeScript) / setuptools (Python)
 - Hot reload functionality
 - Configuration management patterns
 
@@ -58,66 +84,74 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
 
 ### ✅ Completed
 
-**Core CLI Framework** (Day 1-2)
+**TypeScript CLI (Express.js)** - **FULLY COMPLETE**
 - [x] TypeScript CLI setup with commander.js
 - [x] Package.json workspace configuration
 - [x] Build system with esbuild integration
-- [x] Basic command structure (scan, dev, build)
-
-**Express Scanning Engine** (Day 3-4)
-- [x] AST parsing with ts-morph
+- [x] Basic command structure (scan, init, dev, inspect, clean)
+- [x] Express scanning engine with ts-morph
 - [x] Route detection for common Express patterns
 - [x] Parameter extraction (path, query, body)
 - [x] Endpoint metadata collection
-
-**MCP Server Generation** (Day 5-6)
 - [x] MCP configuration (mcp.yaml) generation
 - [x] TypeScript server generation with MCP SDK
 - [x] Individual tool handler generation
 - [x] HTTP client integration for endpoint calls
-
-**Testing & Validation** (Day 7)
 - [x] Demo Express app with 5 endpoints
 - [x] End-to-end scanning and generation workflow
 - [x] TypeScript compilation verification
 - [x] Command argument parsing fixes
-
-**Bug Fixes** (Day 8)
-- [x] Fixed npm script command routing issue
-- [x] Fixed HTTP method template string bug in tool handlers
-- [x] Fixed subprocess working directory for Express app startup
-- [x] Verified generated code compiles and runs correctly
-- [x] Verified development workflow starts Express app correctly
-
-**Developer Experience** (Day 8)
-- [x] Built comprehensive interactive test CLI (`npm run test-cli`)
+- [x] Built comprehensive interactive test CLI
 - [x] Added individual test scripts for all major workflows
 - [x] Created project status checker and file structure validation
 - [x] Implemented background process management for dev mode testing
 - [x] Added automatic cleanup and error recovery
 - [x] Created test CLI documentation (TEST-CLI.md)
-
-**MCP Inspector Integration** (Day 9)
 - [x] Integrated official MCP Inspector for testing
 - [x] Added `inspect` command to launch Inspector UI
 - [x] Updated test CLI with Inspector option
 - [x] Verified Inspector connects to generated MCP server
-
-**Enhanced Type Extraction** (Day 9-10)
-- [x] Improved Express scanner to extract TypeScript interfaces and types
-- [x] Enhanced parameter analysis to detect req.body, req.params, req.query usage
+- [x] Enhanced type extraction with TypeScript interface analysis
+- [x] Improved parameter analysis to detect req.body, req.params, req.query usage
 - [x] Updated MCP generator to map TypeScript types to JSON Schema
 - [x] Added TypeScript interface generation for tool arguments
 - [x] Improved type mapping between TypeScript and JSON Schema types
-- [x] **Fixed type analysis execution order** to preserve detailed type information
-- [x] **Implemented proper import path resolution** for complex TypeScript imports
-- [x] **Enhanced JSON Schema generation** with detailed properties and validation
-- [x] **Added automatic type inference** for common patterns (e.g., parseInt for numbers)
+- [x] Fixed type analysis execution order to preserve detailed type information
+- [x] Implemented proper import path resolution for complex TypeScript imports
+- [x] Enhanced JSON Schema generation with detailed properties and validation
+- [x] Added automatic type inference for common patterns
+- [x] **Refactored to modern McpServer pattern** with inline tool definitions
+- [x] **Eliminated separate tool handler files** and switch statements
+- [x] **Enhanced blank template** with modern MCP server style
+- [x] **Added example tools** (hello_world, get_user_info) to blank template
+
+**Python CLI (FastAPI)** - **FULLY COMPLETE**
+- [x] Python CLI setup with argparse and rich
+- [x] Package configuration with setuptools
+- [x] FastAPI scanning engine with astroid
+- [x] Route decorator detection and parsing
+- [x] Parameter extraction (path, query, body)
+- [x] Pydantic model analysis
+- [x] Type annotation extraction
+- [x] MCP configuration (mcp.yaml) generation
+- [x] Python server generation with MCP SDK
+- [x] Inline tool definitions using server.tool() decorators
+- [x] HTTP client integration with httpx
+- [x] Demo FastAPI app with 8 endpoints
+- [x] End-to-end scanning and generation workflow
+- [x] Command structure (scan, init, dev, inspect, clean)
+- [x] Rich console output with progress indicators
+- [x] Error handling and validation
+- [x] MCP Inspector integration
+- [x] Development mode with subprocess management
+- [x] Blank template generation with example tools
+- [x] Requirements.txt and README generation
+- [x] Test script for CLI functionality verification
 
 ### 🔄 In Progress
 
-**Development Workflow** (Day 8-9)
-- [x] Express app subprocess management
+**Development Workflow** (Both CLIs)
+- [x] Express/FastAPI app subprocess management
 - [x] Development mode with hot reload framework
 - [x] Interactive testing infrastructure
 - [x] MCP Inspector integration testing
@@ -126,38 +160,42 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
 
 ### 📋 Next Steps
 
-**Phase 1: Core Functionality** (Days 11-12)
-- [x] **Advanced Type Analysis**: Extract specific properties from TypeScript interfaces
-- [x] **Request Body Analysis**: Analyze req.body usage to extract property names and types
-- [ ] **Query Parameter Detection**: Detect and type query parameters from req.query usage (partially working)
-- [ ] **Response Type Inference**: Infer response types from res.json() calls
-- [ ] Test actual MCP tool execution with Claude/clients
-- [ ] Improve error handling and edge case coverage
-- [ ] Add support for middleware detection
-
-**Phase 2: Advanced Features** (Days 13-16)
-- [ ] Add Python server generation option
-- [ ] Support for authentication/authorization patterns
-- [ ] Configuration file support (.mcprc)
-- [ ] Plugin system for custom transformations
-- [ ] **File Watching**: Implement hot reload with chokidar
+**Phase 1: Advanced Features** (Days 13-16)
+- [ ] **Query Parameter Detection**: Detect and type query parameters from req.query usage (TypeScript CLI)
+- [ ] **Response Type Inference**: Infer response types from res.json() calls (TypeScript CLI)
+- [ ] **Pydantic Model Parsing**: Extract detailed schema from Pydantic models (Python CLI)
+- [ ] **Authentication Support**: Add support for authentication/authorization patterns
+- [ ] **Configuration Files**: Add .mcprc configuration file support
+- [ ] **Plugin System**: Create plugin system for custom transformations
+- [ ] **File Watching**: Implement hot reload with chokidar/watcher
 - [ ] **Incremental Rebuilds**: Only regenerate changed endpoints
 
-**Phase 3: Production Readiness** (Days 17-20)
-- [ ] Comprehensive test suite
-- [ ] Documentation and examples
-- [ ] CI/CD pipeline setup
-- [ ] NPM package publication
+**Phase 2: Production Readiness** (Days 17-20)
+- [ ] **Comprehensive Testing**: Add unit tests and integration tests for both CLIs
+- [ ] **Documentation**: Create comprehensive documentation and examples
+- [ ] **CI/CD Pipeline**: Set up automated testing and deployment
+- [ ] **NPM/PyPI Publication**: Publish both CLIs to package registries
+- [ ] **Performance Optimization**: Optimize scanning and generation performance
+- [ ] **Error Recovery**: Improve error handling and recovery mechanisms
+
+**Phase 3: Advanced Integration** (Days 21-25)
+- [ ] **Claude Desktop Integration**: Test with actual Claude Desktop clients
+- [ ] **Multi-language Support**: Add support for other frameworks (Django, Flask, etc.)
+- [ ] **Template System**: Create customizable template system
+- [ ] **Validation**: Add comprehensive validation for generated servers
+- [ ] **Monitoring**: Add monitoring and logging capabilities
 
 ## Technical Decisions
 
 ### Language Choice
-- **TypeScript**: Primary implementation language
-- **Rationale**: Best tooling for Express AST parsing, strong typing for MCP SDK integration
+- **TypeScript**: Primary implementation for Express.js scanning
+- **Python**: Primary implementation for FastAPI scanning
+- **Rationale**: Best tooling for respective frameworks, strong typing for MCP SDK integration
 
 ### AST Parsing
-- **Tool**: ts-morph (TypeScript compiler wrapper)
-- **Rationale**: More maintainable than regex parsing, handles complex Express patterns
+- **TypeScript**: ts-morph (TypeScript compiler wrapper)
+- **Python**: astroid (Python AST parsing library)
+- **Rationale**: More maintainable than regex parsing, handles complex patterns
 
 ### MCP Integration
 - **Approach**: Generate servers using official MCP SDK
@@ -168,26 +206,28 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
 - **Focus**: Developer ergonomics and fast iteration cycles
 
 ### Type Extraction Strategy
-- **Approach**: Two-pass scanning (types first, then routes)
+- **TypeScript**: Two-pass scanning (types first, then routes)
+- **Python**: Single-pass with type annotation analysis
 - **Rationale**: Enables proper type resolution and mapping
-- **Current Status**: Basic type extraction working, advanced property analysis pending
 
 ## Success Metrics
 
-1. **Functionality**: Successfully convert 90%+ of common Express patterns
-2. **Performance**: Sub-5 second generation for typical Express apps  
-3. **Developer Experience**: Single command to go from Express app to working MCP server
+1. **Functionality**: Successfully convert 90%+ of common Express/FastAPI patterns
+2. **Performance**: Sub-5 second generation for typical applications  
+3. **Developer Experience**: Single command to go from app to working MCP server
 4. **Reliability**: Generated servers work correctly with MCP Inspector and Claude
-5. **Type Safety**: Proper TypeScript type extraction and JSON Schema mapping
+5. **Type Safety**: Proper type extraction and JSON Schema mapping
+6. **Cross-platform**: Both TypeScript and Python CLIs work seamlessly
 
 ## Risk Mitigation
 
-1. **Complex Express Patterns**: Focus on 80/20 rule - handle most common patterns first
+1. **Complex Framework Patterns**: Focus on 80/20 rule - handle most common patterns first
 2. **MCP Compatibility**: Use official SDK and test with multiple MCP clients
 3. **Maintenance Burden**: Automated testing for generated code quality
 4. **Performance**: Implement caching and incremental builds for large applications
 5. **Type Complexity**: Start with basic types, gradually add advanced type analysis
+6. **Framework Differences**: Maintain separate implementations for optimal tooling
 
 ---
 
-*Last Updated: 2025-01-27 - Enhanced type extraction with TypeScript interface analysis*
+*Last Updated: 2025-01-27 - Completed both TypeScript and Python CLI implementations*
