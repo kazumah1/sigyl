@@ -1,14 +1,35 @@
 {
   "name": "@mcp-scan/cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "commonjs",
   "private": false,
-  "homepage": "https://github.com/your-org/mcp-scan-cli",
+  "description": "Automatically scan Express/Node.js applications and generate Model Context Protocol (MCP) servers from their endpoints. Zero-config conversion of REST APIs to AI-accessible tools.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "express",
+    "nodejs",
+    "api-scanning",
+    "ai-tools",
+    "claude-desktop",
+    "rest-api",
+    "code-generation",
+    "typescript",
+    "javascript"
+  ],
+  "homepage": "https://github.com/your-org/mcp-scan-cli#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/your-org/mcp-scan-cli.git"
   },
-  "description": "Scan Express/Node.js applications and generate MCP servers from their endpoints",
+  "bugs": {
+    "url": "https://github.com/your-org/mcp-scan-cli/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && node build.mjs && chmod +x dist/index.js",
@@ -24,7 +45,8 @@
     "inspect": "tsx src/index.ts inspect",
     "clean": "tsx src/index.ts clean",
     "prepare": "npm run build",
-    "check": "npx @biomejs/biome check --write --unsafe"
+    "check": "npx @biomejs/biome check --write --unsafe",
+    "prepublishOnly": "npm run build && npm test"
   },
   "bin": {
     "mcp-scan": "dist/index.js"
