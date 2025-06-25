@@ -55,12 +55,15 @@ class MCPInspector:
         """Create MCP Inspector config file (same as TypeScript CLI)"""
         import json
         
+        # Always use the correct .mcp-generated directory and server.py
+        mcp_generated = server_path.resolve()
+        server_py = mcp_generated / "server.py"
         config = {
             "mcpServers": {
                 "demo-server": {
                     "command": "python",
                     "args": ["server.py"],
-                    "cwd": str(server_path.absolute())
+                    "cwd": str(mcp_generated)
                 }
             }
         }
@@ -91,17 +94,21 @@ class MCPInspector:
                         "npx", "@modelcontextprotocol/inspector"
                     ], cwd=Path.cwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     
-                    # Wait a moment for the inspector to start
-                    time.sleep(3)
-                    
-                    # Check if inspector started successfully
-                    if inspector_process.poll() is not None:
-                        stdout, stderr = inspector_process.communicate()
-                        print(f"❌ MCP Inspector failed to start: {stderr}")
-                        return False
-                    
-                    print("✅ MCP Inspector started successfully")
-                    print("🌐 Inspector should be available at: http://localhost:6274")
+                    # Wait for the inspector to print the tokenized URL
+                    url_found = False
+                    for _ in range(20):  # Wait up to ~10 seconds
+                        line = inspector_process.stdout.readline()
+                        if not line:
+                            time.sleep(0.5)
+                            continue
+                        print(line.strip())
+                        if "http://localhost:6274" in line and "MCP_PROXY_AUTH_TOKEN" in line:
+                            print(f"\n[Inspector Link] {line.strip()}")
+                            url_found = True
+                            break
+                    if not url_found:
+                        print("🌐 Inspector should be available at: http://localhost:6274")
+                        print("💡 If you see a connection error, check the Inspector logs for the tokenized URL.")
                     print("💡 Press Ctrl+C to stop the inspector")
                     
                     # Keep inspector running

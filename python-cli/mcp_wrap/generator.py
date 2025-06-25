@@ -180,6 +180,7 @@ async def handle_list_tools() -> ListToolsResult:
     tools = [
         {self._generate_tool_definitions(endpoints)}
     ]
+    tools = [Tool(**tool) for tool in tools]
     return ListToolsResult(tools=tools)
 
 @server.call_tool()
@@ -492,17 +493,20 @@ This server is generated from your FastAPI application. To regenerate:
                 name = endpoint['name']
                 description = endpoint['description']
                 schema = self._generate_tool_schema(endpoint)
-                
-                tool_def = f'''Tool(
-    name="{name}",
-    description="{description}",
-    inputSchema={json.dumps(schema, indent=4)}
-)'''
+                method = endpoint['method']
+                path = endpoint['path']
+                tool_def = f'''{{
+    "name": "{name}",
+    "description": "{description}",
+    "inputSchema": {json.dumps(schema, indent=4)},
+    "outputSchema": {{"type": "object", "description": "Response from {method.upper()} {path}"}}
+}}'''
                 definitions.append(tool_def)
         except Exception as e:
             print(f"Warning: Could not generate tool definitions: {e}")
         
-        return ',\n        '.join(definitions)
+        # Join with comma and newline, no trailing comma
+        return ',\n'.join(definitions)
     
     def _generate_tool_implementations(self, endpoints: List[Dict]) -> str:
         """Generate tool implementations"""
@@ -511,7 +515,7 @@ This server is generated from your FastAPI application. To regenerate:
         try:
             for endpoint in endpoints:
                 name = endpoint['name']
-                path = endpoint['path']
+                path = endpoint['path']  # e.g. '/users/{user_id}'
                 method = endpoint['method']
                 description = endpoint['description']
                 parameters = endpoint.get('parameters', {})
@@ -522,18 +526,20 @@ This server is generated from your FastAPI application. To regenerate:
                 
                 for param_name, param_info in parameters.items():
                     if param_info.get("in") == "path":
-                        path_param_handling.append(f'        if "{param_name}" in args:\n            url = url.replace("{{{{{param_name}}}}}", str(args["{param_name}"]))')
+                        # Always replace curly-brace params in the URL (single curly braces)
+                        path_param_handling.append(f'        if "{param_name}" in args:\n            url = url.replace("{{{param_name}}}", str(args["{param_name}"]))')
                     elif param_info.get("in") in ["body", "query"]:
                         query_body_handling.append(f'        if "{param_name}" in args:\n            request_data["{param_name}"] = args["{param_name}"]')
                 
                 path_param_code = '\n'.join(path_param_handling)
                 query_body_code = '\n'.join(query_body_handling)
                 
+                # IMPORTANT: Do NOT use f-string with undefined variables for the URL!
                 impl = f'''async def tool_{name}(args: Dict[str, Any]) -> str:
     """{description}"""
     try:
         # Prepare request
-        url = f"{{FASTAPI_URL}}{path}"
+        url = FASTAPI_URL + "{path}"
 {path_param_code if path_param_code else ''}
         # Prepare request data
         request_data = {{}}
@@ -549,7 +555,7 @@ This server is generated from your FastAPI application. To regenerate:
             elif "{method.upper()}" == "DELETE":
                 response = await client.delete(url)
             else:
-                return f"Unsupported method: {{method}}"
+                return f"Unsupported method: {method}"
             
             response.raise_for_status()
             result = response.json()
@@ -559,7 +565,7 @@ This server is generated from your FastAPI application. To regenerate:
     except httpx.HTTPStatusError as e:
         return f"HTTP Error {{e.response.status_code}}: {{e.response.text}}"
     except Exception as e:
-        return f"Error calling {{path}}: {{str(e)}}"
+        return f"Error calling {path}: {{str(e)}}"
 '''
                 implementations.append(impl)
         except Exception as e:
