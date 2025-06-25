@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "demo-server": {
+      "command": "python",
+      "args": [
+        "server.py"
+      ],
+      "cwd": "/Users/kazuma/Desktop/main/cs/Projects/fuck-smithery/python-cli/.mcp-generated"
+    }
+  }
+}
