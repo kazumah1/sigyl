@@ -21,21 +21,17 @@ const Login = () => {
 
   const handleGitHubAppLogin = async () => {
     try {
-      setLoading(true);
-      await signInWithGitHubApp();
-      toast({
-        title: "Success",
-        description: "Redirecting to GitHub App installation...",
-      });
+      const url = await signInWithGitHubApp();
+      // Open in the same window instead of a new tab to ensure proper redirect handling
+      window.location.href = url;
     } catch (error) {
-      console.error('GitHub App login error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to initiate GitHub App installation. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      console.error('Error getting GitHub App URL:', error);
+      // Fallback to the old approach
+      const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev'
+      const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
+      const state = Math.random().toString(36).substring(2, 15);
+      const fallbackUrl = `https://github.com/apps/${appName}/installations/new?state=${state}&request_oauth_on_install=true&redirect_uri=${redirectUrl}`;
+      window.location.href = fallbackUrl;
     }
   };
 
@@ -112,20 +108,15 @@ const Login = () => {
                     <span>Secure repository access with GitHub App</span>
                   </div>
                   <p className="text-sm text-gray-400">
-                    Install the GitHub App to authenticate and grant access to your repositories for MCP server deployment.
+                    Sign in with your GitHub account and grant access to your repositories for MCP server deployment.
                   </p>
                   <Button 
                     onClick={handleGitHubAppLogin}
-                    disabled={loading}
                     className="w-full bg-white hover:bg-gray-100 text-black font-bold tracking-tight"
                     size="lg"
                   >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    ) : (
-                      <Github className="w-5 h-5 mr-2" />
-                    )}
-                    Install GitHub App & Sign In
+                    <Github className="w-5 h-5 mr-2" />
+                    Sign in with GitHub App
                   </Button>
                 </div>
               </TabsContent>

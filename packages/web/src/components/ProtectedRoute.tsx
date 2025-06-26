@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
@@ -15,8 +15,38 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const hasRedirected = useRef(false)
+  const [isStable, setIsStable] = useState(false)
 
-  if (loading) {
+  useEffect(() => {
+    console.log('ProtectedRoute state:', { 
+      loading, 
+      hasUser: !!user, 
+      pathname: location.pathname,
+      hasRedirected: hasRedirected.current 
+    })
+    
+    if (!loading && !user && !hasRedirected.current) {
+      console.log('Redirecting to login from:', location.pathname)
+      localStorage.setItem('intended_page', location.pathname)
+      hasRedirected.current = true
+      navigate('/login')
+    }
+  }, [loading, user, navigate, location.pathname])
+
+  // Add a small delay to prevent flickering when authentication state changes
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => {
+        console.log('Setting authentication state as stable')
+        setIsStable(true)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, user])
+
+  if (loading || !isStable) {
+    console.log('ProtectedRoute: Showing loading state')
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -28,12 +58,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    // Store the intended page before redirecting
-    React.useEffect(() => {
-      localStorage.setItem('intended_page', location.pathname)
-      navigate('/login')
-    }, [navigate, location.pathname])
-    
+    console.log('ProtectedRoute: No user, showing redirect state')
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -44,6 +69,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     )
   }
 
+  console.log('ProtectedRoute: User authenticated, rendering children')
   return <>{children}</>
 }
 

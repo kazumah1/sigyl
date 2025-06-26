@@ -188,22 +188,25 @@ const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button 
-            onClick={handleInstallApp}
-            disabled={installing}
+            onClick={() => {
+              const url = signInWithGitHubApp();
+              console.log('Opening GitHub App install URL:', url);
+              window.open(url, '_blank');
+            }}
             className="flex-1"
           >
-            {installing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Installing...
-              </>
-            ) : (
-              <>
-                <Github className="w-4 h-4 mr-2" />
-                Install GitHub App
-              </>
-            )}
+            <Github className="w-4 h-4 mr-2" />
+            Install GitHub App
           </Button>
+          <button
+            onClick={() => {
+              console.log('Plain test button clicked');
+              window.open('https://github.com', '_blank');
+            }}
+            style={{ padding: '12px', background: '#eee', border: '1px solid #ccc', borderRadius: '6px', marginTop: '8px' }}
+          >
+            Test Open GitHub
+          </button>
           
           <Button 
             variant="outline" 
