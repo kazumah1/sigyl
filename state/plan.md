@@ -9,6 +9,7 @@
 - Docker-based MCP deploys (hosted via Railway)
 - CLI tool (mcp publish) that auto-generates, deploys, and registers
 - Modern web frontend (React + Vite) for discovery and deployment
+- **NEW: Secure Secrets Manager for MCP Server API Keys**
 
 ## 📦 Tech Stack
 | Component | Stack | Status |
@@ -195,6 +196,73 @@ With Registry API fully operational, GitHub integration complete, and MCP Explor
 - Integrate CLI with Registry API for package publishing
 - Add CLI commands for package management
 - **Advantage:** Complete developer workflow
+
+### **NEW: Option 4: Secure Secrets Manager (Hours 6-8)** 🔐
+
+**Status:** Step 1 Complete ✅
+
+**✅ Step 1: Secrets API Routes - COMPLETE**
+- ✅ **Database Migration**: `mcp_secrets` table with encryption, audit fields, and proper foreign key to `api_users`
+- ✅ **API Routes**: Full CRUD operations for secrets management
+  - `POST /api/v1/secrets` → Create new secret
+  - `GET /api/v1/secrets` → List user's secrets
+  - `GET /api/v1/secrets/:id` → Get specific secret
+  - `PUT /api/v1/secrets/:id` → Update secret
+  - `DELETE /api/v1/secrets/:id` → Delete secret
+- ✅ **Encryption**: AES-256-GCM encryption for secret values
+- ✅ **Authentication**: Integrated with existing API key system
+- ✅ **Environment Setup**: Added `SECRETS_ENCRYPTION_KEY` to environment
+- ✅ **Testing**: Debug scripts and test scripts created and verified
+- ✅ **API Integration**: Successfully tested with curl commands
+
+**🔧 Technical Implementation:**
+- **Encryption**: AES-256-GCM with random IV for each secret
+- **Database Schema**: Proper foreign key relationships and audit fields
+- **API Security**: Authentication required for all operations
+- **Error Handling**: Comprehensive validation and error responses
+- **Testing**: Debug scripts for environment verification and manual testing
+
+**📋 Next Steps for Secrets Manager:**
+- **Step 2**: Web UI for secrets management (2-3 hours) ✅ **COMPLETE**
+- **Step 3**: Integration with MCP deployment system (1-2 hours) ✅ **COMPLETE**
+- **Step 4**: Team permissions and sharing (2-3 hours)
+
+**✅ Step 2: Frontend Secrets Manager - COMPLETE**
+- ✅ **Secrets Page**: Complete React component with modern UI at `/secrets`
+- ✅ **CRUD Operations**: Add, edit, delete secrets with form validation
+- ✅ **Security Features**: Password fields, validation, confirmation dialogs
+- ✅ **User Experience**: Loading states, error handling, success notifications
+- ✅ **Navigation**: Added to router with protected route
+- ✅ **Theme Integration**: Matches existing dark theme design system
+
+**✅ Step 3: Deployment Integration - COMPLETE**
+- ✅ **Updated Deployment Service**: Modified to fetch and inject user secrets
+- ✅ **Secret Selection UI**: Added to deployment wizard with checkbox interface
+- ✅ **Environment Variable Injection**: Secrets automatically converted to env vars
+- ✅ **User Experience**: Clear indication of selected secrets and security notices
+- ✅ **Integration Points**: Connected secrets API with deployment flow
+
+**🔧 Technical Implementation:**
+- **Frontend**: React + TypeScript with shadcn/ui components
+- **Backend Integration**: Direct API calls to secrets endpoints
+- **Security**: Encrypted storage, secure transmission, user isolation
+- **UX**: Intuitive interface with clear feedback and validation
+- **Deployment Flow**: Seamless integration with existing deployment wizard
+
+**🎯 Complete MVP Secrets Manager Features:**
+- ✅ **Secure Storage**: AES-256 encryption at rest
+- ✅ **User Management**: Individual user secret isolation
+- ✅ **CRUD Operations**: Full create, read, update, delete functionality
+- ✅ **Deployment Integration**: Automatic injection during MCP server deployment
+- ✅ **Modern UI**: Beautiful, responsive interface with dark theme
+- ✅ **Validation**: Environment variable name validation and error handling
+- ✅ **Security**: Password fields, confirmation dialogs, audit trail ready
+
+**📋 Remaining Enhancements (Future):**
+- **Step 4**: Team permissions and sharing (2-3 hours)
+- **Audit Logging**: Track secret access and usage
+- **Secret Rotation**: Automatic key rotation workflows
+- **Compliance Features**: Enterprise-grade security features
 
 ## 🔄 Updated Implementation Order
 
