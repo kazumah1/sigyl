@@ -103,10 +103,11 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
     }
 
   } catch (error) {
-    console.error('❌ Get logs error:', error);
-    res.status(500).json({
+    console.error('Error fetching deployment logs:', error);
+    return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get deployment logs'
+      error: 'Failed to fetch deployment logs',
+      message: 'An error occurred while fetching deployment logs'
     });
   }
 });
@@ -179,10 +180,11 @@ router.get('/:id/health', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Health check error:', error);
-    res.status(500).json({
+    console.error('Error fetching deployment health:', error);
+    return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to check deployment health'
+      error: 'Failed to fetch deployment health',
+      message: 'An error occurred while fetching deployment health'
     });
   }
 });
@@ -248,10 +250,11 @@ router.post('/:id/restart', async (req: Request, res: Response) => {
     }
 
   } catch (error) {
-    console.error('❌ Restart error:', error);
-    res.status(500).json({
+    console.error('Error restarting deployment:', error);
+    return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to restart deployment'
+      error: 'Failed to restart deployment',
+      message: 'An error occurred while restarting the deployment'
     });
   }
 });
@@ -344,10 +347,11 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
 
   } catch (error) {
-    console.error('❌ Delete error:', error);
-    res.status(500).json({
+    console.error('Error deleting deployment:', error);
+    return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete deployment'
+      error: 'Failed to delete deployment',
+      message: 'An error occurred while deleting the deployment'
     });
   }
 });

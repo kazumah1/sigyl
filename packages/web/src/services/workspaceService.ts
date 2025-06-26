@@ -130,22 +130,39 @@ export const workspaceService = {
 
       const githubUser = JSON.parse(githubUserStr);
       
-      // Use the database function to get or create GitHub App user profile
-      const { data, error } = await supabase.rpc('get_or_create_github_app_profile', {
-        github_id: userId,
-        github_username: githubUser.login,
-        email: githubUser.email || `${githubUser.login}@github.com`,
-        full_name: githubUser.name,
-        avatar_url: githubUser.avatar_url
-      });
+      // Check if profile already exists using github_id (which should exist)
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('github_id', githubUser.id.toString())
+        .single();
+
+      if (existingProfile) {
+        console.log('GitHub App user profile already exists:', githubUser.login);
+        return existingProfile.id;
+      }
+
+      // Create profile directly
+      const { data: newProfile, error } = await supabase
+        .from('profiles')
+        .insert({
+          email: githubUser.email || `${githubUser.login}@github.com`,
+          username: githubUser.login,
+          full_name: githubUser.name,
+          github_username: githubUser.login,
+          github_id: githubUser.id.toString(),
+          avatar_url: githubUser.avatar_url
+        })
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Error creating GitHub user profile:', error);
         throw error;
       }
 
-      console.log('GitHub App user profile ensured:', githubUser.login);
-      return data; // Return the profile UUID
+      console.log('Created profile for GitHub App user:', githubUser.login);
+      return newProfile.id;
     } catch (error) {
       console.error('Error ensuring GitHub user profile:', error);
       throw error;
