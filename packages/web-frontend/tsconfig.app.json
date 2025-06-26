@@ -26,5 +26,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "src/services", "../web/src/components/DeploymentDashboard.tsx", "../web/src/components/DeployWizard.tsx", "../web/src/components/DeployWizardWithGitHubApp.tsx", "../web/src/components/GitHubAppInstall.tsx", "../web/src/components/ProtectedRoute.tsx", "../web/src/components/UserProfile.tsx", "src/types/marketplace.ts", "src/pages/Deploy.tsx"]
 }
