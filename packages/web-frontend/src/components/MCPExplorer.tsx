@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { MarketplaceService } from '@/services/marketplaceService'
+import { MarketplaceService } from '../services/marketplaceService'
 import { MCPPackage, PackageWithDetails, MarketplaceFilters } from '@/types/marketplace'
 import { toast } from 'sonner'
 import { InstallationGuide } from './InstallationGuide'

@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Index from './pages/Index';
 import Blog from './pages/Blog';
 import Deploy from './pages/Deploy';
+import Secrets from './pages/Secrets';
 import Marketplace from './pages/Marketplace';
 import Docs from './pages/Docs';
 import NotFound from './pages/NotFound';
@@ -26,6 +27,11 @@ function App() {
               <Route path="/deploy" element={
                 <ProtectedRoute>
                   <Deploy />
+                </ProtectedRoute>
+              } />
+              <Route path="/secrets" element={
+                <ProtectedRoute>
+                  <Secrets />
                 </ProtectedRoute>
               } />
               <Route path="/marketplace" element={<Marketplace />} />

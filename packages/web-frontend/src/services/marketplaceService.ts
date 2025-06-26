@@ -1,5 +1,5 @@
 // Marketplace service for MCP discovery and installation
-import { MCPPackage, PackageWithDetails, PackageSearchResult } from '@/types/marketplace'
+import { MCPPackage, PackageWithDetails, PackageSearchResult } from '@/marketplace'
 
 // Registry API configuration
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
