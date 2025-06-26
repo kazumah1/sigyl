@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import packagesRouter from './routes/packages';
 import githubAppRouter from './routes/githubApp';
+import apiKeysRouter from './routes/apiKeys';
 import { APIResponse } from './types';
 
 const app = express();
@@ -47,6 +48,7 @@ app.get('/health', (_req, res) => {
 // API routes
 app.use('/api/v1/packages', packagesRouter);
 app.use('/api/v1/github', githubAppRouter);
+app.use('/api/v1/keys', apiKeysRouter);
 
 // Root endpoint
 app.get('/', (_req, res) => {

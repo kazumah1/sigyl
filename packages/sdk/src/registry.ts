@@ -51,8 +51,23 @@ function createApiClient(config: SDKConfig = {}): AxiosInstance {
   return client;
 }
 
+// Helper function to validate authentication
+function validateAuth(config: SDKConfig, operation: string): void {
+  if (config.requireAuth && !config.apiKey) {
+    throw new Error(`Authentication required for ${operation}. Please provide an API key.`);
+  }
+}
+
+// Helper function to validate admin permissions
+function validateAdminAuth(config: SDKConfig, operation: string): void {
+  if (!config.apiKey) {
+    throw new Error(`Admin API key required for ${operation}. Please provide an API key with admin permissions.`);
+  }
+}
+
 /**
  * Search for MCP packages in the registry
+ * Note: Search is typically public, but can be restricted if requireAuth is true
  */
 export async function searchPackages(
   query?: string,
@@ -61,27 +76,33 @@ export async function searchPackages(
   offset: number = 0,
   config: SDKConfig = {}
 ): Promise<PackageSearchResult> {
+  // Validate auth if required
+  validateAuth(config, 'searching packages');
+  
   const client = createApiClient(config);
   
-  const params: any = {
-    limit,
-    offset
-  };
-  
-  if (query) params.q = query;
-  if (tags && tags.length > 0) params.tags = tags.join(',');
+  // Build query parameters manually to ensure proper formatting
+  const searchParams = new URLSearchParams();
+  searchParams.append('limit', limit.toString());
+  searchParams.append('offset', offset.toString());
+  if (query) searchParams.append('q', query);
+  if (tags && tags.length > 0) searchParams.append('tags', tags.join(','));
 
   // The interceptor returns the data directly
-  return await client.get('/packages/search', { params });
+  return await client.get(`/packages/search?${searchParams.toString()}`);
 }
 
 /**
  * Get detailed information about a specific package
+ * Note: Package details are typically public, but can be restricted if requireAuth is true
  */
 export async function getPackage(
   name: string,
   config: SDKConfig = {}
 ): Promise<PackageWithDetails> {
+  // Validate auth if required
+  validateAuth(config, 'getting package details');
+  
   const client = createApiClient(config);
   
   if (!name || name.trim().length === 0) {
@@ -94,20 +115,43 @@ export async function getPackage(
 
 /**
  * Register a new MCP package in the registry
+ * Note: Registration ALWAYS requires authentication
  */
 export async function registerMCP(
   packageData: CreatePackageRequest,
   apiKey?: string,
   config: SDKConfig = {}
 ): Promise<MCPPackage> {
-  const client = createApiClient({ ...config, apiKey });
+  // Registration always requires authentication
+  if (!apiKey && !config.apiKey) {
+    throw new Error('API key is required for registering MCP packages');
+  }
+  
+  const client = createApiClient({ ...config, apiKey: apiKey || config.apiKey });
   
   // The interceptor returns the data directly
   return await client.post('/packages', packageData);
 }
 
 /**
+ * Get all packages (admin operation)
+ * Note: This requires admin API key with admin permissions
+ */
+export async function getAllPackagesAdmin(
+  config: SDKConfig = {}
+): Promise<MCPPackage[]> {
+  // Admin operations always require admin authentication
+  validateAdminAuth(config, 'getting all packages');
+  
+  const client = createApiClient(config);
+  
+  // The interceptor returns the data directly
+  return await client.get('/packages/admin/all');
+}
+
+/**
  * Manually invoke a tool by URL
+ * Note: Tool invocation may require authentication depending on the tool
  */
 export async function invoke(
   toolUrl: string,
@@ -116,12 +160,18 @@ export async function invoke(
 ): Promise<any> {
   const timeout = config.timeout || DEFAULT_TIMEOUT;
   
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  
+  // Add API key if provided
+  if (config.apiKey) {
+    headers['Authorization'] = `Bearer ${config.apiKey}`;
+  }
+  
   const response = await axios.post(toolUrl, input, {
     timeout,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(config.apiKey && { 'Authorization': `Bearer ${config.apiKey}` })
-    }
+    headers
   });
   
   return response.data;

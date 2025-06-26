@@ -9,6 +9,8 @@
     "dev": "tsc --watch",
     "test": "ts-node test-sdk.ts",
     "test:realistic": "ts-node test-realistic.ts",
+    "test:auth": "ts-node test-authentication.ts",
+    "test:admin": "ts-node test-admin.ts",
     "test:example": "ts-node examples/simple-usage.ts",
     "clean": "rm -rf dist",
     "prebuild": "npm run clean"

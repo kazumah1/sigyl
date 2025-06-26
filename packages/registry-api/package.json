@@ -10,7 +10,10 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "clean": "rimraf dist",
-    "seed": "ts-node src/scripts/seedData.ts"
+    "seed": "ts-node src/scripts/seedData.ts",
+    "migrate:api-keys": "ts-node src/scripts/runMigrations.ts",
+    "manage-keys": "ts-node src/scripts/manageApiKeys.ts",
+    "test:api-keys": "ts-node src/scripts/testApiKeys.ts"
   },
   "dependencies": {
     "@octokit/rest": "^20.1.2",

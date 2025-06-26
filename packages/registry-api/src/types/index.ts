@@ -64,4 +64,63 @@ export interface APIResponse<T> {
 export interface PackageWithDetails extends MCPPackage {
   deployments: MCPDeployment[];
   tools: MCPTool[];
+}
+
+// API Key Management Types
+export interface APIUser {
+  id: string;
+  email: string;
+  name: string;
+  github_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface APIKey {
+  id: string;
+  user_id: string;
+  key_hash: string;
+  key_prefix: string;
+  name: string;
+  permissions: string[];
+  is_active: boolean;
+  last_used?: string;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAPIKeyRequest {
+  name: string;
+  permissions?: string[];
+  expires_at?: string;
+}
+
+export interface APIKeyUsage {
+  id: string;
+  key_id: string;
+  endpoint: string;
+  method: string;
+  status_code: number;
+  response_time_ms?: number;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
+export interface AuthenticatedUser {
+  key_id: string;
+  user_id: string;
+  permissions: string[];
+  is_active: boolean;
+}
+
+export type Permission = 'read' | 'write' | 'admin';
+
+export interface APIKeyStats {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  average_response_time: number;
+  last_used: string;
 } 
