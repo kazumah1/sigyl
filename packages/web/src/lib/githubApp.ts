@@ -48,8 +48,11 @@ const GITHUB_APP_CONFIG = {
  * This will redirect users to GitHub to install the app and authenticate
  */
 export function getGitHubAppInstallUrl(state?: string): string {
-  let url = `https://github.com/apps/${GITHUB_APP_CONFIG.appName}/installations/new?request_oauth_on_install=true`;
-  if (state) url += `&state=${state}`;
+  const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
+  const stateParam = state || Math.random().toString(36).substring(2, 15);
+  
+  // Use the app's main page URL which handles both new and existing installations
+  let url = `https://github.com/apps/${GITHUB_APP_CONFIG.appName}?request_oauth_on_install=true&redirect_uri=${redirectUrl}&state=${stateParam}`;
   return url;
 }
 
@@ -92,12 +95,14 @@ export function checkForGitHubAppCallback(): {
   code: string | null;
   user: any | null;
   access_token: string | null;
+  state: string | null;
 } {
   const urlParams = new URLSearchParams(window.location.search);
   const installationId = urlParams.get('installation_id');
   const code = urlParams.get('code');
   const userParam = urlParams.get('user');
   const accessToken = urlParams.get('access_token');
+  const state = urlParams.get('state');
   
   let user = null;
   if (userParam) {
@@ -108,7 +113,7 @@ export function checkForGitHubAppCallback(): {
     }
   }
   
-  return { installationId, code, user, access_token: accessToken };
+  return { installationId, code, user, access_token: accessToken, state };
 }
 
 /**
@@ -252,5 +257,63 @@ export async function storeGitHubAppInstallation(
   } catch (error) {
     console.error('Error storing GitHub App installation:', error)
     throw error
+  }
+}
+
+/**
+ * Check if a GitHub username has an existing installation
+ */
+export async function checkExistingInstallation(githubUsername: string): Promise<{
+  hasInstallation: boolean;
+  installationId?: number;
+  githubUsername?: string;
+}> {
+  try {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/check-installation/${githubUsername}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to check installation: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error checking existing installation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get OAuth URL for existing installation
+ */
+export async function getOAuthUrlForExistingInstallation(
+  installationId: number,
+  redirectUri?: string,
+  state?: string
+): Promise<string> {
+  try {
+    const params = new URLSearchParams();
+    if (redirectUri) params.append('redirect_uri', redirectUri);
+    if (state) params.append('state', state);
+
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/oauth-url/${installationId}?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get OAuth URL: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.oauthUrl;
+  } catch (error) {
+    console.error('Error getting OAuth URL for existing installation:', error);
+    throw error;
   }
 } 
