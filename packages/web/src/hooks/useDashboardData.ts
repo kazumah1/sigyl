@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { mcpServerService, MCPServer } from '@/services/mcpServerService';
 import { workspaceService, Workspace } from '@/services/workspaceService';
@@ -124,8 +123,13 @@ export const useDashboardData = () => {
         });
       } else if (user) {
         // Load real data for authenticated users
-        const workspaces = await workspaceService.getUserWorkspaces(user.id);
-        const workspace = workspaces[0] || null;
+        let workspaces = await workspaceService.getUserWorkspaces(user.id);
+        let workspace = workspaces[0] || null;
+
+        // If no workspaces exist, create a demo workspace
+        if (!workspace) {
+          workspace = await workspaceService.getOrCreateDemoWorkspace(user.id);
+        }
 
         if (workspace) {
           const [mcpServers, metrics, visitData, toolUsageData, serverStatusData] = await Promise.all([
@@ -152,7 +156,7 @@ export const useDashboardData = () => {
           setData(prev => ({
             ...prev,
             loading: false,
-            error: 'No workspace found'
+            error: 'No workspace found and could not create demo workspace'
           }));
         }
       }

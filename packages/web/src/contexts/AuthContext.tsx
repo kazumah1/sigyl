@@ -48,7 +48,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         hasState: !!state 
       })
       
-      if (installationId && code) {
+      // Handle both installation flow (installationId + code) and OAuth flow (just code)
+      if (code) {
         try {
           console.log('Handling GitHub App callback...')
           
@@ -65,12 +66,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           let result;
           let user;
           let accessToken;
+          let finalInstallationId;
           
           // Check if we have user data from URL parameters (redirected callback)
           if (urlUser && urlToken) {
             console.log('Using user data from URL parameters')
+            finalInstallationId = installationId ? parseInt(installationId) : null;
             result = {
-              installationId: parseInt(installationId),
+              installationId: finalInstallationId,
               user: urlUser,
               repos: [],
               access_token: urlToken
@@ -79,8 +82,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             accessToken = urlToken;
           } else {
             console.log('Making API call for user data')
+            
+            // For OAuth flow, we need to get the installation ID from stored state
+            if (!installationId) {
+              const storedInstallationId = localStorage.getItem('github_app_installation_id');
+              if (storedInstallationId) {
+                finalInstallationId = parseInt(storedInstallationId);
+                console.log('Using stored installation ID for OAuth flow:', finalInstallationId);
+              } else {
+                console.error('No installation ID found for OAuth flow');
+                alert('Authentication failed: No installation ID found. Please try installing the GitHub App again.');
+                return;
+              }
+            } else {
+              finalInstallationId = parseInt(installationId);
+            }
+            
             // Fall back to API call for direct callback
-            result = await handleGitHubAppCallback(installationId, code);
+            result = await handleGitHubAppCallback(finalInstallationId.toString(), code);
             if (!result || !result.user) {
               console.error('GitHub App callback did not return user info:', result);
               alert('Authentication failed: No user info returned from GitHub. Please try again.');
@@ -99,12 +118,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('Creating user session for:', user.login)
           
           // Set the installation ID in the auth context
-          setGitHubInstallationId(result.installationId)
+          setGitHubInstallationId(finalInstallationId)
           
           // Store the GitHub user information in localStorage for session management
           localStorage.setItem('github_app_user', JSON.stringify(user))
           localStorage.setItem('github_app_access_token', accessToken)
-          localStorage.setItem('github_app_installation_id', result.installationId.toString())
+          localStorage.setItem('github_app_installation_id', finalInstallationId.toString())
           
           // Create a custom user session
           const now = new Date().toISOString();
@@ -164,7 +183,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.removeItem('github_app_install_time')
           localStorage.removeItem('github_oauth_state')
           
-          console.log('GitHub App installation completed:', result.installationId)
+          // Clear stored username since we're now signed in
+          localStorage.removeItem('github_username_for_login')
+          
+          console.log('GitHub App installation completed:', finalInstallationId)
           
           // Wait a moment for state to be set, then redirect
           setTimeout(() => {
@@ -353,6 +375,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const signOut = async () => {
+    try {
+      // Store the GitHub username before clearing session data
+      const storedUser = localStorage.getItem('github_app_user')
+      let githubUsername: string | null = null
+      
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser)
+          githubUsername = userData.login
+          // Store just the username for future login attempts
+          localStorage.setItem('github_username_for_login', githubUsername)
+        } catch (error) {
+          console.error('Error parsing stored user data during sign out:', error)
+        }
+      }
+      
+      // Clear GitHub App installation data
+      setGitHubInstallationId(null)
+      localStorage.removeItem('github_app_installing')
+      localStorage.removeItem('github_app_install_time')
+      localStorage.removeItem('github_oauth_state')
+      localStorage.removeItem('github_app_installation_id')
+      
+      // Clear GitHub App session data (but keep username for future login)
+      localStorage.removeItem('github_app_user')
+      localStorage.removeItem('github_app_access_token')
+      
+      // Clear admin session if it exists
+      localStorage.removeItem('admin_session')
+      
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        throw error
+      }
+      
+      // Force clear the state
+      setUser(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+      throw error
+    }
+  }
+
   const signInWithGitHubApp = async () => {
     // Build the GitHub App URL that works for both new and existing installations
     const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev'
@@ -365,9 +432,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('github_oauth_state', state)
     
     // Check if we have a stored GitHub username from a previous session
-    const storedUser = localStorage.getItem('github_app_user')
     let githubUsername: string | null = null
     
+    // First try to get from current session
+    const storedUser = localStorage.getItem('github_app_user')
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
@@ -375,6 +443,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('Error parsing stored user data:', error)
       }
+    }
+    
+    // If no current session, try to get from stored username (from previous sign out)
+    if (!githubUsername) {
+      githubUsername = localStorage.getItem('github_username_for_login')
     }
     
     // If we have a GitHub username, check if they have an existing installation
@@ -385,6 +458,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (installationCheck.hasInstallation && installationCheck.installationId) {
           console.log('User has existing installation, using OAuth flow')
+          
+          // Store the installation ID for the callback handler
+          localStorage.setItem('github_app_installation_id', installationCheck.installationId.toString())
+          
           // Use OAuth flow for existing installation
           const oauthUrl = await getOAuthUrlForExistingInstallation(
             installationCheck.installationId,
@@ -404,36 +481,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const installUrl = `https://github.com/apps/${appName}/installations/new?state=${state}&request_oauth_on_install=true&redirect_uri=${redirectUrl}`
     
     return installUrl
-  }
-
-  const signOut = async () => {
-    try {
-      // Clear GitHub App installation data
-      setGitHubInstallationId(null)
-      localStorage.removeItem('github_app_installing')
-      localStorage.removeItem('github_app_install_time')
-      localStorage.removeItem('github_oauth_state')
-      localStorage.removeItem('github_app_installation_id')
-      
-      // Clear GitHub App session data
-      localStorage.removeItem('github_app_user')
-      localStorage.removeItem('github_app_access_token')
-      
-      // Clear admin session if it exists
-      localStorage.removeItem('admin_session')
-      
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        throw error
-      }
-      
-      // Force clear the state
-      setUser(null)
-      setSession(null)
-    } catch (error) {
-      console.error('Error signing out:', error)
-      throw error
-    }
   }
 
   const refreshUser = async () => {
