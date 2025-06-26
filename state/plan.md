@@ -19,10 +19,12 @@ This section tracks the integration status of backend and frontend features for 
 - ✅ **GitHub repositories are correctly loaded and displayed in the frontend via the GitHub App installation.**
 - ✅ **Dashboard errors fixed** - Database schema issues resolved with proper metrics table and RLS policies
 - ✅ **GitHub App re-authentication fixed** - Users can now sign out and sign back in without being redirected to the installation page if they already have the app installed
-- ✅ **GitHub App OAuth flow working** - OAuth callback handling now properly supports both installation flow and OAuth flow for existing installations
-- ⬜️ Deployment flow: UI and simulation are working, but real container hosting is not yet integrated.
-- ⬜️ Secrets Manager: UI and API are complete, but full deployment integration is in progress.
-- ⬜️ Health checks and logs: UI is present, but backend integration is pending.
+- ✅ **GitHub App OAuth flow working** - OAuth callback handling now properly supports both installation and OAuth flows
+- ✅ **Multi-account GitHub support implemented** - Users can now link multiple GitHub accounts and switch between them on the Deploy page with a dropdown selector. The dropdown now displays the organization display name for org installations (not just the login/username), making it easier to differentiate between personal and org accounts.
+- ⬜️ Deployment flow: UI and simulation are working, but real container hosting is not yet integrated
+- ⬜️ Registry API integration: Backend exists but not fully connected to frontend deployment flow
+- ⬜️ Secrets management: Backend exists but not integrated with deployment flow
+- ⬜️ Dashboard metrics: Backend exists but not connected to real deployment data
 
 (Expand this section as more features are hooked up end-to-end.)
 
@@ -39,11 +41,21 @@ This section tracks the integration status of backend and frontend features for 
 **Solution:** Applied nuclear fix that temporarily disables RLS, drops all policies, then re-enables with ultra-simple policies
 **Nuclear Fix Applied:** `fix-dashboard-errors-nuclear.sql` - Completely breaks recursion cycle
 
-#### **3. Table Name Mismatch**
+#### **3. Invalid UUID Syntax (400 Error) - FIXED ✅**
+**Problem:** Frontend services were using hardcoded string IDs like `"demo-workspace-id"` and `"github_162946059"` instead of real UUIDs
+**Solution:** Updated all services to use real UUIDs from database and removed hardcoded string fallbacks
+**Services Fixed:** `workspaceService.ts`, `analyticsService.ts`, `useDashboardData.ts`, `Dashboard.tsx`
+
+#### **4. GitHub App User Profile Missing (400 Error) - FIXED ✅**
+**Problem:** GitHub App users have IDs like `github_162946059` but no corresponding profile in the `profiles` table
+**Solution:** Added `ensureGitHubUserProfile()` method to automatically create profile entries for GitHub App users
+**Implementation:** Profile creation uses GitHub user data from localStorage and creates proper profile entries
+
+#### **5. Table Name Mismatch**
 **Problem:** Service expected `metrics` but database had `mcp_metrics`
 **Solution:** Created unified `metrics` table and updated service to handle both cases
 
-#### **4. Missing Demo Data**
+#### **6. Missing Demo Data**
 **Problem:** Dashboard showed empty state for new users
 **Solution:** Added demo workspace and sample data generation
 
@@ -436,6 +448,7 @@ web/src/
 ├── ✅ GitHubAppInstall component
 ├── ✅ Login page with GitHub App authentication
 └── ✅ Header navigation with working Deploy button
+├── ✅ GitHub account dropdown now shows organization display name for orgs
 ```
 
 #### **Container Builder (PLACEHOLDER 🚧)**
@@ -601,6 +614,7 @@ web/src/
 ├── ✅ GitHubAppInstall component
 ├── ✅ Login page with GitHub App authentication
 └── ✅ Header navigation with working Deploy button
+├── ✅ GitHub account dropdown now shows organization display name for orgs
 ```
 
 #### **Container Builder (PLACEHOLDER 🚧)**

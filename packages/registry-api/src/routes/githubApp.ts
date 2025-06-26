@@ -99,47 +99,116 @@ router.get('/callback', async (req, res) => {
     });
     const user = await userRes.json();
 
+    // Fetch installation info to determine if this is an org and get org display name
+    let accountLogin = user.login;
+    let accountType = user.type || 'User';
+    if (user.type === 'Organization' || user.type === 'Bot') {
+      // If the user is an org, fetch the org details for display name
+      try {
+        const orgRes = await fetch(`https://api.github.com/orgs/${user.login}`, {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        });
+        if (orgRes.ok) {
+          const org = await orgRes.json();
+          console.log('Fetched org details:', org); // Debug log
+          if (org.name) {
+            accountLogin = org.name;
+          }
+        } else {
+          const errorText = await orgRes.text();
+          console.error('Failed to fetch org details:', orgRes.status, errorText);
+        }
+      } catch (err) {
+        console.error('Error fetching org details:', err);
+      }
+      accountType = 'Organization';
+    }
+
     // Get installation token and repos
     const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
     const installToken = await getInstallationAccessToken(jwt, installationId);
     const repos = await listRepos(installToken);
 
-    // Store installation in github_installations table first
+    // Store user profile in profiles table
+    let profileId = null;
     try {
-      await installationService.upsertInstallation({
-        installation_id: installationId,
-        account_login: user.login,
-        account_type: user.type || 'User',
-        repositories: repos.map((repo: any) => repo.full_name)
-      });
+      const { data: profile, error: profileError } = await userInstallationService.supabase
+        .from('profiles')
+        .upsert({
+          email: user.email || `${user.login}@users.noreply.github.com`,
+          username: user.login,
+          full_name: user.name,
+          avatar_url: user.avatar_url,
+          github_username: user.login,
+          github_id: user.id,
+        }, { onConflict: 'github_id' })
+        .select()
+        .single();
+
+      console.log('Profile upsert result:', profile, profileError);
+
+      if (profile && profile.id) {
+        profileId = profile.id;
+      } else {
+        // Fallback: fetch the profile by github_id
+        const { data: foundProfile, error: fetchError } = await userInstallationService.supabase
+          .from('profiles')
+          .select('id')
+          .eq('github_id', user.id)
+          .single();
+        if (foundProfile && foundProfile.id) {
+          profileId = foundProfile.id;
+        } else {
+          console.error('Could not find profile after upsert:', fetchError);
+        }
+      }
     } catch (error) {
-      console.error('Error storing installation:', error);
-      // Continue even if storage fails
+      console.error('Error storing user profile:', error);
     }
 
-    // Store user installation in database
-    try {
-      const installationData: {
-        user_id: string;
-        github_username: string;
-        installation_id: number;
-        access_token?: string;
-        token_expires_at?: string;
-      } = {
-        user_id: `github_${user.id}`,
-        github_username: user.login,
-        installation_id: installationId,
-        access_token: tokenData.access_token,
-      };
-
-      if (tokenData.expires_in) {
-        installationData.token_expires_at = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+    if (profileId) {
+      // Store installation in github_installations table first
+      try {
+        await installationService.upsertInstallation({
+          installation_id: installationId,
+          account_login: accountLogin,
+          account_type: accountType,
+          repositories: repos.map((repo: any) => repo.full_name),
+          profile_id: profileId,
+        });
+      } catch (error) {
+        console.error('Error storing installation:', error);
+        // Continue even if storage fails
       }
 
-      await userInstallationService.upsertUserInstallation(installationData);
-    } catch (error) {
-      console.error('Error storing user installation:', error);
-      // Continue even if storage fails
+      // Store user installation in database
+      try {
+        const installationData: {
+          user_id: string;
+          github_username: string;
+          installation_id: number;
+          access_token?: string;
+          token_expires_at?: string;
+          profile_id?: string | null;
+        } = {
+          user_id: `github_${user.id}`,
+          github_username: user.login,
+          installation_id: installationId,
+          access_token: tokenData.access_token,
+          profile_id: profileId,
+        };
+
+        if (tokenData.expires_in) {
+          installationData.token_expires_at = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+        }
+
+        await userInstallationService.upsertUserInstallation(installationData);
+      } catch (error) {
+        console.error('Error storing user installation:', error);
+        // Continue even if storage fails
+      }
+    } else {
+      console.error('No valid profileId, skipping installation upserts.');
     }
 
     // Prepare the data to send to frontend
@@ -147,7 +216,9 @@ router.get('/callback', async (req, res) => {
       installationId,
       user,
       repos,
-      access_token: tokenData.access_token
+      access_token: tokenData.access_token,
+      account_login: accountLogin,
+      account_type: accountType
     };
 
     // If we have a state parameter (redirect URL), redirect to frontend

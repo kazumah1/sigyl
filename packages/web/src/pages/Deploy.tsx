@@ -5,16 +5,16 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import DeployWizardWithGitHubApp from "@/components/DeployWizardWithGitHubApp";
-import { DeploymentRequest } from "@/services/deploymentService";
+import GitHubAccountSelector from "@/components/GitHubAccountSelector";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const Deploy = () => {
-  const { user } = useAuth();
+  const { user, activeGitHubAccount } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
 
-  const handleDeploy = (deployment: DeploymentRequest) => {
+  const handleDeploy = (deployment: any) => {
     console.log('Deployment initiated:', deployment);
     toast.success('Deployment started successfully!');
     
@@ -22,6 +22,11 @@ const Deploy = () => {
     setTimeout(() => {
       navigate('/dashboard');
     }, 2000);
+  };
+
+  const handleAccountChange = (account: any) => {
+    console.log('Switched to GitHub account:', account.username);
+    toast.success(`Switched to ${account.username}`);
   };
 
   const DeployContent = () => (
@@ -41,11 +46,31 @@ const Deploy = () => {
               Connect your GitHub repository and deploy your MCP server with enterprise-grade reliability. 
               Get started in minutes with our streamlined deployment process.
             </p>
-            {user && (
-              <div className={`flex items-center justify-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="text-sm">Deploying as: {user.user_metadata?.user_name || user.email}</span>
+            
+            {/* GitHub Account Selector */}
+            <div className="flex flex-col items-center gap-4 mb-6">
+              {user && (
+                <div className={`flex items-center justify-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className="text-sm">Deploying as: {user.user_metadata?.user_name || user.email}</span>
+                </div>
+              )}
+              
+              <div className="w-full max-w-md">
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  GitHub Account
+                </label>
+                <GitHubAccountSelector 
+                  onAccountChange={handleAccountChange}
+                  className="w-full"
+                />
               </div>
-            )}
+              
+              {activeGitHubAccount && (
+                <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Using repositories from: <span className="font-medium">{activeGitHubAccount.username}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Deployment Wizard */}

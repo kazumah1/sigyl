@@ -23,7 +23,7 @@ interface DeployWizardWithGitHubAppProps {
 }
 
 const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
-  const { user, githubInstallationId } = useAuth()
+  const { user, activeGitHubAccount } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -36,29 +36,29 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
 
-  // Load repositories when installation ID is available
+  // Load repositories when active account is available
   useEffect(() => {
-    if (githubInstallationId) {
-      loadRepositories(githubInstallationId)
+    if (activeGitHubAccount) {
+      loadRepositories(activeGitHubAccount.installationId)
     }
-  }, [githubInstallationId])
+  }, [activeGitHubAccount])
 
   // Load MCP metadata when repo is selected
   useEffect(() => {
-    if (selectedRepo && selectedRepo.has_mcp && githubInstallationId) {
+    if (selectedRepo && selectedRepo.has_mcp && activeGitHubAccount) {
       loadMCPMetadata()
     } else {
       setMcpMetadata(null)
     }
-  }, [selectedRepo, githubInstallationId])
+  }, [selectedRepo, activeGitHubAccount])
 
   const loadMCPMetadata = async () => {
-    if (!selectedRepo || !githubInstallationId) return
+    if (!selectedRepo || !activeGitHubAccount) return
 
     setLoadingMetadata(true)
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const metadata = await getMCPConfigWithApp(githubInstallationId, owner, repo)
+      const metadata = await getMCPConfigWithApp(activeGitHubAccount.installationId, owner, repo)
       setMcpMetadata(metadata)
     } catch (err) {
       console.error('Failed to load MCP metadata:', err)
@@ -86,14 +86,14 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   }
 
   const handleDeploy = async () => {
-    if (!selectedRepo || !githubInstallationId) return
+    if (!selectedRepo || !activeGitHubAccount) return
 
     setDeploying(true)
     setDeployError(null)
 
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const result = await deployMCPWithApp(githubInstallationId, owner, repo, selectedBranch)
+      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch)
       
       // Call the onDeploy callback
       onDeploy?.(result)
@@ -128,7 +128,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const regularRepos = filteredRepos.filter(repo => !repo.has_mcp)
 
   // Show GitHub App installation if no installation ID
-  if (!githubInstallationId) {
+  if (!activeGitHubAccount) {
     return (
       <GitHubAppInstall 
         onInstallationComplete={handleInstallationComplete}
@@ -176,7 +176,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => loadRepositories(githubInstallationId)}
+                  onClick={() => loadRepositories(activeGitHubAccount.installationId)}
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}

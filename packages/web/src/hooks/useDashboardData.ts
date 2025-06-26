@@ -123,12 +123,12 @@ export const useDashboardData = () => {
         });
       } else if (user) {
         // Load real data for authenticated users
-        let workspaces = await workspaceService.getUserWorkspaces(user.id);
+        let workspaces = await workspaceService.getUserWorkspaces();
         let workspace = workspaces[0] || null;
 
         // If no workspaces exist, create a demo workspace
         if (!workspace) {
-          workspace = await workspaceService.getOrCreateDemoWorkspace(user.id);
+          workspace = await workspaceService.getOrCreateDemoWorkspace();
         }
 
         if (workspace) {

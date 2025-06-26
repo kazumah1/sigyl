@@ -43,6 +43,7 @@ export class InstallationService {
     account_login: string;
     account_type: string;
     repositories: string[];
+    profile_id?: string | null;
   }): Promise<InstallationRecord> {
     const { data, error } = await this.supabase
       .from('github_installations')
@@ -51,6 +52,7 @@ export class InstallationService {
         account_login: installationData.account_login,
         account_type: installationData.account_type,
         repositories: installationData.repositories,
+        profile_id: installationData.profile_id || null,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'installation_id'

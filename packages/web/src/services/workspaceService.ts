@@ -11,23 +11,56 @@ export interface Workspace {
 }
 
 export const workspaceService = {
-  async getUserWorkspaces(userId: string): Promise<Workspace[]> {
+  async getUserWorkspaces(): Promise<Workspace[]> {
     try {
-      const { data, error } = await supabase
+      // For GitHub App users, ensure profile exists first
+      const githubUserStr = localStorage.getItem('github_app_user');
+      if (githubUserStr) {
+        const githubUser = JSON.parse(githubUserStr);
+        const userId = `github_${githubUser.id}`;
+        
+        // Ensure GitHub App user has a profile
+        await this.ensureGitHubUserProfile(userId);
+        
+        // Get the profile UUID for querying workspaces
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('auth_type', 'github_app')
+          .eq('auth_user_id', userId)
+          .single();
+
+        if (profile) {
+          // Query workspaces using the profile UUID
+          const { data: workspaces, error } = await supabase
+            .from('workspaces')
+            .select('*')
+            .eq('owner_id', profile.id)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error fetching workspaces:', error);
+            return [];
+          }
+
+          return workspaces || [];
+        }
+      }
+
+      // Fallback for Supabase auth users
+      const { data: workspaces, error } = await supabase
         .from('workspaces')
         .select('*')
-        .eq('owner_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching workspaces:', error);
-        // Return empty array if there's an error - let the UI handle empty state
         return [];
       }
-      
-      return data || [];
+
+      return workspaces || [];
     } catch (error) {
-      console.error('Error fetching workspaces:', error);
+      console.error('Error in getUserWorkspaces:', error);
       return [];
     }
   },
@@ -85,42 +118,115 @@ export const workspaceService = {
     }
   },
 
-  // Helper method to get or create a demo workspace for the current user
-  async getOrCreateDemoWorkspace(userId: string): Promise<Workspace | null> {
+  // Helper method to ensure GitHub App users have a profile
+  async ensureGitHubUserProfile(userId: string): Promise<string> {
     try {
-      // First try to find an existing demo workspace
-      const { data: existing, error: findError } = await supabase
-        .from('workspaces')
-        .select('*')
-        .eq('owner_id', userId)
-        .eq('slug', 'demo-workspace')
-        .single();
-
-      if (existing) {
-        return existing;
+      // Get GitHub user data from localStorage
+      const githubUserStr = localStorage.getItem('github_app_user');
+      if (!githubUserStr) {
+        console.error('No GitHub user data found for profile creation');
+        throw new Error('No GitHub user data available');
       }
 
-      // If no demo workspace exists, create one
-      const { data: newWorkspace, error: createError } = await supabase
+      const githubUser = JSON.parse(githubUserStr);
+      
+      // Use the database function to get or create GitHub App user profile
+      const { data, error } = await supabase.rpc('get_or_create_github_app_profile', {
+        github_id: userId,
+        github_username: githubUser.login,
+        email: githubUser.email || `${githubUser.login}@github.com`,
+        full_name: githubUser.name,
+        avatar_url: githubUser.avatar_url
+      });
+
+      if (error) {
+        console.error('Error creating GitHub user profile:', error);
+        throw error;
+      }
+
+      console.log('GitHub App user profile ensured:', githubUser.login);
+      return data; // Return the profile UUID
+    } catch (error) {
+      console.error('Error ensuring GitHub user profile:', error);
+      throw error;
+    }
+  },
+
+  // Get or create demo workspace with GitHub App support
+  async getOrCreateDemoWorkspace(): Promise<Workspace> {
+    try {
+      // For GitHub App users, ensure profile exists first
+      const githubUserStr = localStorage.getItem('github_app_user');
+      if (githubUserStr) {
+        const githubUser = JSON.parse(githubUserStr);
+        const userId = `github_${githubUser.id}`;
+        
+        // Ensure GitHub App user has a profile
+        const profileId = await this.ensureGitHubUserProfile(userId);
+        
+        // Check if demo workspace exists
+        const { data: existingWorkspace } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('owner_id', profileId)
+          .eq('slug', 'demo-workspace')
+          .single();
+
+        if (existingWorkspace) {
+          return existingWorkspace;
+        }
+
+        // Create demo workspace
+        const { data: newWorkspace, error } = await supabase
+          .from('workspaces')
+          .insert({
+            name: 'Demo Workspace',
+            slug: 'demo-workspace',
+            description: 'Demo workspace for testing',
+            owner_id: profileId
+          })
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Error creating demo workspace:', error);
+          throw error;
+        }
+
+        return newWorkspace;
+      }
+
+      // Fallback for Supabase auth users
+      const { data: workspaces } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('slug', 'demo-workspace')
+        .limit(1);
+
+      if (workspaces && workspaces.length > 0) {
+        return workspaces[0];
+      }
+
+      // Create demo workspace for Supabase auth users
+      const { data: newWorkspace, error } = await supabase
         .from('workspaces')
         .insert({
           name: 'Demo Workspace',
           slug: 'demo-workspace',
-          description: 'Demo workspace for testing and demonstration',
-          owner_id: userId
+          description: 'Demo workspace for testing'
         })
-        .select()
+        .select('*')
         .single();
 
-      if (createError) {
-        console.error('Error creating demo workspace:', createError);
-        return null;
+      if (error) {
+        console.error('Error creating demo workspace:', error);
+        throw error;
       }
 
       return newWorkspace;
     } catch (error) {
-      console.error('Error getting or creating demo workspace:', error);
-      return null;
+      console.error('Error in getOrCreateDemoWorkspace:', error);
+      throw error;
     }
   }
 };
