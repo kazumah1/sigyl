@@ -78,6 +78,18 @@ export interface SDKConfig {
   registryUrl?: string;
   timeout?: number;
   apiKey?: string;
+  requireAuth?: boolean;
 }
 
-export type ToolFunction = (input: any) => Promise<any>; 
+export type ToolFunction = (input: any) => Promise<any>;
+
+// Authentication types
+export interface AuthConfig {
+  apiKey?: string;
+  requireAuth?: boolean;
+}
+
+export interface AuthenticatedRequest {
+  headers: Record<string, string>;
+  requiresAuth: boolean;
+} 

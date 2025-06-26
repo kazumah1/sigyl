@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
+import { requireAuth, requirePermissions, optionalAuth } from '../middleware/auth';
 import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
 
 const router = Router();
@@ -29,8 +30,8 @@ const searchQuerySchema = z.object({
   offset: z.string().optional().transform((val: string | undefined) => val ? parseInt(val, 10) : 0)
 });
 
-// POST /api/v1/packages - Create a new package
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+// POST /api/v1/packages - Create a new package (requires write permission)
+router.post('/', requirePermissions(['write']), async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedData = createPackageSchema.parse(req.body);
     
@@ -46,7 +47,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const newPackage = await packageService.createPackage(validatedData as CreatePackageRequest);
+    // Set author_id from authenticated user if not provided
+    const packageData = {
+      ...validatedData,
+      author_id: validatedData.author_id || req.user?.user_id
+    } as CreatePackageRequest;
+
+    const newPackage = await packageService.createPackage(packageData);
     
     const response: APIResponse<typeof newPackage> = {
       success: true,
@@ -76,8 +83,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// GET /api/v1/packages/search - Search packages
-router.get('/search', async (req: Request, res: Response): Promise<void> => {
+// GET /api/v1/packages/search - Search packages (optional auth for analytics)
+router.get('/search', optionalAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedQuery = searchQuerySchema.parse(req.query);
     
@@ -111,8 +118,8 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// GET /api/v1/packages/:name - Get package by name
-router.get('/:name', async (req: Request, res: Response): Promise<void> => {
+// GET /api/v1/packages/:name - Get package by name (optional auth for analytics)
+router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     
@@ -159,8 +166,8 @@ router.get('/:name', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// GET /api/v1/packages - Get all packages (for admin/debugging)
-router.get('/', async (_req: Request, res: Response): Promise<void> => {
+// GET /api/v1/packages - Get all packages (requires admin permission)
+router.get('/', requirePermissions(['admin']), async (_req: Request, res: Response): Promise<void> => {
   try {
     const packages = await packageService.getAllPackages();
     
@@ -168,6 +175,29 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
       success: true,
       data: packages,
       message: `Retrieved ${packages.length} packages`
+    };
+    
+    res.json(response);
+  } catch (error) {
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve packages',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+    
+    res.status(500).json(response);
+  }
+});
+
+// GET /api/v1/packages/admin/all - Admin endpoint for getting all packages (requires admin permission)
+router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const packages = await packageService.getAllPackages();
+    
+    const response: APIResponse<typeof packages> = {
+      success: true,
+      data: packages,
+      message: `Admin: Retrieved ${packages.length} packages`
     };
     
     res.json(response);

@@ -7,7 +7,7 @@ import type {
   CreatePackageRequest,
   ToolFunction
 } from './types';
-import { searchPackages, getPackage, registerMCP, invoke } from './registry';
+import { searchPackages, getPackage, registerMCP, invoke, getAllPackagesAdmin } from './registry';
 import { connect, connectDirect } from './connect';
 
 /**
@@ -101,11 +101,20 @@ export class MCPConnectSDK {
   }
 
   /**
-   * Get all packages (for admin/debugging)
+   * Search all packages (public operation - limited results)
+   * This uses the public search endpoint with a high limit
+   */
+  async searchAllPackages(limit: number = 100): Promise<MCPPackage[]> {
+    const response = await this.searchPackages(undefined, undefined, limit, 0);
+    return response.packages;
+  }
+
+  /**
+   * Get all packages (admin operation - requires admin API key)
+   * This calls the admin endpoint that requires admin permissions
    */
   async getAllPackages(): Promise<MCPPackage[]> {
-    const response = await this.searchPackages(undefined, undefined, 1000, 0);
-    return response.packages;
+    return getAllPackagesAdmin(this.config);
   }
 
   /**
