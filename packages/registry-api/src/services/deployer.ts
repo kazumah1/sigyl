@@ -1,4 +1,6 @@
 import { RailwayService, RailwayConfig, RailwayDeploymentRequest } from '@sigil/container-builder';
+import { supabase } from '../config/database';
+import { decrypt } from '../utils/encryption';
 
 // Railway configuration
 const RAILWAY_CONFIG: RailwayConfig = {
@@ -11,6 +13,8 @@ export interface DeploymentRequest {
   repoName: string;
   branch?: string;
   env: Record<string, string>;
+  userId?: string;
+  selectedSecrets?: string[];
 }
 
 export interface DeploymentResult {
@@ -22,7 +26,47 @@ export interface DeploymentResult {
 }
 
 /**
- * Deploy MCP repository to Railway with security validation
+ * Fetch and decrypt user secrets from database
+ */
+async function fetchUserSecrets(userId: string, selectedSecrets?: string[]): Promise<Record<string, string>> {
+  try {
+    let secretsQuery = supabase
+      .from('mcp_secrets')
+      .select('key, value')
+      .eq('user_id', userId);
+    
+    // If specific secrets are selected, filter by them
+    if (selectedSecrets && selectedSecrets.length > 0) {
+      secretsQuery = secretsQuery.in('id', selectedSecrets);
+    }
+    
+    const { data: secrets, error } = await secretsQuery;
+    
+    if (error) {
+      console.warn('Failed to fetch secrets:', error);
+      return {};
+    }
+    
+    if (!secrets || secrets.length === 0) {
+      return {};
+    }
+    
+    // Decrypt secrets and return as environment variables
+    const decryptedSecrets = secrets.map((secret: { key: string; value: string }) => ({
+      key: secret.key,
+      value: decrypt(secret.value)
+    }));
+    
+    return Object.fromEntries(decryptedSecrets.map((s: { key: string; value: string }) => [s.key, s.value]));
+    
+  } catch (error) {
+    console.error('Error fetching user secrets:', error);
+    return {};
+  }
+}
+
+/**
+ * Deploy MCP repository to Railway with security validation and secrets management
  */
 export async function deployRepo(request: DeploymentRequest): Promise<DeploymentResult> {
   try {
@@ -31,6 +75,19 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // Check if Railway API token is configured
     if (!RAILWAY_CONFIG.apiToken) {
       throw new Error('Railway API token not configured. Set RAILWAY_API_TOKEN environment variable.');
+    }
+
+    // Fetch user secrets if userId is provided
+    let deploymentEnv = { ...request.env };
+    
+    if (request.userId) {
+      console.log('🔐 Fetching user secrets...');
+      const userSecrets = await fetchUserSecrets(request.userId, request.selectedSecrets);
+      deploymentEnv = {
+        ...deploymentEnv,
+        ...userSecrets
+      };
+      console.log(`✅ Added ${Object.keys(userSecrets).length} secrets to deployment environment`);
     }
 
     // Initialize Railway service
@@ -42,7 +99,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       repoName: request.repoName,
       branch: request.branch || 'main',
       environmentVariables: {
-        ...request.env,
+        ...deploymentEnv,
         // MCP-specific environment variables
         NODE_ENV: 'production',
         MCP_TRANSPORT: 'http',

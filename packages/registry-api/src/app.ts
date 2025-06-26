@@ -7,6 +7,7 @@ import githubAppRouter from './routes/githubApp';
 import apiKeysRouter from './routes/apiKeys';
 import deployRouter from './routes/deploy';
 import deploymentsRouter from './routes/deployments';
+import secretsRouter from './routes/secrets';
 import { APIResponse } from './types';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/v1/github', githubAppRouter);
 app.use('/api/v1/keys', apiKeysRouter);
 app.use('/api/v1', deployRouter);
 app.use('/api/v1/deployments', deploymentsRouter);
+app.use('/api/v1/secrets', secretsRouter);
 
 // Root endpoint
 app.get('/', (_req, res) => {

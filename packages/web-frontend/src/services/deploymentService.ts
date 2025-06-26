@@ -12,6 +12,7 @@ export interface DeploymentRequest {
   env: Record<string, string>
   metadata?: MCPMetadata
   githubToken: string
+  selectedSecrets?: string[]
 }
 
 export interface DeploymentResult {

@@ -6,10 +6,17 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Github, GitBranch, Star, Eye, EyeOff, CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Rocket } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Loader2, Github, GitBranch, Star, Eye, EyeOff, CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Rocket, Shield } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { fetchUserRepos, GitHubRepo, fetchMCPMetadata, MCPMetadata } from "@/lib/github"
-import { DeploymentService, DeploymentRequest, DeploymentResult } from "@/services/deploymentService"
+import { DeploymentService, DeploymentRequest, DeploymentResult } from "../../../web-frontend/src/services/deploymentService"
+
+interface Secret {
+  id: string;
+  key: string;
+  created_at: string;
+}
 
 interface DeployWizardProps {
   onDeploy?: (deployment: DeploymentRequest) => void
@@ -29,11 +36,17 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
   const [deployResult, setDeployResult] = useState<DeploymentResult | null>(null)
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
+  
+  // NEW: Secrets state
+  const [secrets, setSecrets] = useState<Secret[]>([])
+  const [selectedSecrets, setSelectedSecrets] = useState<string[]>([])
+  const [loadingSecrets, setLoadingSecrets] = useState(false)
 
   // Load user repositories on component mount
   useEffect(() => {
     if (user && session?.provider_token) {
       loadRepositories()
+      loadSecrets() // NEW: Load secrets
     }
   }, [user, session])
 
@@ -45,6 +58,31 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
       setMcpMetadata(null)
     }
   }, [selectedRepo, session])
+
+  // NEW: Load user secrets
+  const loadSecrets = async () => {
+    if (!session?.access_token) return;
+
+    setLoadingSecrets(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/secrets`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSecrets(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching secrets:', error);
+    } finally {
+      setLoadingSecrets(false);
+    }
+  };
 
   const loadRepositories = async () => {
     if (!session?.provider_token) return
@@ -90,7 +128,9 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
         branch: selectedBranch,
         env: mcpMetadata ? { PORT: mcpMetadata.port.toString() } : {},
         metadata: mcpMetadata || undefined,
-        githubToken: session.provider_token
+        githubToken: session.provider_token,
+        // NEW: Include selected secrets
+        selectedSecrets: selectedSecrets.length > 0 ? selectedSecrets : undefined
       }
 
       // Use the actual deployment service
@@ -120,7 +160,17 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
     setMcpMetadata(null)
     setDeployError(null)
     setDeployResult(null)
+    setSelectedSecrets([]) // NEW: Reset selected secrets
   }
+
+  // NEW: Handle secret selection
+  const handleSecretToggle = (secretId: string) => {
+    setSelectedSecrets(prev => 
+      prev.includes(secretId) 
+        ? prev.filter(id => id !== secretId)
+        : [...prev, secretId]
+    );
+  };
 
   // Filter repositories based on search and visibility preferences
   const filteredRepos = repos.filter(repo => {
@@ -347,6 +397,82 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
                 )}
               </div>
             )}
+
+            {/* NEW: Secret Selection */}
+            <div>
+              <Label className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Secrets & Environment Variables
+              </Label>
+              <div className="text-sm text-gray-500 mb-3">
+                Select which secrets to include in your deployment. These will be available as environment variables.
+              </div>
+              
+              {loadingSecrets ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading secrets...
+                </div>
+              ) : secrets.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <div className="text-center">
+                    <Shield className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 mb-2">No secrets configured</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open('/secrets', '_blank')}
+                    >
+                      Manage Secrets
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {secrets.map((secret) => (
+                    <div key={secret.id} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <Checkbox
+                        id={secret.id}
+                        checked={selectedSecrets.includes(secret.id)}
+                        onCheckedChange={() => handleSecretToggle(secret.id)}
+                      />
+                      <Label 
+                        htmlFor={secret.id} 
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-sm">{secret.key}</span>
+                          <span className="text-xs text-gray-500">
+                            Created {new Date(secret.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                  
+                  {selectedSecrets.length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>{selectedSecrets.length}</strong> secret{selectedSecrets.length !== 1 ? 's' : ''} selected
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        These will be securely injected as environment variables during deployment
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open('/secrets', '_blank')}
+                    >
+                      Manage Secrets
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Deploy Error */}
             {deployError && (

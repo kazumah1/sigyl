@@ -13,7 +13,9 @@
     "seed": "ts-node src/scripts/seedData.ts",
     "migrate:api-keys": "ts-node src/scripts/runMigrations.ts",
     "manage-keys": "ts-node src/scripts/manageApiKeys.ts",
-    "test:api-keys": "ts-node src/scripts/testApiKeys.ts"
+    "test:api-keys": "ts-node src/scripts/testApiKeys.ts",
+    "test:secrets": "ts-node src/scripts/testSecrets.ts",
+    "debug:secrets": "ts-node src/scripts/debugSecrets.ts"
   },
   "dependencies": {
     "@octokit/rest": "^20.1.2",

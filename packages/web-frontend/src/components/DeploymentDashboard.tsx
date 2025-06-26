@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { deploymentService, DeploymentConfig } from '@/services/deploymentService'
+import { deploymentService, DeploymentConfig } from '../../../web-frontend/src/services/deploymentService'
 import { Deployment } from '@/lib/supabase'
 import { Play, Stop, Trash2, ExternalLink, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
