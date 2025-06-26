@@ -1,8 +1,9 @@
 // Deployment service for MCP servers with security validation
 import { MCPMetadata } from "@/lib/github"
 import { SecurityValidationResult } from "@/types/security"
-// TODO: Import from the container-builder package once properly packaged
-// import { RailwayService, RailwayConfig } from '@mcp-platform/container-builder'
+
+// Import Railway service from container-builder package
+import { RailwayService, RailwayConfig, RailwayDeploymentRequest } from '@sigil/container-builder'
 
 export interface DeploymentRequest {
   repoUrl: string
@@ -26,11 +27,11 @@ export interface DeploymentResult {
 // Registry API configuration
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
 
-// TODO: Railway configuration (disabled until proper package linking)
-// const RAILWAY_CONFIG: RailwayConfig = {
-//   apiToken: import.meta.env.VITE_RAILWAY_API_TOKEN || 'demo-token',
-//   apiUrl: import.meta.env.VITE_RAILWAY_API_URL
-// }
+// Railway configuration
+const RAILWAY_CONFIG: RailwayConfig = {
+  apiToken: import.meta.env.VITE_RAILWAY_API_TOKEN || 'demo-token',
+  apiUrl: import.meta.env.VITE_RAILWAY_API_URL
+}
 
 export class DeploymentService {
   /**
@@ -40,10 +41,17 @@ export class DeploymentService {
     try {
       console.log('🔒 Starting secure deployment process for:', request.repoName)
 
-      // TODO: Use Railway API when packages are properly linked
-      // For now, use enhanced simulation with security validation
-      console.log('🧪 Using enhanced simulation with security validation')
-      return await DeploymentService.simulateDeployment(request)
+      // Check if Railway API token is available
+      const hasRailwayToken = import.meta.env.VITE_RAILWAY_API_TOKEN && 
+                             import.meta.env.VITE_RAILWAY_API_TOKEN !== 'demo-token'
+
+      if (hasRailwayToken) {
+        console.log('🚀 Using real Railway API for deployment')
+        return await DeploymentService.deployToRailway(request)
+      } else {
+        console.log('🧪 Using enhanced simulation (Railway API token not configured)')
+        return await DeploymentService.simulateDeployment(request)
+      }
 
     } catch (error) {
       console.error('❌ Deployment failed:', error)
@@ -55,21 +63,64 @@ export class DeploymentService {
   }
 
   /**
-   * TODO: Deploy to Railway using real API (disabled until proper package linking)
+   * Deploy to Railway using real API
    */
-  // static async deployToRailway(request: DeploymentRequest): Promise<DeploymentResult> {
-  //   try {
-  //     console.log('🚀 Deploying to Railway...')
-  //     const railwayService = new RailwayService(RAILWAY_CONFIG)
-  //     // ... Railway deployment logic
-  //   } catch (error) {
-  //     console.error('❌ Railway deployment failed:', error)
-  //     return {
-  //       success: false,
-  //       error: error instanceof Error ? error.message : 'Railway deployment failed'
-  //     }
-  //   }
-  // }
+  static async deployToRailway(request: DeploymentRequest): Promise<DeploymentResult> {
+    try {
+      console.log('🚀 Deploying to Railway...')
+      
+      // Initialize Railway service
+      const railwayService = new RailwayService(RAILWAY_CONFIG)
+      
+      // Prepare Railway deployment request
+      const railwayRequest: RailwayDeploymentRequest = {
+        repoUrl: request.repoUrl,
+        repoName: request.repoName,
+        branch: request.branch,
+        environmentVariables: {
+          ...request.env,
+          NODE_ENV: 'production',
+          MCP_TRANSPORT: 'http',
+          MCP_ENDPOINT: '/mcp',
+          FORCE_HTTPS: 'true',
+          SESSION_SECURE: 'true',
+          REQUIRE_TOKEN_VALIDATION: 'true'
+        }
+      }
+      
+      // Deploy to Railway with security validation
+      const railwayResult = await railwayService.deployMCPServer(railwayRequest)
+      
+      if (!railwayResult.success) {
+        return {
+          success: false,
+          error: railwayResult.error || 'Railway deployment failed',
+          securityReport: railwayResult.securityReport
+        }
+      }
+      
+      console.log('✅ Railway deployment successful:', railwayResult.deploymentUrl)
+      console.log('🔗 MCP endpoint available at:', `${railwayResult.deploymentUrl}/mcp`)
+      
+      // Register in MCP Registry
+      const registryId = await DeploymentService.registerInRegistry(request, railwayResult.deploymentUrl!)
+      
+      return {
+        success: true,
+        deploymentUrl: railwayResult.deploymentUrl,
+        registryId,
+        serviceId: railwayResult.serviceId,
+        securityReport: railwayResult.securityReport
+      }
+      
+    } catch (error) {
+      console.error('❌ Railway deployment failed:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Railway deployment failed'
+      }
+    }
+  }
 
   /**
    * Enhanced simulation with security validation
