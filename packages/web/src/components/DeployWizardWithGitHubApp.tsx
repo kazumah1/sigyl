@@ -23,8 +23,7 @@ interface DeployWizardWithGitHubAppProps {
 }
 
 const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
-  const { user } = useAuth()
-  const [installationId, setInstallationId] = useState<number | null>(null)
+  const { user, githubInstallationId } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -37,22 +36,29 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
 
+  // Load repositories when installation ID is available
+  useEffect(() => {
+    if (githubInstallationId) {
+      loadRepositories(githubInstallationId)
+    }
+  }, [githubInstallationId])
+
   // Load MCP metadata when repo is selected
   useEffect(() => {
-    if (selectedRepo && selectedRepo.has_mcp && installationId) {
+    if (selectedRepo && selectedRepo.has_mcp && githubInstallationId) {
       loadMCPMetadata()
     } else {
       setMcpMetadata(null)
     }
-  }, [selectedRepo, installationId])
+  }, [selectedRepo, githubInstallationId])
 
   const loadMCPMetadata = async () => {
-    if (!selectedRepo || !installationId) return
+    if (!selectedRepo || !githubInstallationId) return
 
     setLoadingMetadata(true)
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const metadata = await getMCPConfigWithApp(installationId, owner, repo)
+      const metadata = await getMCPConfigWithApp(githubInstallationId, owner, repo)
       setMcpMetadata(metadata)
     } catch (err) {
       console.error('Failed to load MCP metadata:', err)
@@ -62,7 +68,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   }
 
   const handleInstallationComplete = async (installId: number) => {
-    setInstallationId(installId)
     await loadRepositories(installId)
   }
 
@@ -81,14 +86,14 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   }
 
   const handleDeploy = async () => {
-    if (!selectedRepo || !installationId) return
+    if (!selectedRepo || !githubInstallationId) return
 
     setDeploying(true)
     setDeployError(null)
 
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const result = await deployMCPWithApp(installationId, owner, repo, selectedBranch)
+      const result = await deployMCPWithApp(githubInstallationId, owner, repo, selectedBranch)
       
       // Call the onDeploy callback
       onDeploy?.(result)
@@ -122,24 +127,8 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const mcpRepos = filteredRepos.filter(repo => repo.has_mcp)
   const regularRepos = filteredRepos.filter(repo => !repo.has_mcp)
 
-  if (!user) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Github className="w-5 h-5" />
-            Authentication Required
-          </CardTitle>
-          <CardDescription>
-            Please sign in to access your repositories
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    )
-  }
-
   // Show GitHub App installation if no installation ID
-  if (!installationId) {
+  if (!githubInstallationId) {
     return (
       <GitHubAppInstall 
         onInstallationComplete={handleInstallationComplete}
@@ -187,7 +176,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => loadRepositories(installationId)}
+                  onClick={() => loadRepositories(githubInstallationId)}
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
@@ -204,35 +193,19 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-center space-y-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto" />
-                  <p className="text-gray-400">Loading repositories...</p>
-                </div>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="ml-2">Loading repositories...</span>
               </div>
             ) : (
-              <Tabs defaultValue="mcp" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="mcp" className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    MCP Ready ({mcpRepos.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="all" className="flex items-center gap-2">
-                    <Github className="w-4 h-4" />
-                    All Repos ({filteredRepos.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="mcp" className="space-y-4">
-                  {mcpRepos.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Github className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-200 mb-2">No MCP repositories found</h3>
-                      <p className="text-gray-400">
-                        Repositories with MCP configuration files will appear here
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4">
+              <div className="space-y-4">
+                {/* MCP Ready Repositories */}
+                {mcpRepos.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      MCP Ready ({mcpRepos.length})
+                    </h3>
+                    <div className="grid gap-3">
                       {mcpRepos.map((repo) => (
                         <RepoCard
                           key={repo.id}
@@ -243,33 +216,37 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                         />
                       ))}
                     </div>
-                  )}
-                </TabsContent>
+                  </div>
+                )}
 
-                <TabsContent value="all" className="space-y-4">
-                  {filteredRepos.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Github className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-200 mb-2">No repositories found</h3>
-                      <p className="text-gray-400">
-                        Try adjusting your search or filter settings
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4">
-                      {filteredRepos.map((repo) => (
+                {/* Regular Repositories */}
+                {regularRepos.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Github className="w-5 h-5" />
+                      Other Repositories ({regularRepos.length})
+                    </h3>
+                    <div className="grid gap-3">
+                      {regularRepos.map((repo) => (
                         <RepoCard
                           key={repo.id}
                           repo={repo}
                           isSelected={false}
                           onSelect={setSelectedRepo}
-                          isMCP={repo.has_mcp}
+                          isMCP={false}
                         />
                       ))}
                     </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  </div>
+                )}
+
+                {filteredRepos.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Github className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No repositories found matching your criteria.</p>
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -296,73 +273,39 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Repos
+                Back to Repositories
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Repository Info */}
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-3">
-                <Github className="w-5 h-5" />
-                <div>
-                  <h4 className="font-medium">{selectedRepo.name}</h4>
-                  <p className="text-sm text-gray-500">{selectedRepo.full_name}</p>
-                  {selectedRepo.description && (
-                    <p className="text-sm text-gray-400 mt-1">{selectedRepo.description}</p>
+            <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Github className="w-8 h-8" />
+              <div className="flex-1">
+                <h4 className="font-semibold">{selectedRepo.full_name}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedRepo.description || 'No description available'}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  {selectedRepo.private && (
+                    <Badge variant="outline" className="text-xs">
+                      <Lock className="w-3 h-3 mr-1" />
+                      Private
+                    </Badge>
+                  )}
+                  {selectedRepo.has_mcp && (
+                    <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      MCP Ready
+                    </Badge>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {selectedRepo.private && <Lock className="w-4 h-4 text-gray-400" />}
-                {selectedRepo.has_mcp && (
-                  <Badge variant="default">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    MCP Ready
-                  </Badge>
-                )}
-              </div>
             </div>
 
-            {/* MCP Configuration */}
-            {selectedRepo.has_mcp && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <h4 className="font-medium">MCP Configuration Found</h4>
-                </div>
-                
-                {loadingMetadata ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading MCP configuration...
-                  </div>
-                ) : mcpMetadata ? (
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{mcpMetadata.name}</span>
-                      <Badge variant="outline">v{mcpMetadata.version || '1.0.0'}</Badge>
-                    </div>
-                    <p className="text-sm text-gray-400">{mcpMetadata.description}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Port: {mcpMetadata.port}</span>
-                      <span>Tools: {mcpMetadata.tools.length}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      MCP configuration found but could not be loaded
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-
             {/* Branch Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="branch">Deployment Branch</Label>
+            <div>
+              <Label htmlFor="branch">Branch</Label>
               <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select branch" />
@@ -375,40 +318,77 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
               </Select>
             </div>
 
+            {/* MCP Metadata Display */}
+            {loadingMetadata ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading MCP configuration...</span>
+              </div>
+            ) : mcpMetadata ? (
+              <div className="space-y-4">
+                <h4 className="font-semibold">MCP Configuration</h4>
+                <div className="grid gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Name</Label>
+                    <p className="text-sm">{mcpMetadata.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Description</Label>
+                    <p className="text-sm">{mcpMetadata.description}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Port</Label>
+                    <p className="text-sm">{mcpMetadata.port}</p>
+                  </div>
+                  {mcpMetadata.tools && mcpMetadata.tools.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium">Tools ({mcpMetadata.tools.length})</Label>
+                      <div className="space-y-2">
+                        {mcpMetadata.tools.map((tool, index) => (
+                          <div key={index} className="text-sm p-2 bg-white dark:bg-gray-700 rounded">
+                            <strong>{tool.name}</strong>: {tool.description}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : selectedRepo.has_mcp && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  MCP configuration found but could not be loaded. The deployment will proceed with default settings.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Deployment Error */}
+            {deployError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{deployError}</AlertDescription>
+              </Alert>
+            )}
+
             {/* Deploy Button */}
-            <div className="space-y-4">
-              {deployError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{deployError}</AlertDescription>
-                </Alert>
+            <Button
+              onClick={handleDeploy}
+              disabled={deploying}
+              className="w-full"
+            >
+              {deploying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deploying...
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Deploy MCP Server
+                </>
               )}
-
-              <Button
-                onClick={handleDeploy}
-                disabled={deploying || !selectedRepo.has_mcp}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold tracking-tight"
-                size="lg"
-              >
-                {deploying ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Deploying...
-                  </>
-                ) : (
-                  <>
-                    <Rocket className="w-5 h-5 mr-2" />
-                    Deploy MCP Server
-                  </>
-                )}
-              </Button>
-
-              {!selectedRepo.has_mcp && (
-                <p className="text-sm text-gray-500 text-center">
-                  This repository doesn't contain MCP configuration files
-                </p>
-              )}
-            </div>
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -416,7 +396,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   )
 }
 
-// RepoCard component
 interface RepoCardProps {
   repo: GitHubAppRepository
   isSelected: boolean
@@ -426,36 +405,37 @@ interface RepoCardProps {
 
 const RepoCard: React.FC<RepoCardProps> = ({ repo, isSelected, onSelect, isMCP }) => {
   return (
-    <Card 
-      className={`cursor-pointer transition-all hover:border-indigo-500/50 ${
-        isSelected ? 'border-indigo-500 bg-indigo-500/5' : ''
+    <div
+      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+        isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
       }`}
       onClick={() => onSelect(repo)}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Github className="w-5 h-5" />
-            <div className="flex-1">
-              <h4 className="font-medium">{repo.name}</h4>
-              <p className="text-sm text-gray-500">{repo.full_name}</p>
-              {repo.description && (
-                <p className="text-sm text-gray-400 mt-1 line-clamp-2">{repo.description}</p>
-              )}
-            </div>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Github className="w-4 h-4" />
+            <h4 className="font-medium">{repo.name}</h4>
+            {repo.private && <Lock className="w-3 h-3 text-gray-400" />}
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            {repo.description || 'No description available'}
+          </p>
           <div className="flex items-center gap-2">
-            {repo.private && <Lock className="w-4 h-4 text-gray-400" />}
             {isMCP && (
-              <Badge variant="default" className="text-xs">
+              <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                 <CheckCircle className="w-3 h-3 mr-1" />
                 MCP Ready
               </Badge>
             )}
+            <span className="text-xs text-gray-500">{repo.full_name}</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-2">
+          <Star className="w-4 h-4 text-gray-400" />
+        </div>
+      </div>
+    </div>
   )
 }
 

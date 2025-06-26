@@ -31,17 +31,22 @@
 - **Popular/Trending:** Curated package lists based on activity
 
 #### **2. Customer Registration/Setup (COMPLETE ✅)** 
-- **GitHub OAuth:** Full authentication with private repo access
+- **GitHub App Authentication:** Full non-OAuth GitHub App integration with secure repository access
 - **User Profiles:** Automatic database profile creation
 - **Permissions:** Row Level Security for data protection
+- **Global Callback Handling:** GitHub App installation callback handled globally in AuthContext
+- **Consistent Routing:** Both Dashboard and Deploy buttons now redirect to /login when not authenticated
+- **Session Management:** Custom session management for GitHub App users with localStorage persistence
+- **Redirect Flow:** Users are redirected back to their intended page after GitHub App installation
 
 #### **3. Customer Deployment (PARTIAL 🟡)**
 **What Works:**
-- ✅ **Repository Selection:** GitHub repo browser with MCP detection
+- ✅ **Repository Selection:** GitHub repo browser with MCP detection using GitHub App
 - ✅ **MCP Metadata:** Automatic `mcp.yaml` parsing and validation
-- ✅ **Deploy UI:** Complete DeployWizard with step-by-step flow
+- ✅ **Deploy UI:** Complete DeployWizardWithGitHubApp with step-by-step flow
 - ✅ **Registry Registration:** Successful package registration in database
 - ✅ **Deployment Simulation:** Mock deployment process with realistic URLs
+- ✅ **Header Navigation:** Deploy button in header now uses GitHub App authentication and redirects to /login when not authenticated
 
 **What's Missing:**
 - ❌ **Real Hosting Integration:** Currently simulated deployment only
@@ -61,11 +66,22 @@
 ```
 packages/registry-api/
 ├── ✅ Full CRUD operations
-├── ✅ GitHub App integration  
+├── ✅ GitHub App integration with non-OAuth flow
 ├── ✅ Package search & filtering
 ├── ✅ User authentication via API keys
 ├── ✅ Deployment tracking
 └── ✅ Health check endpoints
+```
+
+#### **Frontend Authentication (COMPLETE ✅)**
+```
+web/src/
+├── ✅ AuthContext with GitHub App integration
+├── ✅ Global GitHub App callback handling
+├── ✅ DeployWizardWithGitHubApp component
+├── ✅ GitHubAppInstall component
+├── ✅ Login page with GitHub App authentication
+└── ✅ Header navigation with working Deploy button
 ```
 
 #### **Container Builder (PLACEHOLDER 🚧)**
@@ -99,8 +115,9 @@ static async deployToHosting(request: DeploymentRequest): Promise<string> {
 
 #### **Frontend Deploy UI (COMPLETE ✅)**
 ```
-packages/web-frontend/src/components/
-├── ✅ DeployWizard.tsx (complete step-by-step flow)
+web/src/components/
+├── ✅ DeployWizardWithGitHubApp.tsx (complete step-by-step flow with GitHub App)
+├── ✅ GitHubAppInstall.tsx (GitHub App installation component)
 ├── ✅ DeploymentDashboard.tsx (user deployment management)
 ├── ✅ GitHub repo selection with MCP detection
 ├── ✅ Environment variable configuration

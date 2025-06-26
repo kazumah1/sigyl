@@ -4,10 +4,12 @@ import fetch from 'node-fetch';
 
 const router = express.Router();
 
-router.get('/github/callback', async (req, res) => {
+router.get('/callback', async (req, res) => {
   try {
     const installationId = Number(req.query.installation_id);
     const code = req.query.code as string;
+    const state = req.query.state as string; // This should contain the redirect URL
+    
     if (!installationId || !code) {
       return res.status(400).json({ error: 'Missing installation_id or code' });
     }
@@ -40,14 +42,30 @@ router.get('/github/callback', async (req, res) => {
     const installToken = await getInstallationAccessToken(jwt, installationId);
     const repos = await listRepos(installToken);
 
-    // Optionally associate install with your user system here
-
-    return res.json({
+    // Prepare the data to send to frontend
+    const callbackData = {
       installationId,
       user,
       repos,
       access_token: tokenData.access_token
-    });
+    };
+
+    // If we have a state parameter (redirect URL), redirect to frontend
+    if (state) {
+      const redirectUrl = decodeURIComponent(state);
+      const params = new URLSearchParams({
+        installation_id: installationId.toString(),
+        code: code,
+        user: JSON.stringify(user),
+        access_token: tokenData.access_token
+      });
+      
+      const finalUrl = `${redirectUrl}?${params.toString()}`;
+      return res.redirect(finalUrl);
+    }
+
+    // Fallback: return JSON if no redirect URL
+    return res.json(callbackData);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'GitHub App callback failed' });
