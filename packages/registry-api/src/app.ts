@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import packagesRouter from './routes/packages';
 import githubAppRouter from './routes/githubApp';
 import apiKeysRouter from './routes/apiKeys';
+import deployRouter from './routes/deploy';
+import deploymentsRouter from './routes/deployments';
 import { APIResponse } from './types';
 
 const app = express();
@@ -49,6 +51,8 @@ app.get('/health', (_req, res) => {
 app.use('/api/v1/packages', packagesRouter);
 app.use('/api/v1/github', githubAppRouter);
 app.use('/api/v1/keys', apiKeysRouter);
+app.use('/api/v1', deployRouter);
+app.use('/api/v1/deployments', deploymentsRouter);
 
 // Root endpoint
 app.get('/', (_req, res) => {

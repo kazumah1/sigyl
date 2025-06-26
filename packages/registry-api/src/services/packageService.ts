@@ -173,4 +173,84 @@ export class PackageService {
 
     return data || [];
   }
+
+  // Deployment management methods
+
+  async getDeploymentById(id: string): Promise<MCPDeployment | null> {
+    const { data, error } = await supabase
+      .from('mcp_deployments')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  }
+
+  async getAllDeployments(options: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<MCPDeployment[]> {
+    const { status, limit = 50, offset = 0 } = options;
+
+    let query = supabase
+      .from('mcp_deployments')
+      .select('*');
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    query = query
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch deployments: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async updateDeploymentHealth(
+    id: string, 
+    _healthStatus: 'healthy' | 'unhealthy' | 'unknown', 
+    lastChecked: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('mcp_deployments')
+      .update({
+        last_health_check: lastChecked,
+        // Note: We don't have a health_status column yet, but we can add it later
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Failed to update deployment health: ${error.message}`);
+    }
+  }
+
+  async updateDeploymentStatus(
+    id: string, 
+    status: 'active' | 'inactive' | 'failed'
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('mcp_deployments')
+      .update({
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Failed to update deployment status: ${error.message}`);
+    }
+  }
 } 
