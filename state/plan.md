@@ -11,6 +11,61 @@
 - Modern web frontend (React + Vite) for discovery and deployment
 - **NEW: Secure Secrets Manager for MCP Server API Keys**
 
+## 🚦 Hooking Up the Web App
+This section tracks the integration status of backend and frontend features for the Sigil MCP platform.
+
+**Current Integration Status (January 2025):**
+- ✅ **GitHub login via GitHub App is fully working and integrated with the frontend.**
+- ✅ **GitHub repositories are correctly loaded and displayed in the frontend via the GitHub App installation.**
+- ✅ **Dashboard errors fixed** - Database schema issues resolved with proper metrics table and RLS policies
+- ✅ **GitHub App re-authentication fixed** - Users can now sign out and sign back in without being redirected to the installation page if they already have the app installed
+- ✅ **GitHub App OAuth flow working** - OAuth callback handling now properly supports both installation flow and OAuth flow for existing installations
+- ⬜️ Deployment flow: UI and simulation are working, but real container hosting is not yet integrated.
+- ⬜️ Secrets Manager: UI and API are complete, but full deployment integration is in progress.
+- ⬜️ Health checks and logs: UI is present, but backend integration is pending.
+
+(Expand this section as more features are hooked up end-to-end.)
+
+## 🔧 **DASHBOARD ERROR FIXES - COMPLETED ✅**
+
+### **Issues Identified and Resolved:**
+
+#### **1. Missing `metrics` Table (404 Error)**
+**Problem:** Analytics service was trying to query a `metrics` table that didn't exist
+**Solution:** Created proper `metrics` table with correct schema and relationships
+
+#### **2. Infinite Recursion in RLS Policies (500 Error) - NUCLEAR FIX APPLIED**
+**Problem:** `workspace_members` policy was causing circular reference that persisted even after initial fixes
+**Solution:** Applied nuclear fix that temporarily disables RLS, drops all policies, then re-enables with ultra-simple policies
+**Nuclear Fix Applied:** `fix-dashboard-errors-nuclear.sql` - Completely breaks recursion cycle
+
+#### **3. Table Name Mismatch**
+**Problem:** Service expected `metrics` but database had `mcp_metrics`
+**Solution:** Created unified `metrics` table and updated service to handle both cases
+
+#### **4. Missing Demo Data**
+**Problem:** Dashboard showed empty state for new users
+**Solution:** Added demo workspace and sample data generation
+
+### **✅ Completed Fixes:**
+
+**Database Migration:** `20250127000000-fix-dashboard-errors.sql` + `fix-dashboard-errors-nuclear.sql`
+- ✅ Created `metrics` table with proper schema
+- ✅ **NUCLEAR FIX:** Temporarily disabled RLS to break infinite recursion
+- ✅ **NUCLEAR FIX:** Dropped all problematic policies and re-created ultra-simple ones
+- ✅ Added proper indexes for performance
+- ✅ Inserted sample demo data
+- ✅ Added demo workspace and MCP server
+
+**Service Updates:**
+- ✅ **analyticsService.ts** - Added demo data fallbacks and better error handling
+- ✅ **workspaceService.ts** - Added demo workspace support and error handling
+- ✅ **RLS Policies** - Nuclear fix applied to eliminate all circular references
+
+**Result:** Dashboard now loads without errors and shows realistic demo data for new users
+
+**🚨 CRITICAL:** If infinite recursion persists, run the nuclear fix script in Supabase SQL Editor
+
 ## 💰 **PRICING STRATEGY & COST ANALYSIS**
 
 ### **Railway Hosting Costs (Our Infrastructure Costs)**
@@ -335,6 +390,7 @@ Railway's pricing **DOES scale with usage**:
 - **Consistent Routing:** Both Dashboard and Deploy buttons now redirect to /login when not authenticated
 - **Session Management:** Custom session management for GitHub App users with localStorage persistence
 - **Redirect Flow:** Users are redirected back to their intended page after GitHub App installation
+- **NEW:** ✅ **GitHub login and repository loading are confirmed working and correctly hooked up to the frontend.**
 
 #### **3. Customer Deployment (PARTIAL 🟡)**
 **What Works:**
@@ -344,6 +400,7 @@ Railway's pricing **DOES scale with usage**:
 - ✅ **Registry Registration:** Successful package registration in database
 - ✅ **Deployment Simulation:** Mock deployment process with realistic URLs
 - ✅ **Header Navigation:** Deploy button in header now uses GitHub App authentication and redirects to /login when not authenticated
+- **NEW:** ✅ **GitHub repositories are loaded and displayed in the Deploy flow via the GitHub App.**
 
 **What's Missing:**
 - ❌ **Real Hosting Integration:** Currently simulated deployment only
@@ -535,117 +592,56 @@ mcp-platform/
 - ✅ CORS and security middleware configured for frontend integration
 - ✅ **API tested and confirmed working via frontend integration**
 
-### STEP 3: GitHub App Integration - **IMPLEMENTED** ✅
-**Status:** GitHub App authentication flow implemented
+#### **Frontend Authentication (COMPLETE ✅)**
+```
+web/src/
+├── ✅ AuthContext with GitHub App integration
+├── ✅ Global GitHub App callback handling
+├── ✅ DeployWizardWithGitHubApp component
+├── ✅ GitHubAppInstall component
+├── ✅ Login page with GitHub App authentication
+└── ✅ Header navigation with working Deploy button
+```
 
-**✅ Implemented Components:**
-- ✅ **GitHubAppService**: JWT signing, installation token generation
-- ✅ **InstallationService**: Database management for installations and repos
-- ✅ **GitHub App Routes**: Complete API endpoints for app integration
-- ✅ **Database Schema**: Tables for storing installation and repository data
-- ✅ **Environment Configuration**: GitHub App credentials setup
+#### **Container Builder (PLACEHOLDER 🚧)**
+```
+packages/container-builder/
+├── 📋 Dockerfile.template (basic template)
+├── 📋 index.ts (empty placeholder function)
+└── ❌ No actual Docker building logic
+```
 
-**✅ GitHub App Features:**
-- ✅ JWT-based authentication with GitHub App
-- ✅ Installation token generation and management
-- ✅ Repository listing with MCP file detection
-- ✅ Secure access to private repositories
-- ✅ Database storage of installation and repository metadata
-- ✅ MCP configuration file retrieval
+#### **Deployment Service (SIMULATION ONLY 🟡)**
+```typescript
+// Current: packages/web-frontend/src/services/deploymentService.ts
+static async deployToHosting(request: DeploymentRequest): Promise<string> {
+    // TODO: Implement actual hosting platform deployment
+    // For now, simulate the deployment process
+    
+    console.log('Deploying to hosting platform...')
+    
+    // Simulate deployment delay
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    // Generate a mock deployment URL
+    const sanitizedName = request.repoName.replace('/', '-').toLowerCase()
+    const deploymentUrl = `https://${sanitizedName}-${Date.now()}.railway.app`
+    
+    console.log('Deployed to:', deploymentUrl)
+    return deploymentUrl
+}
+```
 
-**🔧 Technical Implementation:**
-- **Authentication Flow**: JWT signing with RSA private key
-- **Installation Management**: Store and retrieve installation data
-- **Repository Access**: List and access repositories with proper permissions
-- **MCP Detection**: Check multiple common MCP file locations
-- **Database Integration**: Supabase tables for persistence
-
-### STEP 4: Container Builder - **PLACEHOLDER ONLY** 🚧
-- 🚧 Currently just empty placeholder functions
-- 📋 No actual Docker containerization implemented
-- 📋 No integration with hosting platforms
-- ❌ **BLOCKING REAL DEPLOYMENTS**
-
-### STEP 5: CLI Tool - **MOSTLY COMPLETE** 🟡
-- ✅ CLI structure and commands implemented
-- ❌ **Missing: Deploy command** (needs Container Builder integration)
-- 🎯 **Ready to integrate with Registry API once Container Builder is ready**
-
-### STEP 6: Web Frontend - **DEPLOY FLOW COMPLETE** ✅
-**Status:** Complete customer-facing deployment interface
-
-**✅ Core Infrastructure:**
-- ✅ React 18 + TypeScript + Vite setup with modern tooling
-- ✅ Tailwind CSS with custom dark theme system
-- ✅ shadcn/ui component library integration
-- ✅ React Router v6 navigation with protected routes
-- ✅ Comprehensive error handling and loading states
-
-**✅ Authentication System (GitHub OAuth):**
-- ✅ Supabase Auth integration with GitHub OAuth
-- ✅ Comprehensive authentication context with session management
-- ✅ Protected route system for deployment features
-- ✅ User profile creation and management
-- ✅ OAuth scopes: `read:user`, `user:email`, `repo`
-- ✅ Automatic user profile creation in database
-- ✅ Row Level Security for data protection
-
-**✅ GitHub Integration:**
-- ✅ Complete GitHub API integration for repository access
-- ✅ Private repository support with proper permissions
-- ✅ Automatic MCP detection in repositories (`mcp.yaml` scanning)
-- ✅ Repository selector UI with collapsible behavior
-- ✅ Branch selection and file content access
-- ✅ **Fixed 403 Forbidden errors for private repositories**
-
-**✅ Deployment System:**
-- ✅ Comprehensive DeployWizard component with step-by-step flow
-- ✅ Environment variable configuration interface
-- ✅ Integration with Registry API for package registration
-- ✅ DeploymentDashboard for managing user deployments
-- ✅ Real-time deployment status tracking (simulated)
-- ✅ Health check integration (simulated)
-- ✅ **End-to-end deployment flow working with registry registration**
-
-**✅ MCP Explorer + Install:**
-- ✅ **MarketplaceService**: Complete service for MCP discovery and installation
-- ✅ **MCPExplorer Component**: Comprehensive marketplace interface with real Registry API integration
-- ✅ **Installation Guide**: Step-by-step installation instructions with code examples
-- ✅ **Real Data Integration**: Replaced placeholder data with actual Registry API calls
-- ✅ **Search & Filter**: Advanced search with category filtering and debounced queries
-- ✅ **Package Details**: Detailed package information with tools and deployments
-- ✅ **Installation Flow**: Complete install process with deployment simulation
-- ✅ **Popular & Trending**: Curated package lists based on downloads and activity
-- ✅ **Toast Notifications**: Rich notifications using Sonner for better UX
-- ✅ **Copy to Clipboard**: Easy code snippet copying for configuration
-- ✅ **Responsive Design**: Mobile-friendly interface with modern animations
-
-**✅ Secrets Manager Integration:**
-- ✅ **Secrets Page**: Complete CRUD interface at `/secrets`
-- ✅ **Secret Selection**: Integration with deployment wizard
-- ✅ **Security Features**: Password fields, validation, confirmation dialogs
-- ✅ **User Experience**: Loading states, error handling, success notifications
-- ✅ **Deployment Integration**: Automatic secret injection during deployment
-
-**🔧 Technical Implementation:**
-- **Registry API Integration**: Direct connection to operational Registry API
-- **TypeScript Types**: Comprehensive type definitions for marketplace data
-- **Error Handling**: Graceful fallbacks for API failures
-- **Loading States**: Smooth loading animations and skeleton screens
-- **Installation Simulation**: Mock deployment process ready for real hosting integration
-- **Database Seeding**: Sample data script for testing and demonstration
-
-**📋 What's Ready:**
-- Complete MCP discovery and exploration interface
-- Real-time search and filtering capabilities
-- Package installation with deployment simulation
-- Comprehensive installation guides with code examples
-- Popular and trending package curation
-- Mobile-responsive design with modern animations
-- Integration with existing authentication and deployment systems
-
-### STEP 7: Integration Testing - **PENDING**
-- End-to-end flow testing
+#### **Frontend Deploy UI (COMPLETE ✅)**
+```
+web/src/components/
+├── ✅ DeployWizardWithGitHubApp.tsx (complete step-by-step flow with GitHub App)
+├── ✅ GitHubAppInstall.tsx (GitHub App installation component)
+├── ✅ DeploymentDashboard.tsx (user deployment management)
+├── ✅ GitHub repo selection with MCP detection
+├── ✅ Environment variable configuration
+└── ✅ Real-time deployment status (simulated)
+```
 
 ## 🚀 NEXT IMMEDIATE STEPS
 

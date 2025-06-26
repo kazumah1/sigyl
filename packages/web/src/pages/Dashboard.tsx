@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -168,11 +167,11 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="api-keys" className="space-y-6">
-              <APIKeysManager workspaceId={workspace?.id || 'demo-workspace'} />
+              <APIKeysManager workspaceId={workspace?.id || ''} />
             </TabsContent>
 
             <TabsContent value="team" className="space-y-6">
-              <WorkspaceMembers workspaceId={workspace?.id || 'demo-workspace'} />
+              <WorkspaceMembers workspaceId={workspace?.id || ''} />
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-6">
