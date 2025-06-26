@@ -12,7 +12,7 @@ export interface UserInstallationRecord {
 }
 
 export class UserInstallationService {
-  private supabase;
+  public supabase;
 
   constructor() {
     this.supabase = createClient(
@@ -66,6 +66,7 @@ export class UserInstallationService {
     installation_id: number;
     access_token?: string;
     token_expires_at?: string;
+    profile_id?: string | null;
   }): Promise<UserInstallationRecord> {
     const { data, error } = await this.supabase
       .from('user_installations')
@@ -75,6 +76,7 @@ export class UserInstallationService {
         installation_id: installationData.installation_id,
         access_token: installationData.access_token || null,
         token_expires_at: installationData.token_expires_at || null,
+        profile_id: installationData.profile_id || null,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,installation_id'

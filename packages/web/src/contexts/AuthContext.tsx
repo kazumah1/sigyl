@@ -3,6 +3,19 @@ import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { checkForGitHubAppCallback, handleGitHubAppCallback } from '@/lib/githubApp'
 
+// Types for multi-account support
+interface GitHubAccount {
+  installationId: number
+  username: string
+  fullName?: string
+  avatarUrl?: string
+  email?: string
+  accessToken: string
+  isActive: boolean
+  accountLogin: string
+  accountType: string
+}
+
 type AuthContextType = {
   user: User | null
   session: Session | null
@@ -13,6 +26,13 @@ type AuthContextType = {
   githubInstallationId: number | null
   setGitHubInstallationId: (id: number | null) => void
   isGitHubAppSessionValid: () => boolean
+  // Multi-account support
+  githubAccounts: GitHubAccount[]
+  activeGitHubAccount: GitHubAccount | null
+  setActiveGitHubAccount: (account: GitHubAccount | null) => void
+  addGitHubAccount: (account: GitHubAccount) => void
+  removeGitHubAccount: (installationId: number) => void
+  linkAdditionalGitHubAccount: () => Promise<string>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -34,6 +54,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [githubInstallationId, setGitHubInstallationId] = useState<number | null>(null)
+  const [githubAccounts, setGitHubAccounts] = useState<GitHubAccount[]>([])
+  const [activeGitHubAccount, setActiveGitHubAccount] = useState<GitHubAccount | null>(null)
 
   // Global GitHub App callback handler
   useEffect(() => {
@@ -120,10 +142,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Set the installation ID in the auth context
           setGitHubInstallationId(finalInstallationId)
           
+          // Create GitHub account object
+          const newGitHubAccount: GitHubAccount = {
+            installationId: finalInstallationId,
+            username: user.login,
+            fullName: user.name,
+            avatarUrl: user.avatar_url,
+            email: user.email,
+            accessToken: accessToken,
+            isActive: true,
+            accountLogin: result?.account_login || user.login,
+            accountType: result?.account_type || 'User',
+          }
+          
           // Store the GitHub user information in localStorage for session management
           localStorage.setItem('github_app_user', JSON.stringify(user))
           localStorage.setItem('github_app_access_token', accessToken)
           localStorage.setItem('github_app_installation_id', finalInstallationId.toString())
+          
+          // Store multiple accounts
+          const existingAccounts = JSON.parse(localStorage.getItem('github_app_accounts') || '[]')
+          const updatedAccounts = [...existingAccounts.filter((acc: GitHubAccount) => acc.installationId !== finalInstallationId), newGitHubAccount]
+          localStorage.setItem('github_app_accounts', JSON.stringify(updatedAccounts))
+          
+          // Check if we're linking an additional account
+          const isLinking = localStorage.getItem('github_app_linking') === 'true'
+          
+          if (isLinking) {
+            // Just add the new account without replacing the current session
+            setGitHubAccounts(updatedAccounts)
+            console.log('Additional GitHub account linked:', user.login)
+            
+            // Clear linking state
+            localStorage.removeItem('github_app_linking')
+          } else {
+            // Update state for new installation
+            setGitHubAccounts(updatedAccounts)
+            setActiveGitHubAccount(newGitHubAccount)
+          }
           
           // Create a custom user session
           const now = new Date().toISOString();
@@ -218,11 +274,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const githubAppUser = localStorage.getItem('github_app_user')
       const githubAppToken = localStorage.getItem('github_app_access_token')
       const githubAppInstallationId = localStorage.getItem('github_app_installation_id')
+      const githubAppAccounts = localStorage.getItem('github_app_accounts')
       
       console.log('GitHub App session check:', { 
         hasUser: !!githubAppUser, 
         hasToken: !!githubAppToken,
-        hasInstallationId: !!githubAppInstallationId
+        hasInstallationId: !!githubAppInstallationId,
+        hasAccounts: !!githubAppAccounts
       })
       
       if (githubAppUser && githubAppToken) {
@@ -233,6 +291,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.removeItem('github_app_user')
             localStorage.removeItem('github_app_access_token')
             localStorage.removeItem('github_app_installation_id')
+            localStorage.removeItem('github_app_accounts')
             localStorage.removeItem('github_app_installing')
             localStorage.removeItem('github_app_install_time')
             localStorage.removeItem('github_oauth_state')
@@ -240,6 +299,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else {
             const userData = JSON.parse(githubAppUser)
             console.log('Restoring GitHub App session for user:', userData.login)
+            
+            // Restore multiple accounts
+            if (githubAppAccounts) {
+              const accounts: GitHubAccount[] = JSON.parse(githubAppAccounts)
+              setGitHubAccounts(accounts)
+              
+              // Set active account (first active one or first one)
+              const activeAccount = accounts.find(acc => acc.isActive) || accounts[0]
+              if (activeAccount) {
+                setActiveGitHubAccount(activeAccount)
+                setGitHubInstallationId(activeAccount.installationId)
+              }
+            }
             
             const now = new Date().toISOString();
             const customUser = {
@@ -280,11 +352,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(customUser)
             setSession(session)
             
-            // Restore installation ID if available
-            if (githubAppInstallationId) {
-              setGitHubInstallationId(parseInt(githubAppInstallationId))
-            }
-            
             setLoading(false)
             console.log('GitHub App session restored successfully')
             return
@@ -295,6 +362,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.removeItem('github_app_user')
           localStorage.removeItem('github_app_access_token')
           localStorage.removeItem('github_app_installation_id')
+          localStorage.removeItem('github_app_accounts')
         }
       }
       
@@ -304,8 +372,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
       setUser(session?.user ?? null)
+
+      // Fetch user profile from profiles table if session exists
+      if (session?.user) {
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          if (profile && !profileError) {
+            // Use profile as the logged-in user
+            setUser({
+              ...session.user,
+              user_metadata: {
+                ...session.user.user_metadata,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                github_username: profile.github_username,
+                github_id: profile.github_id,
+              },
+              email: profile.email,
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error)
+        }
+      }
       setLoading(false)
-      
       console.log('Session initialization complete:', { 
         hasUser: !!session?.user, 
         hasSession: !!session 
@@ -520,6 +614,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return true
   }
 
+  const addGitHubAccount = (account: GitHubAccount) => {
+    setGitHubAccounts([...githubAccounts, account])
+    if (account.isActive) {
+      setActiveGitHubAccount(account)
+    }
+  }
+
+  const removeGitHubAccount = (installationId: number) => {
+    const newAccounts = githubAccounts.filter(account => account.installationId !== installationId)
+    setGitHubAccounts(newAccounts)
+    if (activeGitHubAccount && activeGitHubAccount.installationId === installationId) {
+      setActiveGitHubAccount(null)
+    }
+  }
+
+  const linkAdditionalGitHubAccount = async () => {
+    // Build the GitHub App URL for linking additional accounts
+    const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev'
+    const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
+    const state = Math.random().toString(36).substring(2, 15); // for CSRF protection
+    
+    // Store linking state in localStorage
+    localStorage.setItem('github_app_linking', 'true')
+    localStorage.setItem('github_app_install_time', Date.now().toString())
+    localStorage.setItem('github_oauth_state', state)
+    
+    // Use installation flow for linking additional accounts
+    console.log('Linking additional GitHub account')
+    const installUrl = `https://github.com/apps/${appName}/installations/new?state=${state}&request_oauth_on_install=true&redirect_uri=${redirectUrl}`
+    
+    return installUrl
+  }
+
   const value = {
     user,
     session,
@@ -530,6 +657,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     githubInstallationId,
     setGitHubInstallationId,
     isGitHubAppSessionValid,
+    githubAccounts,
+    activeGitHubAccount,
+    setActiveGitHubAccount,
+    addGitHubAccount,
+    removeGitHubAccount,
+    linkAdditionalGitHubAccount,
   }
 
   return (
