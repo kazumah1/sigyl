@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { APIKeyService } from '../services/apiKeyService';
-import { requireAuth, requirePermissions } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import type { CreateAPIKeyRequest } from '../types';
 
 const router = Router();
@@ -45,10 +45,14 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 
     const { apiKey, keyData } = await APIKeyService.createAPIKey(
       req.user!.user_id,
-      { name, permissions, expires_at }
+      { 
+        name, 
+        permissions: permissions || [], 
+        ...(expires_at && { expires_at })
+      }
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: {
         api_key: apiKey, // Only returned once
@@ -65,7 +69,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error creating API key:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to create API key',
       message: 'An error occurred while creating the API key'
@@ -81,7 +85,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const apiKeys = await APIKeyService.getUserAPIKeys(req.user!.user_id);
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         keys: apiKeys.map(key => ({
@@ -98,7 +102,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching API keys:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch API keys',
       message: 'An error occurred while fetching API keys'
@@ -132,7 +136,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         key: {
@@ -149,7 +153,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching API key:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch API key',
       message: 'An error occurred while fetching the API key'
@@ -188,7 +192,7 @@ router.get('/:id/stats', requireAuth, async (req: Request, res: Response) => {
     const daysNumber = days ? parseInt(days as string) : 30;
     const stats = await APIKeyService.getAPIKeyStats(id, daysNumber);
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         key_id: id,
@@ -198,7 +202,7 @@ router.get('/:id/stats', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching API key stats:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch API key stats',
       message: 'An error occurred while fetching API key statistics'
@@ -234,13 +238,13 @@ router.patch('/:id/deactivate', requireAuth, async (req: Request, res: Response)
 
     await APIKeyService.deactivateAPIKey(id, req.user!.user_id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'API key deactivated successfully'
     });
   } catch (error) {
     console.error('Error deactivating API key:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to deactivate API key',
       message: 'An error occurred while deactivating the API key'
@@ -276,13 +280,13 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
 
     await APIKeyService.deleteAPIKey(id, req.user!.user_id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'API key deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting API key:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to delete API key',
       message: 'An error occurred while deleting the API key'
@@ -306,7 +310,7 @@ router.get('/profile/me', requireAuth, async (req: Request, res: Response) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         user: {
@@ -320,7 +324,7 @@ router.get('/profile/me', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch user profile',
       message: 'An error occurred while fetching the user profile'

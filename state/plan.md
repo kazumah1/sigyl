@@ -28,15 +28,15 @@ This section tracks the integration status of backend and frontend features for 
 
 (Expand this section as more features are hooked up end-to-end.)
 
-## 🔧 **DASHBOARD ERROR FIXES - COMPLETED ✅**
+## 🔧 **DASHBOARD ERROR FIXES - IN PROGRESS 🔄**
 
 ### **Issues Identified and Resolved:**
 
-#### **1. Missing `metrics` Table (404 Error)**
+#### **1. Missing `metrics` Table (404 Error) - FIXED ✅**
 **Problem:** Analytics service was trying to query a `metrics` table that didn't exist
 **Solution:** Created proper `metrics` table with correct schema and relationships
 
-#### **2. Infinite Recursion in RLS Policies (500 Error) - NUCLEAR FIX APPLIED**
+#### **2. Infinite Recursion in RLS Policies (500 Error) - NUCLEAR FIX APPLIED ✅**
 **Problem:** `workspace_members` policy was causing circular reference that persisted even after initial fixes
 **Solution:** Applied nuclear fix that temporarily disables RLS, drops all policies, then re-enables with ultra-simple policies
 **Nuclear Fix Applied:** `fix-dashboard-errors-nuclear.sql` - Completely breaks recursion cycle
@@ -51,13 +51,22 @@ This section tracks the integration status of backend and frontend features for 
 **Solution:** Added `ensureGitHubUserProfile()` method to automatically create profile entries for GitHub App users
 **Implementation:** Profile creation uses GitHub user data from localStorage and creates proper profile entries
 
-#### **5. Table Name Mismatch**
-**Problem:** Service expected `metrics` but database had `mcp_metrics`
-**Solution:** Created unified `metrics` table and updated service to handle both cases
+#### **5. GitHub App Database Functions Missing (404 Error) - FIXED ✅**
+**Problem:** The `get_or_create_github_app_profile` function doesn't exist in the database
+**Solution:** Applied temporary fix that bypasses the database function and directly creates profiles
+**Status:** ✅ **FIXED** - Direct profile creation without database function
+**Implementation:** Profile creation now uses direct Supabase insert instead of RPC call
 
-#### **6. Missing Demo Data**
-**Problem:** Dashboard showed empty state for new users
-**Solution:** Added demo workspace and sample data generation
+#### **6. Hardcoded Demo Workspace IDs (400 Error) - FIXED ✅**
+**Problem:** Dashboard was using hardcoded `"demo-workspace"` string IDs that aren't valid UUIDs
+**Solution:** Updated dashboard to use mock data for demo mode instead of trying to query database with invalid IDs
+**Implementation:** Demo mode now uses static mock data instead of database queries
+
+#### **7. Profile Query 406 Errors - FIXED ✅**
+**Problem:** Frontend was querying profiles with `auth_type` and `auth_user_id` columns that don't exist
+**Solution:** Updated workspace service to use correct column names (`github_id`) for profile queries
+**Status:** ✅ **FIXED** - Profile queries now use existing columns
+**Implementation:** Removed invalid column filters from profile queries
 
 ### **✅ Completed Fixes:**
 
@@ -73,10 +82,16 @@ This section tracks the integration status of backend and frontend features for 
 - ✅ **analyticsService.ts** - Added demo data fallbacks and better error handling
 - ✅ **workspaceService.ts** - Added demo workspace support and error handling
 - ✅ **RLS Policies** - Nuclear fix applied to eliminate all circular references
+- ✅ **useDashboardData.ts** - Fixed hardcoded demo workspace IDs, now uses mock data
 
 **Result:** Dashboard now loads without errors and shows realistic demo data for new users
 
 **🚨 CRITICAL:** If infinite recursion persists, run the nuclear fix script in Supabase SQL Editor
+
+### **⏳ PENDING: GitHub App User Functions**
+**Status:** SQL migration ready, needs to be executed
+**File:** `packages/web/fix-github-app-users.sql`
+**Action Required:** Run this SQL in Supabase SQL Editor to create the missing database functions
 
 ## 💰 **PRICING STRATEGY & COST ANALYSIS**
 

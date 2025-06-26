@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Bell, Search, Plus, LogOut } from 'lucide-react';
@@ -25,11 +24,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-gray-800">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="text-2xl font-bold tracking-tight text-white">
+            <div 
+              className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"
+              onClick={() => navigate('/')}
+            >
               SIGYL
             </div>
             <div className="text-sm text-gray-400">
@@ -37,13 +39,25 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-              <Search className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-              <Bell className="w-4 h-4" />
-            </Button>
+          <nav className="flex items-center space-x-8">
+            <button 
+              onClick={() => navigate('/marketplace')}
+              className="text-gray-300 hover:text-white font-medium transition-colors"
+            >
+              Marketplace
+            </button>
+            <button 
+              onClick={() => navigate('/docs')}
+              className="text-gray-300 hover:text-white font-medium transition-colors"
+            >
+              Docs
+            </button>
+            <button 
+              onClick={() => navigate('/blog')}
+              className="text-gray-300 hover:text-white font-medium transition-colors"
+            >
+              Blog
+            </button>
             <Button 
               size="sm" 
               className="bg-white hover:bg-gray-100 text-black font-medium"
@@ -51,17 +65,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
               <Plus className="w-4 h-4 mr-2" />
               New Server
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLogout}
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
             <UserProfile />
-          </div>
+          </nav>
         </div>
       </div>
     </header>

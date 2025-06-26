@@ -47,7 +47,7 @@ export const useDashboardData = () => {
       if (adminSession || !user) {
         // Load demo data for admin or non-authenticated users
         const demoWorkspace: Workspace = {
-          id: 'demo-workspace',
+          id: 'demo-workspace-id',
           name: 'DZ\'s Enterprise Workspace',
           slug: 'dz-enterprise',
           description: 'Main development workspace for MCP integrations',
@@ -67,7 +67,7 @@ export const useDashboardData = () => {
             github_repo: 'dz/mcp-ecommerce-server',
             created_at: '2024-01-15T10:30:00Z',
             updated_at: '2024-01-20T15:30:00Z',
-            workspace_id: 'demo-workspace'
+            workspace_id: 'demo-workspace-id'
           },
           {
             id: '2',
@@ -79,7 +79,7 @@ export const useDashboardData = () => {
             github_repo: 'dz/mcp-crm-hub',
             created_at: '2024-01-10T14:20:00Z',
             updated_at: '2024-01-19T14:20:00Z',
-            workspace_id: 'demo-workspace'
+            workspace_id: 'demo-workspace-id'
           },
           {
             id: '3',
@@ -91,17 +91,34 @@ export const useDashboardData = () => {
             github_repo: 'dz/mcp-analytics-connector',
             created_at: '2024-01-20T09:15:00Z',
             updated_at: '2024-01-20T16:45:00Z',
-            workspace_id: 'demo-workspace'
+            workspace_id: 'demo-workspace-id'
           }
         ];
 
-        const analytics = await analyticsService.getVisitData('demo-workspace');
-        const toolUsage = await analyticsService.getToolUsageData('demo-workspace');
-        const serverStatus = await analyticsService.getServerStatusData('demo-workspace');
+        // Use mock analytics data instead of trying to query the database
+        const mockAnalytics: VisitData[] = [
+          { date: '2025-01-27', visits: 1250, toolCalls: 3400 },
+          { date: '2025-01-28', visits: 1380, toolCalls: 3800 },
+          { date: '2025-01-29', visits: 1420, toolCalls: 4100 },
+          { date: '2025-01-30', visits: 1560, toolCalls: 4500 },
+          { date: '2025-01-31', visits: 1680, toolCalls: 4800 }
+        ];
+
+        const mockToolUsage: ToolUsageData[] = [
+          { toolName: 'E-commerce API', calls: 1200, successRate: 98.5 },
+          { toolName: 'CRM Integration', calls: 800, successRate: 97.2 },
+          { toolName: 'Analytics Connector', calls: 600, successRate: 99.1 }
+        ];
+
+        const mockServerStatus: ServerStatusData[] = [
+          { serverName: 'E-commerce API Server', status: 'healthy', responseTime: 45, uptime: 99.9 },
+          { serverName: 'CRM Integration Hub', status: 'healthy', responseTime: 52, uptime: 99.8 },
+          { serverName: 'Analytics Connector', status: 'deploying', responseTime: 0, uptime: 0 }
+        ];
 
         // Calculate metrics from demo data
-        const totalVisits = analytics.reduce((sum, day) => sum + day.visits, 0);
-        const totalToolCalls = analytics.reduce((sum, day) => sum + day.toolCalls, 0);
+        const totalVisits = mockAnalytics.reduce((sum, day) => sum + day.visits, 0);
+        const totalToolCalls = mockAnalytics.reduce((sum, day) => sum + day.toolCalls, 0);
         const activeServers = demoServers.filter(s => s.status === 'active').length;
 
         setData({
@@ -114,9 +131,9 @@ export const useDashboardData = () => {
             totalIntegrations: demoServers.length
           },
           analyticsData: {
-            visitData: analytics,
-            toolUsageData: toolUsage,
-            serverStatusData: serverStatus
+            visitData: mockAnalytics,
+            toolUsageData: mockToolUsage,
+            serverStatusData: mockServerStatus
           },
           loading: false,
           error: null
