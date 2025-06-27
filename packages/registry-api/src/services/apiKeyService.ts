@@ -69,6 +69,62 @@ export class APIKeyService {
   }
 
   /**
+   * Create or get a GitHub user
+   */
+  static async createOrGetGitHubUser(githubId: string, email: string, name: string): Promise<APIUser> {
+    // First try to find by GitHub ID
+    const { data: existingUser } = await supabase
+      .from('api_users')
+      .select('*')
+      .eq('github_id', githubId)
+      .single();
+
+    if (existingUser) {
+      return existingUser as APIUser;
+    }
+
+    // If not found by GitHub ID, try by email
+    const { data: existingUserByEmail } = await supabase
+      .from('api_users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (existingUserByEmail) {
+      // Update the existing user with GitHub ID
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('api_users')
+        .update({ github_id: githubId })
+        .eq('id', existingUserByEmail.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error(`Failed to update user with GitHub ID: ${updateError.message}`);
+      }
+
+      return updatedUser as APIUser;
+    }
+
+    // Create new user
+    const { data: newUser, error: insertError } = await supabase
+      .from('api_users')
+      .insert({
+        email,
+        name,
+        github_id: githubId
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw new Error(`Failed to create GitHub user: ${insertError.message}`);
+    }
+
+    return newUser as APIUser;
+  }
+
+  /**
    * Create a new API key for a user
    */
   static async createAPIKey(

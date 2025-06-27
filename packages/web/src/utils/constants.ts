@@ -1,9 +1,9 @@
-
 export const DASHBOARD_ROUTES = {
   OVERVIEW: '/dashboard',
   SERVERS: '/dashboard?tab=servers',
   ANALYTICS: '/dashboard?tab=analytics',
   API_KEYS: '/dashboard?tab=api-keys',
+  SECRETS: '/dashboard?tab=secrets',
   TEAM: '/dashboard?tab=team',
   SETTINGS: '/dashboard?tab=settings'
 } as const;

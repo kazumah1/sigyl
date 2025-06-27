@@ -57,7 +57,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   };
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="border-black">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Server className="w-5 h-5" />
@@ -70,7 +70,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       <CardContent>
         <div className="space-y-4">
           {servers.map((server) => (
-            <div key={server.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+            <div key={server.id} className="flex items-center justify-between p-4 rounded-lg">
               <div className="flex items-center space-x-4 flex-1 min-w-0">
                 {getStatusIcon(server.status, server.deployment_status)}
                 <div className="flex-1 min-w-0">
@@ -102,10 +102,10 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
           ))}
           
           {servers.length === 0 && (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-white">
               <Server className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>No MCP servers deployed yet</p>
-              <Button className="mt-4 bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white">
+              <Button className="mt-4 bg-white text-black">
                 Deploy Your First Server
               </Button>
             </div>

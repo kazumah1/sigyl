@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import {
   Server, 
   BarChart3, 
   Key, 
+  Lock,
   Users, 
   Settings, 
   Store, 
@@ -28,10 +28,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
   
   const dashboardItems = [
     { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-    { icon: Server, label: 'MCP Servers', path: '/dashboard?tab=servers' },
+    { icon: Server, label: 'Servers', path: '/dashboard?tab=servers' },
     { icon: BarChart3, label: 'Analytics', path: '/dashboard?tab=analytics' },
     { icon: Key, label: 'API Keys', path: '/dashboard?tab=api-keys' },
-    { icon: Users, label: 'Team', path: '/dashboard?tab=team' },
+    { icon: Lock, label: 'Secrets', path: '/dashboard?tab=secrets' },
     { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
   ];
 
@@ -43,8 +43,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 z-30 ${collapsed ? 'w-16' : 'w-64'}`}>
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+    <div className={`fixed left-0 top-0 h-full border-r transition-all duration-300 z-30 ${collapsed ? 'w-16' : 'w-64'}`}>
+      <div className="flex items-center justify-between p-4">
         {!collapsed && (
           <div className="text-xl font-bold text-white">SIGYL</div>
         )}
@@ -91,8 +91,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
             })}
           </nav>
         </div>
-
-        <Separator className="bg-gray-800" />
       </div>
     </div>
   );

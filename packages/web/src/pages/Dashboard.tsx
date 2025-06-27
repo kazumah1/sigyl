@@ -11,6 +11,7 @@ import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import MetricsOverview from '@/components/dashboard/MetricsOverview';
 import MCPServersList from '@/components/dashboard/MCPServersList';
 import APIKeysManager from '@/components/dashboard/APIKeysManager';
+import SecretsManager from '@/components/dashboard/SecretsManager';
 import WorkspaceMembers from '@/components/dashboard/WorkspaceMembers';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
@@ -63,7 +64,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen flex">
       <DashboardSidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
@@ -83,56 +84,16 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Metrics Overview - Show loading state only for this component */}
-          {loading ? (
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-8 bg-gray-700 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <MetricsOverview metrics={metrics} />
-          )}
-
           {/* Main Dashboard Content - Render based on activeTab */}
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {loading ? (
-                <>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                    <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-gray-700 rounded"></div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                    <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
-                    <div className="space-y-3">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-12 bg-gray-700 rounded"></div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <MCPServersList servers={mcpServers} />
-                  <ActivityFeed />
-                </>
-              )}
+            <div className="">
+              <MCPServersList servers={mcpServers} />
             </div>
           )}
 
           {activeTab === 'servers' && (
             loading ? (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+              <div className="rounded-lg p-6 animate-pulse">
                 <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
@@ -168,8 +129,8 @@ const Dashboard = () => {
             <APIKeysManager workspaceId={workspace?.id || ''} />
           )}
 
-          {activeTab === 'team' && (
-            <WorkspaceMembers workspaceId={workspace?.id || ''} />
+          {activeTab === 'secrets' && (
+            <SecretsManager workspaceId={workspace?.id || ''} />
           )}
 
           {activeTab === 'settings' && (

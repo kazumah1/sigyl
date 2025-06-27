@@ -11,10 +11,10 @@ export const InteractiveBackground = ({ theme, onThemeChange }: InteractiveBackg
   const [activeGraph, setActiveGraph] = useState(0);
 
   const themes = {
-    vibrant: { primary: '#6366F1', secondary: '#EC4899', accent: '#10B981', bg: '#F8FAFC' },
-    sunset: { primary: '#F59E0B', secondary: '#EF4444', accent: '#8B5CF6', bg: '#FEF7ED' },
-    ocean: { primary: '#0EA5E9', secondary: '#06B6D4', accent: '#3B82F6', bg: '#F0F9FF' },
-    forest: { primary: '#10B981', secondary: '#059669', accent: '#34D399', bg: '#F0FDF4' }
+    vibrant: { primary: '#3d0288', secondary: '#EC4899', accent: '#10B981', bg: '#F8FAFC' },
+    sunset: { primary: '#3d0288', secondary: '#EF4444', accent: '#8B5CF6', bg: '#FEF7ED' },
+    ocean: { primary: '#3d0288', secondary: '#06B6D4', accent: '#3B82F6', bg: '#F0F9FF' },
+    forest: { primary: '#3d0288', secondary: '#059669', accent: '#34D399', bg: '#F0FDF4' }
   };
 
   const currentTheme = themes[theme as keyof typeof themes] || themes.vibrant;
