@@ -158,14 +158,13 @@ export default function createStatelessServer({
 
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
-	const schema = this.generateZodSchema(endpoint)
+	const shape = this.generateZodShapeObject(endpoint)
 	const description = endpoint.description || `${endpoint.method} ${endpoint.path}`
-	
 	return `	// ===== ${endpoint.method.toUpperCase()} ${endpoint.path} =====
 	server.tool(
 		"${toolName}",
 		"${description}",
-		${schema},
+		${shape},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = \`http://localhost:\${config.appPort || 3000}${endpoint.path}\`;
@@ -183,8 +182,7 @@ ${endpoints.map(endpoint => {
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-			${this.generateParameterHandling(endpoint)}
-			
+${this.generateParameterHandling(endpoint)}
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -193,17 +191,14 @@ ${endpoints.map(endpoint => {
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -217,14 +212,14 @@ ${endpoints.map(endpoint => {
 					content: [
 						{
 							type: "text",
-							text: \`Error calling \${method} ${endpoint.path}: \${error.message}\`
+							text: \`Error calling \${endpoint.method.toUpperCase()} \${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
 						}
 					]
 				};
 			}
 		}
-	);`
-}).join('\n\n')}
+	);
+`}).join('\n\n')}
 
 	// ============================================================================
 	// MANUAL TOOL TEMPLATE
@@ -294,50 +289,24 @@ main().catch((error) => {
 				"@types/node": "^20.0.0"
 			}
 		};
-
-		// Add comments to package.json by converting to string with comments
-		const packageJsonWithComments = `{
-  "name": "generated-mcp-server",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "server.js",
-  "description": "Auto-generated MCP server from Express endpoints",
-  "scripts": {
-    "build": "tsc",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.1",
-    "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
-  }
-}`
-
-		writeFileSync(join(this.outDir, "package.json"), packageJsonWithComments)
+		writeFileSync(join(this.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
 		verboseLog("Generated package.json");
 
-		// Generate tsconfig.json for TypeScript compilation
+		// Always generate a valid tsconfig.json for TypeScript/ESM compatibility
 		const tsConfig = {
 			compilerOptions: {
 				target: "ES2020",
 				module: "ESNext",
 				moduleResolution: "node",
-				allowSyntheticDefaultImports: true,
-				esModuleInterop: true,
-				allowJs: true,
 				outDir: "./",
 				rootDir: "./",
 				strict: true,
-				skipLibCheck: true,
-				forceConsistentCasingInFileNames: true
+				esModuleInterop: true,
+				skipLibCheck: true
 			},
-			include: ["*.ts", "tools/*.ts"],
+			include: ["*.ts"],
 			exclude: ["node_modules", "*.js"]
 		};
-
 		writeFileSync(join(this.outDir, "tsconfig.json"), JSON.stringify(tsConfig, null, 2));
 		verboseLog("Generated tsconfig.json");
 	}
@@ -759,42 +728,37 @@ ${properties.join('\n')}
 		}
 	}
 
-	private generateZodSchema(endpoint: ExpressEndpoint): string {
-		const properties: string[] = []
-		
+	private generateZodShapeObject(endpoint: ExpressEndpoint): string {
+		const properties: string[] = [];
 		// Add path and query parameters
 		if (endpoint.parameters) {
 			for (const param of endpoint.parameters) {
-				const zodType = this.mapTypeToZod(param.type)
-				const optional = param.required ? "" : ".optional()"
-				properties.push(`\t\t${param.name}: z.${zodType}()${optional}`)
+				const zodType = this.mapTypeToZod(param.type);
+				const optional = param.required ? "" : ".optional()";
+				properties.push(`\t${param.name}: z.${zodType}()${optional}`);
 			}
 		}
-		
 		// Add request body for POST/PUT/PATCH requests
-		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+		if (["POST", "PUT", "PATCH"].includes(endpoint.method)) {
 			if (endpoint.requestBody && endpoint.requestBody.properties) {
 				const bodyProperties = Object.entries(endpoint.requestBody.properties)
 					.map(([key, value]) => {
-						const zodType = this.mapTypeToZod(value.type)
-						const optional = endpoint.requestBody?.required?.includes(key) ? "" : ".optional()"
-						return `\t\t\t${key}: z.${zodType}()${optional}`
+						const zodType = this.mapTypeToZod(value.type);
+						const optional = endpoint.requestBody?.required?.includes(key) ? "" : ".optional()";
+						return `\t\t${key}: z.${zodType}()${optional}`;
 					})
-					.join(',\n')
-				
-				properties.push(`\t\tbody: z.object({\n${bodyProperties}\n\t\t}).optional()`)
+					.join(',\n');
+				properties.push(`\tbody: z.object({\n${bodyProperties}\n\t}).optional()`);
 			} else {
-				properties.push(`\t\tbody: z.any().optional()`)
+				properties.push(`\tbody: z.object({}).optional()`);
 			}
 		}
-		
 		if (properties.length === 0) {
-			return `z.object({})`
+			return `{}`;
 		}
-		
-		return `z.object({
+		return `{
 ${properties.join(',\n')}
-\t})`
+\t}`;
 	}
 
 	private mapTypeToZod(type: string): string {

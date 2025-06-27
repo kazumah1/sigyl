@@ -20,7 +20,7 @@ interface DevOptions {
 export async function dev(options: DevOptions): Promise<void> {
 	try {
 		const mcpPort = options.port || "8181"
-		const outDir = join(options.directory, ".mcp-generated")
+		const outDir = join(options.directory, "template-mcp")
 		
 		let expressProcess: ChildProcess | undefined
 		let mcpProcess: ChildProcess | undefined

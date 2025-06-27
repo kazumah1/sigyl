@@ -48,12 +48,12 @@ export async function openMCPInspector(
 
 /**
  * Launches the official MCP Inspector UI, starting the generated server as a subprocess.
- * @param serverEntry Path to the generated MCP server TypeScript file (default: .mcp-generated/server.ts)
+ * @param serverEntry Path to the generated MCP server TypeScript file (default: template-mcp/server.ts)
  * @param serverArgs Optional arguments to pass to the server
  * @param inspectorArgs Optional arguments to pass to the inspector
  */
 export function launchMCPInspector(
-	serverEntry: string = path.resolve(process.cwd(), ".mcp-generated/server.ts"),
+	serverEntry: string = path.resolve(process.cwd(), "template-mcp/server.ts"),
 	serverArgs: string[] = [],
 	inspectorArgs: string[] = []
 ) {

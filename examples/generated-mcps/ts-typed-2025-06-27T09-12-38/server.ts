@@ -34,12 +34,12 @@ export default function createStatelessServer({
 	server.tool(
 		"getApiUsers",
 		"GET /api/users",
-		z.object({
-		limit: z.number().optional(),
-		offset: z.number().optional(),
-		search: z.string().optional(),
-		status: z.string().optional()
-	}),
+		{
+	limit: z.number().optional(),
+	offset: z.number().optional(),
+	search: z.string().optional(),
+	status: z.string().optional()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/users`;
@@ -57,7 +57,7 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Add query parameter limit
+			// Add query parameter limit
 			if (args.limit) queryParams.append("limit", args.limit);
 			// Add query parameter offset
 			if (args.offset) queryParams.append("offset", args.offset);
@@ -65,7 +65,6 @@ export default function createStatelessServer({
 			if (args.search) queryParams.append("search", args.search);
 			// Add query parameter status
 			if (args.status) queryParams.append("status", args.status);
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -74,17 +73,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -98,7 +94,7 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/users: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
@@ -106,17 +102,18 @@ export default function createStatelessServer({
 		}
 	);
 
+
 	// ===== GET /api/products =====
 	server.tool(
 		"getApiProducts",
 		"GET /api/products",
-		z.object({
-		category: z.string().optional(),
-		minPrice: z.number().optional(),
-		maxPrice: z.number().optional(),
-		sortBy: z.string().optional(),
-		inStock: z.boolean().optional()
-	}),
+		{
+	category: z.string().optional(),
+	minPrice: z.number().optional(),
+	maxPrice: z.number().optional(),
+	sortBy: z.string().optional(),
+	inStock: z.boolean().optional()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/products`;
@@ -134,7 +131,7 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Add query parameter category
+			// Add query parameter category
 			if (args.category) queryParams.append("category", args.category);
 			// Add query parameter minPrice
 			if (args.minPrice) queryParams.append("minPrice", args.minPrice);
@@ -144,7 +141,6 @@ export default function createStatelessServer({
 			if (args.sortBy) queryParams.append("sortBy", args.sortBy);
 			// Add query parameter inStock
 			if (args.inStock) queryParams.append("inStock", args.inStock);
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -153,17 +149,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -177,7 +170,7 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/products: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
@@ -185,13 +178,14 @@ export default function createStatelessServer({
 		}
 	);
 
+
 	// ===== GET /api/users/:id =====
 	server.tool(
 		"getApiUsersById",
 		"GET /api/users/:id",
-		z.object({
-		id: z.number()
-	}),
+		{
+	id: z.number()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/users/:id`;
@@ -209,9 +203,8 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Replace path parameter :id
+			// Replace path parameter :id
 			requestOptions.url = requestOptions.url.replace(":id", args.id || "");
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -220,17 +213,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -244,7 +234,7 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/users/:id: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
@@ -252,17 +242,18 @@ export default function createStatelessServer({
 		}
 	);
 
+
 	// ===== POST /api/users =====
 	server.tool(
 		"postApiUsers",
 		"POST /api/users",
-		z.object({
-		body: z.object({
-			name: z.string(),
-			email: z.string(),
-			status: z.string().optional()
-		}).optional()
-	}),
+		{
+	body: z.object({
+		name: z.string(),
+		email: z.string(),
+		status: z.string().optional()
+	}).optional()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/users`;
@@ -280,9 +271,8 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Add request body
+			// Add request body
 			if (args.body) Object.assign(bodyParams, args.body);
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -291,17 +281,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -315,7 +302,7 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/users: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
@@ -323,18 +310,19 @@ export default function createStatelessServer({
 		}
 	);
 
+
 	// ===== PUT /api/users/:id =====
 	server.tool(
 		"putApiUsersById",
 		"PUT /api/users/:id",
-		z.object({
-		id: z.number(),
-		body: z.object({
-			name: z.string().optional(),
-			email: z.string().optional(),
-			status: z.string().optional()
-		}).optional()
-	}),
+		{
+	id: z.number(),
+	body: z.object({
+		name: z.string().optional(),
+		email: z.string().optional(),
+		status: z.string().optional()
+	}).optional()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/users/:id`;
@@ -352,11 +340,10 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Replace path parameter :id
+			// Replace path parameter :id
 			requestOptions.url = requestOptions.url.replace(":id", args.id || "");
 			// Add request body
 			if (args.body) Object.assign(bodyParams, args.body);
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -365,17 +352,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -389,7 +373,7 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/users/:id: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
@@ -397,13 +381,14 @@ export default function createStatelessServer({
 		}
 	);
 
+
 	// ===== DELETE /api/users/:id =====
 	server.tool(
 		"deleteApiUsersById",
 		"DELETE /api/users/:id",
-		z.object({
-		id: z.number()
-	}),
+		{
+	id: z.number()
+	},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
 			const url = `http://localhost:${config.appPort || 3000}/api/users/:id`;
@@ -421,9 +406,8 @@ export default function createStatelessServer({
 			const queryParams = new URLSearchParams();
 			const bodyParams: any = {};
 			
-						// Replace path parameter :id
+			// Replace path parameter :id
 			requestOptions.url = requestOptions.url.replace(":id", args.id || "");
-			
 			// ===== URL CONSTRUCTION =====
 			// Add query parameters to URL
 			if (queryParams.toString()) {
@@ -432,17 +416,14 @@ export default function createStatelessServer({
 			} else {
 				requestOptions.url = url;
 			}
-			
 			// Add body for POST/PUT/PATCH requests
 			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
 				requestOptions.body = JSON.stringify(bodyParams);
 			}
-
 			// ===== HTTP REQUEST & RESPONSE =====
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				
 				return {
 					content: [
 						{
@@ -456,13 +437,14 @@ export default function createStatelessServer({
 					content: [
 						{
 							type: "text",
-							text: `Error calling ${method} /api/users/:id: ${error.message}`
+							text: `Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: ${error instanceof Error ? error.message : String(error)}`
 						}
 					]
 				};
 			}
 		}
 	);
+
 
 	// ============================================================================
 	// MANUAL TOOL TEMPLATE
