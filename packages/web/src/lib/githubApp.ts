@@ -180,12 +180,23 @@ export async function deployMCPWithApp(
   branch: string = 'main'
 ): Promise<any> {
   try {
+    const repoUrl = `https://github.com/${owner}/${repo}`;
+    
+    console.log('🚀 Deploying MCP with GitHub App:', {
+      installationId,
+      owner,
+      repo,
+      branch,
+      repoUrl
+    });
+    
     const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/deploy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        repoUrl,
         owner,
         repo,
         branch,
@@ -193,11 +204,25 @@ export async function deployMCPWithApp(
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to deploy MCP: ${response.status} ${response.statusText}`)
+      let errorMessage = `Failed to deploy MCP: ${response.status} ${response.statusText}`;
+      
+      // Try to get error details from response body
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        console.error('❌ Deployment error details:', errorData);
+      } catch (parseError) {
+        console.error('❌ Could not parse error response:', parseError);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json()
-    return data.data
+    console.log('✅ Deployment successful:', data);
+    return data
   } catch (error) {
     console.error('Error deploying MCP with GitHub App:', error)
     throw error

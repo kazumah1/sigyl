@@ -23,7 +23,7 @@ interface DeployWizardWithGitHubAppProps {
 }
 
 const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
-  const { user, activeGitHubAccount } = useAuth()
+  const { user, activeGitHubAccount, clearInvalidInstallations } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -35,6 +35,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [deployError, setDeployError] = useState<string | null>(null)
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
+  const [installationError, setInstallationError] = useState<boolean>(false)
 
   // Load repositories when active account is available
   useEffect(() => {
@@ -74,15 +75,32 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const loadRepositories = async (installId: number) => {
     setLoading(true)
     setError(null)
+    setInstallationError(false)
 
     try {
       const repos = await fetchRepositoriesWithApp(installId)
       setRepositories(repos)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load repositories')
+      console.error('Error loading repositories:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load repositories'
+      setError(errorMessage)
+      
+      // Check if this is a GitHub App installation error
+      if (errorMessage.includes('500') || errorMessage.includes('404') || errorMessage.includes('Not Found') || errorMessage.includes('installation')) {
+        console.log('Detected GitHub App installation error')
+        setInstallationError(true)
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleClearInstallations = () => {
+    console.log('User requested to clear invalid installations')
+    clearInvalidInstallations()
+    setInstallationError(false)
+    setError(null)
+    // The component will re-render and show the GitHubAppInstall component
   }
 
   const handleDeploy = async () => {
@@ -187,7 +205,25 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error}
+                  {installationError && (
+                    <div className="mt-3">
+                      <p className="text-sm mb-2">
+                        This error suggests that the GitHub App installation is invalid or has been removed. 
+                        You can clear the stored installation data and set up a fresh installation.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleClearInstallations}
+                        className="bg-background hover:bg-background/80"
+                      >
+                        Clear Installation & Reinstall
+                      </Button>
+                    </div>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
