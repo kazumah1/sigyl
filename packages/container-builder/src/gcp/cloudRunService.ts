@@ -1,7 +1,8 @@
 import { MCPSecurityValidator } from '../security/validator';
 import { SecurityReport } from '../types/security';
 import { SigylConfigUnion, NodeRuntimeConfig, ContainerRuntimeConfig } from '../types/config';
-import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuth, JWT } from 'google-auth-library';
+import * as fs from 'fs';
 
 export interface CloudRunDeploymentRequest {
   repoUrl: string;
@@ -47,26 +48,36 @@ export class CloudRunService {
     this.config = config;
     this.region = config.region;
     this.projectId = config.projectId;
-    
     // Initialize Google Cloud authentication
-    this.auth = new GoogleAuth({
+    const authConfig: any = {
       scopes: [
         'https://www.googleapis.com/auth/cloud-platform',
         'https://www.googleapis.com/auth/cloudbuild',
         'https://www.googleapis.com/auth/run.admin'
-      ],
-      ...(config.keyFilePath && { keyFilename: config.keyFilePath }),
-      ...(config.serviceAccountKey && { credentials: JSON.parse(config.serviceAccountKey) })
-    });
+      ]
+    };
+    // Do NOT add credentials or keyFilename here. Let GoogleAuth pick up the credentials from the environment.
+    this.auth = new GoogleAuth(authConfig);
   }
 
   /**
-   * Get access token for API calls
+   * Get access token for API calls using JWT-based OAuth 2.0 flow.
+   * Loads credentials directly from config, not from this.auth.
    */
   private async getAccessToken(): Promise<string> {
     const client = await this.auth.getClient();
-    const accessToken = await client.getAccessToken();
-    return accessToken.token || '';
+    const result = await client.getAccessToken();
+    let token: string | undefined;
+    if (typeof result === 'string') {
+      token = result;
+    } else if (result && typeof result === 'object' && 'token' in result) {
+      token = result.token as string | undefined;
+    }
+    if (!token) {
+      throw new Error('OAuth token retrieval failed');
+    }
+    console.log('[CloudRunService] getAccessToken result:', token);
+    return token;
   }
 
   /**
