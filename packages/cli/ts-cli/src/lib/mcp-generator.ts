@@ -395,6 +395,21 @@ main().catch((error) => {
 
 		writeFileSync(join(this.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
 		verboseLog("Generated package.json");
+
+		// --- PATCH: Generate tool handler files ---
+		const toolsDir = join(this.outDir, "tools");
+		if (!existsSync(toolsDir)) {
+			mkdirSync(toolsDir, { recursive: true });
+		}
+		for (const endpoint of endpoints) {
+			const toolName = this.generateToolName(endpoint);
+			const handlerCode = `export async function ${toolName}(args) {
+				// TODO: Implement actual logic for ${endpoint.method} ${endpoint.path}
+				return { content: [ { type: "text", text: "Dummy response from ${toolName}" } ] };
+			}
+			`;
+			writeFileSync(join(toolsDir, `${toolName}.js`), handlerCode);
+		}
 	}
 
 	private async generatePythonServer(
