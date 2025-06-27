@@ -111,7 +111,7 @@ ts-cli/
 ├── .mcp-generated/          # Generated MCP server
 │   ├── server.ts           # TypeScript MCP server
 │   ├── server.js           # Built JavaScript (after build)
-│   ├── mcp.yaml           # MCP configuration
+│   ├── sigyl.yaml           # MCP configuration
 │   ├── package.json       # Server dependencies
 │   └── tools/             # Individual tool handlers
 │       ├── getApiUsers.ts

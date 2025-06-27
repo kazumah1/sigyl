@@ -436,7 +436,7 @@ async function runScanDemo(appDir: string, language: string): Promise<void> {
 	console.log(chalk.green("✔ MCP server generated successfully!"))
 	console.log()
 	console.log(chalk.blue("🎉 Generated files:"))
-	console.log(`  ${outputDir}/mcp.yaml - MCP configuration`)
+	console.log(`  ${outputDir}/sigyl.yaml - MCP configuration`)
 	console.log(`  ${outputDir}/server.${language === 'typescript' ? 'ts' : 'js'} - MCP server`)
 	console.log(`  ${outputDir}/tools/ - Tool handlers`)
 	console.log()
