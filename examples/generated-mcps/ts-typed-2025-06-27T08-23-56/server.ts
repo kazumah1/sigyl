@@ -467,84 +467,21 @@ export default function createStatelessServer({
 	// ============================================================================
 	// MANUAL TOOL TEMPLATE
 	// ============================================================================
-	// To add a new tool manually, uncomment and modify the template below:
+	// To add a new tool manually, use the following simple template:
 	/*
 	server.tool(
-		"myCustomTool",
-		"Description of what this tool does",
-		z.object({
-			// ===== INPUT PARAMETERS =====
-			// Define your tool's input parameters here
-			param1: z.string().describe("Description of param1"),
-			param2: z.number().optional().describe("Optional numeric parameter"),
-			// For complex objects:
-			// body: z.object({
-			//     field1: z.string(),
-			//     field2: z.number()
-			// }).optional()
-		}),
-		async (args) => {
-			// ===== REQUEST CONFIGURATION =====
-			const url = "https://api.example.com/endpoint";
-			const method = "POST";
-			
-			// Build request options
-			const requestOptions: any = {
-				method,
-				headers: {
-					"Content-Type": "application/json",
-				},
-			};
-
-			// ===== PARAMETER HANDLING =====
-			const queryParams = new URLSearchParams();
-			const bodyParams: any = {};
-			// Example: Add query parameters
-			// if (args.param1) queryParams.append("param1", args.param1);
-			// Example: Add body parameters
-			// if (args.body) Object.assign(bodyParams, args.body);
-
-			// ===== URL CONSTRUCTION =====
-			if (queryParams.toString()) {
-				const separator = url.includes('?') ? '&' : '?';
-				requestOptions.url = `${url}${separator}${queryParams.toString()}`;
-			} else {
-				requestOptions.url = url;
-			}
-			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
-				requestOptions.body = JSON.stringify(bodyParams);
-			}
-
-			// ===== CUSTOM LOGIC & HTTP REQUEST =====
-			try {
-				// Example: Make an HTTP request
-				// const response = await fetch(requestOptions.url, requestOptions);
-				// const data = await response.json();
-				// Example: Custom logic without HTTP request
-				const result = {
-					message: "Custom tool executed successfully",
-					parameters: args,
-					timestamp: new Date().toISOString()
-				};
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(result, null, 2)
-						}
-					]
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error in custom tool: ${error.message}`
-						}
-					]
-				};
-			}
-		}
+	  "reverseString",
+	  "Reverse a string value",
+	  {
+	    value: z.string().describe("String to reverse"),
+	  },
+	  async ({ value }) => {
+	    return {
+	      content: [
+	        { type: "text", text: value.split("").reverse().join("") }
+	      ]
+	    };
+	  }
 	);
 	*/
 

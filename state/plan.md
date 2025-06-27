@@ -10,6 +10,33 @@
 - Modern web frontend (React + Vite) for discovery and deployment
 - Secure Secrets Manager for MCP Server API Keys
 
+## 🚨 **CURRENT ISSUES & FIXES**
+
+### **Supabase 406 Error - DEBUGGING IN PROGRESS**
+**Issue:** Dashboard was throwing 406 (Not Acceptable) errors when querying profiles table
+**Error:** `GET /rest/v1/profiles?select=id&auth_type=eq.github_app&auth_user_id=eq.github_162946059 406 (Not Acceptable)`
+
+**Root Cause:** Row Level Security (RLS) policies on the profiles table were too restrictive and preventing queries for GitHub App users.
+
+**Debugging Tools Created:**
+- ✅ `packages/web/debug-profiles-406-error.sql` - Comprehensive diagnostic script
+- ✅ `packages/web/fix-profiles-rls-406-error.sql` - RLS policy fix (original approach)
+- ✅ `packages/web/fix-profiles-rls-nuclear.sql` - Nuclear option to completely disable RLS
+- ✅ Enhanced logging in `workspaceService.ts` to track the query flow
+
+**Current Status:** 🔍 **DEBUGGING** - Issue persists after initial fix attempt
+
+**Next Steps:** 
+1. Run `debug-profiles-406-error.sql` in Supabase SQL Editor to diagnose current state
+2. If RLS is the issue, run `fix-profiles-rls-nuclear.sql` to completely disable RLS
+3. Check browser console logs for detailed debugging information
+4. If issue persists after RLS disable, the problem may be elsewhere (column structure, permissions, etc.)
+
+**Debugging Process:**
+- Added comprehensive logging to `getUserWorkspaces()` and `ensureGitHubUserProfile()` methods
+- Created fallback query logic to try alternative approaches
+- Prepared nuclear option to completely disable RLS for testing
+
 ## 📦 Tech Stack Status
 | Component | Stack | Status |
 |-----------|-------|--------|

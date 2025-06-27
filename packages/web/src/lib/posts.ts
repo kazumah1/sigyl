@@ -15,89 +15,50 @@ export interface BlogPost {
   contentHtml?: string;
 }
 
-// Import all markdown files from the posts directory
-const postModules = import.meta.glob('@/posts/*.md?raw', { eager: true });
-console.log('[DEBUG] postModules:', postModules);
+// Static blog post array (replace with your own content as needed)
+const staticPosts: BlogPost[] = [
+  {
+    slug: 'security-best-practices',
+    title: 'Security Best Practices for MCP Deployments',
+    excerpt: 'Essential security considerations when deploying Model Context Protocol servers, including authentication, encryption, and monitoring.',
+    author: 'Alex Rivera',
+    date: '2024-01-12',
+    readTime: '10 min read',
+    category: 'technical',
+    tags: ['security', 'technical'],
+    featured: true,
+    content: `# Security Best Practices for MCP Deployments\n\nSecurity is paramount when deploying Model Context Protocol (MCP) servers, especially when they handle sensitive data or provide access to critical systems. This guide covers essential security practices to keep your MCP deployments safe and compliant.\n\n... (rest of your content here) ...`,
+  },
+];
 
 export function getSortedPostsData(): BlogPost[] {
-  const posts: BlogPost[] = [];
-
-  try {
-    // Process each markdown file
-    for (const path in postModules) {
-      try {
-        const file = postModules[path] as any;
-        const slug = path.replace('@/posts/', '').replace('.md', '');
-        
-        // Skip template file
-        if (slug === '_template') continue;
-        
-        // Use file as string if possible, otherwise use file.default
-        const rawContent = typeof file === 'string' ? file : file.default;
-        console.log(`[DEBUG] Processing file: ${path}, slug: ${slug}`);
-        console.log('[DEBUG] Raw content:', rawContent);
-        
-        // Parse frontmatter and content
-        const { data, content } = matter(rawContent);
-        
-        // Create post object with fallbacks
-        const post: BlogPost = {
-          slug,
-          title: data.title || 'Untitled Post',
-          excerpt: data.excerpt || 'No excerpt available',
-          author: data.author || 'SIGYL Team',
-          date: data.date || new Date().toISOString().split('T')[0],
-          readTime: data.readTime || getReadingTime(content),
-          category: data.category || 'general',
-          tags: data.tags || [],
-          featured: data.featured || false,
-          content,
-        };
-
-        posts.push(post);
-      } catch (error) {
-        console.error(`[DEBUG] Error processing post ${path}:`, error);
-        // Continue processing other posts even if one fails
-      }
-    }
-    console.log('[DEBUG] Final posts array:', posts);
-    // Sort by date (newest first)
-    return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  } catch (error) {
-    console.error('[DEBUG] Error loading blog posts:', error);
-    return [];
-  }
+  // Return the static array, sorted by date (newest first)
+  return staticPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 export function getPostData(slug: string): BlogPost | null {
-  try {
-    const post = getSortedPostsData().find(post => post.slug === slug);
-    return post || null;
-  } catch (error) {
-    console.error(`Error getting post data for slug: ${slug}`, error);
-    return null;
-  }
+  return staticPosts.find(post => post.slug === slug) || null;
 }
 
 export function getPostsByCategory(category: string): BlogPost[] {
-  return getSortedPostsData().filter(post => post.category === category);
+  return staticPosts.filter(post => post.category === category);
 }
 
 export function getPostsByTag(tag: string): BlogPost[] {
-  return getSortedPostsData().filter(post => post.tags.includes(tag));
+  return staticPosts.filter(post => post.tags.includes(tag));
 }
 
 export function getFeaturedPosts(): BlogPost[] {
-  return getSortedPostsData().filter(post => post.featured);
+  return staticPosts.filter(post => post.featured);
 }
 
 export function getAllCategories(): string[] {
-  const categories = getSortedPostsData().map(post => post.category);
+  const categories = staticPosts.map(post => post.category);
   return [...new Set(categories)];
 }
 
 export function getAllTags(): string[] {
-  const tags = getSortedPostsData().flatMap(post => post.tags);
+  const tags = staticPosts.flatMap(post => post.tags);
   return [...new Set(tags)];
 }
 

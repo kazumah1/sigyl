@@ -188,42 +188,46 @@ const Blog = () => {
         {/* Featured Post */}
         {featuredPost && (
           <div className="mb-12">
-            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden hover:bg-gray-800/50 transition-all duration-300 hover-lift">
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                <div className="lg:order-2">
-                  <div className="h-64 lg:h-full bg-gradient-to-br from-gray-800 to-gray-900" />
-                </div>
-                <div className="p-8 lg:order-1">
-                  <Badge className="bg-blue-500/20 text-blue-400 mb-4">Featured</Badge>
-                  <CardTitle className="text-2xl lg:text-3xl font-bold text-white mb-4">
-                    {featuredPost.title}
-                  </CardTitle>
-                  <CardDescription className="text-gray-400 text-lg mb-6">
-                    {featuredPost.excerpt}
-                  </CardDescription>
-                  <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {featuredPost.author}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(featuredPost.date)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {featuredPost.readTime}
+            <Link
+              to={`/blog/${featuredPost.slug}`}
+              className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+              aria-label={`Read blog post: ${featuredPost.title}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <Card className="bg-gray-900/50 border-gray-800 overflow-hidden hover:bg-gray-800/50 transition-all duration-300 hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer">
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                  <div className="lg:order-2">
+                    <div className="h-64 lg:h-full bg-gradient-to-br from-gray-800 to-gray-900" />
+                  </div>
+                  <div className="p-8 lg:order-1">
+                    <Badge className="bg-blue-500/20 text-blue-400 mb-4">Featured</Badge>
+                    <CardTitle className="text-2xl lg:text-3xl font-bold text-white mb-4">
+                      {featuredPost.title}
+                    </CardTitle>
+                    <CardDescription className="text-gray-400 text-lg mb-6">
+                      {featuredPost.excerpt}
+                    </CardDescription>
+                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {featuredPost.author}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(featuredPost.date)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {featuredPost.readTime}
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center text-blue-400 group-hover:text-white transition-colors font-medium">
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </span>
                   </div>
-                  <Link to={`/blog/${featuredPost.slug}`}>
-                    <Button className="btn-primary">
-                      Read More
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           </div>
         )}
 
@@ -232,46 +236,52 @@ const Blog = () => {
           {filteredPosts.map((post) => {
             const IconComponent = getCategoryIcon(post.category);
             return (
-              <Card key={post.slug} className="bg-gray-900/50 border-gray-800 hover:bg-gray-800/50 transition-all duration-300 hover-lift">
-                <CardHeader>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-white/10 rounded-lg">
-                      <IconComponent className="w-5 h-5 text-white" />
+              <Link
+                key={post.slug}
+                to={`/blog/${post.slug}`}
+                className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl h-full"
+                aria-label={`Read blog post: ${post.title}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <Card className="bg-gray-900/50 border-gray-800 hover:bg-gray-800/50 transition-all duration-300 hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer h-full">
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-white/10 rounded-lg">
+                        <IconComponent className="w-5 h-5 text-white" />
+                      </div>
+                      <Badge className="bg-gray-700/50 text-gray-300 text-xs capitalize">
+                        {post.category.replace('-', ' ')}
+                      </Badge>
                     </div>
-                    <Badge className="bg-gray-700/50 text-gray-300 text-xs capitalize">
-                      {post.category.replace('-', ' ')}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-white text-lg leading-tight mb-3">
-                    {post.title}
-                  </CardTitle>
-                  <CardDescription className="text-gray-400 text-sm">
-                    {post.excerpt}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {post.author}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {post.readTime}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                      {formatDate(post.date)}
-                    </span>
-                    <Link to={`/blog/${post.slug}`}>
-                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-0">
+                    <CardTitle className="text-white text-lg leading-tight mb-3">
+                      {post.title}
+                    </CardTitle>
+                    <CardDescription className="text-gray-400 text-sm">
+                      {post.excerpt}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {post.author}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {post.readTime}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {formatDate(post.date)}
+                      </span>
+                      <span className="text-gray-400 group-hover:text-white transition-colors">
                         <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>
