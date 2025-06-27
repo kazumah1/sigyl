@@ -8,7 +8,8 @@ const CLOUD_RUN_CONFIG: CloudRunConfig = {
   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
   region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
   serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
-  keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
+  // Fall back to GOOGLE_APPLICATION_CREDENTIALS if no explicit keyFilePath is provided
+  keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS || ''
 };
 
 export interface DeploymentRequest {
@@ -132,6 +133,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     }
 
     // Initialize Cloud Run service
+    console.log("cloud run config", CLOUD_RUN_CONFIG);
     const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
     // Prepare Cloud Run deployment request with Sigyl configuration
@@ -215,4 +217,3 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
     }
   };
 }
-  

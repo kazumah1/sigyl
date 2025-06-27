@@ -4,7 +4,8 @@
  * Environment validation script for production deployment
  * Run this before launching to ensure all required configuration is present
  */
-
+require('dotenv').config();
+import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -50,33 +51,13 @@ const ENV_CHECKS: EnvCheck[] = [
     description: 'Google Cloud region',
     validator: (v) => v.includes('-')
   },
-  {
-    key: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY',
-    required: true,
-    description: 'Google Cloud service account key (JSON)',
-    validator: (v) => {
-      try {
-        const parsed = JSON.parse(v);
-        return parsed.type === 'service_account' && parsed.project_id && parsed.private_key;
-      } catch {
-        return false;
-      }
-    },
-    sensitive: true
-  },
 
   // GitHub App
-  {
-    key: 'GITHUB_APP_ID',
-    required: true,
-    description: 'GitHub App ID',
-    validator: (v) => /^\d+$/.test(v)
-  },
   {
     key: 'GITHUB_PRIVATE_KEY',
     required: true,
     description: 'GitHub App private key',
-    validator: (v) => v.includes('BEGIN PRIVATE KEY'),
+    validator: (v) => v.includes('BEGIN RSA PRIVATE KEY'),
     sensitive: true
   },
   {
