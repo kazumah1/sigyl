@@ -7,9 +7,9 @@ import { fetchSigylYaml, SigylConfig } from './yaml';
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
   region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
-  serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
-  // Fall back to GOOGLE_APPLICATION_CREDENTIALS if no explicit keyFilePath is provided
-  keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS || ''
+  // Remove credential fields - let GoogleAuth use GOOGLE_APPLICATION_CREDENTIALS automatically
+  serviceAccountKey: '',
+  keyFilePath: ''
 };
 
 export interface DeploymentRequest {

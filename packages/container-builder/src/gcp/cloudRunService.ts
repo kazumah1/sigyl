@@ -48,36 +48,58 @@ export class CloudRunService {
     this.config = config;
     this.region = config.region;
     this.projectId = config.projectId;
-    // Initialize Google Cloud authentication
-    const authConfig: any = {
+    
+    // Initialize Google Cloud authentication using Application Default Credentials
+    // This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS environment variable
+    this.auth = new GoogleAuth({
       scopes: [
         'https://www.googleapis.com/auth/cloud-platform',
         'https://www.googleapis.com/auth/cloudbuild',
         'https://www.googleapis.com/auth/run.admin'
-      ]
-    };
-    // Do NOT add credentials or keyFilename here. Let GoogleAuth pick up the credentials from the environment.
-    this.auth = new GoogleAuth(authConfig);
+      ],
+      projectId: this.projectId
+    });
   }
 
   /**
    * Get access token for API calls using JWT-based OAuth 2.0 flow.
-   * Loads credentials directly from config, not from this.auth.
+   * Creates a fresh GoogleAuth instance each time to ensure environment variables are picked up correctly.
    */
   private async getAccessToken(): Promise<string> {
-    const client = await this.auth.getClient();
-    const result = await client.getAccessToken();
-    let token: string | undefined;
-    if (typeof result === 'string') {
-      token = result;
-    } else if (result && typeof result === 'object' && 'token' in result) {
-      token = result.token as string | undefined;
+    // Debug: Check environment variables
+    console.log('[CloudRunService] Environment debug:');
+    console.log('  GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    console.log('  File exists:', process.env.GOOGLE_APPLICATION_CREDENTIALS ? require('fs').existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS) : 'N/A');
+    console.log('  Working directory:', process.cwd());
+    
+    try {
+      // Create a fresh GoogleAuth instance each time to ensure environment variables are picked up
+      const auth = new GoogleAuth({
+        scopes: [
+          'https://www.googleapis.com/auth/cloud-platform',
+          'https://www.googleapis.com/auth/cloudbuild',
+          'https://www.googleapis.com/auth/run.admin'
+        ],
+        projectId: this.projectId
+      });
+      
+      const client = await auth.getClient();
+      const result = await client.getAccessToken();
+      let token: string | undefined;
+      if (typeof result === 'string') {
+        token = result;
+      } else if (result && typeof result === 'object' && 'token' in result) {
+        token = result.token as string | undefined;
+      }
+      if (!token) {
+        throw new Error('OAuth token retrieval failed');
+      }
+      console.log('[CloudRunService] getAccessToken success - token length:', token.length);
+      return token;
+    } catch (error) {
+      console.error('[CloudRunService] getAccessToken failed:', error);
+      throw error;
     }
-    if (!token) {
-      throw new Error('OAuth token retrieval failed');
-    }
-    console.log('[CloudRunService] getAccessToken result:', token);
-    return token;
   }
 
   /**
@@ -155,30 +177,80 @@ export class CloudRunService {
     
     console.log(`🔨 Building Node.js runtime image: ${imageUri}`);
     
-    // Generate optimized Dockerfile for Node.js runtime
-    const dockerfile = this.generateNodeDockerfile(config);
-    
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create Cloud Build using REST API
+      // Create Cloud Build configuration that pulls from GitHub and builds a Docker image
       const buildConfig = {
         source: {
-          repoSource: {
-            projectId: this.projectId,
-            repoName: request.repoName,
-            branchName: request.branch
+          gitSource: {
+            url: request.repoUrl,
+            revision: request.branch
           }
         },
         steps: [
+          // Step 1: Create a Dockerfile for the MCP server
+          {
+            name: 'gcr.io/cloud-builders/docker',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              `cat > Dockerfile << 'EOF'
+# Sigyl MCP Server - Node.js Runtime
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S mcpuser && \\
+    adduser -S mcpuser -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && \\
+    npm cache clean --force
+
+# Copy application code
+COPY . .
+
+${config.language === 'typescript' ? `
+# Build TypeScript if needed
+RUN npm run build || echo "No build script found"
+` : ''}
+
+# Change ownership to non-root user
+RUN chown -R mcpuser:mcpuser /app
+USER mcpuser
+
+# Environment variables
+ENV NODE_ENV=production
+ENV MCP_TRANSPORT=http
+ENV MCP_ENDPOINT=/mcp
+ENV PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
+  CMD curl -f http://localhost:8080/health || curl -f http://localhost:8080/mcp || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Start server
+CMD ["npm", "start"]
+EOF`
+            ]
+          },
+          // Step 2: Build the Docker image
           {
             name: 'gcr.io/cloud-builders/docker',
             args: [
               'build',
               '-t', imageUri,
               '.'
-            ],
-            env: ['DOCKER_BUILDKIT=1']
+            ]
           }
         ],
         images: [imageUri],
@@ -241,20 +313,16 @@ export class CloudRunService {
     console.log(`🔨 Building container runtime image: ${imageUri}`);
     
     const dockerfilePath = config.build?.dockerfile || 'Dockerfile';
-    const buildContext = config.build?.dockerBuildPath || '.';
-    
-    console.log(`Using Dockerfile: ${dockerfilePath}, Build context: ${buildContext}`);
     
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create Cloud Build using REST API
+      // Create Cloud Build configuration that pulls from GitHub and builds using existing Dockerfile
       const buildConfig = {
         source: {
-          repoSource: {
-            projectId: this.projectId,
-            repoName: request.repoName,
-            branchName: request.branch
+          gitSource: {
+            url: request.repoUrl,
+            revision: request.branch
           }
         },
         steps: [
@@ -264,9 +332,8 @@ export class CloudRunService {
               'build',
               '-t', imageUri,
               '-f', dockerfilePath,
-              buildContext
-            ],
-            env: ['DOCKER_BUILDKIT=1']
+              '.'
+            ]
           }
         ],
         images: [imageUri],
@@ -404,7 +471,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
 # Expose port
 EXPOSE 8080
 
-# Start server
+# Start command
 CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
 `;
   }
@@ -459,6 +526,7 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
                       containerPort: 8080
                     }
                   ],
+                  // Use the built container image directly
                   env: [
                     { name: 'NODE_ENV', value: 'production' },
                     { name: 'MCP_TRANSPORT', value: 'http' },
