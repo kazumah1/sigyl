@@ -4,10 +4,9 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 
 // Tool handlers
 import { getApiUsers } from "./tools/getApiUsers.js";
+import { getApiProducts } from "./tools/getApiProducts.js";
 import { getApiUsersById } from "./tools/getApiUsersById.js";
 import { postApiUsers } from "./tools/postApiUsers.js";
-import { putApiUsersById } from "./tools/putApiUsersById.js";
-import { deleteApiUsersById } from "./tools/deleteApiUsersById.js";
 
 const server = new Server(
 	{
@@ -30,7 +29,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 		description: "GET /api/users",
 		inputSchema: {
 			type: "object",
-			properties: {},
+			properties: {"limit":{"type":"number","description":"Query parameter: limit"},"offset":{"type":"number","description":"Query parameter: offset"},"search":{"type":"string","description":"Query parameter: search"},"status":{"type":"string","description":"Query parameter: status"}},
+			required: []
+		}
+	},
+{
+		name: "getApiProducts",
+		description: "GET /api/products",
+		inputSchema: {
+			type: "object",
+			properties: {"category":{"type":"string","description":"Query parameter: category"},"minPrice":{"type":"number","description":"Query parameter: minPrice"},"maxPrice":{"type":"number","description":"Query parameter: maxPrice"},"sortBy":{"type":"string","description":"Query parameter: sortBy"}},
 			required: []
 		}
 	},
@@ -51,24 +59,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 			properties: {"body":{"type":"object","description":"Request body data"}},
 			required: []
 		}
-	},
-{
-		name: "putApiUsersById",
-		description: "PUT /api/users/:id",
-		inputSchema: {
-			type: "object",
-			properties: {"id":{"type":"number","description":"Path parameter: id","required":true},"body":{"type":"object","description":"Request body data"}},
-			required: ["id"]
-		}
-	},
-{
-		name: "deleteApiUsersById",
-		description: "DELETE /api/users/:id",
-		inputSchema: {
-			type: "object",
-			properties: {"id":{"type":"number","description":"Path parameter: id","required":true}},
-			required: ["id"]
-		}
 	}
 		]
 	};
@@ -81,14 +71,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	switch (name) {
 		case "getApiUsers":
 			return await getApiUsers(args || {});
+		case "getApiProducts":
+			return await getApiProducts(args || {});
 		case "getApiUsersById":
 			return await getApiUsersById(args || {});
 		case "postApiUsers":
 			return await postApiUsers(args || {});
-		case "putApiUsersById":
-			return await putApiUsersById(args || {});
-		case "deleteApiUsersById":
-			return await deleteApiUsersById(args || {});
 		default:
 			throw new Error("Unknown tool: " + name);
 	}
