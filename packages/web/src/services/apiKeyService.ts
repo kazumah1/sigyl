@@ -23,14 +23,7 @@ export interface CreateAPIKeyRequest {
 
 export interface CreateAPIKeyResponse {
   api_key: string; // Only returned once
-  key: {
-    id: string;
-    name: string;
-    key_prefix: string;
-    permissions: string[];
-    expires_at?: string;
-    created_at: string;
-  };
+  key: APIKey;
 }
 
 export interface APIKeyStats {

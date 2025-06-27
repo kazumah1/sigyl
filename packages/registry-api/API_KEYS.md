@@ -166,7 +166,9 @@ Authorization: Bearer <api_key_with_admin_permission>
 - **Cryptographic Hashing**: API keys are hashed using HMAC-SHA256
 - **Secure Generation**: Uses Node.js crypto.randomBytes for key generation
 - **Prefix Display**: Only first 8 characters are shown in listings
-- **One-Time Display**: Full API key only shown once during creation
+- **One-Time Display**: Full API key only shown once during creation. After that, only the prefix is visible in the dashboard or via API. If you lose the key, you must generate a new one.
+
+> **Warning:** You will only see your full API key once, immediately after creation. Be sure to copy and store it securely. If you lose it, you cannot recover it and must create a new key.
 
 ### Rate Limiting
 

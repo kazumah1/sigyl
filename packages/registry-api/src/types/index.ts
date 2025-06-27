@@ -1,3 +1,5 @@
+import { MCPSecret } from '../services/yaml';
+
 export interface MCPPackage {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface MCPPackage {
   source_api_url?: string;
   tags?: string[];
   downloads_count: number;
+  required_secrets?: MCPSecret[];
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +41,7 @@ export interface CreatePackageRequest {
   source_api_url?: string;
   tags?: string[];
   tools?: Omit<MCPTool, 'id' | 'package_id'>[];
+  required_secrets?: MCPSecret[];
 }
 
 export interface PackageSearchQuery {

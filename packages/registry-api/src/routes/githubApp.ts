@@ -274,7 +274,15 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
             description: repo.description,
             html_url: repo.html_url,
             has_mcp: !!mcpConfig,
-            mcp_files: mcpConfig ? ['mcp.yaml', 'mcp.yml'] : []
+            mcp_files: mcpConfig ? ['mcp.yaml', 'mcp.yml'] : [],
+            mcp_config: mcpConfig ? {
+              name: mcpConfig.name,
+              description: mcpConfig.description,
+              version: mcpConfig.version,
+              port: mcpConfig.port,
+              tools_count: mcpConfig.tools?.length || 0,
+              required_secrets: mcpConfig.secrets || []
+            } : null
           };
         } catch (error) {
           // If MCP config fetch fails, assume no MCP
@@ -286,7 +294,8 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
             description: repo.description,
             html_url: repo.html_url,
             has_mcp: false,
-            mcp_files: []
+            mcp_files: [],
+            mcp_config: null
           };
         }
       })
@@ -334,7 +343,8 @@ router.get('/installations/:installationId/repositories/:owner/:repo/mcp', async
     res.json({
       success: true,
       data: {
-        content: mcpConfig
+        content: mcpConfig,
+        required_secrets: mcpConfig.secrets || []
       }
     });
   } catch (error) {
