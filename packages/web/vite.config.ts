@@ -17,6 +17,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "buffer": "buffer",
     },
+  },
+  assetsInclude: ['**/*.md'],
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['gray-matter', 'buffer'],
   },
 }));
