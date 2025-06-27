@@ -1,166 +1,458 @@
-# SIGYL MCP Registry & Hosting - Project Plan
+# Sigil MCP Platform - Technical Implementation Guide
 
 ## 🎯 Project Overview
-**Goal:** Build an end-to-end functional MVP for MCP Registry & Hosting
+**Goal:** End-to-end functional MVP for MCP Registry & Hosting
 
 ### Core Components:
 - MCP Registry API (Express + PostgreSQL)
-- Docker-based MCP deploys (hosted via Google Cloud Run)
-- CLI tool (mcp publish) for auto-deployment
-- Modern web frontend (React + Vite)
+- Docker-based MCP deploys (hosted via Railway)
+- CLI tool (mcp publish) for auto-generate, deploy, and register
+- Modern web frontend (React + Vite) for discovery and deployment
 - Secure Secrets Manager for MCP Server API Keys
-- Complete Blog System with Markdown Support
 
-## ✅ COMPLETED FEATURES
+## 📦 Tech Stack Status
+| Component | Stack | Status |
+|-----------|-------|--------|
+| Registry DB | Supabase (PostgreSQL) | ✅ **COMPLETE** |
+| API Layer | Express (TypeScript) | ✅ **COMPLETE & OPERATIONAL** |
+| CLI | oclif (TypeScript) | 🟡 **MOSTLY COMPLETE** (missing deploy) |
+| Container Hosting | Docker + Railway | 🚧 **BASIC PLACEHOLDER** (needs real implementation) |
+| Frontend | React + Tailwind (Vite) | ✅ **MCP EXPLORER + DEPLOY UI COMPLETE** |
 
-### **Google Cloud Run Migration - COMPLETE**
-- ✅ **CloudRunService** - Full Google Cloud Run integration with security validation
-- ✅ **Container Builder** - Google Cloud Run-optimized Dockerfiles and GCR integration  
-- ✅ **Registry API** - Updated to use Google Cloud Run deployment service
-- ✅ **Frontend** - Modified to work with Google Cloud Run endpoints
-- ✅ **Cost Savings**: 60-75% reduction vs Railway ($8-12 → $1-3/month per MCP)
+## 🏗️ Current Implementation Status
 
-### **Frontend Integration - COMPLETE**
-- ✅ **GitHub App Integration** - Complete OAuth flow with multi-account support
-- ✅ **Deployment Service** - Real API integration with Google Cloud Run
-- ✅ **Secrets Service** - Full CRUD operations with encryption
-- ✅ **Dashboard** - Real-time data with optimized performance
-- ✅ **Blog System** - Complete markdown-based blog with search and filtering
-- ✅ **API Keys Management** - Integrated with GitHub App authentication
+### ✅ **COMPLETED COMPONENTS**
 
-### **Secrets Manager - COMPLETE**
-- ✅ **Database Migration**: `mcp_secrets` table with AES-256 encryption
-- ✅ **API Routes**: Full CRUD operations for secrets management
-- ✅ **Frontend UI**: Complete React component with modern interface
-- ✅ **Deployment Integration**: Automatic secret injection during MCP deployment
-- ✅ **YAML Parsing**: Extract required secrets from `mcp.yaml` files
+#### **1. Registry API (Express) - COMPLETE & OPERATIONAL**
+**Location:** `packages/registry-api/`
+**Status:** ✅ **FULLY OPERATIONAL**
 
-### **Blog System - COMPLETE**
-- ✅ **Markdown Support**: Full markdown parsing with frontmatter
-- ✅ **Syntax Highlighting**: Code blocks with rehype-highlight
-- ✅ **Real Blog Posts**: 3 sample posts about SIGYL and MCP
-- ✅ **Search & Filtering**: Search by title/excerpt, filter by category/tags
-- ✅ **Responsive Design**: Beautiful dark theme matching SIGYL brand
+**Working Features:**
+- ✅ Express server with TypeScript
+- ✅ Supabase database integration verified
+- ✅ Full CRUD API endpoints:
+  - `POST /api/v1/packages` → Create new packages
+  - `GET /api/v1/packages/search` → Search with filters
+  - `GET /api/v1/packages/:name` → Get package details
+  - `GET /api/v1/packages` → List all packages
+- ✅ **GitHub App API endpoints**:
+  - `GET /api/v1/github/installations/:id/repositories` → List repos with MCP status
+  - `GET /api/v1/github/installations/:id/repositories/:owner/:repo/mcp` → Get MCP config
+  - `GET /api/v1/github/installations/:id` → Get installation info
+  - `POST /api/v1/github/installations/:id/deploy` → Deploy MCP from repo
+- ✅ **Secrets Manager API endpoints**:
+  - `POST /api/v1/secrets` → Create new secret
+  - `GET /api/v1/secrets` → List user's secrets
+  - `GET /api/v1/secrets/:id` → Get specific secret
+  - `PUT /api/v1/secrets/:id` → Update secret
+  - `DELETE /api/v1/secrets/:id` → Delete secret
+- ✅ Health check endpoint (`/health`)
+- ✅ Input validation with Zod
+- ✅ Error handling and consistent API responses
+- ✅ CORS and security middleware configured
 
-### **Database & API - COMPLETE**
-- ✅ **Registry API**: Express + PostgreSQL backend operational
-- ✅ **GitHub App Backend**: OAuth flow and repository integration
-- ✅ **Secrets API**: Encrypted storage and retrieval
-- ✅ **Dashboard Integration**: Real-time deployment data
-- ✅ **Error Fixes**: Database schema issues resolved
+#### **2. Database Schema (Supabase) - COMPLETE**
+**Location:** `packages/registry-api/migrations/`
+**Status:** ✅ **DEPLOYED AND OPERATIONAL**
 
-## 🔄 CURRENT STATUS
+**Tables:**
+- ✅ `mcp_packages` - Package metadata and configuration
+- ✅ `mcp_deployments` - Deployment tracking and status
+- ✅ `mcp_tools` - Tool definitions and schemas
+- ✅ `mcp_secrets` - Encrypted user secrets storage
+- ✅ `api_users` - API key management
+- ✅ `profiles` - User profile data
+- ✅ `workspaces` - Workspace management
+- ✅ `metrics` - Analytics and usage data
 
-### **Testing Phase - SIMULATION MODE ACTIVE**
-- **Registry API:** `http://localhost:3000` ✅ **RUNNING**
-- **Web Frontend:** `http://localhost:8082` ✅ **RUNNING** 
-- **Google Cloud Integration:** ✅ **SIMULATION MODE** (working without credentials)
-- **Security Validation:** ✅ **ACTIVE**
+**Features:**
+- ✅ Row Level Security (RLS) policies
+- ✅ Proper foreign key relationships
+- ✅ JSONB fields for flexible data storage
+- ✅ Encryption for sensitive data
+- ✅ Indexes for performance optimization
 
-### **Ready for Testing:**
-1. **Frontend UI Testing** (5-10 minutes)
-   - Open http://localhost:8082
-   - Test deploy flow with GitHub repository
-   - Verify Google Cloud Run simulation works end-to-end
+#### **3. Frontend Authentication (GitHub App) - COMPLETE**
+**Location:** `packages/web/src/`
+**Status:** ✅ **FULLY OPERATIONAL**
 
-2. **Real Google Cloud Testing** (15-30 minutes)
-   - Set up Google Cloud credentials
-   - Test actual deployment to Google Cloud Run
+**Components:**
+- ✅ `AuthContext` with GitHub App integration
+- ✅ Global GitHub App callback handling
+- ✅ `DeployWizardWithGitHubApp` component
+- ✅ `GitHubAppInstall` component
+- ✅ Login page with GitHub App authentication
+- ✅ Header navigation with working Deploy button
+- ✅ GitHub account dropdown with organization display names
 
-## 📋 NEXT STEPS (PRIORITY ORDER)
+**Features:**
+- ✅ Non-OAuth GitHub App flow
+- ✅ Repository access via GitHub App installation
+- ✅ Multi-account GitHub support
+- ✅ Session management with localStorage
+- ✅ Proper redirect handling after installation
 
-### **1. Real Google Cloud Run Integration (4-6 hours)**
-- [ ] **Google Cloud Credentials Setup**
-  - Create Google Cloud Project
-  - Set up Service Account with Cloud Run permissions
-  - Configure environment variables in `.env`
+#### **4. MCP Explorer & Marketplace - COMPLETE**
+**Location:** `packages/web/src/components/marketplace/`
+**Status:** ✅ **FULLY OPERATIONAL**
 
-- [ ] **Container Building Implementation**
-  - Implement actual Docker image building
-  - Add Google Cloud Run-compatible Dockerfile generation
-  - Image pushing to Google Container Registry
+**Features:**
+- ✅ Package discovery with search and filtering
+- ✅ Package detail pages with comprehensive information
+- ✅ Tool listings and schema display
+- ✅ Deployment status and health indicators
+- ✅ Popular and trending package sections
+- ✅ Category-based filtering
 
-- [ ] **Health Monitoring**
-  - Replace simulated health checks with real HTTP checks
-  - Add deployment status monitoring
+#### **5. Secrets Manager - COMPLETE**
+**Location:** `packages/web/src/pages/Secrets.tsx`
+**Status:** ✅ **FULLY OPERATIONAL**
 
-### **2. Frontend Secrets Integration (2-3 hours)**
-- [ ] **Marketplace Display**
-  - Show required secrets in package detail pages
-  - Add secrets badges to package cards
-  - Filter by secret requirements
+**Features:**
+- ✅ AES-256-GCM encryption for secret values
+- ✅ Full CRUD operations (create, read, update, delete)
+- ✅ User isolation and security
+- ✅ Integration with deployment flow
+- ✅ Modern UI with dark theme
+- ✅ Form validation and error handling
 
-- [ ] **Deployment Flow Enhancement**
-  - Add secrets detection step in deploy wizard
-  - Validate required secrets before deployment
-  - Auto-populate secrets from MCP requirements
+#### **6. YAML Secrets Parsing - COMPLETE**
+**Location:** `packages/registry-api/src/services/yaml.ts`
+**Status:** ✅ **IMPLEMENTED**
 
-### **3. Gateway Integration (3-4 hours)**
-- [ ] **Secrets Injection**
-  - Automatically inject user secrets into MCP connections
-  - Validate required secrets before connection
-  - Pass secrets as headers, query params, or config
+**Features:**
+- ✅ `MCPSecretSchema` for YAML validation
+- ✅ Automatic secrets extraction from `mcp.yaml`
+- ✅ Database storage in `required_secrets` JSONB field
+- ✅ API endpoints returning secrets information
+- ✅ TypeScript type definitions
 
-- [ ] **Session Management**
-  - Secure secret handling during MCP sessions
-  - Enhanced connection endpoint with secrets validation
+### 🟡 **PARTIALLY COMPLETE COMPONENTS**
 
-### **4. CLI Tool Development (4-6 hours)**
-- [ ] **mcp publish Command**
-  - Auto-generate deployment configuration
-  - Deploy to Google Cloud Run
-  - Register with Registry API
+#### **7. Deployment Flow - PARTIAL**
+**Location:** `packages/web/src/services/deploymentService.ts`
+**Status:** 🟡 **UI COMPLETE, BACKEND SIMULATION**
 
-- [ ] **Package Management**
-  - CLI commands for package management
-  - Integration with Registry API
+**What Works:**
+- ✅ Complete DeployWizardWithGitHubApp UI
+- ✅ GitHub repository selection and MCP detection
+- ✅ Environment variable configuration
+- ✅ Secrets integration and selection
+- ✅ Registry package registration
+- ✅ Real-time deployment status (simulated)
 
-### **5. Production Deployment (2-3 hours)**
-- [ ] **Environment Setup**
-  - Production Google Cloud Run configuration
-  - Domain and SSL setup
-  - Monitoring and logging
+**What's Missing:**
+- ❌ Real container building and deployment
+- ❌ Actual hosting platform integration
+- ❌ Real health monitoring and logs
 
-- [ ] **Testing & Validation**
-  - End-to-end deployment testing
-  - Performance optimization
-  - Security validation
+**Current Implementation:**
+```typescript
+// packages/web/src/services/deploymentService.ts
+static async deployToHosting(request: DeploymentRequest): Promise<string> {
+    // TODO: Implement actual hosting platform deployment
+    // For now, simulate the deployment process
+    
+    console.log('Deploying to hosting platform...')
+    
+    // Simulate deployment delay
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    // Generate a mock deployment URL
+    const sanitizedName = request.repoName.replace('/', '-').toLowerCase()
+    const deploymentUrl = `https://${sanitizedName}-${Date.now()}.railway.app`
+    
+    console.log('Deployed to:', deploymentUrl)
+    return deploymentUrl
+}
+```
 
-## 🎯 SUCCESS METRICS
+#### **8. Container Builder - PLACEHOLDER**
+**Location:** `packages/container-builder/`
+**Status:** 🚧 **BASIC PLACEHOLDER**
 
-### **Technical Goals:**
-- [ ] **95% deployment success rate**
-- [ ] **<2 second deployment time**
-- [ ] **99.9% uptime for hosted MCPs**
-- [ ] **Zero security vulnerabilities in production**
+**Current State:**
+- 📋 `Dockerfile.template` (basic template)
+- 📋 `index.ts` (empty placeholder function)
+- ❌ No actual Docker building logic
 
-### **Business Goals:**
-- [ ] **100 active users** by month 3
-- [ ] **$5,000 MRR** by month 6
-- [ ] **80% user retention** month-over-month
-- [ ] **1,000 MCPs deployed** by month 6
+**Missing Implementation:**
+```typescript
+// packages/container-builder/src/builder.ts
+export class ContainerBuilder {
+  static async buildMCPContainer(repoUrl: string, branch: string): Promise<string> {
+    // 1. Clone repository
+    // 2. Generate Dockerfile from mcp.yaml
+    // 3. Build Docker image
+    // 4. Push to registry
+    // 5. Return image URL
+  }
+}
+```
 
-## 💰 COST STRUCTURE
+#### **9. CLI Tool - MOSTLY COMPLETE**
+**Location:** `packages/cli/`
+**Status:** 🟡 **STRUCTURE COMPLETE, MISSING DEPLOY**
 
-### **Google Cloud Run Pricing:**
-- **Free Tier**: 400,000 GB-seconds, 200,000 vCPU-seconds per month
-- **API Router MCPs**: $1-3/month (vs Railway's $8-12)
-- **Data Processing MCPs**: $3-8/month (vs Railway's $25-40)
-- **AI/ML MCPs**: $10-25/month (vs Railway's $80-120)
+**What Works:**
+- ✅ CLI structure with oclif framework
+- ✅ Basic commands and help system
+- ✅ Package management commands
 
-### **Revenue Projections:**
-- **Conservative (Year 1)**: $19,000/month with 1,000 MCPs
-- **Optimistic (Year 1)**: $38,000/month with 2,000 MCPs
-- **Enterprise Upsell (Year 2)**: Additional $20,000-50,000/month
+**What's Missing:**
+- ❌ Deploy command implementation
+- ❌ Integration with Registry API
+- ❌ Container building integration
 
-## 🚀 COMPETITIVE ADVANTAGES
+### ❌ **NOT IMPLEMENTED COMPONENTS**
 
-1. **Cost Leadership**: 60-75% cheaper than Railway
-2. **Security Leadership**: Only platform with built-in vulnerability scanning
-3. **Developer Experience**: MCP-specific optimizations and seamless GitHub integration
-4. **Enterprise Ready**: Team management, audit logging, compliance features
+#### **10. Real Hosting Integration**
+**Status:** ❌ **NOT IMPLEMENTED**
 
----
+**Missing:**
+- ❌ Railway API integration
+- ❌ Container deployment to Railway
+- ❌ Real health monitoring
+- ❌ Log streaming and aggregation
 
-**Last Updated:** January 2025  
-**Status:** Google Cloud Run migration complete, ready for real deployment testing 
+#### **11. Gateway Service**
+**Status:** ❌ **NOT IMPLEMENTED**
+
+**Missing:**
+- ❌ MCP server proxy/routing
+- ❌ Secrets injection at runtime
+- ❌ Session management
+- ❌ Load balancing
+
+## 🚨 **CRITICAL GAPS FOR PRODUCTION**
+
+### **1. Real Container Building (HIGH PRIORITY)**
+**Missing:** Actual Docker containerization logic
+**Impact:** No real MCP server deployment possible
+**Effort:** 4-6 hours
+
+**Required Implementation:**
+```typescript
+// packages/container-builder/src/builder.ts
+export class ContainerBuilder {
+  static async buildMCPContainer(repoUrl: string, config: MCPConfig): Promise<string> {
+    // 1. Clone repository from GitHub
+    // 2. Parse mcp.yaml for configuration
+    // 3. Generate MCP-specific Dockerfile
+    // 4. Build Docker image with Railway compatibility
+    // 5. Push to container registry
+    // 6. Return image URL for deployment
+  }
+}
+```
+
+### **2. Railway API Integration (HIGH PRIORITY)**
+**Missing:** Connection to actual Railway hosting platform
+**Impact:** Simulated deployments only
+**Effort:** 3-4 hours
+
+**Required Implementation:**
+```typescript
+// packages/registry-api/src/services/railwayService.ts
+export class RailwayService {
+  static async deployToRailway(imageUrl: string, env: Record<string, string>): Promise<string> {
+    // 1. Create Railway project
+    // 2. Deploy container with environment variables
+    // 3. Configure health checks and monitoring
+    // 4. Return deployment URL
+  }
+}
+```
+
+### **3. Health Monitoring (MEDIUM PRIORITY)**
+**Missing:** Real health checks and monitoring
+**Impact:** No visibility into MCP server status
+**Effort:** 2-3 hours
+
+**Required Implementation:**
+```typescript
+// packages/registry-api/src/services/healthService.ts
+export class HealthService {
+  static async checkMCPHealth(deploymentUrl: string): Promise<'healthy' | 'unhealthy'> {
+    // 1. HTTP health check to /mcp endpoint
+    // 2. Validate MCP protocol response
+    // 3. Check response time and availability
+    // 4. Update deployment status in database
+  }
+}
+```
+
+## 📋 **IMMEDIATE NEXT STEPS**
+
+### **Option A: Real Hosting Integration (4-6 hours)**
+**Goal:** Replace deployment simulation with actual hosting
+
+**Steps:**
+1. **Container Builder Implementation** (2-3 hours)
+   - Implement Docker image building from GitHub repos
+   - Add Railway-compatible Dockerfile generation
+   - Image pushing to Railway registry
+
+2. **Railway API Integration** (2-3 hours)
+   - Implement actual Railway deployment API calls
+   - Replace simulation in DeploymentService
+   - Add real environment variable configuration
+
+**Result:** Customers can actually deploy working MCP servers
+
+### **Option B: Database Seeding & Testing (1-2 hours)**
+**Goal:** Complete testing environment with sample data
+
+**Steps:**
+1. **Run Database Seeding**
+   - Execute existing seeding script for comprehensive testing
+   - Test complete discovery → deploy → manage flow
+   - Identify any remaining UI/UX issues
+
+**Result:** Complete testing environment with realistic data
+
+### **Option C: CLI Integration (2-4 hours)**
+**Goal:** Complete developer workflow
+
+**Steps:**
+1. **Complete CLI Deploy Command**
+   - Connect CLI to Registry API
+   - Add package publishing workflow
+   - Developer-focused deployment tools
+
+**Result:** Complete developer experience
+
+## 🔧 **TECHNICAL IMPLEMENTATION DETAILS**
+
+### **Database Schema**
+```sql
+-- Core tables for MCP platform
+mcp_packages (id, name, description, version, tools, required_secrets, created_at)
+mcp_deployments (id, package_id, deployment_url, status, health, created_at)
+mcp_secrets (id, user_id, name, value_encrypted, created_at)
+api_users (id, user_id, api_key_hash, created_at)
+profiles (id, github_id, username, email, created_at)
+workspaces (id, name, owner_id, created_at)
+metrics (id, deployment_id, request_count, error_count, created_at)
+```
+
+### **API Endpoints**
+```typescript
+// Core MCP Registry endpoints
+POST   /api/v1/packages              // Create new package
+GET    /api/v1/packages/search       // Search packages
+GET    /api/v1/packages/:name        // Get package details
+GET    /api/v1/packages              // List all packages
+
+// GitHub App integration
+GET    /api/v1/github/installations/:id/repositories
+GET    /api/v1/github/installations/:id/repositories/:owner/:repo/mcp
+POST   /api/v1/github/installations/:id/deploy
+
+// Secrets management
+POST   /api/v1/secrets               // Create secret
+GET    /api/v1/secrets               // List user secrets
+PUT    /api/v1/secrets/:id           // Update secret
+DELETE /api/v1/secrets/:id           // Delete secret
+```
+
+### **Frontend Architecture**
+```typescript
+// Key components and services
+src/
+├── components/
+│   ├── marketplace/          // MCP discovery and browsing
+│   ├── deploy/              // Deployment wizard
+│   └── auth/                // GitHub App authentication
+├── services/
+│   ├── deploymentService.ts // Deployment orchestration
+│   ├── registryService.ts   // Registry API integration
+│   └── secretsService.ts    // Secrets management
+└── pages/
+    ├── Marketplace.tsx      // Main marketplace
+    ├── Deploy.tsx          // Deployment flow
+    └── Secrets.tsx         // Secrets management
+```
+
+## 🚀 **DEPLOYMENT INSTRUCTIONS**
+
+### **Local Development Setup**
+```bash
+# 1. Start Registry API
+cd packages/registry-api
+npm install
+npm run dev  # Runs on localhost:3000
+
+# 2. Start Frontend
+cd packages/web
+npm install
+npm run dev  # Runs on localhost:8082
+
+# 3. Configure Environment
+# Copy .env.example to .env and configure:
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - GITHUB_APP_ID
+# - GITHUB_APP_PRIVATE_KEY
+# - SECRETS_ENCRYPTION_KEY
+```
+
+### **Database Setup**
+```bash
+# 1. Run migrations
+cd packages/registry-api
+npm run migrate
+
+# 2. Seed with sample data (optional)
+npm run seed
+```
+
+### **Production Deployment**
+```bash
+# 1. Deploy to Railway/Render/Fly.io
+# 2. Configure environment variables
+# 3. Set up GitHub App webhook
+# 4. Configure custom domain
+```
+
+## 📊 **CURRENT SYSTEM STATUS**
+
+### **✅ Working Features**
+- Complete MCP discovery and marketplace
+- GitHub App authentication and repository access
+- Package registration and management
+- Secrets management with encryption
+- YAML parsing and validation
+- Database schema and API endpoints
+
+### **🟡 Partially Working**
+- Deployment flow (UI complete, backend simulation)
+- Container building (placeholder only)
+- CLI tool (structure complete, missing deploy)
+
+### **❌ Not Implemented**
+- Real hosting platform integration
+- Actual container deployment
+- Health monitoring and logging
+- Gateway service for MCP routing
+
+## 🎯 **SUCCESS METRICS**
+
+### **Technical Milestones**
+- ✅ Registry API operational
+- ✅ Frontend marketplace complete
+- ✅ GitHub integration working
+- ✅ Secrets management implemented
+- 🎯 Real deployment working
+- 🎯 Health monitoring active
+- 🎯 Production hosting live
+
+### **User Experience Goals**
+- ✅ Users can discover MCPs
+- ✅ Users can authenticate with GitHub
+- ✅ Users can manage secrets
+- 🎯 Users can deploy MCPs
+- 🎯 Users can monitor deployments
+- 🎯 Users can use deployed MCPs
+
+This technical implementation guide focuses on the current state and immediate next steps for completing the MCP platform MVP.
