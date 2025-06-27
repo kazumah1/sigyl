@@ -99,148 +99,107 @@ const Dashboard = () => {
             <MetricsOverview metrics={metrics} />
           )}
 
-          {/* Main Dashboard Tabs */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="bg-gray-900/80 border border-gray-700 p-1 backdrop-blur-sm">
-              <TabsTrigger 
-                value="overview" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger 
-                value="servers" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                MCP Servers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger 
-                value="api-keys" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                API Keys
-              </TabsTrigger>
-              <TabsTrigger 
-                value="team" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                Team
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300 transition-colors"
-              >
-                Settings
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {loading ? (
-                  <>
-                    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                      <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-16 bg-gray-700 rounded"></div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                      <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
-                      <div className="space-y-3">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i} className="h-12 bg-gray-700 rounded"></div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <MCPServersList servers={mcpServers} />
-                    <ActivityFeed />
-                  </>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="servers" className="space-y-6">
+          {/* Main Dashboard Content - Render based on activeTab */}
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {loading ? (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                  <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-24 bg-gray-700 rounded"></div>
-                    ))}
+                <>
+                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                    <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-16 bg-gray-700 rounded"></div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <MCPServersList servers={mcpServers} detailed />
-              )}
-            </TabsContent>
-
-            <TabsContent value="analytics" className="space-y-6">
-              {loading ? (
-                <div className="space-y-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                      <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
-                      <div className="h-64 bg-gray-700 rounded"></div>
+                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                    <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="h-12 bg-gray-700 rounded"></div>
+                      ))}
                     </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <MCPServersList servers={mcpServers} />
+                  <ActivityFeed />
+                </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'servers' && (
+            loading ? (
+              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-24 bg-gray-700 rounded"></div>
                   ))}
                 </div>
-              ) : (
-                <AnalyticsCharts 
-                  visitData={analyticsData.visitData}
-                  toolUsageData={analyticsData.toolUsageData}
-                  serverStatusData={analyticsData.serverStatusData}
-                />
-              )}
-            </TabsContent>
+              </div>
+            ) : (
+              <MCPServersList servers={mcpServers} detailed />
+            )
+          )}
 
-            <TabsContent value="api-keys" className="space-y-6">
-              <APIKeysManager workspaceId={workspace?.id || ''} />
-            </TabsContent>
-
-            <TabsContent value="team" className="space-y-6">
-              <WorkspaceMembers workspaceId={workspace?.id || ''} />
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-6">
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
-                    Workspace Settings
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Manage your workspace configuration and preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-300">Workspace Name</label>
-                      <p className="text-white mt-1">{workspace?.name || 'Loading...'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-300">Workspace Slug</label>
-                      <p className="text-white mt-1">{workspace?.slug || 'Loading...'}</p>
-                    </div>
-                    <Button className="bg-gray-700 hover:bg-gray-600 text-white">
-                      Update Settings
-                    </Button>
+          {activeTab === 'analytics' && (
+            loading ? (
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                    <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+                    <div className="h-64 bg-gray-700 rounded"></div>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                ))}
+              </div>
+            ) : (
+              <AnalyticsCharts 
+                visitData={analyticsData.visitData}
+                toolUsageData={analyticsData.toolUsageData}
+                serverStatusData={analyticsData.serverStatusData}
+              />
+            )
+          )}
+
+          {activeTab === 'api-keys' && (
+            <APIKeysManager workspaceId={workspace?.id || ''} />
+          )}
+
+          {activeTab === 'team' && (
+            <WorkspaceMembers workspaceId={workspace?.id || ''} />
+          )}
+
+          {activeTab === 'settings' && (
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Workspace Settings
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage your workspace configuration and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Workspace Name</label>
+                    <p className="text-white mt-1">{workspace?.name || 'Loading...'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Workspace Slug</label>
+                    <p className="text-white mt-1">{workspace?.slug || 'Loading...'}</p>
+                  </div>
+                  <Button className="bg-gray-700 hover:bg-gray-600 text-white">
+                    Update Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
