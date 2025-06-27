@@ -197,15 +197,18 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S mcpuser && \\
+RUN addgroup -g 1001 -S mcpuser && \
     adduser -S mcpuser -u 1001
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \\
-    npm cache clean --force
+# Install dependencies (try npm ci, fallback to npm install if lockfile is missing)
+RUN if [ -f package-lock.json ]; then \
+      npm ci --only=production; \
+    else \
+      npm install --omit=dev; \
+    fi && npm cache clean --force
 
 # Copy application code
 COPY . .
@@ -223,10 +226,9 @@ USER mcpuser
 ENV NODE_ENV=production
 ENV MCP_TRANSPORT=http
 ENV MCP_ENDPOINT=/mcp
-ENV PORT=8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/health || curl -f http://localhost:8080/mcp || exit 1
 
 # Expose port
@@ -456,7 +458,6 @@ USER mcpuser
 ENV NODE_ENV=production
 ENV MCP_TRANSPORT=http
 ENV MCP_ENDPOINT=/mcp
-ENV PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
@@ -525,11 +526,10 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
                     { name: 'NODE_ENV', value: 'production' },
                     { name: 'MCP_TRANSPORT', value: 'http' },
                     { name: 'MCP_ENDPOINT', value: '/mcp' },
-                    { name: 'PORT', value: '8080' },
-                    ...Object.entries(request.environmentVariables).map(([name, value]) => ({
-                      name,
-                      value
-                    }))
+                    // Do NOT set PORT here, and filter it from user envs
+                    ...Object.entries(request.environmentVariables)
+                      .filter(([name]) => name !== 'PORT')
+                      .map(([name, value]) => ({ name, value }))
                   ],
                   resources: {
                     limits: {
