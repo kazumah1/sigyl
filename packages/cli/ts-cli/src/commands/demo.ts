@@ -246,46 +246,51 @@ async function runInteractiveTest(appDir: string, demoApp: any): Promise<void> {
 }
 
 async function startExpressApp(appDir: string, startCommand: string): Promise<ChildProcess> {
+	// If the app is TypeScript (app.ts exists and not app.js), use ts-node
+	const fs = require('fs');
+	const path = require('path');
+	const appTs = path.join(appDir, 'app.ts');
+	const appJs = path.join(appDir, 'app.js');
+	let actualCommand = startCommand;
+	if (fs.existsSync(appTs) && !fs.existsSync(appJs)) {
+		actualCommand = 'npx ts-node app.ts';
+		console.log(chalk.yellow('  Detected TypeScript Express app, using ts-node to start it...'));
+	}
+
 	return new Promise((resolve, reject) => {
-		console.log(chalk.gray(`  Running: ${startCommand}`))
-		
-		const [cmd, ...args] = startCommand.split(' ')
+		console.log(chalk.gray(`  Running: ${actualCommand}`));
+		const [cmd, ...args] = actualCommand.split(' ');
 		const process = spawn(cmd, args, {
 			cwd: appDir,
 			stdio: ['pipe', 'pipe', 'pipe'],
 			shell: true
-		})
-		
-		let started = false
-		
+		});
+		let started = false;
 		process.stdout?.on('data', (data) => {
-			const output = data.toString()
+			const output = data.toString();
 			if (output.includes('Server running') || output.includes('listening')) {
 				if (!started) {
-					started = true
-					console.log(chalk.green("  ✔ Express app started on port 3000"))
-					resolve(process)
+					started = true;
+					console.log(chalk.green('  ✔ Express app started on port 3000'));
+					resolve(process);
 				}
 			}
-		})
-		
+		});
 		process.stderr?.on('data', (data) => {
-			console.error(chalk.red(`Express error: ${data}`))
-		})
-		
+			console.error(chalk.red(`Express error: ${data}`));
+		});
 		process.on('error', (error) => {
-			reject(error)
-		})
-		
+			reject(error);
+		});
 		// Fallback timeout
 		setTimeout(() => {
 			if (!started) {
-				started = true
-				console.log(chalk.green("  ✔ Express app started (timeout)"))
-				resolve(process)
+				started = true;
+				console.log(chalk.green('  ✔ Express app started (timeout)'));
+				resolve(process);
 			}
-		}, 3000)
-	})
+		}, 3000);
+	});
 }
 
 async function startMCPServer(language: string, outputDir: string): Promise<ChildProcess> {

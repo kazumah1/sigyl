@@ -160,6 +160,8 @@ ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
 	const shape = this.generateZodShapeObject(endpoint)
 	const description = endpoint.description || `${endpoint.method} ${endpoint.path}`
+	const methodLiteral = endpoint.method.toUpperCase();
+	const pathLiteral = endpoint.path;
 	return `	// ===== ${endpoint.method.toUpperCase()} ${endpoint.path} =====
 	server.tool(
 		"${toolName}",
@@ -184,10 +186,8 @@ ${endpoints.map(endpoint => {
 			
 ${this.generateParameterHandling(endpoint)}
 			// ===== URL CONSTRUCTION =====
-			// Add query parameters to URL
 			if (queryParams.toString()) {
-				const separator = url.includes('?') ? '&' : '?';
-				requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
+				requestOptions.url = url + (url.includes('?') ? '&' : '?') + queryParams.toString();
 			} else {
 				requestOptions.url = url;
 			}
@@ -199,20 +199,13 @@ ${this.generateParameterHandling(endpoint)}
 			try {
 				const response = await fetch(requestOptions.url, requestOptions);
 				const data = await response.json();
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(data, null, 2)
-						}
-					]
-				};
+				return data;
 			} catch (error) {
 				return {
 					content: [
 						{
 							type: "text",
-							text: \`Error calling \${endpoint.method.toUpperCase()} \${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
+							text: \`Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
 						}
 					]
 				};
@@ -543,13 +536,13 @@ export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise
 		
 		// Replace path parameters
 		${endpoint.parameters?.filter(p => p.location === "path").map(param => 
-			`url = url.replace(":${param.name}", String(args.${param.name} || ""))`
+			`url = url.replace(":${param.name}", String(args.${param.name}) || "");`
 		).join('\n\t\t') || ''}
 		
 		// Add query parameters
 		const queryParams = new URLSearchParams()
 		${endpoint.parameters?.filter(p => p.location === "query").map(param => 
-			`if (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}))`
+			`if (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`
 		).join('\n\t\t') || ''}
 		
 		if (queryParams.toString()) {
@@ -588,7 +581,7 @@ export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise
 			content: [
 				{
 					type: "text",
-					text: "Error calling ${endpoint.method} ${endpoint.path}: " + error
+					text: \`Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
 				}
 			]
 		}
@@ -598,11 +591,11 @@ export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise
 		} else if (this.language === "javascript") {
 			// Generate plain JS handler (no types)
 			const pathReplacements = endpoint.parameters?.filter(p => p.location === "path").map(param => 
-				`\t\turl = url.replace(":${param.name}", String(args.${param.name} || ""))`
+				`\t\turl = url.replace(":${param.name}", String(args.${param.name}) || "");`
 			).join('\n') || ''
 			
 			const queryParams = endpoint.parameters?.filter(p => p.location === "query").map(param => 
-				`\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}))`
+				`\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`
 			).join('\n') || ''
 			
 			const bodyHandling = ['POST', 'PUT', 'PATCH'].includes(endpoint.method) ? 
@@ -651,7 +644,7 @@ ${bodyHandling}
 			content: [
 				{
 					type: "text",
-					text: "Error calling ${endpoint.method} ${endpoint.path}: " + error
+					text: \`Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
 				}
 			]
 		}
@@ -777,30 +770,27 @@ ${properties.join(',\n')}
 	}
 
 	private generateParameterHandling(endpoint: ExpressEndpoint): string {
-		const lines: string[] = []
-		
+		const lines: string[] = [];
 		// Handle path parameters
 		if (endpoint.parameters) {
 			for (const param of endpoint.parameters) {
 				if (param.location === "path") {
-					lines.push(`\t\t\t// Replace path parameter :${param.name}`)
-					lines.push(`\t\t\trequestOptions.url = requestOptions.url.replace(":${param.name}", args.${param.name} || "");`)
+					lines.push(`\t\t\t// Replace path parameter :${param.name}`);
+					lines.push(`\t\t\trequestOptions.url = requestOptions.url.replace(":${param.name}", String(args.${param.name}) || "");`);
 				} else if (param.location === "query") {
-					lines.push(`\t\t\t// Add query parameter ${param.name}`)
-					lines.push(`\t\t\tif (args.${param.name}) queryParams.append("${param.name}", args.${param.name});`)
+					lines.push(`\t\t\t// Add query parameter ${param.name}`);
+					lines.push(`\t\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`);
 				} else if (param.location === "body") {
-					lines.push(`\t\t\t// Add body parameter ${param.name}`)
-					lines.push(`\t\t\tif (args.${param.name}) bodyParams.${param.name} = args.${param.name};`)
+					lines.push(`\t\t\t// Add body parameter ${param.name}`);
+					lines.push(`\t\t\tif (args.${param.name} !== undefined) bodyParams.${param.name} = args.${param.name};`);
 				}
 			}
 		}
-		
 		// Handle request body for POST/PUT/PATCH requests
-		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-			lines.push(`\t\t\t// Add request body`)
-			lines.push(`\t\t\tif (args.body) Object.assign(bodyParams, args.body);`)
+		if (["POST", "PUT", "PATCH"].includes(endpoint.method)) {
+			lines.push(`\t\t\t// Add request body`);
+			lines.push(`\t\t\tif (args.body) Object.assign(bodyParams, args.body);`);
 		}
-		
-		return lines.join('\n')
+		return lines.join('\n');
 	}
 } 
