@@ -16,7 +16,7 @@ export interface BlogPost {
 }
 
 // Import all markdown files from the posts directory
-const postModules = import.meta.glob('../posts/*.md', { eager: true });
+const postModules = import.meta.glob('../posts/*.md?raw', { eager: true });
 
 export function getSortedPostsData(): BlogPost[] {
   const posts: BlogPost[] = [];

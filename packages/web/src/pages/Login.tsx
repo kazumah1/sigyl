@@ -92,14 +92,14 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="github" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-800">
-                <TabsTrigger value="github" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
+              {/* <TabsList className="grid w-full grid-cols-1 bg-gray-800"> */}
+                {/* <TabsTrigger value="github" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
                   GitHub App
-                </TabsTrigger>
-                <TabsTrigger value="admin" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
+                </TabsTrigger> */}
+                {/* <TabsTrigger value="admin" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
                   Admin
-                </TabsTrigger>
-              </TabsList>
+                </TabsTrigger> */}
+              {/* </TabsList> */}
               
               <TabsContent value="github" className="space-y-4">
                 <div className="text-center space-y-4">
