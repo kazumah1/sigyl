@@ -728,7 +728,11 @@ ${properties.join('\n')}
 			for (const param of endpoint.parameters) {
 				const zodType = this.mapTypeToZod(param.type);
 				const optional = param.required ? "" : ".optional()";
-				properties.push(`\t${param.name}: z.${zodType}()${optional}`);
+				if (zodType === "object") {
+					properties.push(`\t${param.name}: z.${zodType}({})${optional}`);
+				} else {
+					properties.push(`\t${param.name}: z.${zodType}()${optional}`);
+				}
 			}
 		}
 		// Add request body for POST/PUT/PATCH requests
@@ -738,7 +742,11 @@ ${properties.join('\n')}
 					.map(([key, value]) => {
 						const zodType = this.mapTypeToZod(value.type);
 						const optional = endpoint.requestBody?.required?.includes(key) ? "" : ".optional()";
-						return `\t\t${key}: z.${zodType}()${optional}`;
+						if (zodType === "object") {
+							return `\t\t${key}: z.${zodType}({})${optional}`;
+						} else {
+							return `\t\t${key}: z.${zodType}()${optional}`;
+						}
 					})
 					.join(',\n');
 				properties.push(`\tbody: z.object({\n${bodyProperties}\n\t}).optional()`);
