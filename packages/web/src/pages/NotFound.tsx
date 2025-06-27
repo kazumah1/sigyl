@@ -23,7 +23,7 @@ const NotFound = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div 
-              className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-indigo-400 transition-colors"
+              className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-blue-400 transition-colors"
               onClick={() => navigate('/')}
             >
               SIGYL
@@ -31,25 +31,26 @@ const NotFound = () => {
             <nav className="flex items-center space-x-6">
               <button 
                 onClick={() => navigate('/marketplace')}
-                className="text-white font-bold tracking-tight hover:text-indigo-400 transition-colors"
+                className="text-white font-bold tracking-tight hover:text-blue-400 transition-colors"
               >
                 Marketplace
               </button>
               <button 
                 onClick={() => navigate('/docs')}
-                className="text-white font-bold tracking-tight hover:text-indigo-400 transition-colors"
+                className="text-white font-bold tracking-tight hover:text-blue-400 transition-colors"
               >
                 Docs
               </button>
               <button 
                 onClick={() => navigate('/blog')}
-                className="text-white font-bold tracking-tight hover:text-indigo-400 transition-colors"
+                className="text-white font-bold tracking-tight hover:text-blue-400 transition-colors"
               >
                 Blog
               </button>
-              <Button 
+              <Button
+                size="lg"
                 onClick={() => navigate('/deploy')}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold tracking-tight"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold tracking-tight"
               >
                 Deploy
               </Button>
@@ -71,7 +72,7 @@ const NotFound = () => {
           
           <div className="space-y-4">
             <Button 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold tracking-tight transition-all duration-300 hover:scale-105"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold tracking-tight transition-all duration-300 hover:scale-105"
               onClick={() => window.history.back()}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -88,6 +89,13 @@ const NotFound = () => {
                 Return Home
               </Button>
             </div>
+
+            <Button
+              size="lg"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold tracking-tight transition-all duration-300 hover:scale-105"
+            >
+              Get Started Free
+            </Button>
           </div>
         </div>
       </div>

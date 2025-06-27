@@ -395,6 +395,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email: profile.email,
             })
           }
+          
+          // Check for existing GitHub App installations for this OAuth user
+          await loadExistingGitHubAppAccounts(session.user)
         } catch (error) {
           console.error('Error fetching user profile:', error)
         }
@@ -464,8 +467,107 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Error creating user profile:', error)
         }
       }
+      
+      // Check for existing GitHub App installations for this user
+      await loadExistingGitHubAppAccounts(user)
     } catch (error) {
       console.error('Error ensuring user profile:', error)
+    }
+  }
+
+  // New function to load existing GitHub App accounts for OAuth users
+  const loadExistingGitHubAppAccounts = async (user: User) => {
+    try {
+      const githubUsername = user.user_metadata?.user_name
+      const githubId = user.user_metadata?.sub
+      
+      if (!githubUsername && !githubId) {
+        console.log('No GitHub username or ID found for user')
+        return
+      }
+
+      console.log('Checking for existing GitHub App installations for:', githubUsername)
+
+      // Check localStorage first for any stored GitHub App accounts
+      const storedAccounts = localStorage.getItem('github_app_accounts')
+      if (storedAccounts) {
+        try {
+          const accounts: GitHubAccount[] = JSON.parse(storedAccounts)
+          const userAccounts = accounts.filter(account => 
+            account.username === githubUsername || 
+            account.email === user.email
+          )
+          
+          if (userAccounts.length > 0) {
+            console.log('Found existing GitHub App accounts in localStorage:', userAccounts.length)
+            setGitHubAccounts(userAccounts)
+            
+            // Set the first account as active
+            const activeAccount = userAccounts.find(acc => acc.isActive) || userAccounts[0]
+            if (activeAccount) {
+              setActiveGitHubAccount(activeAccount)
+              setGitHubInstallationId(activeAccount.installationId)
+              console.log('Restored GitHub App access for:', activeAccount.username)
+            }
+            return
+          }
+        } catch (error) {
+          console.error('Error parsing stored GitHub App accounts:', error)
+        }
+      }
+
+      // Check database for existing GitHub App installations
+      if (githubUsername) {
+        try {
+          console.log('Checking database for GitHub App installations for:', githubUsername)
+          const { data: installations, error } = await supabase
+            .from('github_installations')
+            .select('*')
+            .eq('account_login', githubUsername)
+
+          if (error) {
+            console.error('Error querying GitHub installations:', error)
+          } else if (installations && installations.length > 0) {
+            console.log('Found existing GitHub App installations in database:', installations.length)
+            
+            // Convert database installations to GitHubAccount format
+            const githubAccounts: GitHubAccount[] = installations.map(installation => ({
+              installationId: installation.installation_id,
+              username: installation.account_login,
+              fullName: installation.account_login, // We don't have full name in the installations table
+              avatarUrl: user.user_metadata?.avatar_url || '',
+              email: user.email || '',
+              accessToken: '', // This will need to be refreshed when needed
+              isActive: false,
+              accountLogin: installation.account_login,
+              accountType: installation.account_type || 'User'
+            }))
+
+            // Mark first account as active
+            if (githubAccounts.length > 0) {
+              githubAccounts[0].isActive = true
+            }
+
+            setGitHubAccounts(githubAccounts)
+            setActiveGitHubAccount(githubAccounts[0])
+            setGitHubInstallationId(githubAccounts[0].installationId)
+            
+            // Store in localStorage for faster future access
+            localStorage.setItem('github_app_accounts', JSON.stringify(githubAccounts))
+            
+            console.log('Restored GitHub App access from database for:', githubAccounts[0].username)
+            return
+          }
+        } catch (error) {
+          console.error('Error checking database for GitHub App installations:', error)
+        }
+      }
+
+      // If no localStorage accounts found, check if they need to link their GitHub App
+      console.log('No existing GitHub App installations found for user:', githubUsername)
+      
+    } catch (error) {
+      console.error('Error loading existing GitHub App accounts:', error)
     }
   }
 
