@@ -1,18 +1,18 @@
 import express from 'express';
 import { supabase } from '../config/database';
-import { requireAuth } from '../middleware/auth';
+import { requireGitHubAuth } from '../middleware/githubAuth';
 import { encrypt, decrypt } from '../utils/encryption';
 import { APIResponse } from '../types';
 
 const router = express.Router();
 
 // Create secret
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireGitHubAuth, async (req, res) => {
   try {
     console.log('POST /api/v1/secrets called');
     console.log('req.user:', req.user);
     console.log('body:', req.body);
-    const { key, value } = req.body;
+    const { key, value, description, mcp_server_id } = req.body;
     const userId = req.user!.user_id;
 
     if (!key || !value) {
@@ -41,9 +41,11 @@ router.post('/', requireAuth, async (req, res) => {
       .insert({ 
         user_id: userId, 
         key, 
-        value: encryptedValue 
+        value: encryptedValue,
+        description,
+        mcp_server_id
       })
-      .select('id, key, created_at')
+      .select('*')
       .single();
 
     if (error) {
@@ -58,12 +60,19 @@ router.post('/', requireAuth, async (req, res) => {
       throw error;
     }
 
-    const response: APIResponse<{ id: string; key: string; created_at: string }> = {
+    const response: APIResponse<{ secret: any }> = {
       success: true,
       data: {
-        id: data.id,
-        key: data.key,
-        created_at: data.created_at
+        secret: {
+          id: data.id,
+          key: data.key,
+          value: value, // Return decrypted value for new secrets
+          description: data.description,
+          mcp_server_id: data.mcp_server_id,
+          is_encrypted: true,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        }
       },
       message: 'Secret created successfully'
     };
@@ -80,22 +89,41 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// List secrets (keys only, no values)
-router.get('/', requireAuth, async (req, res) => {
+// List secrets
+router.get('/', requireGitHubAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
+    const { mcp_server_id } = req.query;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('mcp_secrets')
-      .select('id, key, created_at')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
+    if (mcp_server_id) {
+      query = query.eq('mcp_server_id', mcp_server_id);
+    }
+
+    const { data, error } = await query;
+
     if (error) throw error;
 
-    const response: APIResponse<Array<{ id: string; key: string; created_at: string }>> = {
+    // Decrypt values and format response
+    const secrets = data?.map(secret => ({
+      id: secret.id,
+      key: secret.key,
+      value: decrypt(secret.value),
+      description: secret.description,
+      mcp_server_id: secret.mcp_server_id,
+      is_encrypted: true,
+      created_at: secret.created_at,
+      updated_at: secret.updated_at
+    })) || [];
+
+    const response: APIResponse<{ secrets: any[] }> = {
       success: true,
-      data: data || [],
+      data: { secrets },
       message: 'Secrets retrieved successfully'
     };
 
@@ -111,15 +139,15 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// Get secret by ID (for editing)
-router.get('/:id', requireAuth, async (req, res) => {
+// Get secret by ID
+router.get('/:id', requireGitHubAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;
 
     const { data, error } = await supabase
       .from('mcp_secrets')
-      .select('id, key, created_at')
+      .select('*')
       .eq('id', secretId)
       .eq('user_id', userId)
       .single();
@@ -136,12 +164,19 @@ router.get('/:id', requireAuth, async (req, res) => {
       throw error;
     }
 
-    const response: APIResponse<{ id: string; key: string; created_at: string }> = {
+    const response: APIResponse<{ secret: any }> = {
       success: true,
       data: {
-        id: data.id,
-        key: data.key,
-        created_at: data.created_at
+        secret: {
+          id: data.id,
+          key: data.key,
+          value: decrypt(data.value),
+          description: data.description,
+          mcp_server_id: data.mcp_server_id,
+          is_encrypted: true,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        }
       },
       message: 'Secret retrieved successfully'
     };
@@ -159,11 +194,11 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 // Update secret
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireGitHubAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;
-    const { key, value } = req.body;
+    const { key, value, description, mcp_server_id } = req.body;
 
     if (!key || !value) {
       const response: APIResponse<null> = {
@@ -190,11 +225,13 @@ router.put('/:id', requireAuth, async (req, res) => {
       .from('mcp_secrets')
       .update({ 
         key, 
-        value: encryptedValue 
+        value: encryptedValue,
+        description,
+        mcp_server_id
       })
       .eq('id', secretId)
       .eq('user_id', userId)
-      .select('id, key, created_at')
+      .select('*')
       .single();
 
     if (error) {
@@ -217,12 +254,19 @@ router.put('/:id', requireAuth, async (req, res) => {
       throw error;
     }
 
-    const response: APIResponse<{ id: string; key: string; created_at: string }> = {
+    const response: APIResponse<{ secret: any }> = {
       success: true,
       data: {
-        id: data.id,
-        key: data.key,
-        created_at: data.created_at
+        secret: {
+          id: data.id,
+          key: data.key,
+          value: value, // Return decrypted value for updated secrets
+          description: data.description,
+          mcp_server_id: data.mcp_server_id,
+          is_encrypted: true,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        }
       },
       message: 'Secret updated successfully'
     };
@@ -240,7 +284,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Delete secret
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireGitHubAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;

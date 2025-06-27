@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { APIKeyService } from '../services/apiKeyService';
-import { requireAuth } from '../middleware/auth';
+import { requireGitHubAuth } from '../middleware/githubAuth';
 import type { CreateAPIKeyRequest } from '../types';
 
 const router = Router();
@@ -9,7 +9,7 @@ const router = Router();
  * Create a new API key
  * POST /api/keys
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post('/', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const { name, permissions, expires_at }: CreateAPIKeyRequest = req.body;
 
@@ -81,7 +81,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * List all API keys for the authenticated user
  * GET /api/keys
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get('/', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const apiKeys = await APIKeyService.getUserAPIKeys(req.user!.user_id);
 
@@ -114,7 +114,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * Get a specific API key
  * GET /api/keys/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get('/:id', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const apiKey = await APIKeyService.getAPIKey(id);
@@ -165,7 +165,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * Get API key usage statistics
  * GET /api/keys/:id/stats
  */
-router.get('/:id/stats', requireAuth, async (req: Request, res: Response) => {
+router.get('/:id/stats', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { days } = req.query;
@@ -214,7 +214,7 @@ router.get('/:id/stats', requireAuth, async (req: Request, res: Response) => {
  * Deactivate an API key
  * PATCH /api/keys/:id/deactivate
  */
-router.patch('/:id/deactivate', requireAuth, async (req: Request, res: Response) => {
+router.patch('/:id/deactivate', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const apiKey = await APIKeyService.getAPIKey(id);
@@ -256,7 +256,7 @@ router.patch('/:id/deactivate', requireAuth, async (req: Request, res: Response)
  * Delete an API key
  * DELETE /api/keys/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete('/:id', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const apiKey = await APIKeyService.getAPIKey(id);
@@ -298,7 +298,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * Get current user profile
  * GET /api/keys/profile
  */
-router.get('/profile/me', requireAuth, async (req: Request, res: Response) => {
+router.get('/profile/me', requireGitHubAuth, async (req: Request, res: Response) => {
   try {
     const user = await APIKeyService.getUser(req.user!.user_id);
 

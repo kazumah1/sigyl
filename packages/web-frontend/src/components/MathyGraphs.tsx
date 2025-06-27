@@ -36,7 +36,7 @@ const MathyGraphs: React.FC = () => {
   const getThemeColors = useCallback(() => {
     const colors = {
       dark: {
-        primary: '#6366F1',    // Bright indigo
+        primary: '#3d0288',    // Main brand color
         secondary: '#EC4899',  // Bright pink
         accent: '#10B981',     // Bright emerald
         tertiary: '#F59E0B',   // Bright amber

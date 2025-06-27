@@ -51,7 +51,7 @@ const MetricsOverview: React.FC<MetricsOverviewProps> = ({ metrics }) => {
       {cards.map((card, index) => {
         const IconComponent = card.icon;
         return (
-          <Card key={index} className="bg-gray-900/50 border-gray-800">
+          <Card key={index} className="border-indigo-600/40">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
                 {card.title}

@@ -95,7 +95,7 @@ const WorkspaceMembers: React.FC<WorkspaceMembersProps> = ({ workspaceId }) => {
   };
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="border-indigo-600/40">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Users className="w-5 h-5" />
