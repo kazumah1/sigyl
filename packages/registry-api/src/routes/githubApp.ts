@@ -414,4 +414,70 @@ router.get('/installations/:installationId', async (req, res) => {
   }
 });
 
+// Deploy MCP from GitHub repository
+router.post('/installations/:installationId/deploy', async (req, res) => {
+  try {
+    const { installationId } = req.params;
+    const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
+    
+    if (!installationId || !repoUrl || !owner || !repo) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Installation ID, repository URL, owner, and repo are required' 
+      });
+    }
+
+    console.log(`🚀 Starting deployment for ${owner}/${repo} via GitHub App installation ${installationId}`);
+
+    // Get installation token
+    const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
+    const installToken = await getInstallationAccessToken(jwt, Number(installationId));
+
+    // Import deployment service
+    const { deployRepo } = await import('../services/deployer');
+
+    // Prepare deployment request
+    const deploymentRequest = {
+      repoUrl,
+      repoName: `${owner}/${repo}`,
+      branch,
+      env: environmentVariables,
+      userId,
+      selectedSecrets,
+      githubToken: installToken
+    };
+
+    // Deploy to Google Cloud Run
+    const deploymentResult = await deployRepo(deploymentRequest);
+
+    if (!deploymentResult.success) {
+      console.error('❌ Deployment failed:', deploymentResult.error);
+      
+      return res.status(500).json({
+        success: false,
+        error: deploymentResult.error || 'Deployment failed',
+        securityReport: deploymentResult.securityReport
+      });
+    }
+
+    console.log('✅ Deployment successful:', deploymentResult.deploymentUrl);
+
+    // Return success response
+    res.json({
+      success: true,
+      deploymentUrl: deploymentResult.deploymentUrl,
+      serviceName: deploymentResult.serviceName,
+      mcpEndpoint: `${deploymentResult.deploymentUrl}/mcp`,
+      securityReport: deploymentResult.securityReport
+    });
+
+  } catch (error) {
+    console.error('❌ GitHub App deployment error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown deployment error'
+    });
+  }
+});
+
 export default router;
