@@ -112,13 +112,13 @@ async function showStatus(): Promise<void> {
 	if (generatedExists) {
 		const serverTs = existsSync(join(generatedDir, "server.ts"))
 		const serverJs = existsSync(join(generatedDir, "server.js"))
-		const mcpYaml = existsSync(join(generatedDir, "mcp.yaml"))
+		const mcpYaml = existsSync(join(generatedDir, "sigyl.yaml"))
 		const toolsDir = existsSync(join(generatedDir, "tools"))
 		const packageJson = existsSync(join(generatedDir, "package.json"))
 		
 		console.log(`  - server.ts: ${serverTs ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - server.js: ${serverJs ? chalk.green("✅") : chalk.red("❌")}`)
-		console.log(`  - mcp.yaml: ${mcpYaml ? chalk.green("✅") : chalk.red("❌")}`)
+		console.log(`  - sigyl.yaml: ${mcpYaml ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - tools/: ${toolsDir ? chalk.green("✅") : chalk.red("❌")}`)
 		console.log(`  - package.json: ${packageJson ? chalk.green("✅") : chalk.red("❌")}`)
 	}
