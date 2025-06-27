@@ -36,7 +36,7 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 		spinner.succeed("Template MCP server created successfully!")
 		
 		console.log(chalk.green("\n🎉 Generated files:"))
-		console.log(chalk.gray(`  ${join(options.outDir, "mcp.yaml")} - MCP configuration`))
+		console.log(chalk.gray(`  ${join(options.outDir, "sigyl.yaml")} - MCP configuration`))
 		console.log(chalk.gray(`  ${join(options.outDir, "server.ts")} - MCP server`))
 		
 		console.log(chalk.blue("\n🚀 Next steps:"))
@@ -52,7 +52,7 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 }
 
 async function generateMCPConfig(options: InitOptions): Promise<void> {
-	// Use the Smithery/MCP config schema and header as in the attached mcp.yaml
+	// Use the MCP config schema and header as in the attached sigyl.yaml
 	const config = {
 		runtime: "node",
 		startCommand: {
@@ -122,9 +122,9 @@ async function generateMCPConfig(options: InitOptions): Promise<void> {
 		}
 	};
 
-	const yamlHeader = `# Smithery/MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n# See https://smithery.ai/docs/use/session-config for more info.\n`;
+	const yamlHeader = `# MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n`;
 	const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
-	writeFileSync(join(options.outDir, "mcp.yaml"), yamlContent);
+	writeFileSync(join(options.outDir, "sigyl.yaml"), yamlContent);
 }
 
 async function generateTypeScriptServer(options: InitOptions): Promise<void> {

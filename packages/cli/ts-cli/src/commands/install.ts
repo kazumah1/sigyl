@@ -166,8 +166,8 @@ async function installServer(serverPath: string | undefined, options: InstallOpt
 		console.log(chalk.gray("2. Look for the hammer icon (🔨) in the chat input"))
 		console.log(chalk.gray("3. Your MCP tools should now be available in Claude"))
 		
-		// Show what tools are available if we can read the mcp.yaml
-		const mcpYamlPath = join(targetPath.includes("/") ? targetPath.split("/").slice(0, -1).join("/") : ".", "mcp.yaml")
+		// Show what tools are available if we can read the sigyl.yaml
+		const mcpYamlPath = join(targetPath.includes("/") ? targetPath.split("/").slice(0, -1).join("/") : ".", "sigyl.yaml")
 		if (existsSync(mcpYamlPath)) {
 			try {
 				const yaml = require("yaml")
@@ -179,7 +179,7 @@ async function installServer(serverPath: string | undefined, options: InstallOpt
 					})
 				}
 			} catch {
-				// Ignore errors reading mcp.yaml
+				// Ignore errors reading sigyl.yaml
 			}
 		}
 	} else {
