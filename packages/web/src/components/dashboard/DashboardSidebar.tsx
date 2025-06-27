@@ -3,17 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
-  LayoutDashboard, 
   Server, 
-  BarChart3, 
-  Key, 
   Lock,
-  Users, 
   Settings, 
-  Store, 
-  FileText, 
-  BookOpen,
-  Home,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -27,10 +19,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
   const location = useLocation();
   
   const dashboardItems = [
-    { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-    { icon: Server, label: 'Servers', path: '/dashboard?tab=servers' },
-    { icon: BarChart3, label: 'Analytics', path: '/dashboard?tab=analytics' },
-    { icon: Key, label: 'API Keys', path: '/dashboard?tab=api-keys' },
+    { icon: Server, label: 'Servers', path: '/dashboard' },
     { icon: Lock, label: 'Secrets', path: '/dashboard?tab=secrets' },
     { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
   ];

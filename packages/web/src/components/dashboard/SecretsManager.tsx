@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Lock, 
   Plus, 
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SecretsService, Secret, CreateSecretRequest } from '@/services/secretsService';
+import { APIKeyService, APIKey, CreateAPIKeyRequest } from '@/services/apiKeyService';
 import {
   Dialog,
   DialogContent,
@@ -44,14 +46,25 @@ interface SecretsManagerProps {
 
 const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerId }) => {
   const { toast } = useToast();
+  
+  // Secrets state
   const [secrets, setSecrets] = useState<Secret[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingSecrets, setIsLoadingSecrets] = useState(true);
+  const [isCreatingSecret, setIsCreatingSecret] = useState(false);
   const [showValues, setShowValues] = useState<{ [key: string]: boolean }>({});
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSecretDialogOpen, setIsSecretDialogOpen] = useState(false);
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
   
-  // Form state
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [isLoadingApiKeys, setIsLoadingApiKeys] = useState(true);
+  const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // Form state for secrets
   const [formData, setFormData] = useState({
     key: '',
     value: '',
@@ -59,14 +72,16 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     mcp_server_id: mcpServerId || ''
   });
 
-  // Fetch secrets on component mount
+  // Fetch data on component mount
   useEffect(() => {
     fetchSecrets();
+    fetchAPIKeys();
   }, [mcpServerId]);
 
+  // Secrets functions
   const fetchSecrets = async () => {
     try {
-      setIsLoading(true);
+      setIsLoadingSecrets(true);
       const fetchedSecrets = await SecretsService.getSecrets(mcpServerId);
       setSecrets(fetchedSecrets);
     } catch (error) {
@@ -77,7 +92,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingSecrets(false);
     }
   };
 
@@ -102,7 +117,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     }
 
     try {
-      setIsCreating(true);
+      setIsCreatingSecret(true);
       const request: CreateSecretRequest = {
         key: formData.key.toUpperCase(),
         value: formData.value,
@@ -120,7 +135,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         description: '',
         mcp_server_id: mcpServerId || ''
       });
-      setIsDialogOpen(false);
+      setIsSecretDialogOpen(false);
       
       toast({
         title: "Secret Created",
@@ -134,7 +149,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         variant: "destructive",
       });
     } finally {
-      setIsCreating(false);
+      setIsCreatingSecret(false);
     }
   };
 
@@ -142,7 +157,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     if (!editingSecret) return;
 
     try {
-      setIsCreating(true);
+      setIsCreatingSecret(true);
       const updatedSecret = await SecretsService.updateSecret(editingSecret.id, {
         key: formData.key.toUpperCase(),
         value: formData.value,
@@ -162,7 +177,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         mcp_server_id: mcpServerId || ''
       });
       setEditingSecret(null);
-      setIsDialogOpen(false);
+      setIsSecretDialogOpen(false);
       
       toast({
         title: "Secret Updated",
@@ -176,7 +191,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         variant: "destructive",
       });
     } finally {
-      setIsCreating(false);
+      setIsCreatingSecret(false);
     }
   };
 
@@ -198,14 +213,6 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     }
   };
 
-  const handleCopyValue = (value: string) => {
-    navigator.clipboard.writeText(value);
-    toast({
-      title: "Copied to clipboard",
-      description: "Secret value has been copied to your clipboard.",
-    });
-  };
-
   const toggleValueVisibility = (id: string) => {
     setShowValues(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -218,18 +225,18 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       description: '',
       mcp_server_id: mcpServerId || ''
     });
-    setIsDialogOpen(true);
+    setIsSecretDialogOpen(true);
   };
 
   const openEditDialog = (secret: Secret) => {
     setEditingSecret(secret);
     setFormData({
       key: secret.key,
-      value: secret.value,
+      value: secret.value || '',
       description: secret.description || '',
       mcp_server_id: secret.mcp_server_id || mcpServerId || ''
     });
-    setIsDialogOpen(true);
+    setIsSecretDialogOpen(true);
   };
 
   const handleTemplateSelect = (template: { key: string; description: string; placeholder: string }) => {
@@ -240,175 +247,371 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     }));
   };
 
-  const templates = SecretsService.getCommonSecretTemplates();
+  // API Keys functions
+  const fetchAPIKeys = async () => {
+    try {
+      setIsLoadingApiKeys(true);
+      const keys = await APIKeyService.getAPIKeys();
+      setApiKeys(keys);
+    } catch (error) {
+      console.error('Failed to fetch API keys:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch API keys. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingApiKeys(false);
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-gray-900/50 border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Lock className="w-5 h-5" />
-            Environment Variables
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Manage environment variables for your MCP servers
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleCreateApiKey = async () => {
+    if (!newKeyName.trim()) return;
+    
+    try {
+      setIsCreatingApiKey(true);
+      const request: CreateAPIKeyRequest = {
+        name: newKeyName,
+        permissions: ['read', 'write'],
+      };
+      
+      const result = await APIKeyService.createAPIKey(request);
+      
+      setNewlyCreatedKey(result.api_key);
+      setShowKeyModal(true);
+      setApiKeys(prev => [{
+        ...result.key,
+        is_active: true,
+        last_used: undefined
+      }, ...prev]);
+      setNewKeyName('');
+      
+      toast({
+        title: "API Key Created",
+        description: `New API key "${newKeyName}" has been created successfully. Make sure to copy it now - you won't be able to see it again!`,
+      });
+    } catch (error) {
+      console.error('Failed to create API key:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create API key",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingApiKey(false);
+    }
+  };
+
+  const handleDeleteApiKey = async (id: string) => {
+    setDeleteConfirmId(null);
+    try {
+      await APIKeyService.deleteAPIKey(id);
+      setApiKeys(prev => prev.filter(key => key.id !== id));
+      toast({
+        title: "API Key Deleted",
+        description: "API key has been permanently deleted.",
+      });
+    } catch (error) {
+      console.error('Failed to delete API key:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete API key",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeactivateApiKey = async (id: string) => {
+    try {
+      await APIKeyService.deactivateAPIKey(id);
+      setApiKeys(prev => prev.map(key => 
+        key.id === id ? { ...key, is_active: false } : key
+      ));
+      toast({
+        title: "API Key Deactivated",
+        description: "API key has been deactivated.",
+      });
+    } catch (error) {
+      console.error('Failed to deactivate API key:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to deactivate API key",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatPermissions = (permissions: string[]) => {
+    return permissions.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ');
+  };
+
+  const secretTemplates = [
+    { key: 'OPENAI_API_KEY', description: 'OpenAI API key for AI integrations', placeholder: 'sk-...' },
+    { key: 'ANTHROPIC_API_KEY', description: 'Anthropic API key for Claude integrations', placeholder: 'sk-ant-...' },
+    { key: 'DATABASE_URL', description: 'Database connection string', placeholder: 'postgresql://...' },
+    { key: 'JWT_SECRET', description: 'JWT signing secret', placeholder: 'your-secret-key' },
+    { key: 'REDIS_URL', description: 'Redis connection string', placeholder: 'redis://...' },
+  ];
 
   return (
     <Card className="bg-gray-900/50 border-gray-800">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Lock className="w-5 h-5" />
-          Environment Variables
+          Secrets & API Keys
         </CardTitle>
         <CardDescription className="text-gray-400">
-          Manage environment variables for your MCP servers
+          Manage environment variables and API keys for your MCP servers
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Create New Secret */}
-        <div className="flex gap-4">
-          <Button 
-            onClick={openCreateDialog}
-            className="bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Environment Variable
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowValues({})}
-            className="text-gray-400 hover:text-white"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            Show All Values
-          </Button>
-        </div>
+      <CardContent>
+        <Tabs defaultValue="secrets" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-800">
+            <TabsTrigger value="secrets" className="data-[state=active]:bg-gray-700">
+              <Lock className="w-4 h-4 mr-2" />
+              Environment Variables
+            </TabsTrigger>
+            <TabsTrigger value="api-keys" className="data-[state=active]:bg-gray-700">
+              <Key className="w-4 h-4 mr-2" />
+              API Keys
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Secrets List */}
-        <div className="space-y-4">
-          {secrets.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Lock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No environment variables found</p>
-              <p className="text-sm">Add your first environment variable to get started</p>
+          {/* Secrets Tab */}
+          <TabsContent value="secrets" className="space-y-6 mt-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">Environment Variables</h3>
+              <Button onClick={openCreateDialog} className="bg-green-600 hover:bg-green-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Secret
+              </Button>
             </div>
-          ) : (
-            secrets.map((secret) => (
-              <div key={secret.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-white font-medium font-mono">{secret.key}</h3>
-                    {secret.is_encrypted && (
-                      <Badge variant="secondary" className="text-xs">
-                        Encrypted
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {secret.mcp_server_id ? 'Server-specific' : 'Global'}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-2">
-                  <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded flex-1 mr-4">
-                    {showValues[secret.id] ? secret.value : '•'.repeat(Math.min(secret.value.length, 20))}
-                  </code>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleValueVisibility(secret.id)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      {showValues[secret.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyValue(secret.value)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(secret)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteSecret(secret.id, secret.key)}
-                      className="text-gray-400 hover:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                {secret.description && (
-                  <p className="text-xs text-gray-500 mb-2">{secret.description}</p>
-                )}
-                
-                <p className="text-xs text-gray-500">
-                  Updated {new Date(secret.updated_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
 
-        {/* Create/Edit Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            {isLoadingSecrets ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : secrets.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <Lock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No environment variables found</p>
+                <p className="text-sm">Add your first secret to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {secrets.map((secret) => (
+                  <div key={secret.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-white font-medium">{secret.key}</h3>
+                        {secret.mcp_server_id && (
+                          <Badge variant="secondary" className="text-xs">
+                            Server-specific
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleValueVisibility(secret.id)}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          {showValues[secret.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(secret)}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteSecret(secret.id, secret.key)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {secret.description && (
+                      <p className="text-gray-400 text-sm mb-2">{secret.description}</p>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                      <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded flex-1">
+                        {showValues[secret.id] ? secret.value : '••••••••••••••••'}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(secret.value || '');
+                          toast({
+                            title: "Copied to clipboard",
+                            description: "Secret value has been copied to your clipboard.",
+                          });
+                        }}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* API Keys Tab */}
+          <TabsContent value="api-keys" className="space-y-6 mt-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">API Keys</h3>
+            </div>
+
+            {/* Create New API Key */}
+            <div className="flex gap-4">
+              <Input
+                placeholder="Enter API key name"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white"
+                disabled={isCreatingApiKey}
+              />
+              <Button 
+                onClick={handleCreateApiKey}
+                disabled={isCreatingApiKey || !newKeyName.trim()}
+                className="bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white"
+              >
+                {isCreatingApiKey ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2" />
+                )}
+                Create Key
+              </Button>
+            </div>
+
+            {isLoadingApiKeys ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No API keys found</p>
+                <p className="text-sm">Create your first API key to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {apiKeys.map((apiKey) => (
+                  <div key={apiKey.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-white font-medium">{apiKey.name}</h3>
+                        <Badge 
+                          variant={apiKey.is_active ? "secondary" : "outline"} 
+                          className="text-xs"
+                        >
+                          {apiKey.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {apiKey.last_used ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Last used {new Date(apiKey.last_used).toLocaleDateString()}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Never used
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-2">
+                      <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded">
+                        {`${apiKey.key_prefix}...`}
+                      </code>
+                      <div className="flex items-center gap-2">
+                        {apiKey.is_active ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleDeactivateApiKey(apiKey.id)}
+                            className="px-4 py-2 font-semibold rounded bg-yellow-600 text-white hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 border border-yellow-700 shadow"
+                          >
+                            Deactivate
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled
+                            className="px-4 py-2 font-semibold rounded bg-gray-700 text-gray-300 border border-gray-600 shadow cursor-not-allowed"
+                          >
+                            Deactivated
+                          </Button>
+                        )}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => setDeleteConfirmId(apiKey.id)}
+                          className="px-4 py-2 font-semibold rounded bg-red-600 text-white hover:bg-red-500 focus:ring-2 focus:ring-red-400 border border-red-700 shadow"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Delete
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Permissions: {formatPermissions(apiKey.permissions)}</span>
+                      <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Secret Creation/Edit Dialog */}
+        <Dialog open={isSecretDialogOpen} onOpenChange={setIsSecretDialogOpen}>
           <DialogContent className="bg-gray-900 border-gray-700">
             <DialogHeader>
               <DialogTitle className="text-white">
                 {editingSecret ? 'Edit Environment Variable' : 'Add Environment Variable'}
               </DialogTitle>
               <DialogDescription className="text-gray-400">
-                {editingSecret 
-                  ? 'Update the environment variable details below.'
-                  : 'Add a new environment variable for your MCP server.'
-                }
+                {editingSecret ? 'Update the environment variable configuration.' : 'Add a new environment variable for your MCP server.'}
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
               {/* Quick Templates */}
-              {!editingSecret && (
-                <div className="space-y-2">
-                  <Label className="text-white">Quick Templates</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {templates.slice(0, 6).map((template) => (
-                      <Button
-                        key={template.key}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTemplateSelect(template)}
-                        className="text-xs text-gray-400 hover:text-white border-gray-600"
-                      >
-                        {template.key}
-                      </Button>
-                    ))}
-                  </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-300 mb-2 block">Quick Templates</Label>
+                <div className="flex flex-wrap gap-2">
+                  {secretTemplates.map((template) => (
+                    <Button
+                      key={template.key}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTemplateSelect(template)}
+                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                    >
+                      {template.key}
+                    </Button>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="key" className="text-white">Variable Name</Label>
+              <div>
+                <Label htmlFor="key" className="text-sm font-medium text-gray-300">Key</Label>
                 <Input
                   id="key"
                   placeholder="e.g., OPENAI_API_KEY"
@@ -416,13 +619,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value }))}
                   className="bg-gray-800 border-gray-700 text-white"
                 />
-                <p className="text-xs text-gray-500">
-                  Use uppercase letters, numbers, and underscores only
-                </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="value" className="text-white">Value</Label>
+              <div>
+                <Label htmlFor="value" className="text-sm font-medium text-gray-300">Value</Label>
                 <Textarea
                   id="value"
                   placeholder="Enter the secret value"
@@ -432,11 +632,11 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-white">Description (Optional)</Label>
+              <div>
+                <Label htmlFor="description" className="text-sm font-medium text-gray-300">Description (Optional)</Label>
                 <Input
                   id="description"
-                  placeholder="What is this variable used for?"
+                  placeholder="Brief description of this secret"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="bg-gray-800 border-gray-700 text-white"
@@ -447,26 +647,88 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                className="text-gray-400 hover:text-white"
+                onClick={() => setIsSecretDialogOpen(false)}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
               >
                 Cancel
               </Button>
               <Button
                 onClick={editingSecret ? handleUpdateSecret : handleCreateSecret}
-                disabled={isCreating || !formData.key.trim() || !formData.value.trim()}
-                className="bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white"
+                disabled={isCreatingSecret || !formData.key.trim() || !formData.value.trim()}
+                className="bg-green-600 hover:bg-green-700"
               >
-                {isCreating ? (
+                {isCreatingSecret ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4 mr-2" />
-                )}
+                ) : null}
                 {editingSecret ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* API Key Modal - show only once after creation */}
+        <Dialog open={showKeyModal} onOpenChange={(open) => {
+          if (!open) {
+            setShowKeyModal(false);
+            setNewlyCreatedKey(null);
+          }
+        }}>
+          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8">
+            <DialogHeader className="w-full text-center">
+              <DialogTitle className="text-2xl font-bold mb-2">Your new API key</DialogTitle>
+            </DialogHeader>
+            <div className="w-full flex flex-col items-center gap-4">
+              <code
+                className="text-lg font-mono bg-gray-900 px-6 py-4 rounded-lg text-green-400 border border-green-700 break-all select-all shadow-md w-full text-center"
+                style={{ wordBreak: 'break-all' }}
+              >
+                {newlyCreatedKey}
+              </code>
+              <span className="text-base text-yellow-400 text-center font-medium px-2">
+                Copy this key now. <span className="font-bold">You will not be able to see it again!</span>
+              </span>
+            </div>
+            <div className="w-full flex flex-row items-center justify-center gap-4 mt-2">
+              <Button
+                onClick={() => {
+                  if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
+                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
+                }}
+                className="bg-gradient-to-r from-green-500 to-yellow-500 text-white px-6 py-2 font-semibold rounded shadow hover:from-green-600 hover:to-yellow-600"
+              >
+                Copy
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
+                className="px-6 py-2 font-semibold rounded shadow"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation dialog */}
+        {deleteConfirmId && (
+          <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+            <DialogContent className="max-w-md mx-auto bg-gray-900 border border-gray-700 shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
+              <DialogHeader className="w-full text-center mb-2">
+                <DialogTitle className="text-2xl font-bold text-white mb-2">Delete API Key</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex flex-col items-center gap-2">
+                <p className="text-lg text-red-400 font-semibold text-center mb-1">
+                  Are you sure you want to <span className="font-bold">permanently delete</span> this API key?
+                </p>
+                <p className="text-base text-gray-400 text-center mb-2">This action cannot be undone.</p>
+              </div>
+              <div className="w-full flex flex-row items-center justify-center gap-6 mt-2">
+                <Button variant="destructive" onClick={() => handleDeleteApiKey(deleteConfirmId)} className="px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
+                <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardContent>
     </Card>
   );
