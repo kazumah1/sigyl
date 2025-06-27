@@ -1,11 +1,12 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/UserProfile";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
 
 const PageHeader = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -18,12 +19,14 @@ const PageHeader = () => {
             SIGYL
           </div>
           <nav className="flex items-center space-x-8">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="text-gray-300 hover:text-white font-medium transition-colors"
-            >
-              Dashboard
-            </button>
+            {user && (
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="text-gray-300 hover:text-white font-medium transition-colors"
+              >
+                Dashboard
+              </button>
+            )}
             <button 
               onClick={() => navigate('/marketplace')}
               className="text-gray-300 hover:text-white font-medium transition-colors"

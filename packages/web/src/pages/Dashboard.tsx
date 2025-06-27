@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
@@ -14,10 +14,10 @@ import APIKeysManager from '@/components/dashboard/APIKeysManager';
 import WorkspaceMembers from '@/components/dashboard/WorkspaceMembers';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
+import PageHeader from '@/components/PageHeader';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [adminSession] = useState(() => {
@@ -37,13 +37,6 @@ const Dashboard = () => {
 
   const activeTab = searchParams.get('tab') || 'overview';
 
-  // Redirect to login if no user and no admin session
-  React.useEffect(() => {
-    if (!user && !adminSession) {
-      navigate('/login');
-    }
-  }, [user, adminSession, navigate]);
-
   const handleTabChange = (tab: string) => {
     if (tab === 'overview') {
       setSearchParams({});
@@ -52,17 +45,10 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 animate-spin border-2 border-green-400 border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-gray-400">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const currentUser = adminSession || user;
+  const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
 
+  // Show error state if there's an error
   if (error) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -76,9 +62,6 @@ const Dashboard = () => {
     );
   }
 
-  const currentUser = adminSession || user;
-  const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
-
   return (
     <div className="min-h-screen bg-gray-950 flex">
       <DashboardSidebar 
@@ -87,10 +70,7 @@ const Dashboard = () => {
       />
       
       <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
-        <DashboardHeader 
-          workspaceName={workspace?.name || 'Your Workspace'} 
-          userName={displayName}
-        />
+        <PageHeader />
         
         <div className="container mx-auto px-6 py-8 mt-16">
           {/* Welcome Section */}
@@ -103,8 +83,21 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Metrics Overview */}
-          <MetricsOverview metrics={metrics} />
+          {/* Metrics Overview - Show loading state only for this component */}
+          {loading ? (
+            <div className="mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                    <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <MetricsOverview metrics={metrics} />
+          )}
 
           {/* Main Dashboard Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
@@ -149,21 +142,66 @@ const Dashboard = () => {
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MCPServersList servers={mcpServers} />
-                <ActivityFeed />
+                {loading ? (
+                  <>
+                    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                      <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-16 bg-gray-700 rounded"></div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                      <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+                      <div className="space-y-3">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-12 bg-gray-700 rounded"></div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <MCPServersList servers={mcpServers} />
+                    <ActivityFeed />
+                  </>
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="servers" className="space-y-6">
-              <MCPServersList servers={mcpServers} detailed />
+              {loading ? (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                  <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-gray-700 rounded"></div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MCPServersList servers={mcpServers} detailed />
+              )}
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              <AnalyticsCharts 
-                visitData={analyticsData.visitData}
-                toolUsageData={analyticsData.toolUsageData}
-                serverStatusData={analyticsData.serverStatusData}
-              />
+              {loading ? (
+                <div className="space-y-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
+                      <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+                      <div className="h-64 bg-gray-700 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <AnalyticsCharts 
+                  visitData={analyticsData.visitData}
+                  toolUsageData={analyticsData.toolUsageData}
+                  serverStatusData={analyticsData.serverStatusData}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="api-keys" className="space-y-6">
@@ -189,11 +227,11 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-300">Workspace Name</label>
-                      <p className="text-white mt-1">{workspace?.name}</p>
+                      <p className="text-white mt-1">{workspace?.name || 'Loading...'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-300">Workspace Slug</label>
-                      <p className="text-white mt-1">{workspace?.slug}</p>
+                      <p className="text-white mt-1">{workspace?.slug || 'Loading...'}</p>
                     </div>
                     <Button className="bg-gray-700 hover:bg-gray-600 text-white">
                       Update Settings
