@@ -1,6 +1,7 @@
-import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest } from '@sigil/container-builder';
+import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '@sigil/container-builder';
 import { supabase } from '../config/database';
 import { decrypt } from '../utils/encryption';
+import { fetchSigylYaml, SigylConfig } from './yaml';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -17,6 +18,7 @@ export interface DeploymentRequest {
   env: Record<string, string>;
   userId?: string;
   selectedSecrets?: string[];
+  githubToken?: string;
 }
 
 export interface DeploymentResult {
@@ -25,6 +27,22 @@ export interface DeploymentResult {
   serviceName?: string;
   error?: string;
   securityReport?: any;
+}
+
+/**
+ * Generate default Sigyl configuration for Node.js runtime
+ */
+function generateDefaultSigylConfig(): SigylConfig {
+  return {
+    runtime: 'node',
+    language: 'javascript',
+    entryPoint: 'server.js',
+    env: {
+      NODE_ENV: 'production',
+      MCP_TRANSPORT: 'http',
+      MCP_ENDPOINT: '/mcp'
+    }
+  };
 }
 
 /**
@@ -85,6 +103,21 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
     }
 
+    // Extract repo details
+    const [owner, repo] = request.repoName.split('/');
+
+    // Try to fetch sigyl.yaml configuration
+    let sigylConfig;
+    try {
+      console.log('📋 Fetching sigyl.yaml configuration...');
+      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
+      console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+    } catch (error) {
+      console.warn('⚠️ Could not fetch sigyl.yaml, generating default Node.js configuration');
+      // Generate default configuration for Node.js runtime
+      sigylConfig = generateDefaultSigylConfig();
+    }
+
     // Fetch user secrets if userId is provided
     let deploymentEnv = { ...request.env };
     
@@ -101,21 +134,23 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // Initialize Cloud Run service
     const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
-    // Prepare Cloud Run deployment request with MCP-specific configuration
+    // Prepare Cloud Run deployment request with Sigyl configuration
     const cloudRunRequest: CloudRunDeploymentRequest = {
       repoUrl: request.repoUrl,
       repoName: request.repoName,
       branch: request.branch || 'main',
       environmentVariables: {
         ...deploymentEnv,
-        // MCP-specific environment variables
+        // Add sigyl.yaml environment variables
+        ...sigylConfig.env,
+        // Ensure required MCP variables are set
         NODE_ENV: 'production',
         MCP_TRANSPORT: 'http',
         MCP_ENDPOINT: '/mcp',
-        FORCE_HTTPS: 'true',
-        SESSION_SECURE: 'true',
-        REQUIRE_TOKEN_VALIDATION: 'true'
-      }
+        PORT: '8080'
+      },
+      // Pass the sigyl configuration with proper casting
+      sigylConfig: sigylConfig as SigylConfigUnion
     };
 
     console.log('🔒 Deploying with security validation...');
