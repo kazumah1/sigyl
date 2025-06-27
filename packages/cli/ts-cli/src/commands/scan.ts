@@ -66,7 +66,7 @@ export async function scanAndGenerate(
 		spinner.succeed("MCP server generated successfully!")
 		
 		console.log(chalk.green("\n🎉 Generated files:"))
-		console.log(chalk.gray(`  ${join(options.outDir, "mcp.yaml")} - MCP configuration`))
+		console.log(chalk.gray(`  ${join(options.outDir, "sigyl.yaml")} - MCP configuration`))
 		console.log(chalk.gray(`  ${join(options.outDir, "server.ts")} - MCP server`))
 		console.log(chalk.gray(`  ${join(options.outDir, "tools/")} - Tool handlers`))
 		
