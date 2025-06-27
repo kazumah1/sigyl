@@ -1,3 +1,7 @@
+import { supabase } from '@/lib/supabase'
+
+// Registry API configuration
+const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
 
 // Deployment service for managing agent deployments
 export interface DeploymentConfig {
@@ -19,7 +23,7 @@ export interface DeploymentConfig {
 export interface DeploymentStatus {
   id: string;
   name: string;
-  status: 'pending' | 'deploying' | 'running' | 'stopped' | 'failed';
+  status: 'pending' | 'deploying' | 'running' | 'stopped' | 'failed' | 'active';
   health: 'healthy' | 'degraded' | 'unhealthy';
   url?: string;
   createdAt: Date;
@@ -42,153 +46,282 @@ export interface MCPTemplate {
   popularity: number;
 }
 
+export interface DeploymentRequest {
+  repoUrl: string;
+  repoName: string;
+  branch: string;
+  env: Record<string, string>;
+  githubToken: string;
+}
+
+export interface DeploymentResult {
+  success: boolean;
+  deploymentUrl?: string;
+  packageId?: string;
+  serviceId?: string;
+  error?: string;
+  securityReport?: any;
+}
+
 class DeploymentService {
-  baseUrl = '/api/deployments';
-
+  /**
+   * Get all deployments for the current user
+   */
   async getDeployments(): Promise<DeploymentStatus[]> {
-    // Mock deployments for demo
-    return [
-      {
-        id: 'dep-001',
-        name: 'OpenAI Connector',
-        status: 'running',
-        health: 'healthy',
-        url: 'https://openai-connector.sigyl.app',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-20'),
-        metrics: {
-          cpu: 45,
-          memory: 67,
-          requests: 15420,
-          errors: 12
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
-      },
-      {
-        id: 'dep-002',
-        name: 'Database Agent',
-        status: 'running',
-        health: 'healthy',
-        url: 'https://db-agent.sigyl.app',
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-19'),
-        metrics: {
-          cpu: 32,
-          memory: 54,
-          requests: 8930,
-          errors: 3
-        }
-      },
-      {
-        id: 'dep-003',
-        name: 'Web Scraper',
-        status: 'deploying',
-        health: 'healthy',
-        createdAt: new Date('2024-01-18'),
-        updatedAt: new Date('2024-01-20'),
-        metrics: {
-          cpu: 0,
-          memory: 0,
-          requests: 0,
-          errors: 0
-        }
-      },
-      {
-        id: 'dep-004',
-        name: 'Email Automation',
-        status: 'stopped',
-        health: 'unhealthy',
-        url: 'https://email-auto.sigyl.app',
-        createdAt: new Date('2024-01-12'),
-        updatedAt: new Date('2024-01-17'),
-        metrics: {
-          cpu: 0,
-          memory: 0,
-          requests: 0,
-          errors: 145
-        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch deployments: ${response.status}`);
       }
-    ];
+
+      const result = await response.json();
+      
+      // Transform backend data to frontend format
+      return (result.data || []).map((deployment: any) => ({
+        id: deployment.id,
+        name: deployment.package_name || deployment.name,
+        status: deployment.status === 'active' ? 'running' : deployment.status,
+        health: deployment.health_status || 'healthy',
+        url: deployment.deployment_url,
+        createdAt: new Date(deployment.created_at),
+        updatedAt: new Date(deployment.updated_at),
+        metrics: {
+          cpu: deployment.metrics?.cpu || 0,
+          memory: deployment.metrics?.memory || 0,
+          requests: deployment.metrics?.requests || 0,
+          errors: deployment.metrics?.errors || 0
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to fetch deployments:', error);
+      // Return empty array on error
+      return [];
+    }
   }
 
+  /**
+   * Get specific deployment by ID
+   */
   async getDeployment(id: string): Promise<DeploymentStatus | null> {
-    const deployments = await this.getDeployments();
-    return deployments.find(d => d.id === id) || null;
-  }
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-  async createDeployment(config: DeploymentConfig): Promise<DeploymentStatus> {
-    // Mock deployment creation
-    const deployment: DeploymentStatus = {
-      id: `dep-${Date.now()}`,
-      name: config.name,
-      status: 'pending',
-      health: 'healthy',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      metrics: {
-        cpu: 0,
-        memory: 0,
-        requests: 0,
-        errors: 0
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`Failed to fetch deployment: ${response.status}`);
       }
-    };
 
-    // Simulate deployment process
-    setTimeout(() => {
-      deployment.status = 'deploying';
-      deployment.updatedAt = new Date();
-    }, 1000);
+      const result = await response.json();
+      const deployment = result.data;
 
-    setTimeout(() => {
-      deployment.status = 'running';
-      deployment.url = `https://${config.name.toLowerCase().replace(/\s+/g, '-')}.sigyl.app`;
-      deployment.updatedAt = new Date();
-    }, 5000);
-
-    return deployment;
+      return {
+        id: deployment.id,
+        name: deployment.package_name || deployment.name,
+        status: deployment.status === 'active' ? 'running' : deployment.status,
+        health: deployment.health_status || 'healthy',
+        url: deployment.deployment_url,
+        createdAt: new Date(deployment.created_at),
+        updatedAt: new Date(deployment.updated_at),
+        metrics: {
+          cpu: deployment.metrics?.cpu || 0,
+          memory: deployment.metrics?.memory || 0,
+          requests: deployment.metrics?.requests || 0,
+          errors: deployment.metrics?.errors || 0
+        }
+      };
+    } catch (error) {
+      console.error('Failed to fetch deployment:', error);
+      return null;
+    }
   }
 
-  async updateDeployment(id: string, updates: Partial<DeploymentConfig>): Promise<DeploymentStatus | null> {
-    const deployment = await this.getDeployment(id);
-    if (!deployment) return null;
+  /**
+   * Deploy MCP server from GitHub repository
+   */
+  async deployFromGitHub(request: DeploymentRequest): Promise<DeploymentResult> {
+    try {
+      console.log('🚀 Starting deployment:', request.repoName);
 
-    deployment.status = 'deploying';
-    deployment.updatedAt = new Date();
+      const response = await fetch(`${REGISTRY_API_BASE}/deploy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repoUrl: request.repoUrl,
+          githubToken: request.githubToken,
+          branch: request.branch,
+          env: request.env
+        })
+      });
 
-    // Simulate update process
-    setTimeout(() => {
-      deployment.status = 'running';
-      deployment.updatedAt = new Date();
-    }, 3000);
+      const result = await response.json();
 
-    return deployment;
+      if (!response.ok) {
+        console.error('❌ Deployment failed:', result.error);
+        return {
+          success: false,
+          error: result.error || `Deployment failed: ${response.status}`,
+          securityReport: result.securityReport
+        };
+      }
+
+      console.log('✅ Deployment successful:', result.deploymentUrl);
+
+      return {
+        success: true,
+        deploymentUrl: result.deploymentUrl,
+        packageId: result.packageId,
+        serviceId: result.serviceId,
+        securityReport: result.securityReport
+      };
+    } catch (error) {
+      console.error('❌ Deployment error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown deployment error'
+      };
+    }
   }
 
-  async deleteDeployment(id: string): Promise<boolean> {
-    const deployment = await this.getDeployment(id);
-    if (!deployment) return false;
-
-    deployment.status = 'stopped';
-    deployment.updatedAt = new Date();
-    return true;
+  /**
+   * Create deployment from config (legacy compatibility)
+   */
+  async createDeployment(config: DeploymentConfig): Promise<DeploymentStatus> {
+    // For legacy compatibility, convert config to deployment request
+    // This would typically require more information about the source repository
+    throw new Error('Direct deployment from config not supported. Use deployFromGitHub instead.');
   }
 
+  /**
+   * Restart a deployment
+   */
   async restartDeployment(id: string): Promise<boolean> {
-    const deployment = await this.getDeployment(id);
-    if (!deployment) return false;
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}/restart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    deployment.status = 'deploying';
-    deployment.updatedAt = new Date();
+      if (!response.ok) {
+        console.error('Failed to restart deployment:', response.status);
+        return false;
+      }
 
-    setTimeout(() => {
-      deployment.status = 'running';
-      deployment.health = 'healthy';
-      deployment.updatedAt = new Date();
-    }, 2000);
-
-    return true;
+      console.log('✅ Deployment restarted successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to restart deployment:', error);
+      return false;
+    }
   }
 
+  /**
+   * Delete a deployment
+   */
+  async deleteDeployment(id: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to delete deployment:', response.status);
+        return false;
+      }
+
+      console.log('✅ Deployment deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to delete deployment:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get deployment logs
+   */
+  async getDeploymentLogs(id: string, limit: number = 100, since?: string): Promise<string[]> {
+    try {
+      const params = new URLSearchParams();
+      if (limit) params.append('limit', limit.toString());
+      if (since) params.append('since', since);
+
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}/logs?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch logs: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Failed to fetch deployment logs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get deployment health status
+   */
+  async getDeploymentHealth(id: string): Promise<'healthy' | 'unhealthy' | 'unknown'> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        return 'unknown';
+      }
+
+      const result = await response.json();
+      return result.data?.status || 'unknown';
+    } catch (error) {
+      console.error('Failed to fetch deployment health:', error);
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Update deployment configuration
+   */
+  async updateDeployment(id: string, updates: Partial<DeploymentConfig>): Promise<DeploymentStatus | null> {
+    // For now, updating deployment config is not supported
+    // This would require backend endpoint for updating running deployments
+    console.warn('Deployment updates not yet supported');
+    return null;
+  }
+
+  /**
+   * Get MCP templates for deployment
+   */
   async getTemplates(): Promise<MCPTemplate[]> {
+    // Return static templates for now
+    // In the future, these could come from the registry API
     return [
       {
         id: 'template-001',
@@ -238,6 +371,9 @@ class DeploymentService {
     ];
   }
 
+  /**
+   * Deploy from template
+   */
   async deployFromTemplate(templateId: string, customConfig?: Partial<DeploymentConfig>): Promise<DeploymentStatus> {
     const templates = await this.getTemplates();
     const template = templates.find(t => t.id === templateId);
@@ -246,69 +382,68 @@ class DeploymentService {
       throw new Error('Template not found');
     }
 
-    const config = { ...template.config, ...customConfig };
-    return this.createDeployment(config);
+    // For template deployment, we'd need to have pre-built repositories
+    // For now, throw an error directing users to GitHub deployment
+    throw new Error('Template deployment not yet supported. Please deploy from GitHub repository.');
   }
 
+  /**
+   * Calculate deployment cost estimate
+   */
   calculateCost(config: DeploymentConfig): number {
-    const baseCost = config.resources.cpu * 5 + config.resources.memory * 0.01 + config.resources.storage * 0.1;
-    const scalingMultiplier = (config.scaling.maxInstances + config.scaling.minInstances) / 2;
-    return Math.round(baseCost * scalingMultiplier * 100) / 100;
+    const baseCost = 5; // Base platform fee
+    const cpuCost = config.resources.cpu * 10;
+    const memoryCost = (config.resources.memory / 1024) * 15;
+    const storageCost = (config.resources.storage / 10) * 2;
+    
+    return baseCost + cpuCost + memoryCost + storageCost;
   }
 
+  /**
+   * Generate secure API key for deployment
+   */
   generateSecretKey(): string {
-    return 'sk-' + Array.from({ length: 48 }, () => 
-      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 62)]
-    ).join('');
+    return 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
+  /**
+   * Get deployment metrics over time
+   */
   async getMetrics(deploymentId: string, timeRange: '1h' | '24h' | '7d' = '24h') {
-    // Mock metrics data
-    const baseMetrics = {
-      cpu: Math.random() * 100,
-      memory: Math.random() * 100,
-      requests: Math.floor(Math.random() * 10000),
-      errors: Math.floor(Math.random() * 100),
-      latency: Math.random() * 1000
-    };
-
-    const dataPoints = timeRange === '1h' ? 60 : timeRange === '24h' ? 144 : 168;
-    const interval = timeRange === '1h' ? 60000 : timeRange === '24h' ? 600000 : 3600000;
+    // For now, return simulated metrics
+    // In the future, this would fetch real metrics from the backend
+    const now = Date.now();
+    const dataPoints = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 168;
+    const interval = timeRange === '1h' ? 5 * 60 * 1000 : timeRange === '24h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
     return Array.from({ length: dataPoints }, (_, i) => ({
-      timestamp: new Date(Date.now() - (dataPoints - i) * interval),
-      ...Object.fromEntries(
-        Object.entries(baseMetrics).map(([key, value]) => [
-          key,
-          typeof value === 'number' 
-            ? Math.max(0, value + (Math.random() - 0.5) * 20)
-            : value
-        ])
-      )
+      timestamp: new Date(now - (dataPoints - 1 - i) * interval),
+      cpu: Math.random() * 100,
+      memory: Math.random() * 100,
+      requests: Math.floor(Math.random() * 1000),
+      errors: Math.floor(Math.random() * 10)
     }));
   }
 
+  /**
+   * Validate deployment configuration
+   */
   validateConfig(config: DeploymentConfig): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    if (!config.name || config.name.length < 3) {
-      errors.push('Name must be at least 3 characters long');
+    if (!config.name) errors.push('Name is required');
+    if (config.resources.cpu < 0.1) errors.push('CPU must be at least 0.1');
+    if (config.resources.memory < 128) errors.push('Memory must be at least 128MB');
+    if (config.scaling.minInstances < 1) errors.push('Minimum instances must be at least 1');
+    if (config.scaling.maxInstances < config.scaling.minInstances) {
+      errors.push('Maximum instances must be greater than or equal to minimum instances');
     }
 
-    if (config.resources.cpu < 0.5 || config.resources.cpu > 16) {
-      errors.push('CPU must be between 0.5 and 16 cores');
-    }
-
-    if (config.resources.memory < 256 || config.resources.memory > 32768) {
-      errors.push('Memory must be between 256MB and 32GB');
-    }
-
-    if (config.scaling.minInstances < 1 || config.scaling.minInstances > config.scaling.maxInstances) {
-      errors.push('Min instances must be at least 1 and not exceed max instances');
-    }
-
-    return { valid: errors.length === 0, errors };
+    return {
+      valid: errors.length === 0,
+      errors
+    };
   }
 }
 
-export const deploymentService = new DeploymentService();
+export default new DeploymentService();

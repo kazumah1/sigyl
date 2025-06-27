@@ -1,16 +1,11 @@
 // Deployment service for MCP servers with security validation
-import { MCPMetadata } from "@/lib/github"
-import { SecurityValidationResult } from "@/types/security"
-
-// Import Railway service from container-builder package
-import { RailwayService, RailwayConfig, RailwayDeploymentRequest } from '@sigil/container-builder'
 
 export interface DeploymentRequest {
   repoUrl: string
   repoName: string
   branch: string
   env: Record<string, string>
-  metadata?: MCPMetadata
+  metadata?: any
   githubToken: string
   selectedSecrets?: string[]
 }
@@ -18,19 +13,19 @@ export interface DeploymentRequest {
 export interface DeploymentResult {
   success: boolean
   deploymentUrl?: string
-  registryId?: string
-  serviceId?: string
+  packageId?: string
+  serviceName?: string
   error?: string
-  securityReport?: SecurityValidationResult
+  securityReport?: any
 }
 
 // Registry API configuration
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
 
-// Railway configuration
-const RAILWAY_CONFIG: RailwayConfig = {
-  apiToken: import.meta.env.VITE_RAILWAY_API_TOKEN || 'demo-token',
-  apiUrl: import.meta.env.VITE_RAILWAY_API_URL
+// Google Cloud Run configuration
+const CLOUD_RUN_CONFIG = {
+  projectId: import.meta.env.VITE_GOOGLE_CLOUD_PROJECT_ID || 'demo-project',
+  region: import.meta.env.VITE_GOOGLE_CLOUD_REGION || 'us-central1'
 }
 
 export class DeploymentService {
@@ -41,15 +36,15 @@ export class DeploymentService {
     try {
       console.log('🔒 Starting secure deployment process for:', request.repoName)
 
-      // Check if Railway API token is available
-      const hasRailwayToken = import.meta.env.VITE_RAILWAY_API_TOKEN && 
-                             import.meta.env.VITE_RAILWAY_API_TOKEN !== 'demo-token'
+      // Check if Google Cloud credentials are available
+      const hasGoogleCloudCredentials = import.meta.env.VITE_GOOGLE_CLOUD_PROJECT_ID && 
+                                       import.meta.env.VITE_GOOGLE_CLOUD_PROJECT_ID !== 'demo-project'
 
-      if (hasRailwayToken) {
-        console.log('🚀 Using real Railway API for deployment')
-        return await DeploymentService.deployToRailway(request)
+      if (hasGoogleCloudCredentials) {
+        console.log('🚀 Using real Google Cloud Run for deployment')
+        return await DeploymentService.deployToCloudRun(request)
       } else {
-        console.log('🧪 Using enhanced simulation (Railway API token not configured)')
+        console.log('🧪 Using enhanced simulation (Google Cloud credentials not configured)')
         return await DeploymentService.simulateDeployment(request)
       }
 
@@ -63,105 +58,102 @@ export class DeploymentService {
   }
 
   /**
-   * Deploy to Railway using real API
+   * Deploy to Google Cloud Run using real API
    */
-  static async deployToRailway(request: DeploymentRequest): Promise<DeploymentResult> {
+  static async deployToCloudRun(request: DeploymentRequest): Promise<DeploymentResult> {
     try {
-      console.log('🚀 Deploying to Railway...')
+      console.log('🚀 Deploying to Google Cloud Run...')
       
-      // Initialize Railway service
-      const railwayService = new RailwayService(RAILWAY_CONFIG)
-      
-      // Prepare Railway deployment request
-      const railwayRequest: RailwayDeploymentRequest = {
-        repoUrl: request.repoUrl,
-        repoName: request.repoName,
-        branch: request.branch,
-        environmentVariables: {
-          ...request.env,
-          NODE_ENV: 'production',
-          MCP_TRANSPORT: 'http',
-          MCP_ENDPOINT: '/mcp',
-          FORCE_HTTPS: 'true',
-          SESSION_SECURE: 'true',
-          REQUIRE_TOKEN_VALIDATION: 'true'
-        }
-      }
-      
-      // Deploy to Railway with security validation
-      const railwayResult = await railwayService.deployMCPServer(railwayRequest)
-      
-      if (!railwayResult.success) {
+      // For now, we'll use the Registry API's deployment endpoint
+      // which will handle the Google Cloud Run deployment
+      const response = await fetch(`${REGISTRY_API_BASE}/deploy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repoUrl: request.repoUrl,
+          repoName: request.repoName,
+          branch: request.branch,
+          env: {
+            ...request.env,
+            NODE_ENV: 'production',
+            MCP_TRANSPORT: 'http',
+            MCP_ENDPOINT: '/mcp',
+            FORCE_HTTPS: 'true',
+            SESSION_SECURE: 'true',
+            REQUIRE_TOKEN_VALIDATION: 'true'
+          },
+          selectedSecrets: request.selectedSecrets
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
         return {
           success: false,
-          error: railwayResult.error || 'Railway deployment failed',
-          securityReport: railwayResult.securityReport
+          error: result.error || `Deployment failed: ${response.status}`,
+          securityReport: result.securityReport
         }
       }
       
-      console.log('✅ Railway deployment successful:', railwayResult.deploymentUrl)
-      console.log('🔗 MCP endpoint available at:', `${railwayResult.deploymentUrl}/mcp`)
-      
-      // Register in MCP Registry
-      const registryId = await DeploymentService.registerInRegistry(request, railwayResult.deploymentUrl!)
+      console.log('✅ Google Cloud Run deployment successful:', result.deploymentUrl)
+      console.log('🔗 MCP endpoint available at:', `${result.deploymentUrl}/mcp`)
       
       return {
         success: true,
-        deploymentUrl: railwayResult.deploymentUrl,
-        registryId,
-        serviceId: railwayResult.serviceId,
-        securityReport: railwayResult.securityReport
+        deploymentUrl: result.deploymentUrl,
+        packageId: result.packageId,
+        serviceName: result.serviceName,
+        securityReport: result.securityReport
       }
       
     } catch (error) {
-      console.error('❌ Railway deployment failed:', error)
+      console.error('❌ Google Cloud Run deployment failed:', error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Railway deployment failed'
+        error: error instanceof Error ? error.message : 'Google Cloud Run deployment failed'
       }
     }
   }
 
   /**
-   * Enhanced simulation with security validation
+   * Simulate deployment for development/testing
    */
   static async simulateDeployment(request: DeploymentRequest): Promise<DeploymentResult> {
-    console.log('🔍 Running security validation...')
+    console.log('🧪 Running enhanced deployment simulation...')
     
     // Simulate security validation
     const securityReport = await DeploymentService.simulateSecurityValidation(request)
     
-    // Block deployment if critical security issues found
     if (!securityReport.passed) {
-      console.error('🚨 Deployment blocked due to security issues')
       return {
         success: false,
-        error: `Deployment blocked: ${securityReport.summary}`,
+        error: securityReport.summary,
         securityReport
       }
     }
 
-    console.log('✅ Security validation passed, proceeding with enhanced simulation')
-
-    // Simulate deployment delay with realistic Railway-like timing
-    await new Promise(resolve => setTimeout(resolve, 4000))
+    // Simulate deployment delay with realistic Google Cloud Run timing
+    await new Promise(resolve => setTimeout(resolve, 5000))
     
-    // Generate a realistic deployment URL
+    // Generate a mock deployment URL (now Google Cloud Run style)
     const sanitizedName = request.repoName.replace('/', '-').toLowerCase()
-    const deploymentUrl = `https://${sanitizedName}-${Date.now()}.railway.app`
+    const deploymentUrl = `https://${sanitizedName}-${Date.now()}-uc.a.run.app`
     
-    console.log('🚀 Simulated Railway deployment to:', deploymentUrl)
+    console.log('🚀 Simulated Google Cloud Run deployment to:', deploymentUrl)
     console.log('🔗 MCP endpoint available at:', `${deploymentUrl}/mcp`)
     console.log('🔒 Security features enabled: HTTPS, token validation, secure sessions')
 
     // Register in MCP Registry
-    const registryId = await DeploymentService.registerInRegistry(request, deploymentUrl)
+    const packageId = await DeploymentService.registerInRegistry(request, deploymentUrl)
 
     return {
       success: true,
       deploymentUrl,
-      registryId,
-      serviceId: `railway-sim-${Date.now()}`,
+      packageId,
+      serviceName: `sigil-mcp-${sanitizedName}`,
       securityReport
     }
   }
@@ -169,7 +161,7 @@ export class DeploymentService {
   /**
    * Validate MCP security before deployment
    */
-  static async validateSecurity(request: DeploymentRequest): Promise<SecurityValidationResult> {
+  static async validateSecurity(request: DeploymentRequest): Promise<any> {
     try {
       console.log('🔍 Running security validation...')
       
@@ -215,7 +207,7 @@ export class DeploymentService {
   /**
    * Simulate security validation (temporary until API is ready)
    */
-  static async simulateSecurityValidation(request: DeploymentRequest): Promise<SecurityValidationResult> {
+  static async simulateSecurityValidation(request: DeploymentRequest): Promise<any> {
     console.log('🔍 Running simulated security validation...')
     
     // Simulate analysis delay
@@ -263,15 +255,15 @@ export class DeploymentService {
    * Now with MCP-specific security configuration
    */
   static async deployToHosting(request: DeploymentRequest): Promise<string> {
-    // This method is now deprecated in favor of deployToRailway
-    console.warn('⚠️ deployToHosting is deprecated. Use deployToRailway instead.')
+    // This method is now deprecated in favor of deployToCloudRun
+    console.warn('⚠️ deployToHosting is deprecated. Use deployToCloudRun instead.')
     
     // Simulate deployment delay
     await new Promise(resolve => setTimeout(resolve, 3000))
     
     // Generate a mock deployment URL with proper MCP endpoint
     const sanitizedName = request.repoName.replace('/', '-').toLowerCase()
-    const deploymentUrl = `https://${sanitizedName}-${Date.now()}.railway.app`
+    const deploymentUrl = `https://${sanitizedName}-${Date.now()}-uc.a.run.app`
     
     console.log('🚀 Deployed securely to:', deploymentUrl)
     console.log('🔗 MCP endpoint available at:', `${deploymentUrl}/mcp`)
@@ -289,7 +281,7 @@ export class DeploymentService {
       github_url: request.repoUrl,
       deployment_url: deploymentUrl,
       mcp_endpoint: `${deploymentUrl}/mcp`, // NEW: MCP-specific endpoint
-      tags: ['github', 'deployed', 'secure', ...(request.metadata?.tools?.map(t => t.name) || [])],
+      tags: ['github', 'deployed', 'secure', 'cloud-run', ...(request.metadata?.tools?.map(t => t.name) || [])],
       // Map MCP tools to registry format
       tools: request.metadata?.tools?.map(tool => ({
         tool_name: tool.name,
