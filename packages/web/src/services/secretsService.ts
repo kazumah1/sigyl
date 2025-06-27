@@ -32,11 +32,9 @@ export class SecretsService {
    */
   private static getAuthHeaders(): HeadersInit {
     const githubToken = localStorage.getItem('github_app_access_token');
-    
     if (!githubToken) {
       throw new Error('No authentication token available');
     }
-
     return {
       'Authorization': `Bearer ${githubToken}`,
       'Content-Type': 'application/json',
@@ -51,16 +49,13 @@ export class SecretsService {
       const url = mcpServerId 
         ? `${REGISTRY_API_BASE}/secrets?mcp_server_id=${mcpServerId}`
         : `${REGISTRY_API_BASE}/secrets`;
-        
       const response = await fetch(url, {
         headers: this.getAuthHeaders(),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to fetch secrets: ${response.status}`);
       }
-
       const result = await response.json();
       return result.data.secrets;
     } catch (error) {
@@ -77,12 +72,10 @@ export class SecretsService {
       const response = await fetch(`${REGISTRY_API_BASE}/secrets/${id}`, {
         headers: this.getAuthHeaders(),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to fetch secret: ${response.status}`);
       }
-
       const result = await response.json();
       return result.data.secret;
     } catch (error) {
@@ -101,12 +94,10 @@ export class SecretsService {
         headers: this.getAuthHeaders(),
         body: JSON.stringify(request),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to create secret: ${response.status}`);
       }
-
       const result = await response.json();
       return result.data.secret;
     } catch (error) {
@@ -125,12 +116,10 @@ export class SecretsService {
         headers: this.getAuthHeaders(),
         body: JSON.stringify(request),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to update secret: ${response.status}`);
       }
-
       const result = await response.json();
       return result.data.secret;
     } catch (error) {
@@ -148,7 +137,6 @@ export class SecretsService {
         method: 'DELETE',
         headers: this.getAuthHeaders(),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to delete secret: ${response.status}`);
@@ -166,11 +154,9 @@ export class SecretsService {
     try {
       const secrets = await this.getSecrets(mcpServerId);
       const envVars: Record<string, string> = {};
-      
       secrets.forEach(secret => {
         envVars[secret.key] = secret.value;
       });
-      
       return envVars;
     } catch (error) {
       console.error('Failed to get secrets as env vars:', error);
@@ -205,4 +191,4 @@ export class SecretsService {
       { key: 'TWITTER_ACCESS_SECRET', description: 'Twitter access secret', placeholder: 'your-twitter-access-secret' },
     ];
   }
-} 
+}

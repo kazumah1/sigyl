@@ -46,7 +46,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
       }
     };
 
-    // Deploy to Railway with security validation
+    // Deploy to Google Cloud Run with security validation
     const deploymentResult = await deployRepo(deploymentRequest);
 
     if (!deploymentResult.success) {
@@ -96,7 +96,8 @@ router.post('/deploy', async (req: Request, res: Response) => {
       ...(metadata.version && { version: metadata.version }),
       description: metadata.description,
       source_api_url: repoUrl,
-      tags: ['github', 'deployed', 'railway'],
+
+      tags: ['github', 'deployed', 'cloud-run'],
       required_secrets: metadata.secrets || [],
       tools: metadata.tools?.map(tool => ({
         tool_name: tool.name,
@@ -122,7 +123,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
       packageId: registered.id, 
       deploymentUrl,
       mcpEndpoint: `${deploymentUrl}/mcp`,
-      serviceId: deploymentResult.serviceId,
+      serviceName: deploymentResult.serviceName,
       securityReport: deploymentResult.securityReport
     });
 
@@ -135,10 +136,10 @@ router.post('/deploy', async (req: Request, res: Response) => {
         success: false,
         error: 'Repository is private or inaccessible. Please ensure the GitHub App has access to this repository.'
       });
-    } else if (error.message && error.message.toLowerCase().includes('railway api token')) {
+    } else if (error.message && error.message.toLowerCase().includes('google cloud')) {
       return res.status(500).json({
         success: false,
-        error: 'Railway deployment service is not configured. Please contact support.'
+        error: 'Google Cloud Run deployment service is not configured. Please contact support.'
       });
     } else {
       return res.status(500).json({ 
