@@ -144,7 +144,6 @@ export const rateLimit = (options: {
 
     const key = req.user.key_id;
     const now = Date.now();
-    const windowStart = now - windowMs;
 
     const userRequests = requests.get(key);
     

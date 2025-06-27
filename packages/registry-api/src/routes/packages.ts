@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
-import { requireAuth, requirePermissions, optionalAuth } from '../middleware/auth';
+import { requirePermissions, optionalAuth } from '../middleware/auth';
 import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
 
 const router = Router();
@@ -31,7 +31,7 @@ const searchQuerySchema = z.object({
 });
 
 // POST /api/v1/packages - Create a new package (requires write permission)
-router.post('/', requirePermissions(['write']), async (req: Request, res: Response): Promise<void> => {
+router.post('/', requirePermissions(['write']), async (req: Request, res: Response) => {
   try {
     const validatedData = createPackageSchema.parse(req.body);
     
@@ -40,11 +40,10 @@ router.post('/', requirePermissions(['write']), async (req: Request, res: Respon
     if (existingPackage) {
       const response: APIResponse<null> = {
         success: false,
-        error: 'Package name already exists',
-        message: `Package '${validatedData.name}' is already registered`
+        error: 'Package already exists',
+        message: `A package with the name '${validatedData.name}' already exists`
       };
-      res.status(409).json(response);
-      return;
+      return res.status(409).json(response);
     }
 
     // Set author_id from authenticated user if not provided
@@ -60,31 +59,20 @@ router.post('/', requirePermissions(['write']), async (req: Request, res: Respon
       data: newPackage,
       message: 'Package created successfully'
     };
-    
-    res.status(201).json(response);
+    return res.status(201).json(response);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const response: APIResponse<null> = {
-        success: false,
-        error: 'Validation error',
-        message: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
-      };
-      res.status(400).json(response);
-      return;
-    }
-
+    console.error('Error creating package:', error);
     const response: APIResponse<null> = {
       success: false,
-      error: 'Internal server error',
+      error: 'Failed to create package',
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
-    
-    res.status(500).json(response);
+    return res.status(400).json(response);
   }
 });
 
 // GET /api/v1/packages/search - Search packages (optional auth for analytics)
-router.get('/search', optionalAuth, async (req: Request, res: Response): Promise<void> => {
+router.get('/search', optionalAuth, async (req: Request, res: Response) => {
   try {
     const validatedQuery = searchQuerySchema.parse(req.query);
     
@@ -96,7 +84,7 @@ router.get('/search', optionalAuth, async (req: Request, res: Response): Promise
       message: `Found ${searchResults.total} packages`
     };
     
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const response: APIResponse<null> = {
@@ -104,8 +92,7 @@ router.get('/search', optionalAuth, async (req: Request, res: Response): Promise
         error: 'Invalid query parameters',
         message: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
       };
-      res.status(400).json(response);
-      return;
+      return res.status(400).json(response);
     }
 
     const response: APIResponse<null> = {
@@ -114,12 +101,12 @@ router.get('/search', optionalAuth, async (req: Request, res: Response): Promise
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
     
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 
 // GET /api/v1/packages/:name - Get package by name (optional auth for analytics)
-router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<void> => {
+router.get('/:name', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     
@@ -129,8 +116,7 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<
         error: 'Invalid package name',
         message: 'Package name is required'
       };
-      res.status(400).json(response);
-      return;
+      return res.status(400).json(response);
     }
 
     const packageData = await packageService.getPackageByName(name);
@@ -141,8 +127,7 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<
         error: 'Package not found',
         message: `Package '${name}' does not exist`
       };
-      res.status(404).json(response);
-      return;
+      return res.status(404).json(response);
     }
 
     // Increment download count
@@ -154,7 +139,7 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<
       message: 'Package retrieved successfully'
     };
     
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     const response: APIResponse<null> = {
       success: false,
@@ -162,12 +147,12 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
     
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 
 // GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
-router.get('/', optionalAuth, async (_req: Request, res: Response): Promise<void> => {
+router.get('/', optionalAuth, async (_req: Request, res: Response) => {
   try {
     const packages = await packageService.getAllPackages();
     
@@ -177,7 +162,7 @@ router.get('/', optionalAuth, async (_req: Request, res: Response): Promise<void
       message: `Retrieved ${packages.length} packages`
     };
     
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     const response: APIResponse<null> = {
       success: false,
@@ -185,12 +170,12 @@ router.get('/', optionalAuth, async (_req: Request, res: Response): Promise<void
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
     
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 
 // GET /api/v1/packages/admin/all - Admin endpoint for getting all packages (requires admin permission)
-router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, res: Response): Promise<void> => {
+router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, res: Response) => {
   try {
     const packages = await packageService.getAllPackages();
     
@@ -199,17 +184,15 @@ router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, re
       data: packages,
       message: `Admin: Retrieved ${packages.length} packages`
     };
-    
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     const response: APIResponse<null> = {
       success: false,
       error: 'Failed to retrieve packages',
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
-    
-    res.status(500).json(response);
+    return res.status(500).json(response);
   }
 });
 
-export default router; 
+export default router;

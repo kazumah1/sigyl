@@ -33,7 +33,7 @@ async function runMigrations() {
     console.log('\n🔍 Checking if tables already exist...');
     
     try {
-      const { data: users, error: usersError } = await supabase
+      const { error: usersError } = await supabase
         .from('api_users')
         .select('count')
         .limit(1);
@@ -48,7 +48,7 @@ async function runMigrations() {
     }
 
     try {
-      const { data: keys, error: keysError } = await supabase
+      const { error: keysError } = await supabase
         .from('api_keys')
         .select('count')
         .limit(1);
@@ -63,7 +63,7 @@ async function runMigrations() {
     }
 
     try {
-      const { data: usage, error: usageError } = await supabase
+      const { error: usageError } = await supabase
         .from('api_key_usage')
         .select('count')
         .limit(1);
