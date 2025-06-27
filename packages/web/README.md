@@ -118,28 +118,29 @@ Visit `http://localhost:8088`
 
 ## 🔧 Environment Variables
 
-### Required Variables
+### Shared Configuration (All Developers)
+
+This project uses a shared Supabase project and GitHub App for development. All developers can use the same environment configuration.
 
 #### Supabase Configuration
-- **`VITE_SUPABASE_URL`**: Your Supabase project URL
-  - Get from: Supabase Dashboard → Settings → API → Project URL
-- **`VITE_SUPABASE_ANON_KEY`**: Your Supabase anonymous/public key
-  - Get from: Supabase Dashboard → Settings → API → Project API keys → anon public
+- **`VITE_SUPABASE_URL`**: Shared Supabase project URL
+  - Value: `https://zcudhsyvfrlfgqqhjrqv.supabase.co`
+- **`VITE_SUPABASE_ANON_KEY`**: Shared Supabase anonymous/public key
+  - This is a public key and safe to share
 
 #### GitHub Configuration
-- **`VITE_GITHUB_APP_NAME`**: Name of your GitHub App
-  - Set this to your GitHub App's name (e.g., "sigyl-dev")
-- **`VITE_GITHUB_APP_ID`**: Your GitHub App ID
-  - Get from: GitHub App settings page
-- **`GITHUB_PRIVATE_KEY`**: Your GitHub App's private key
-  - Generate from: GitHub App settings → Private keys → Generate private key
-  - Must be in PEM format with newlines escaped as `\n`
-- **`GITHUB_CLIENT_SECRET`**: Your GitHub OAuth App client secret
-  - Get from: GitHub OAuth App settings
+- **`VITE_GITHUB_APP_NAME`**: Shared GitHub App name
+  - Value: `sigyl-dev`
+- **`VITE_GITHUB_APP_ID`**: Shared GitHub App ID
+  - Value: `1459404`
+- **`GITHUB_PRIVATE_KEY`**: Shared GitHub App private key
+  - This key is used for deployment operations
+- **`GITHUB_CLIENT_SECRET`**: Shared GitHub OAuth client secret
+  - Used for user authentication
 
 #### Registry API
-- **`VITE_REGISTRY_API_URL`**: URL of your MCP registry API
-  - Default: `http://localhost:3000/api/v1`
+- **`VITE_REGISTRY_API_URL`**: Shared MCP registry API URL
+  - Value: `http://localhost:3000/api/v1`
   - Must be running for MCP template loading and deployments
 
 ### Optional Variables
@@ -148,10 +149,10 @@ Visit `http://localhost:8088`
   - Default: `false`
 
 ### Security Notes
-- Never commit your `.env` file to version control
-- The `.env` file is already in `.gitignore`
-- Keep your GitHub private key secure
-- Rotate secrets regularly in production
+- The `.env` file contains shared development credentials
+- Never commit the `.env` file to version control (already in `.gitignore`)
+- For production, use separate credentials and environment-specific configuration
+- The GitHub private key is shared for development but should be rotated regularly
 
 ## 🏗️ Architecture Overview
 

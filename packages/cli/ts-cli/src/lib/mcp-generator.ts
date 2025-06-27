@@ -44,152 +44,80 @@ export class MCPGenerator {
 		endpoints: ExpressEndpoint[],
 		options: MCPGenerationOptions
 	): Promise<void> {
+		// More generic Smithery-style configSchema YAML with arbitrary values and no OpenAI-specific fields
 		const config = {
-			name: "generated-mcp-server",
-			description: "Auto-generated MCP server from Express endpoints",
-			version: "1.0.0",
-			tools: endpoints.map(endpoint => {
-				const toolConfig: any = {
-					name: this.generateToolName(endpoint),
-					description: endpoint.description || `${endpoint.method} ${endpoint.path}`,
-					inputSchema: {
-						type: "object",
-						properties: this.generateToolSchema(endpoint),
-						required: endpoint.parameters?.filter(p => p.required).map(p => p.name) || []
+			runtime: "node",
+			startCommand: {
+				type: "http",
+				configSchema: {
+					type: "object",
+					required: ["apiKey", "environment"],
+					properties: {
+						apiKey: {
+							type: "string",
+							title: "MCP API Key",
+							description: "Your MCP API key (required)"
+						},
+						serviceName: {
+							type: "string",
+							title: "Service Name",
+							default: "my-mcp-service",
+							description: "Name of the MCP-compatible service"
+						},
+						logLevel: {
+							type: "string",
+							title: "Log Level",
+							default: "info",
+							enum: ["debug", "info", "warn", "error"],
+							description: "Logging verbosity level"
+						},
+						timeout: {
+							type: "number",
+							title: "Timeout",
+							description: "Request timeout in seconds",
+							default: 30,
+							minimum: 1,
+							maximum: 300
+						},
+						enableMetrics: {
+							type: "boolean",
+							title: "Enable Metrics",
+							description: "Enable metrics collection",
+							default: false
+						},
+						allowedClients: {
+							type: "array",
+							title: "Allowed Clients",
+							description: "List of client IDs allowed to access the server",
+							items: { type: "string" },
+							default: []
+						},
+						customSettings: {
+							type: "object",
+							title: "Custom Settings",
+							description: "Advanced custom settings for the server",
+							properties: {
+								maxConnections: { type: "number", default: 100 },
+								useCache: { type: "boolean", default: true }
+							},
+							default: {}
+						},
+						environment: {
+							type: "string",
+							title: "Environment",
+							description: "Deployment environment",
+							enum: ["development", "staging", "production"],
+							default: "development"
+						}
 					}
 				}
-				
-				// Add output schema if we have response type information
-				if (endpoint.responseSchema) {
-					toolConfig.outputSchema = endpoint.responseSchema
-				} else if (endpoint.responseType) {
-					toolConfig.outputSchema = {
-						type: this.mapTypeToJSONSchema(endpoint.responseType),
-						description: `Response from ${endpoint.method} ${endpoint.path}`
-					}
-				}
-				
-				return toolConfig
-			})
-		}
-
-		// Create YAML content with proper comments
-		const yamlHeader = `# Auto-generated MCP Server Configuration
-# 
-# This file defines the tools available in your MCP server.
-# Each tool corresponds to an endpoint in your Express application.
-# 
-# To add a new tool manually:
-# 1. Add a new entry to the tools array below
-# 2. Define the inputSchema with your tool's parameters
-# 3. Optionally define outputSchema for the expected response
-# 4. Update the corresponding tool handler in server.ts
-
-`
-		const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 })
-		
-		// Add section comments to the YAML content
-		const toolsSectionComment = `
-# ============================================================================
-# AUTO-GENERATED TOOLS FROM EXPRESS ENDPOINTS
-# ============================================================================
-# These tools were automatically generated from your Express application.
-# Each tool corresponds to an endpoint in your Express app.
-`
-		const templateSectionComment = `
-# ============================================================================
-# MANUAL TOOL TEMPLATE
-# ============================================================================
-# To add a new tool manually, uncomment and modify the template below:
-/*
-// ===== CUSTOM TOOL NAME =====
-server.tool(
-	"myCustomTool",
-	"Description of what this tool does",
-	z.object({
-		// ===== INPUT PARAMETERS =====
-		// Define your tool's input parameters here
-		param1: z.string().describe("Description of param1"),
-		param2: z.number().optional().describe("Optional numeric parameter"),
-		// For complex objects:
-		// body: z.object({
-		//     field1: z.string(),
-		//     field2: z.number()
-		// }).optional()
-	}),
-	async (args) => {
-		// ===== REQUEST CONFIGURATION =====
-		const url = "https://api.example.com/endpoint";
-		const method = "POST";
-		
-		// Build request options
-		const requestOptions: any = {
-			method,
-			headers: {
-				"Content-Type": "application/json",
-			},
+			}
 		};
 
-		// ===== PARAMETER HANDLING =====
-		const queryParams = new URLSearchParams();
-		const bodyParams: any = {};
-		// Example: Add query parameters
-		// if (args.param1) queryParams.append("param1", args.param1);
-		// Example: Add body parameters
-		// if (args.body) Object.assign(bodyParams, args.body);
-
-		// ===== URL CONSTRUCTION =====
-		if (queryParams.toString()) {
-			const separator = url.includes('?') ? '&' : '?';
-			requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
-		} else {
-			requestOptions.url = url;
-		}
-		if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
-			requestOptions.body = JSON.stringify(bodyParams);
-		}
-
-		// ===== CUSTOM LOGIC & HTTP REQUEST =====
-		try {
-			// Example: Make an HTTP request
-			// const response = await fetch(requestOptions.url, requestOptions);
-			// const data = await response.json();
-			// Example: Custom logic without HTTP request
-			const result = {
-				message: "Custom tool executed successfully",
-				parameters: args,
-				timestamp: new Date().toISOString()
-			};
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(result, null, 2)
-					}
-				]
-			};
-		} catch (error) {
-			return {
-				content: [
-					{
-						type: "text",
-						text: \`Error in custom tool: \${error.message}\`
-					}
-				]
-			};
-		}
-	}
-);
-*/
-`
-
-		// Insert the section comments at the right places
-		let finalYamlContent = yamlContent
-		finalYamlContent = finalYamlContent.replace('tools:', 'tools:' + toolsSectionComment)
-		finalYamlContent = finalYamlContent + templateSectionComment
-
-		writeFileSync(join(this.outDir, "mcp.yaml"), finalYamlContent)
-		verboseLog("Generated mcp.yaml configuration")
+		const yamlHeader = `# Smithery/MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n# See https://smithery.ai/docs/use/session-config for more info.\n`;
+		const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
+		writeFileSync(join(this.outDir, "mcp.yaml"), yamlContent);
+		verboseLog("Generated mcp.yaml configuration");
 	}
 
 	private async generateTypeScriptServer(
@@ -301,84 +229,21 @@ ${endpoints.map(endpoint => {
 	// ============================================================================
 	// MANUAL TOOL TEMPLATE
 	// ============================================================================
-	// To add a new tool manually, uncomment and modify the template below:
+	// To add a new tool manually, use the following simple template:
 	/*
 	server.tool(
-		"myCustomTool",
-		"Description of what this tool does",
-		z.object({
-			// ===== INPUT PARAMETERS =====
-			// Define your tool's input parameters here
-			param1: z.string().describe("Description of param1"),
-			param2: z.number().optional().describe("Optional numeric parameter"),
-			// For complex objects:
-			// body: z.object({
-			//     field1: z.string(),
-			//     field2: z.number()
-			// }).optional()
-		}),
-		async (args) => {
-			// ===== REQUEST CONFIGURATION =====
-			const url = "https://api.example.com/endpoint";
-			const method = "POST";
-			
-			// Build request options
-			const requestOptions: any = {
-				method,
-				headers: {
-					"Content-Type": "application/json",
-				},
-			};
-
-			// ===== PARAMETER HANDLING =====
-			const queryParams = new URLSearchParams();
-			const bodyParams: any = {};
-			// Example: Add query parameters
-			// if (args.param1) queryParams.append("param1", args.param1);
-			// Example: Add body parameters
-			// if (args.body) Object.assign(bodyParams, args.body);
-
-			// ===== URL CONSTRUCTION =====
-			if (queryParams.toString()) {
-				const separator = url.includes('?') ? '&' : '?';
-				requestOptions.url = \`\${url}\${separator}\${queryParams.toString()}\`;
-			} else {
-				requestOptions.url = url;
-			}
-			if (["POST", "PUT", "PATCH"].includes(method) && Object.keys(bodyParams).length > 0) {
-				requestOptions.body = JSON.stringify(bodyParams);
-			}
-
-			// ===== CUSTOM LOGIC & HTTP REQUEST =====
-			try {
-				// Example: Make an HTTP request
-				// const response = await fetch(requestOptions.url, requestOptions);
-				// const data = await response.json();
-				// Example: Custom logic without HTTP request
-				const result = {
-					message: "Custom tool executed successfully",
-					parameters: args,
-					timestamp: new Date().toISOString()
-				};
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(result, null, 2)
-						}
-					]
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: \`Error in custom tool: \${error.message}\`
-						}
-					]
-				};
-			}
-		}
+	  "reverseString",
+	  "Reverse a string value",
+	  {
+	    value: z.string().describe("String to reverse"),
+	  },
+	  async ({ value }) => {
+	    return {
+	      content: [
+	        { type: "text", text: value.split("").reverse().join("") }
+	      ]
+	    };
+	  }
 	);
 	*/
 

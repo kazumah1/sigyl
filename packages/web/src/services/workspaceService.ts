@@ -13,24 +13,85 @@ export interface Workspace {
 export const workspaceService = {
   async getUserWorkspaces(): Promise<Workspace[]> {
     try {
+      console.log('🔍 getUserWorkspaces: Starting...');
+      
       // For GitHub App users, ensure profile exists first
       const githubUserStr = localStorage.getItem('github_app_user');
+      console.log('🔍 getUserWorkspaces: GitHub user from localStorage:', githubUserStr ? 'exists' : 'not found');
+      
       if (githubUserStr) {
         const githubUser = JSON.parse(githubUserStr);
         const userId = `github_${githubUser.id}`;
+        console.log('🔍 getUserWorkspaces: GitHub user ID:', userId);
+        console.log('🔍 getUserWorkspaces: GitHub user data:', {
+          id: githubUser.id,
+          login: githubUser.login,
+          email: githubUser.email
+        });
         
         // Ensure GitHub App user has a profile
+        console.log('🔍 getUserWorkspaces: Ensuring GitHub user profile...');
         await this.ensureGitHubUserProfile(userId);
         
         // Get the profile UUID for querying workspaces
-        const { data: profile } = await supabase
+        console.log('🔍 getUserWorkspaces: Querying profile with auth_type=github_app and auth_user_id=', userId);
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id')
           .eq('auth_type', 'github_app')
           .eq('auth_user_id', userId)
           .single();
 
+        console.log('🔍 getUserWorkspaces: Profile query result:', { profile, error: profileError });
+
+        if (profileError) {
+          console.error('❌ getUserWorkspaces: Profile query failed:', profileError);
+          // Try alternative query using github_id
+          console.log('🔍 getUserWorkspaces: Trying alternative query with github_id...');
+          const { data: altProfile, error: altError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('github_id', githubUser.id.toString())
+            .single();
+          
+          console.log('🔍 getUserWorkspaces: Alternative query result:', { altProfile, error: altError });
+          
+          if (altProfile) {
+            console.log('✅ getUserWorkspaces: Found profile via github_id, updating auth fields...');
+            // Update the profile to have correct auth_type and auth_user_id
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                auth_type: 'github_app',
+                auth_user_id: userId
+              })
+              .eq('id', altProfile.id);
+            
+            if (updateError) {
+              console.error('❌ getUserWorkspaces: Failed to update profile auth fields:', updateError);
+            } else {
+              console.log('✅ getUserWorkspaces: Profile auth fields updated successfully');
+            }
+            
+            // Use the altProfile for workspace query
+            const { data: workspaces, error } = await supabase
+              .from('workspaces')
+              .select('*')
+              .eq('owner_id', altProfile.id)
+              .order('created_at', { ascending: false });
+
+            if (error) {
+              console.error('Error fetching workspaces:', error);
+              return [];
+            }
+
+            console.log('✅ getUserWorkspaces: Found workspaces:', workspaces?.length || 0);
+            return workspaces || [];
+          }
+        }
+
         if (profile) {
+          console.log('✅ getUserWorkspaces: Found profile, querying workspaces...');
           // Query workspaces using the profile UUID
           const { data: workspaces, error } = await supabase
             .from('workspaces')
@@ -43,10 +104,12 @@ export const workspaceService = {
             return [];
           }
 
+          console.log('✅ getUserWorkspaces: Found workspaces:', workspaces?.length || 0);
           return workspaces || [];
         }
       }
 
+      console.log('🔍 getUserWorkspaces: Falling back to Supabase auth or no auth...');
       // Fallback for Supabase auth users
       const { data: workspaces, error } = await supabase
         .from('workspaces')
@@ -58,9 +121,10 @@ export const workspaceService = {
         return [];
       }
 
+      console.log('✅ getUserWorkspaces: Found workspaces (fallback):', workspaces?.length || 0);
       return workspaces || [];
     } catch (error) {
-      console.error('Error in getUserWorkspaces:', error);
+      console.error('❌ getUserWorkspaces: Unexpected error:', error);
       return [];
     }
   },
@@ -121,50 +185,86 @@ export const workspaceService = {
   // Helper method to ensure GitHub App users have a profile
   async ensureGitHubUserProfile(userId: string): Promise<string> {
     try {
+      console.log('🔍 ensureGitHubUserProfile: Starting with userId:', userId);
+      
       // Get GitHub user data from localStorage
       const githubUserStr = localStorage.getItem('github_app_user');
       if (!githubUserStr) {
-        console.error('No GitHub user data found for profile creation');
+        console.error('❌ ensureGitHubUserProfile: No GitHub user data found for profile creation');
         throw new Error('No GitHub user data available');
       }
 
       const githubUser = JSON.parse(githubUserStr);
+      console.log('🔍 ensureGitHubUserProfile: GitHub user data:', {
+        id: githubUser.id,
+        login: githubUser.login,
+        email: githubUser.email
+      });
       
       // Check if profile already exists using github_id (which should exist)
-      const { data: existingProfile } = await supabase
+      console.log('🔍 ensureGitHubUserProfile: Checking for existing profile with github_id:', githubUser.id.toString());
+      const { data: existingProfile, error: existingError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, auth_type, auth_user_id')
         .eq('github_id', githubUser.id.toString())
         .single();
 
+      console.log('🔍 ensureGitHubUserProfile: Existing profile check result:', { existingProfile, error: existingError });
+
       if (existingProfile) {
-        console.log('GitHub App user profile already exists:', githubUser.login);
+        console.log('✅ ensureGitHubUserProfile: GitHub App user profile already exists:', githubUser.login);
+        
+        // Check if the profile has correct auth_type and auth_user_id
+        if (existingProfile.auth_type !== 'github_app' || existingProfile.auth_user_id !== userId) {
+          console.log('🔍 ensureGitHubUserProfile: Updating profile auth fields...');
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              auth_type: 'github_app',
+              auth_user_id: userId
+            })
+            .eq('id', existingProfile.id);
+          
+          if (updateError) {
+            console.error('❌ ensureGitHubUserProfile: Failed to update profile auth fields:', updateError);
+          } else {
+            console.log('✅ ensureGitHubUserProfile: Profile auth fields updated successfully');
+          }
+        }
+        
         return existingProfile.id;
       }
 
       // Create profile directly
+      console.log('🔍 ensureGitHubUserProfile: Creating new profile...');
+      const profileData = {
+        email: githubUser.email || `${githubUser.login}@github.com`,
+        username: githubUser.login,
+        full_name: githubUser.name,
+        github_username: githubUser.login,
+        github_id: githubUser.id.toString(),
+        avatar_url: githubUser.avatar_url,
+        auth_type: 'github_app',
+        auth_user_id: userId
+      };
+      
+      console.log('🔍 ensureGitHubUserProfile: Profile data to insert:', profileData);
+      
       const { data: newProfile, error } = await supabase
         .from('profiles')
-        .insert({
-          email: githubUser.email || `${githubUser.login}@github.com`,
-          username: githubUser.login,
-          full_name: githubUser.name,
-          github_username: githubUser.login,
-          github_id: githubUser.id.toString(),
-          avatar_url: githubUser.avatar_url
-        })
+        .insert(profileData)
         .select('id')
         .single();
 
       if (error) {
-        console.error('Error creating GitHub user profile:', error);
+        console.error('❌ ensureGitHubUserProfile: Error creating GitHub user profile:', error);
         throw error;
       }
 
-      console.log('Created profile for GitHub App user:', githubUser.login);
+      console.log('✅ ensureGitHubUserProfile: Created profile for GitHub App user:', githubUser.login, 'with ID:', newProfile.id);
       return newProfile.id;
     } catch (error) {
-      console.error('Error ensuring GitHub user profile:', error);
+      console.error('❌ ensureGitHubUserProfile: Unexpected error:', error);
       throw error;
     }
   },
