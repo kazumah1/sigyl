@@ -33,6 +33,7 @@ type AuthContextType = {
   addGitHubAccount: (account: GitHubAccount) => void
   removeGitHubAccount: (installationId: number) => void
   linkAdditionalGitHubAccount: () => Promise<string>
+  clearInvalidInstallations: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -376,12 +377,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user profile from profiles table if session exists
       if (session?.user) {
         try {
+          console.log('Fetching user profile for session user:', session.user.user_metadata?.user_name)
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
           if (profile && !profileError) {
+            console.log('Found user profile in database:', profile.github_username)
             // Use profile as the logged-in user
             setUser({
               ...session.user,
@@ -394,12 +397,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               },
               email: profile.email,
             })
+          } else {
+            console.log('No profile found in database or error:', profileError)
           }
           
-          // Check for existing GitHub App installations for this OAuth user
+          // ALWAYS check for existing GitHub App installations for this OAuth user
+          // regardless of whether we found a profile or not
+          console.log('Calling loadExistingGitHubAppAccounts for session user')
           await loadExistingGitHubAppAccounts(session.user)
         } catch (error) {
           console.error('Error fetching user profile:', error)
+          // Still try to load GitHub App accounts even if profile fetch failed
+          console.log('Profile fetch failed, still calling loadExistingGitHubAppAccounts')
+          await loadExistingGitHubAppAccounts(session.user)
         }
       }
       setLoading(false)
@@ -417,15 +427,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Only handle Supabase auth changes if we don't have a valid GitHub App session
         const hasValidGitHubAppSession = isGitHubAppSessionValid()
         
+        console.log('Auth state change handler:', { 
+          event, 
+          hasUser: !!session?.user, 
+          hasValidGitHubAppSession,
+          githubAppUser: !!localStorage.getItem('github_app_user'),
+          githubAppToken: !!localStorage.getItem('github_app_access_token')
+        })
+        
         if (!hasValidGitHubAppSession) {
-          console.log('Supabase auth state change:', event, { hasUser: !!session?.user })
+          console.log('Processing Supabase auth state change:', event, { hasUser: !!session?.user })
           setSession(session)
           setUser(session?.user ?? null)
           setLoading(false)
 
           // If user signs in, ensure we have their profile in our users table
           if (event === 'SIGNED_IN' && session?.user) {
-            await ensureUserProfile(session.user)
+            console.log('SIGNED_IN event - calling ensureUserProfile and loadExistingGitHubAppAccounts')
+            console.log('Current localStorage state:')
+            console.log('- github_app_accounts:', localStorage.getItem('github_app_accounts'))
+            console.log('- github_app_user:', localStorage.getItem('github_app_user'))
+            console.log('- github_app_access_token:', localStorage.getItem('github_app_access_token'))
+            console.log('- github_app_installation_id:', localStorage.getItem('github_app_installation_id'))
+            
+            // First try to restore GitHub App accounts directly - this is the critical fix
+            console.log('Auth state change: calling loadExistingGitHubAppAccounts FIRST')
+            try {
+              await loadExistingGitHubAppAccounts(session.user)
+            } catch (error) {
+              console.error('Error in loadExistingGitHubAppAccounts:', error)
+            }
+            
+            // Then try ensureUserProfile (but don't let it block the GitHub App restoration)
+            try {
+              await ensureUserProfile(session.user)
+            } catch (error) {
+              console.error('Error in ensureUserProfile:', error)
+            }
           }
         } else {
           console.log('Ignoring Supabase auth state change - valid GitHub App session exists')
@@ -443,15 +481,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [])
 
   const ensureUserProfile = async (user: User) => {
+    console.log('=== ensureUserProfile called ===')
     try {
       // Check if user profile exists
+      console.log('Checking for existing user profile for:', user.id)
       const { data: existingUser } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
         .single()
 
+      console.log('Existing user profile:', existingUser ? 'found' : 'not found')
+
       if (!existingUser) {
+        console.log('Creating new user profile')
         // Create user profile
         const { error } = await supabase
           .from('users')
@@ -465,11 +508,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           console.error('Error creating user profile:', error)
+        } else {
+          console.log('User profile created successfully')
         }
       }
       
       // Check for existing GitHub App installations for this user
-      await loadExistingGitHubAppAccounts(user)
+      // console.log('ensureUserProfile: calling loadExistingGitHubAppAccounts')
+      // await loadExistingGitHubAppAccounts(user)
     } catch (error) {
       console.error('Error ensuring user profile:', error)
     }
@@ -477,12 +523,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // New function to load existing GitHub App accounts for OAuth users
   const loadExistingGitHubAppAccounts = async (user: User) => {
+    console.log('=== loadExistingGitHubAppAccounts called ===')
     try {
       const githubUsername = user.user_metadata?.user_name
       const githubId = user.user_metadata?.sub
       
+      console.log('User metadata:', { githubUsername, githubId, email: user.email })
+      
       if (!githubUsername && !githubId) {
-        console.log('No GitHub username or ID found for user')
+        console.log('No GitHub username or ID found for user - exiting')
         return
       }
 
@@ -490,13 +539,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check localStorage first for any stored GitHub App accounts
       const storedAccounts = localStorage.getItem('github_app_accounts')
+      console.log('Stored accounts in localStorage:', storedAccounts ? 'found' : 'not found')
       if (storedAccounts) {
         try {
           const accounts: GitHubAccount[] = JSON.parse(storedAccounts)
+          console.log('Parsed accounts from localStorage:', accounts.length)
           const userAccounts = accounts.filter(account => 
             account.username === githubUsername || 
             account.email === user.email
           )
+          
+          console.log('Filtered user accounts:', userAccounts.length)
           
           if (userAccounts.length > 0) {
             console.log('Found existing GitHub App accounts in localStorage:', userAccounts.length)
@@ -505,14 +558,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Set the first account as active
             const activeAccount = userAccounts.find(acc => acc.isActive) || userAccounts[0]
             if (activeAccount) {
+              console.log('Setting active account:', activeAccount.username)
               setActiveGitHubAccount(activeAccount)
               setGitHubInstallationId(activeAccount.installationId)
-              console.log('Restored GitHub App access for:', activeAccount.username)
+              
+              // CRITICAL: Restore the GitHub App session state in localStorage
+              // This is what makes isGitHubAppSessionValid() return true
+              const githubUserData = {
+                id: githubId || user.id,
+                login: activeAccount.username,
+                name: activeAccount.fullName || activeAccount.username,
+                avatar_url: activeAccount.avatarUrl || user.user_metadata?.avatar_url,
+                email: activeAccount.email || user.email
+              }
+              
+              console.log('Restoring GitHub App session state in localStorage')
+              localStorage.setItem('github_app_user', JSON.stringify(githubUserData))
+              localStorage.setItem('github_app_access_token', activeAccount.accessToken || 'restored_token')
+              localStorage.setItem('github_app_installation_id', activeAccount.installationId.toString())
+              localStorage.setItem('github_app_install_time', Date.now().toString())
+              
+              console.log('Restored complete GitHub App session for:', activeAccount.username)
             }
             return
           }
-        } catch (error) {
-          console.error('Error parsing stored GitHub App accounts:', error)
+        } catch (parseError) {
+          console.error('Error parsing stored GitHub App accounts:', parseError)
         }
       }
 
@@ -537,7 +608,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               fullName: installation.account_login, // We don't have full name in the installations table
               avatarUrl: user.user_metadata?.avatar_url || '',
               email: user.email || '',
-              accessToken: '', // This will need to be refreshed when needed
+              accessToken: 'db_restored_token', // This will need to be refreshed when needed
               isActive: false,
               accountLogin: installation.account_login,
               accountType: installation.account_type || 'User'
@@ -554,6 +625,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             // Store in localStorage for faster future access
             localStorage.setItem('github_app_accounts', JSON.stringify(githubAccounts))
+            
+            // CRITICAL: Also restore the GitHub App session state in localStorage
+            const githubUserData = {
+              id: githubId || user.id,
+              login: githubAccounts[0].username,
+              name: githubAccounts[0].fullName || githubAccounts[0].username,
+              avatar_url: githubAccounts[0].avatarUrl,
+              email: githubAccounts[0].email
+            }
+            
+            localStorage.setItem('github_app_user', JSON.stringify(githubUserData))
+            localStorage.setItem('github_app_access_token', githubAccounts[0].accessToken)
+            localStorage.setItem('github_app_installation_id', githubAccounts[0].installationId.toString())
+            localStorage.setItem('github_app_install_time', Date.now().toString())
             
             console.log('Restored GitHub App access from database for:', githubAccounts[0].username)
             return
@@ -572,6 +657,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const signOut = async () => {
+    console.log('=== signOut called ===')
     try {
       // Store the GitHub username before clearing session data
       const storedUser = localStorage.getItem('github_app_user')
@@ -583,36 +669,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           githubUsername = userData.login
           // Store just the username for future login attempts
           localStorage.setItem('github_username_for_login', githubUsername)
+          console.log('Stored GitHub username for future login:', githubUsername)
         } catch (error) {
           console.error('Error parsing stored user data during sign out:', error)
         }
       }
       
-      // Clear GitHub App installation data
+      console.log('Clearing GitHub App state...')
+      
+      // Clear GitHub App React state
       setGitHubInstallationId(null)
+      setGitHubAccounts([])
+      setActiveGitHubAccount(null)
+      
+      // Clear GitHub App localStorage data
       localStorage.removeItem('github_app_installing')
       localStorage.removeItem('github_app_install_time')
       localStorage.removeItem('github_oauth_state')
       localStorage.removeItem('github_app_installation_id')
-      
-      // Clear GitHub App session data (but keep username for future login)
       localStorage.removeItem('github_app_user')
       localStorage.removeItem('github_app_access_token')
+      localStorage.removeItem('github_app_accounts')
+      localStorage.removeItem('github_app_linking')
       
       // Clear admin session if it exists
       localStorage.removeItem('admin_session')
       
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        throw error
-      }
-      
-      // Force clear the state
+      console.log('Clearing React state first...')
+      // Clear the state BEFORE calling Supabase signOut to prevent race conditions
       setUser(null)
       setSession(null)
+      setLoading(false)
+      
+      console.log('Calling Supabase signOut...')
+      try {
+        const { error } = await supabase.auth.signOut()
+        if (error) {
+          console.error('Supabase signOut error:', error)
+          // Don't throw - we want to complete the sign out even if Supabase fails
+        } else {
+          console.log('Supabase signOut successful')
+        }
+      } catch (supabaseError) {
+        console.error('Supabase signOut exception:', supabaseError)
+        // Don't throw - we want to complete the sign out even if Supabase fails
+      }
+      
+      console.log('Sign out completed successfully')
+      
+      // Force a page reload to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
+      
     } catch (error) {
       console.error('Error signing out:', error)
-      throw error
+      // Even if there's an error, try to clear state and redirect
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
     }
   }
 
@@ -749,6 +867,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return installUrl
   }
 
+  // New function to clear invalid installations
+  const clearInvalidInstallations = () => {
+    console.log('Clearing invalid GitHub App installations...')
+    
+    // Clear all GitHub App localStorage data
+    localStorage.removeItem('github_app_user')
+    localStorage.removeItem('github_app_access_token')
+    localStorage.removeItem('github_app_installation_id')
+    localStorage.removeItem('github_app_accounts')
+    localStorage.removeItem('github_app_install_time')
+    
+    // Clear React state
+    setGitHubInstallationId(null)
+    setGitHubAccounts([])
+    setActiveGitHubAccount(null)
+    
+    console.log('Invalid installations cleared - user will need to reinstall GitHub App')
+  }
+
   const value = {
     user,
     session,
@@ -765,6 +902,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     addGitHubAccount,
     removeGitHubAccount,
     linkAdditionalGitHubAccount,
+    clearInvalidInstallations,
   }
 
   return (

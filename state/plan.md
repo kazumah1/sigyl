@@ -11,6 +11,64 @@ The Sigyl MCP Platform enables developers to deploy Model Context Protocol (MCP)
 
 ## 🚨 Current Issues & Fixes
 
+### GitHub App Installation 500 Error Fix - DECEMBER 18, 2024
+- **Issue:** "Failed to fetch repositories: 500 Internal Server Error" when trying to access repositories
+- **Root Cause:** Installation ID `73223497` returning 404 "Not Found" when creating GitHub App access token
+- **Symptoms:** 
+  - Console shows `Found existing GitHub App installations in database: 2`
+  - API logs: `RequestError [HttpError]: Not Found - create-an-installation-access-token-for-an-app`
+  - Database contains stale installation IDs that no longer exist on GitHub
+- **Fix Applied:**
+  - Enhanced API endpoint debugging to show GitHub App credentials and installation details
+  - Added `clearInvalidInstallations()` function to AuthContext to clear stale installation data
+  - Updated `DeployWizardWithGitHubApp` to detect installation errors (500/404)
+  - Added user-friendly error handling with "Clear Installation & Reinstall" button
+  - When invalid installation detected, users can clear localStorage and database cache for fresh setup
+- **Status:** ✅ FIXED - Users now have self-service option to resolve invalid GitHub App installations
+
+### Database Schema Issues - DECEMBER 18, 2024
+- **Issue:** Multiple 404 errors when accessing Supabase `users` and 406 errors on `profiles` table
+- **Symptoms:**
+  - `GET /rest/v1/profiles?select=* 406 (Not Acceptable)`
+  - `GET /rest/v1/users?select=* 404 (Not Found)`
+  - User profile creation failing during OAuth login
+- **Root Cause:** Table doesn't exist or RLS policies are blocking access
+- **Status:** 🔍 NEEDS INVESTIGATION - May need database schema review or RLS policy fixes
+
+### GitHub App Session Restoration Fix - DECEMBER 18, 2024
+- **Issue:** After OAuth login, returning users lost GitHub App access on page reload
+- **Symptoms:** Console showed `hasAccounts: true` but `hasToken: false`, users prompted to reinstall GitHub App
+- **Root Cause:** `loadExistingGitHubAppAccounts()` was restoring account data but not the critical localStorage session variables
+- **Fix Applied:**
+  - Enhanced `loadExistingGitHubAppAccounts()` to restore complete GitHub App session state
+  - Now properly sets `github_app_user`, `github_app_access_token`, `github_app_installation_id`, and `github_app_install_time` in localStorage
+  - This ensures `isGitHubAppSessionValid()` returns true for restored sessions
+  - Works for both localStorage-cached accounts and database-restored accounts
+- **Status:** ✅ FIXED - GitHub App access now properly restored after OAuth login
+
+### Sign Out Functionality Fix - DECEMBER 18, 2024
+- **Issue:** Sign out button not working properly, users remained signed in
+- **Symptoms:** Sign out called but state not cleared, user still authenticated, GitHub App card reappeared
+- **Root Cause:** Supabase signOut() was failing silently and preventing state cleanup, auth state change handler interference
+- **Fix Applied:**
+  - Enhanced signOut() function with comprehensive state clearing
+  - Clear React state BEFORE calling Supabase signOut to prevent race conditions
+  - Added error handling so sign out completes even if Supabase fails
+  - Clear all GitHub App localStorage keys and React state
+  - Force page redirect to `/login` after sign out completion
+  - Robust error handling ensures sign out always completes
+- **Status:** ✅ FIXED - Sign out now properly clears all state and redirects to login
+
+### GitHub App Deployment 400 Error - FIXED
+- **Issue:** Deployment endpoint was returning 400 Bad Request
+- **Error:** `POST /installations/73241759/deploy - 400 - 31ms`
+- **Root Cause:** Frontend was missing required `repoUrl` field in deployment request
+- **Fix Applied:**
+  - Updated `deployMCPWithApp()` in `packages/web/src/lib/githubApp.ts` to include `repoUrl`
+  - Added detailed logging to deployment endpoint in `packages/registry-api/src/routes/githubApp.ts`
+  - Enhanced error handling in frontend to show backend error messages
+- **Status:** ✅ FIXED - Deployment requests now include all required fields
+
 ### Supabase 406 Error - DEBUGGING IN PROGRESS
 - **Issue:** Dashboard throws 406 (Not Acceptable) errors when querying `profiles` table
 - **Error:** `GET /rest/v1/profiles?select=id&auth_type=eq.github_app&auth_user_id=eq.github_162946059 406 (Not Acceptable)`
