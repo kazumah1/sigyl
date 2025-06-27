@@ -119,7 +119,9 @@ export class CloudRunService {
 
       // Step 2: Handle deployment based on runtime type (default to node if no config)
       let imageUri: string;
+      console.log('🔍 Request sigylConfig:', request.sigylConfig);
       const sigylConfig = request.sigylConfig || { runtime: 'node', language: 'javascript', entryPoint: 'server.js' };
+      console.log('🔍 Sigyl config:', sigylConfig);
       
       if (sigylConfig.runtime === 'node') {
         // Node runtime - build with our tooling
@@ -190,35 +192,40 @@ export class CloudRunService {
             args: [
               '-c',
               `cat > Dockerfile << 'EOF'
-# Sigyl MCP Server - Node.js Runtime
+# Sigyl MCP Server - Node.js Runtime 1
 FROM node:18-alpine
 
-# Set working directory
+# Set working directory 2
 WORKDIR /app
 
-# Create non-root user for security
+# Create non-root user for security 3
 RUN addgroup -g 1001 -S mcpuser && \
     adduser -S mcpuser -u 1001
 
-# Copy package files
+# Copy package files 4
 COPY package*.json ./
 
-# Install dependencies (try npm ci, fallback to npm install if lockfile is missing)
+# Install all dependencies (including dev) for build
 RUN if [ -f package-lock.json ]; then \
-      npm ci --only=production; \
+      npm ci; \
     else \
-      npm install --omit=dev; \
+      npm install; \
     fi && npm cache clean --force
 
-# Copy application code
+# Copy application code 6
 COPY . .
 
 ${config.language === 'typescript' ? `
-# Build TypeScript if needed
+# Build TypeScript if needed 7
 RUN npm run build || echo "No build script found"
+# Debug: List files after build 8
+RUN ls -l /app
 ` : ''}
 
-# Change ownership to non-root user
+# Prune devDependencies for smaller image
+RUN npm prune --production
+
+# Change ownership to non-root user 7
 RUN chown -R mcpuser:mcpuser /app
 USER mcpuser
 
@@ -235,7 +242,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 EXPOSE 8080
 
 # Start server
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
 EOF`
             ]
           },
@@ -432,14 +439,14 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S mcpuser && \\
+RUN addgroup -g 1001 -S mcpuser && \
     adduser -S mcpuser -u 1001
 
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production && \\
+RUN npm ci --only=production && \
     npm cache clean --force
 
 # Copy application code
@@ -460,14 +467,14 @@ ENV MCP_TRANSPORT=http
 ENV MCP_ENDPOINT=/mcp
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/mcp || exit 1
 
 # Expose port
 EXPOSE 8080
 
 # Start command
-CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
+CMD ["node", "server.js"]
 `;
   }
 
@@ -490,8 +497,7 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
         metadata: {
           name: serviceName,
           annotations: {
-            'run.googleapis.com/ingress': 'all',
-            'run.googleapis.com/execution-environment': 'gen2'
+            'run.googleapis.com/ingress': 'all'
           },
           labels: {
             'app': 'sigyl-mcp',
@@ -506,7 +512,8 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
                 'autoscaling.knative.dev/minScale': '0',
                 'run.googleapis.com/cpu-throttling': 'false',
                 'run.googleapis.com/memory': '512Mi',
-                'run.googleapis.com/cpu': '250m'
+                'run.googleapis.com/cpu': '250m',
+                'run.googleapis.com/execution-environment': 'gen2'
               }
             },
             spec: {
@@ -533,7 +540,7 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
                   ],
                   resources: {
                     limits: {
-                      cpu: '250m',
+                      cpu: '1',
                       memory: '512Mi'
                     },
                     requests: {
@@ -568,17 +575,76 @@ CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
         }
       );
 
+      // Handle 409 ALREADY_EXISTS error by deleting and retrying once
+      let service: any;
       if (!deployResponse.ok) {
-        const error = await deployResponse.text();
-        throw new Error(`Cloud Run API error: ${deployResponse.status} ${error}`);
+        const errorText = await deployResponse.text();
+        if (deployResponse.status === 409 && errorText.includes('ALREADY_EXISTS')) {
+          console.warn(`Service ${serviceName} already exists. Deleting and retrying...`);
+          const deleted = await this.deleteService(serviceName);
+          if (deleted) {
+            // Poll for deletion to complete (up to 2.5 minutes)
+            for (let i = 0; i < 30; i++) {
+              await new Promise(res => setTimeout(res, 5000));
+              const getResp = await fetch(
+                `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+                { headers: { 'Authorization': `Bearer ${accessToken}` } }
+              );
+              if (getResp.status === 404) {
+                break; // Service is fully deleted
+              }
+            }
+          } // else, skip polling if already deleted
+          // Retry creation once
+          const retryResponse = await fetch(
+            `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(serviceConfig)
+            }
+          );
+          if (!retryResponse.ok) {
+            const retryError = await retryResponse.text();
+            throw new Error(`Cloud Run API error after retry: ${retryResponse.status} ${retryError}`);
+          }
+          service = await retryResponse.json();
+        } else {
+          throw new Error(`Cloud Run API error: ${deployResponse.status} ${errorText}`);
+        }
+      } else {
+        service = await deployResponse.json();
       }
-
-      const service = await deployResponse.json() as any;
-      
-      if (service.status?.url) {
+      let serviceUrl = service.status?.url;
+      if (!serviceUrl) {
+        // Poll for up to 5 minutes (30 attempts, 10s each)
+        for (let i = 0; i < 30; i++) {
+          await new Promise(res => setTimeout(res, 10000));
+          const statusResp = await fetch(
+            `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`
+              }
+            }
+          );
+          const statusJson = await statusResp.json() as any;
+          if (statusJson.status?.url) {
+            serviceUrl = statusJson.status.url;
+            break;
+          }
+        }
+        if (!serviceUrl) {
+          throw new Error('Deployment succeeded but no service URL returned after waiting');
+        }
+      }
+      if (serviceUrl) {
         console.log('✅ Cloud Run service deployed successfully');
         return {
-          serviceUrl: service.status.url,
+          serviceUrl,
           serviceName
         };
       } else {

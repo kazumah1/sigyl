@@ -43,27 +43,29 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 
 ### 🔧 Recent Critical Fixes
 
-**Environment Variables Loading**
-- **Issue**: `dotenv` not imported in registry-api entry point
-- **Fix**: Added `import 'dotenv/config';` to `packages/registry-api/src/index.ts`
-- **Result**: Google Cloud credentials now properly loaded
+**TypeScript Template Cloud Run Compatibility**
+- ✅ Fixed: TypeScript template MCP server now generates with HttpServerTransport and listens on process.env.PORT, making it Cloud Run compatible (updated CLI @init.ts and generator logic).
 
-**GitHub Token Security Validation**  
-- **Issue**: GitHub token not passed through deployment pipeline
-- **Fix**: Added `githubToken` field to `CloudRunDeploymentRequest` interface
-- **Result**: Security validation working properly
+**Octokit v2+ Compatibility**
+- ✅ Fixed: Octokit v2+ compatibility for fetching sigyl.yaml and mcp.yaml from GitHub (updated fetchSigylYaml and fetchMCPYaml).
 
-**Google Cloud Authentication**
-- **Issue**: Service account credentials not configured
-- **Fix**: Created service account key file and configured `GOOGLE_CLOUD_KEY_FILE_PATH`
-- **Result**: Authentication working with `sigyll` project
+**Dockerfile Build/Prune**
+- ✅ Fixed: Dockerfile now installs devDependencies for build, then prunes for production, ensuring tsc is available during build.
 
-**Docker Container Deployment**
-- **Issue**: Attempted runtime code download instead of proper container builds
-- **Fix**: Implemented proper Cloud Build with `gitSource` and Docker image creation
-- **Result**: Real container deployments to Google Container Registry
+**Dockerfile Debug Step**
+- ✅ Fixed: Dockerfile debug step to list files after build for troubleshooting.
 
-### 🚀 Ready for Launch
+**Environment Variable Handling**
+- ✅ Fixed: Environment variable handling and Cloud Run reserved variable filtering.
+
+### 🛠️ Outstanding/To-Do
+
+- 🔧 Ensure all CLI-generated templates (including blank and scan modes) use HttpServerTransport for HTTP/Cloud Run compatibility.
+- 🔧 Consider refactoring CLI to always use generator logic for all templates, avoiding static template drift.
+- 🔧 Add more robust error handling and user feedback for missing or misconfigured sigyl.yaml in the deployment pipeline.
+- 🔧 Continue to monitor for any edge cases in build/deploy flow, especially with custom user repos or non-standard project structures.
+
+### 🚀 Launch Readiness
 
 **Current Configuration:**
 - ✅ Google Cloud Project: `sigyll`
@@ -85,20 +87,9 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 - ✅ Pay-per-request pricing model
 - ✅ Expected 60-75% savings vs Railway
 
-### �� Launch Readiness
+### 🚦 Launch Readiness
 
-The platform is now **fully functional** and ready for tomorrow's launch:
-
-1. ✅ **GitHub Integration**: Working App authentication and repository access
-2. ✅ **Security Validation**: Real repository analysis and threat detection  
-3. ✅ **Google Cloud Deployment**: Proper Docker builds and Cloud Run deployment
-4. ✅ **Cost Optimization**: Serverless scaling and resource efficiency
-5. ✅ **Error Handling**: Comprehensive error reporting and debugging
-
-**Next Steps for Launch:**
-1. ✅ All technical components working
-2. ✅ Documentation complete
-3. ✅ Testing successful
-4. 🚀 **READY TO LAUNCH**
+- All critical technical blockers for Cloud Run migration are resolved.
+- Platform is ready for production launch, pending final user acceptance and documentation review.
 
 The Sigyl MCP Platform migration to Google Cloud Run is complete and ready for production use!

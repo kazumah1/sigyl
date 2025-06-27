@@ -47,6 +47,7 @@ export class MCPGenerator {
 		// MCP config schema YAML
 		const config = {
 			runtime: "node",
+			language: this.language,
 			startCommand: {
 				type: "http",
 				configSchema: {
@@ -242,15 +243,15 @@ ${this.generateParameterHandling(endpoint)}
 // SERVER STARTUP
 // ============================================================================
 
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
 
 async function main() {
-	const server = createStatelessServer({ config: { appPort: "${options.appPort || 3000}" } });
+	const server = createStatelessServer({ config: {} });
 	console.log("🚀 MCP Server starting...");
-	console.log("📡 Connecting to Express app on port ${options.appPort || 3000}");
-	const transport = new StdioServerTransport();
+	const port = process.env.PORT || 8080;
+	const transport = new HttpServerTransport({ port });
 	await server.connect(transport);
-	console.log("✅ MCP Server connected and ready");
+	console.log(`✅ MCP Server connected and ready on port ${port}`);
 }
 
 main().catch((error) => {
