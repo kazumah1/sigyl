@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
-import MetricsOverview from '@/components/dashboard/MetricsOverview';
 import MCPServersList from '@/components/dashboard/MCPServersList';
-import APIKeysManager from '@/components/dashboard/APIKeysManager';
 import SecretsManager from '@/components/dashboard/SecretsManager';
-import WorkspaceMembers from '@/components/dashboard/WorkspaceMembers';
-import ActivityFeed from '@/components/dashboard/ActivityFeed';
-import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 import PageHeader from '@/components/PageHeader';
 
 const Dashboard = () => {
@@ -29,17 +23,15 @@ const Dashboard = () => {
   const { 
     workspace, 
     mcpServers, 
-    metrics, 
-    analyticsData, 
     loading, 
     error,
     refetch 
   } = useDashboardData();
 
-  const activeTab = searchParams.get('tab') || 'overview';
+  const activeTab = searchParams.get('tab') || 'servers';
 
   const handleTabChange = (tab: string) => {
-    if (tab === 'overview') {
+    if (tab === 'servers') {
       setSearchParams({});
     } else {
       setSearchParams({ tab });
@@ -74,23 +66,8 @@ const Dashboard = () => {
         <PageHeader />
         
         <div className="container mx-auto px-6 py-8 mt-16">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back, {displayName}
-            </h1>
-            <p className="text-gray-400">
-              Here's what's happening with your MCP integrations today.
-            </p>
-          </div>
 
           {/* Main Dashboard Content - Render based on activeTab */}
-          {activeTab === 'overview' && (
-            <div className="">
-              <MCPServersList servers={mcpServers} />
-            </div>
-          )}
-
           {activeTab === 'servers' && (
             loading ? (
               <div className="rounded-lg p-6 animate-pulse">
@@ -104,29 +81,6 @@ const Dashboard = () => {
             ) : (
               <MCPServersList servers={mcpServers} detailed />
             )
-          )}
-
-          {activeTab === 'analytics' && (
-            loading ? (
-              <div className="space-y-6">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 animate-pulse">
-                    <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
-                    <div className="h-64 bg-gray-700 rounded"></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <AnalyticsCharts 
-                visitData={analyticsData.visitData}
-                toolUsageData={analyticsData.toolUsageData}
-                serverStatusData={analyticsData.serverStatusData}
-              />
-            )
-          )}
-
-          {activeTab === 'api-keys' && (
-            <APIKeysManager workspaceId={workspace?.id || ''} />
           )}
 
           {activeTab === 'secrets' && (

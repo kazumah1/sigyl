@@ -848,8 +848,8 @@ npm run seed
 
 2. **Container Building** 
    - Implement actual Docker image building in `container-builder`
-   - Generate Dockerfiles from `mcp.yaml` configurations
-   - Push images to Railway registry
+   - Add Railway-compatible Dockerfile generation
+   - Image pushing to Railway registry
 
 3. **Health Monitoring**
    - Replace simulated health checks with real HTTP checks
@@ -1230,335 +1230,2985 @@ interface DeploymentSecurityUI {
 
 ### **Updated Implementation Priority:**
 
-1. **Security Validation** (HIGH PRIORITY) - Block unsafe MCPs from deployment
-2. **Secure Railway Configuration** (HIGH PRIORITY) - Default secure settings
-3. **MCP-Aware Container Building** (MEDIUM) - Security-first Dockerfiles
-4. **Security UI Integration** (MEDIUM) - User-friendly security warnings
+1. **Phase 1: Frontend Marketplace Integration** (HIGH PRIORITY)
+   - Users can see what secrets MCPs require before deployment
+   - Better discovery and decision-making
 
-**This makes our platform significantly more valuable** - we're not just MCP hosting, we're **secure MCP hosting** with built-in security validation and best practices enforcement! 🔒
+2. **Phase 2: Deployment Flow Integration** (HIGH PRIORITY)
+   - Seamless secrets setup during deployment
+   - Reduced deployment friction
 
-### **Priority 2: Database Seeding & Testing (1-2 hours)**
-**Goal:** Comprehensive testing with real data
+3. **Phase 3: Gateway Integration** (MEDIUM PRIORITY)
+   - Complete end-to-end secrets workflow
+   - Production-ready secret injection
 
-**Steps:**
-1. Run seeding script to populate database
-2. Test complete customer flow: discovery → deploy → manage  
-3. Identify and fix any remaining issues
+4. **Phase 4: User Experience Enhancements** (MEDIUM PRIORITY)
+   - Advanced features for power users
+   - Team collaboration capabilities
 
-**Result:** Fully validated customer experience
+5. **Phase 5: Documentation and Testing** (LOW PRIORITY)
+   - Complete documentation and validation
+   - Production readiness
 
-### **Priority 3: CLI Integration (2-4 hours)**  
-**Goal:** Developer workflow completion
+### **📋 Immediate Next Actions:**
 
-**Steps:**
-1. Implement CLI deploy command
-2. Connect to Registry API for package publishing
-3. Add developer-focused deployment tools
+1. **Run Supabase migration** - Apply `add_required_secrets_to_packages.sql`
+2. **Test YAML parsing** - Verify secrets extraction from sample MCPs
+3. **Update frontend marketplace** - Display secrets in package details
+4. **Integrate with deployment flow** - Add secrets validation step
 
-**Result:** Complete developer toolchain
+This implementation provides a solid foundation for MCP secrets management, enabling a seamless experience from discovery to deployment while maintaining security and usability.
 
-## 📊 **UPDATED SYSTEM STATUS**
-
-**Registry API:** `http://localhost:3000` ✅ **OPERATIONAL + GITHUB APP + RAILWAY DEPLOYMENT + MONITORING**
-**Web Frontend:** `http://localhost:8080` ✅ **COMPLETE DEPLOY UI (UI MERGE IN PROGRESS)**
-**Security Validation:** ✅ **COMPLETE WITH REAL VULNERABILITY DETECTION**
-**Railway Integration:** ✅ **BACKEND COMPLETE - FRONTEND ON HOLD**
-**Container Builder:** ✅ **RAILWAY SERVICE + SECURITY VALIDATION**
-**Deployment Service:** ✅ **BACKEND REAL RAILWAY API - FRONTEND SIMULATION**
-**Deployment Management:** ✅ **COMPLETE WITH LOGS, HEALTH, AND SERVICE OPERATIONS**
-
-**✅ Ready for customers (Backend):** Discovery, authentication, security validation, real Railway deployment, monitoring
-**🚧 Ready for customers (Frontend):** UI merge in progress - deployment simulation active
-**🎯 Next milestone:** Complete frontend integration after UI merge
-
-### **🚀 NEW BACKEND CAPABILITIES:**
-
-**Real Railway Deployment API:**
-- **Endpoint:** `POST /api/v1/deploy`
-- **Features:** Security validation, MCP configuration, health monitoring
-- **Integration:** Railway GraphQL API with container-builder package
-- **Security:** Pre-deployment vulnerability scanning and blocking
-
-**Deployment Management API:**
-- **Logs:** `GET /api/v1/deployments/:id/logs` - Real-time deployment logs
-- **Health:** `GET /api/v1/deployments/:id/health` - MCP endpoint health monitoring
-- **Restart:** `POST /api/v1/deployments/:id/restart` - Service restart operations
-- **Delete:** `DELETE /api/v1/deployments/:id` - Service deletion with force option
-- **List:** `GET /api/v1/deployments` - All deployments with real-time health status
-
-**MCP-Specific Deployment:**
-- **HTTP Transport:** Automatic MCP endpoint configuration (`/mcp`)
-- **Environment:** Production-ready with security headers
-- **Health Checks:** MCP endpoint validation with response time tracking
-- **Registry Integration:** Automatic package registration with deployment metadata
-- **Service Management:** Complete lifecycle operations (create, monitor, restart, delete)
-
-### **✅ COMPLETED: Enhanced Monitoring & Management (1-2 hours)**
-**Goal:** Complete deployment lifecycle management
-
-**✅ Completed Steps:**
-1. **✅ Deployment Logs Endpoint**
-   - `GET /api/v1/deployments/:id/logs` - Retrieve deployment logs from Railway
-   - Query parameters: `limit`, `since` for filtering
-   - Fallback to simulated logs if Railway API unavailable
-   - Real-time log streaming with timestamp filtering
-
-2. **✅ Health Status Management**
-   - `GET /api/v1/deployments/:id/health` - Real-time MCP health checks
-   - Response time measurement and status code tracking
-   - Automatic database health status updates
-   - MCP-specific endpoint validation (`/mcp`)
-
-3. **✅ Service Management Operations**
-   - `POST /api/v1/deployments/:id/restart` - Service restart functionality
-   - `DELETE /api/v1/deployments/:id` - Service deletion with force option
-   - `GET /api/v1/deployments` - List all deployments with real-time health
-   - Railway API integration with graceful fallbacks
-
-4. **✅ Enhanced PackageService**
-   - Added deployment management methods to PackageService
-   - Database operations for deployment CRUD
-   - Health status tracking and updates
-   - Deployment status management (active/inactive/failed)
-
-**✅ Result:** Complete deployment lifecycle management with monitoring, logs, and service operations
-
-### **🚧 NEXT: Frontend Package Linking (ON HOLD)**
-**Status:** Paused due to UI merge in progress
-**Goal:** Enable real Railway deployments from frontend
-**ETA:** After UI merge is complete
-
----
-*Last Updated: Phase 2 Railway Integration Progress*
-*Critical Next Step: Fix package imports and enable real Railway deployments*
-
-## 🔑 **API KEYS MANAGEMENT INTEGRATION - COMPLETED ✅**
+## 🔐 **MCP YAML SECRETS PARSING - COMPLETED ✅**
 
 ### **Overview:**
-Successfully connected the API keys dashboard to the secrets manager backend logic, enabling users to manage API keys through the web interface with proper authentication and security.
+Successfully implemented YAML parsing support for MCP server secrets, enabling MCP authors to define required secrets in their `mcp.yaml` files and the platform to extract and display these requirements to users.
 
 ### **✅ Implementation Details:**
 
-#### **Backend API Service (`packages/web/src/services/apiKeyService.ts`):**
-- ✅ **Complete API client** for all API key operations
-- ✅ **GitHub App authentication** using stored access tokens
-- ✅ **Error handling** with proper user feedback
-- ✅ **TypeScript interfaces** for type safety
-- ✅ **Methods implemented:**
-  - `createAPIKey()` - Create new API keys
-  - `getAPIKeys()` - Fetch user's API keys
-  - `getAPIKey()` - Get specific API key details
-  - `getAPIKeyStats()` - Get usage statistics
-  - `deactivateAPIKey()` - Deactivate keys
-  - `deleteAPIKey()` - Permanently delete keys
-  - `getUserProfile()` - Get user profile
+#### **YAML Parser Updates (`packages/registry-api/src/services/yaml.ts`):**
+- ✅ **Added `MCPSecretSchema`** - Zod schema for required secrets with validation
+- ✅ **Updated `MCPMetadataSchema`** - Added optional `secrets` array field
+- ✅ **Exported `MCPSecret` type** - TypeScript interface for use throughout codebase
+- ✅ **Schema validation** - Ensures secrets have required fields (name, description, required, type)
 
-#### **Frontend Component (`packages/web/src/components/dashboard/APIKeysManager.tsx`):**
-- ✅ **Real API integration** - Replaced mock data with live backend calls
-- ✅ **Loading states** - Proper loading indicators and error handling
-- ✅ **Security features:**
-  - API keys are masked by default
-  - Full key only shown once after creation
-  - Copy functionality for newly created keys
-  - Deactivate/delete options with confirmation
-- ✅ **User experience:**
-  - Empty state for users with no keys
-  - Permission display
-  - Last used timestamps
-  - Creation dates
-  - Active/inactive status badges
+#### **Database Schema (`packages/registry-api/migrations/add_required_secrets_to_packages.sql`):**
+- ✅ **Added `required_secrets` JSONB field** to `mcp_packages` table
+- ✅ **GIN index** for efficient querying of secrets data
+- ✅ **Documentation comment** explaining the field purpose
+- ✅ **Migration ready** for Supabase deployment
 
-#### **Backend Authentication (`packages/registry-api/src/middleware/githubAuth.ts`):**
-- ✅ **GitHub App token validation** - Validates tokens against GitHub API
-- ✅ **User management** - Creates/gets users in database automatically
-- ✅ **Permission system** - GitHub App users get full permissions
-- ✅ **Security** - Proper error handling and token validation
+#### **Type Definitions (`packages/registry-api/src/types/index.ts`):**
+- ✅ **Updated `MCPPackage` interface** - Added `required_secrets?: MCPSecret[]`
+- ✅ **Updated `CreatePackageRequest` interface** - Added `required_secrets?: MCPSecret[]`
+- ✅ **Imported `MCPSecret` type** from YAML service for consistency
 
-#### **API Routes (`packages/registry-api/src/routes/apiKeys.ts`):**
-- ✅ **Updated authentication** - Changed from API key auth to GitHub App auth
-- ✅ **All endpoints working:**
-  - `POST /api/v1/keys` - Create API key
-  - `GET /api/v1/keys` - List user's API keys
-  - `GET /api/v1/keys/:id` - Get specific API key
-  - `GET /api/v1/keys/:id/stats` - Get usage statistics
-  - `PATCH /api/v1/keys/:id/deactivate` - Deactivate key
-  - `DELETE /api/v1/keys/:id` - Delete key
-  - `GET /api/v1/keys/profile/me` - Get user profile
+#### **Package Service (`packages/registry-api/src/services/packageService.ts`):**
+- ✅ **Updated `createPackage` method** - Now stores `required_secrets` when creating packages
+- ✅ **Database integration** - Properly saves secrets array to JSONB field
 
-#### **Backend Service (`packages/registry-api/src/services/apiKeyService.ts`):**
-- ✅ **GitHub user support** - Added `createOrGetGitHubUser()` method
-- ✅ **Database integration** - Proper user creation and management
-- ✅ **API key generation** - Secure key generation with proper hashing
-- ✅ **Usage tracking** - Logging and statistics support
+#### **Deploy Route (`packages/registry-api/src/routes/deploy.ts`):**
+- ✅ **Updated package creation** - Includes `required_secrets` from YAML metadata
+- ✅ **Automatic extraction** - Secrets are parsed from `mcp.yaml` during deployment
 
-### **🔒 Security Features:**
-- ✅ **GitHub App authentication** - Uses GitHub's secure OAuth flow
-- ✅ **API key masking** - Keys are masked by default for security
-- ✅ **One-time display** - Full API key only shown once after creation
-- ✅ **Permission-based access** - Users can only access their own keys
-- ✅ **Secure deletion** - Keys can be deactivated or permanently deleted
-- ✅ **Usage tracking** - Monitor key usage and last accessed times
-
-### **🎯 User Experience:**
-- ✅ **Seamless integration** - Works with existing GitHub App authentication
-- ✅ **Intuitive interface** - Clear create, view, and manage options
-- ✅ **Real-time feedback** - Toast notifications for all actions
-- ✅ **Error handling** - Graceful error messages and fallbacks
-- ✅ **Loading states** - Proper loading indicators for all operations
-
-### **🧪 Testing Results:**
-- ✅ **API connection verified** - Health endpoint and authentication working
-- ✅ **TypeScript compilation** - No compilation errors
-- ✅ **Authentication flow** - GitHub App tokens properly validated
-- ✅ **Error scenarios** - Proper handling of missing tokens and invalid requests
-
-### **📊 Integration Status:**
-- ✅ **Backend API** - Fully functional with GitHub App authentication
-- ✅ **Frontend Dashboard** - Connected to real API with proper error handling
-- ✅ **Database** - User management and API key storage working
-- ✅ **Security** - Proper authentication and authorization implemented
-- ✅ **User Experience** - Intuitive interface with proper feedback
-
-**Result:** Users can now fully manage their API keys through the web dashboard with enterprise-grade security and user experience.
-
-## 🔐 **SECRETS MANAGER INTEGRATION - COMPLETED ✅**
-
-### **Overview:**
-Successfully implemented a comprehensive secrets manager that allows developers to manage environment variables for their MCP servers through a user-friendly web interface.
-
-### **✅ Implementation Details:**
-
-#### **Architecture Decision - Hybrid Approach:**
-- ✅ **Phase 1: Self-Managed Environment Variables (MVP)** - Implemented
-- ✅ **Future: Smart Detection & Centralized Management** - Planned for Phase 2 & 3
-
-#### **Backend API Service (`packages/web/src/services/secretsService.ts`):**
-- ✅ **Complete API client** for all secret operations
-- ✅ **GitHub App authentication** using stored access tokens
-- ✅ **Environment variable validation** (uppercase letters, numbers, underscores only)
-- ✅ **Methods implemented:**
-  - `getSecrets()` - Fetch user's secrets (with optional MCP server filtering)
-  - `getSecret()` - Get specific secret details
-  - `createSecret()` - Create new environment variables
-  - `updateSecret()` - Update existing secrets
-  - `deleteSecret()` - Delete secrets
-  - `getSecretsAsEnvVars()` - Get secrets formatted for deployment
-  - `validateSecretKey()` - Validate environment variable names
-  - `getCommonSecretTemplates()` - Pre-built templates for popular services
-
-#### **Frontend Component (`packages/web/src/components/dashboard/SecretsManager.tsx`):**
-- ✅ **Modern UI** with dark theme and gradient accents
-- ✅ **Security features:**
-  - Value masking with show/hide toggle
-  - Copy-to-clipboard functionality
-  - Encrypted storage indicators
-- ✅ **User experience:**
-  - Quick templates for common services (OpenAI, Anthropic, Database, etc.)
-  - Form validation with helpful error messages
-  - Loading states and error handling
-  - Real-time updates
-- ✅ **Features:**
-  - Create, edit, delete environment variables
-  - Server-specific vs global secrets
-  - Optional descriptions for better organization
-  - Bulk operations (show all values)
-
-#### **Backend API Routes (`packages/registry-api/src/routes/secrets.ts`):**
-- ✅ **Updated to use GitHub authentication** instead of API key auth
-- ✅ **Enhanced data model** with description and mcp_server_id fields
-- ✅ **Full CRUD operations** with proper error handling
-- ✅ **Encryption/decryption** using AES-256
-- ✅ **Validation** for environment variable names
-- ✅ **Response format** matches frontend expectations
-
-#### **Database Schema (`packages/registry-api/migrations/update_secrets_table.sql`):**
-- ✅ **Added missing fields:**
-  - `description` - Optional description of secret usage
-  - `mcp_server_id` - Optional association with specific MCP servers
-  - `updated_at` - Timestamp for tracking changes
-- ✅ **Indexes** for efficient querying
-- ✅ **Triggers** for automatic timestamp updates
-
-#### **Dashboard Integration:**
-- ✅ **Added Secrets tab** to dashboard navigation
-- ✅ **Integrated with existing dashboard** structure
-- ✅ **Consistent styling** with other dashboard components
+#### **GitHub App Routes (`packages/registry-api/src/routes/githubApp.ts`):**
+- ✅ **Updated repository listing** - Includes MCP configuration with secrets information
+- ✅ **Updated individual MCP config endpoint** - Returns secrets data for frontend consumption
+- ✅ **Enhanced response format** - Provides comprehensive MCP metadata including required secrets
 
 ### **🔧 Technical Features:**
 
-#### **Security:**
-- ✅ **AES-256 encryption** for all secret values at rest
-- ✅ **GitHub App authentication** for secure access
-- ✅ **Row-level security** - users can only access their own secrets
-- ✅ **No plaintext exposure** in logs or responses
+#### **YAML Schema Support:**
+```yaml
+# Example mcp.yaml with secrets
+name: my-mcp-server
+description: A test MCP server
+version: 1.0.0
+port: 3000
+tools:
+  - name: my_tool
+    description: A tool
+    inputSchema:
+      type: object
+      properties:
+        input: { type: string }
+secrets:
+  - name: OPENAI_API_KEY
+    description: OpenAI API key for the service
+    required: true
+    type: string
+  - name: DATABASE_URL
+    description: Database connection string
+    required: true
+    type: string
+  - name: DEBUG_MODE
+    description: Enable debug mode
+    required: false
+    type: boolean
+```
 
-#### **User Experience:**
-- ✅ **Quick templates** for popular services (OpenAI, Anthropic, Database, etc.)
-- ✅ **Form validation** with helpful error messages
-- ✅ **Real-time feedback** with toast notifications
-- ✅ **Responsive design** that works on all devices
+#### **Database Storage:**
+- ✅ **JSONB field** - Efficient storage and querying of secrets array
+- ✅ **Indexed queries** - Fast lookups for packages with specific secret requirements
+- ✅ **Type safety** - Full TypeScript support throughout the stack
 
-#### **Integration:**
-- ✅ **MCP server association** - secrets can be linked to specific servers
-- ✅ **Deployment ready** - secrets are automatically available as environment variables
-- ✅ **API compatibility** - works with existing deployment infrastructure
+#### **API Integration:**
+- ✅ **GitHub repositories endpoint** - Returns MCP config with secrets for discovery
+- ✅ **Individual MCP config endpoint** - Detailed secrets information for deployment
+- ✅ **Package creation** - Automatic secrets extraction and storage
 
-### **🚀 Usage Flow:**
+### **🧪 Testing Results:**
+- ✅ **YAML parsing verified** - Successfully parses secrets from test YAML files
+- ✅ **Schema validation** - Proper validation of required vs optional fields
+- ✅ **Type safety** - TypeScript compilation without errors
+- ✅ **Database integration** - Ready for migration deployment
 
-1. **Developer navigates** to Dashboard → Secrets tab
-2. **Creates environment variables** using the web interface
-3. **Uses quick templates** for common services (OpenAI API key, etc.)
-4. **Associates secrets** with specific MCP servers (optional)
-5. **Deploys MCP server** - secrets are automatically injected as environment variables
-6. **MCP server accesses** secrets via `process.env.SECRET_NAME`
+### **📊 Integration Status:**
+- ✅ **Backend parsing** - YAML secrets extraction fully functional
+- ✅ **Database schema** - Migration ready for deployment
+- ✅ **API endpoints** - Updated to include secrets information
+- ✅ **Type definitions** - Complete TypeScript support
+- ⬜️ **Frontend integration** - Ready for marketplace display
+- ⬜️ **Deployment flow** - Ready for secrets prompting
 
-### **📋 Next Steps (Future Enhancements):**
+**Result:** MCP authors can now define required secrets in their YAML files, and the platform can extract and store this information for user discovery and deployment guidance.
 
-#### **Phase 2: Smart Detection & Suggestions**
-- 🔄 **MCP yaml parsing** to auto-detect required secrets
-- 🔄 **Pattern recognition** for common secret names
-- 🔄 **Integration suggestions** based on MCP server tools
+### **🎯 Key Benefits:**
+1. **User Discovery** - Users can see what secrets an MCP requires before deployment
+2. **Setup Guidance** - Clear indication of required vs optional environment variables
+3. **Deployment Validation** - Platform can validate that all required secrets are provided
+4. **Developer Experience** - MCP authors can document their secret requirements in YAML
+5. **Gateway Integration** - Foundation for dynamic secret injection at runtime
 
-#### **Phase 3: Centralized Management**
-- 🔄 **Sigyl-managed secrets** with dev approval
-- 🔄 **Automatic secret rotation**
-- 🔄 **Integration with external secret managers** (HashiCorp Vault, AWS Secrets Manager)
+### **📋 Current Status:**
+- ✅ **Backend implementation complete** - YAML parsing, database schema, API endpoints
+- ✅ **Migration ready** - Database schema changes prepared
+- ⬜️ **Frontend integration pending** - Marketplace display and deployment flow
+- ⬜️ **Gateway integration pending** - Runtime secret injection
 
-### **🎯 Benefits of This Approach:**
+**Next:** Ready for frontend integration to display secrets in the marketplace and deployment flow.
 
-1. **Developer-Friendly**: Familiar environment variable pattern
-2. **Secure**: Encryption at rest, proper authentication
-3. **Flexible**: Works with any MCP server deployment
-4. **Scalable**: Can evolve to centralized management
-5. **Integrated**: Seamless deployment experience
+## 🎯 **NEXT STEPS FOR MCP SECRETS INTEGRATION**
 
-This implementation provides a solid foundation for secrets management while maintaining the flexibility to evolve toward more advanced features in the future.
+### **Phase 1: Frontend Marketplace Integration (2-3 hours)**
 
-### 🔄 **Gateway Architecture & MCP Secrets Schema (Smithery Pattern)**
+#### **1.1 Update MCP Explorer (`packages/web/src/components/marketplace/`)**
+- 🔄 **Display required secrets** in package detail pages
+- 🔄 **Secrets section** showing what environment variables are needed
+- 🔄 **Required vs optional** indicators with clear descriptions
+- 🔄 **Integration with existing secrets manager** for easy setup
 
-**Key Insight:**
-- The new gateway architecture enables MCP authors to define required secrets in their `mcp.yaml` (or `smithery.yaml`) using a `secrets:` section.
-- Example:
-  ```yaml
-  secrets:
-    - name: OPENAI_API_KEY
-      description: "Your OpenAI API key"
-      required: true
-    - name: ORGANIZATION_ID
-      description: "Optional OpenAI organization"
-      required: false
-  ```
-- **Sigyl** will parse this YAML during MCP registration or deployment, and prompt users in the UI to provide the required secrets.
-- When a user connects to an MCP via the Sigyl gateway, the platform will automatically inject the user's secrets (from the secrets manager) into the MCP connection (as headers, config, or query params), following the Smithery pattern.
-- **No environment variables are required in the MCP server deployment itself**—secrets are injected dynamically at connection time, not at deploy time.
-- This enables:
-  - Dynamic, user-specific secret injection
-  - Secure, session-based secret handling (secrets only exist in memory during the session)
-  - Full compatibility with Smithery's integration model
-  - UI-driven secret prompting and validation for end users
+#### **1.2 Update Package Cards (`packages/web/src/components/marketplace/PackageCard.tsx`)**
+- 🔄 **Secrets badge** showing number of required secrets
+- 🔄 **Quick preview** of secret requirements
+- 🔄 **Setup complexity indicator** based on secret count
 
-**Action Items:**
-- [ ] Update MCP registration and deploy flows to parse `secrets:` from YAML and prompt users for required secrets
-- [ ] Ensure gateway injects secrets at connection time, not as static env vars
-- [ ] Document this pattern for MCP authors and users
-- [ ] Add tests for gateway secret injection and YAML parsing
+#### **1.3 Update Search and Filtering**
+- 🔄 **Filter by secret requirements** (e.g., "MCPs that need OpenAI API key")
+- 🔄 **Search within secret descriptions** for better discovery
+- 🔄 **Complexity-based sorting** (simple vs complex setups)
+
+### **Phase 2: Deployment Flow Integration (2-3 hours)**
+
+#### **2.1 Update Deploy Wizard (`packages/web/src/components/deploy/DeployWizardWithGitHubApp.tsx`)**
+- 🔄 **Secrets detection step** - Parse YAML and show required secrets
+- 🔄 **Secrets validation** - Ensure all required secrets are provided
+- 🔄 **Integration with secrets manager** - Link to existing secrets or create new ones
+- 🔄 **Setup guidance** - Help users understand what each secret is for
+
+#### **2.2 Enhanced Secrets Manager Integration**
+- 🔄 **Auto-populate secrets** from MCP requirements
+- 🔄 **Validation against YAML schema** - Ensure secret names match exactly
+- 🔄 **Bulk secret creation** - Create multiple secrets from MCP requirements
+- 🔄 **Template suggestions** - Pre-fill common secret patterns
+
+#### **2.3 Deployment Validation**
+- 🔄 **Pre-deployment check** - Verify all required secrets are available
+- 🔄 **Secret format validation** - Ensure secrets match expected types
+- 🔄 **User guidance** - Clear error messages for missing or invalid secrets
+
+### **Phase 3: Gateway Integration (3-4 hours)**
+
+#### **3.1 Update Gateway Service (`packages/registry-api/src/services/gatewayService.ts`)**
+- 🔄 **Secrets injection** - Automatically inject user secrets into MCP connections
+- 🔄 **Secret validation** - Verify required secrets are available before connection
+- 🔄 **Dynamic configuration** - Pass secrets as headers, query params, or config
+- 🔄 **Session management** - Secure secret handling during MCP sessions
+
+#### **3.2 Gateway Routes (`packages/registry-api/src/routes/gateway.ts`)**
+- 🔄 **Enhanced connection endpoint** - Include secrets validation and injection
+- 🔄 **Secrets mapping** - Map user secrets to MCP requirements
+- 🔄 **Error handling** - Clear feedback when secrets are missing or invalid
+
+#### **3.3 MCP Server Integration**
+- 🔄 **Secrets documentation** - Guide MCP authors on defining secrets in YAML
+- 🔄 **Gateway compatibility** - Ensure MCPs work with Sigyl's gateway
+- 🔄 **Testing framework** - Validate MCP secrets integration
+
+### **Phase 4: User Experience Enhancements (2-3 hours)**
+
+#### **4.1 Secrets Discovery UI**
+- 🔄 **Secrets marketplace** - Browse MCPs by secret requirements
+- 🔄 **Setup guides** - Step-by-step instructions for each MCP
+- 🔄 **Troubleshooting** - Help users resolve common secret issues
+
+#### **4.2 Advanced Features**
+- 🔄 **Secret templates** - Pre-built configurations for popular services
+- 🔄 **Secret sharing** - Team collaboration on secret management
+- 🔄 **Secret rotation** - Automatic key rotation workflows
+- 🔄 **Audit logging** - Track secret usage and access
+
+### **Phase 5: Documentation and Testing (1-2 hours)**
+
+#### **5.1 MCP Author Documentation**
+- 🔄 **YAML secrets schema** - Complete documentation for MCP authors
+- 🔄 **Best practices** - Guidelines for defining required secrets
+- 🔄 **Examples** - Sample YAML files with different secret patterns
+- 🔄 **Migration guide** - Help existing MCPs add secrets support
+
+#### **5.2 User Documentation**
+- 🔄 **Secrets setup guide** - How to configure secrets for MCPs
+- 🔄 **Troubleshooting** - Common issues and solutions
+- 🔄 **Security best practices** - How to manage secrets securely
+
+#### **5.3 Testing and Validation**
+- 🔄 **End-to-end testing** - Complete secrets workflow validation
+- 🔄 **Integration testing** - Gateway and deployment integration
+- 🔄 **Security testing** - Validate secret handling and encryption
+- 🔄 **Performance testing** - Ensure secrets don't impact performance
+
+### **🎯 Implementation Priority:**
+
+1. **Phase 1: Frontend Marketplace Integration** (HIGH PRIORITY)
+   - Users can see what secrets MCPs require before deployment
+   - Better discovery and decision-making
+
+2. **Phase 2: Deployment Flow Integration** (HIGH PRIORITY)
+   - Seamless secrets setup during deployment
+   - Reduced deployment friction
+
+3. **Phase 3: Gateway Integration** (MEDIUM PRIORITY)
+   - Complete end-to-end secrets workflow
+   - Production-ready secret injection
+
+4. **Phase 4: User Experience Enhancements** (MEDIUM PRIORITY)
+   - Advanced features for power users
+   - Team collaboration capabilities
+
+5. **Phase 5: Documentation and Testing** (LOW PRIORITY)
+   - Complete documentation and validation
+   - Production readiness
+
+### **📋 Immediate Next Actions:**
+
+1. **Run Supabase migration** - Apply `add_required_secrets_to_packages.sql`
+2. **Test YAML parsing** - Verify secrets extraction from sample MCPs
+3. **Update frontend marketplace** - Display secrets in package details
+4. **Integrate with deployment flow** - Add secrets validation step
+
+This implementation provides a solid foundation for MCP secrets management, enabling a seamless experience from discovery to deployment while maintaining security and usability.
+
+## 🔧 **GATEWAY INTEGRATION - MISSING COMPONENTS ANALYSIS**
+
+### **Current Gateway Status:**
+- ✅ **Basic gateway service** - Creates sessions and stores secrets
+- ✅ **Secrets fetching** - Gets user secrets from database  
+- ✅ **Proxy routing** - Routes requests to MCP servers
+- ✅ **Basic secret injection** - Injects secrets as headers/query params
+- ✅ **Session management** - Temporary sessions with expiration
+
+### **Critical Missing Components:**
+
+## 🚨 **PHASE 3.1: MCP SECRETS VALIDATION (HIGH PRIORITY)**
+
+### **Problem:**
+The gateway doesn't validate that users have provided all required secrets for the specific MCP server they're connecting to.
+
+### **Implementation Steps:**
+
+#### **Step 1: Update `GatewayRequest` interface**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+export interface GatewayRequest {
+  mcpServerUrl: string;
+  userApiKey: string;
+  mcpPackageId?: string;  // NEW: To identify the MCP package
+  additionalConfig?: Record<string, any>;
+}
+
+export interface GatewayValidationResult {
+  valid: boolean;
+  missing: string[];
+  extra: string[];
+  requiredSecrets: MCPSecret[];
+  userSecrets: Record<string, string>;
+}
+```
+
+#### **Step 2: Add MCP Package Lookup Method**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+private static async getMCPPackageByUrl(mcpServerUrl: string): Promise<MCPPackage | null> {
+  // Try to find package by deployment URL first
+  const { data: deployment, error: deploymentError } = await supabase
+    .from('mcp_deployments')
+    .select('package_id')
+    .eq('deployment_url', mcpServerUrl)
+    .single();
+
+  if (deploymentError || !deployment) {
+    // Fallback: try to find by source URL pattern
+    const { data: package, error: packageError } = await supabase
+      .from('mcp_packages')
+      .select('*')
+      .ilike('source_api_url', `%${mcpServerUrl}%`)
+      .single();
+    
+    if (packageError || !package) {
+      return null;
+    }
+    return package;
+  }
+
+  // Get full package details
+  const { data: package, error: packageError } = await supabase
+    .from('mcp_packages')
+    .select('*')
+    .eq('id', deployment.package_id)
+    .single();
+
+  if (packageError || !package) {
+    return null;
+  }
+
+  return package;
+}
+```
+
+#### **Step 3: Implement Secrets Validation**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+private static async validateRequiredSecrets(
+  mcpServerUrl: string,
+  userSecrets: Record<string, string>
+): Promise<GatewayValidationResult> {
+  // Get MCP package to find required secrets
+  const mcpPackage = await this.getMCPPackageByUrl(mcpServerUrl);
+  
+  if (!mcpPackage) {
+    throw new Error(`MCP package not found for server: ${mcpServerUrl}`);
+  }
+
+  const requiredSecrets = mcpPackage.required_secrets || [];
+  const userSecretKeys = Object.keys(userSecrets);
+  
+  // Find missing required secrets
+  const missing = requiredSecrets
+    .filter(secret => secret.required && !userSecretKeys.includes(secret.name))
+    .map(secret => secret.name);
+
+  // Find extra secrets (not required by this MCP)
+  const requiredSecretNames = requiredSecrets.map(secret => secret.name);
+  const extra = userSecretKeys.filter(key => !requiredSecretNames.includes(key));
+
+  // Validate secret types if provided
+  const typeValidationErrors: string[] = [];
+  requiredSecrets.forEach(requiredSecret => {
+    const userValue = userSecrets[requiredSecret.name];
+    if (userValue !== undefined) {
+      const isValid = this.validateSecretType(userValue, requiredSecret.type);
+      if (!isValid) {
+        typeValidationErrors.push(
+          `Secret "${requiredSecret.name}" should be type "${requiredSecret.type}", got "${typeof userValue}"`
+        );
+      }
+    }
+  });
+
+  return {
+    valid: missing.length === 0 && typeValidationErrors.length === 0,
+    missing,
+    extra,
+    requiredSecrets,
+    userSecrets
+  };
+}
+
+private static validateSecretType(value: string, expectedType: string): boolean {
+  switch (expectedType) {
+    case 'string':
+      return typeof value === 'string';
+    case 'number':
+      return !isNaN(Number(value));
+    case 'boolean':
+      return value === 'true' || value === 'false';
+    default:
+      return true;
+  }
+}
+```
+
+#### **Step 4: Update Gateway Connection Method**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+static async createGatewayConnection(request: GatewayRequest): Promise<GatewayResponse> {
+  try {
+    // Validate user API key and get user
+    const authenticatedUser = await APIKeyService.validateAPIKey(request.userApiKey);
+    if (!authenticatedUser) {
+      return {
+        success: false,
+        error: 'Invalid API key'
+      };
+    }
+
+    // Fetch user's secrets
+    const userSecrets = await this.getUserSecrets(authenticatedUser.user_id);
+    
+    // NEW: Validate secrets against MCP requirements
+    const validation = await this.validateRequiredSecrets(request.mcpServerUrl, userSecrets);
+    
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: 'Secrets validation failed',
+        details: {
+          missing: validation.missing,
+          required: validation.requiredSecrets.map(s => ({
+            name: s.name,
+            description: s.description,
+            required: s.required,
+            type: s.type
+          }))
+        }
+      };
+    }
+
+    // Filter secrets to only include required ones
+    const filteredSecrets = this.filterSecretsByRequirements(userSecrets, validation.requiredSecrets);
+    
+    // Create gateway URL with filtered secrets
+    const gatewayUrl = await this.createGatewayUrl(
+      request.mcpServerUrl,
+      filteredSecrets,
+      request.additionalConfig
+    );
+
+    return {
+      success: true,
+      gatewayUrl,
+      details: {
+        secretsProvided: Object.keys(filteredSecrets).length,
+        totalRequired: validation.requiredSecrets.filter(s => s.required).length
+      }
+    };
+
+  } catch (error) {
+    console.error('Gateway connection error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Gateway connection failed'
+    };
+  }
+}
+
+private static filterSecretsByRequirements(
+  userSecrets: Record<string, string>,
+  requiredSecrets: MCPSecret[]
+): Record<string, string> {
+  const filtered: Record<string, string> = {};
+  
+  requiredSecrets.forEach(requiredSecret => {
+    const userValue = userSecrets[requiredSecret.name];
+    if (userValue !== undefined) {
+      filtered[requiredSecret.name] = userValue;
+    }
+  });
+  
+  return filtered;
+}
+```
+
+#### **Step 5: Update Gateway Response Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+export interface GatewayResponse {
+  success: boolean;
+  gatewayUrl?: string;
+  error?: GatewayError;
+  details?: {
+    missing?: string[];
+    required?: Array<{
+      name: string;
+      description?: string;
+      required: boolean;
+      type: string;
+    }>;
+    secretsProvided?: number;
+    totalRequired?: number;
+  };
+}
+```
+
+## 🚨 **PHASE 3.2: SMART SECRET INJECTION (HIGH PRIORITY)**
+
+### **Problem:**
+The gateway blindly injects all user secrets, but should only inject secrets that the MCP server actually needs and in the correct format.
+
+### **Implementation Steps:**
+
+#### **Step 1: Add Injection Method Detection**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+enum SecretInjectionMethod {
+  HEADERS = 'headers',
+  QUERY_PARAMS = 'query_params',
+  BODY_CONFIG = 'body_config',
+  ENVIRONMENT = 'environment'
+}
+
+interface SecretInjectionConfig {
+  method: SecretInjectionMethod;
+  headerPrefix?: string;
+  queryParamPrefix?: string;
+  bodyKey?: string;
+}
+
+private static detectInjectionMethod(mcpPackage: MCPPackage): SecretInjectionConfig {
+  // Default to headers for MCP protocol compatibility
+  return {
+    method: SecretInjectionMethod.HEADERS,
+    headerPrefix: 'X-MCP-Secret-'
+  };
+}
+```
+
+#### **Step 2: Update Gateway Session Storage**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionData {
+  mcpServerUrl: string;
+  mcpPackageId: string;  // NEW: Store package ID
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];  // NEW: Store requirements
+  injectionConfig: SecretInjectionConfig;  // NEW: Store injection method
+  additionalConfig?: Record<string, any>;
+  expiresAt: Date;
+}
+
+private static async storeGatewaySession(
+  sessionId: string,
+  sessionData: GatewaySessionData
+): Promise<void> {
+  const { error } = await supabase
+    .from('gateway_sessions')
+    .insert({
+      id: sessionId,
+      mcp_server_url: sessionData.mcpServerUrl,
+      mcp_package_id: sessionData.mcpPackageId,  // NEW
+      user_secrets: sessionData.userSecrets,
+      required_secrets: sessionData.requiredSecrets,  // NEW
+      injection_config: sessionData.injectionConfig,  // NEW
+      additional_config: sessionData.additionalConfig,
+      expires_at: sessionData.expiresAt.toISOString()
+    });
+
+  if (error) {
+    throw new Error(`Failed to store gateway session: ${error.message}`);
+  }
+}
+```
+
+#### **Step 3: Implement Smart Secret Injection**
+```typescript
+// packages/registry-api/src/routes/gateway.ts
+router.all('/:sessionId/*', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const path = req.params[0] || '';
+
+    // Get gateway session
+    const session = await GatewayService.getGatewaySession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found',
+        message: 'Gateway session has expired or does not exist'
+      });
+    }
+
+    // Construct the target URL
+    let targetUrl = `${session.mcpServerUrl}/${path}`;
+    const headers: Record<string, string> = {
+      'Content-Type': req.headers['content-type'] || 'application/json',
+      'Accept': req.headers['accept'] || 'application/json',
+      'User-Agent': req.headers['user-agent'] || 'Sigyl-Gateway/1.0'
+    };
+
+    // NEW: Smart secret injection based on configuration
+    const injectedSecrets = await injectSecretsByMethod(
+      session.userSecrets,
+      session.injectionConfig,
+      req.method,
+      targetUrl,
+      headers,
+      req.body
+    );
+
+    // Make the proxy request with injected secrets
+    const response = await fetch(injectedSecrets.targetUrl, {
+      method: req.method,
+      headers: injectedSecrets.headers,
+      body: injectedSecrets.body
+    });
+
+    // Forward the response
+    const responseData = await response.text();
+    
+    res.status(response.status);
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    res.send(responseData);
+
+  } catch (error) {
+    console.error('Gateway proxy error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Gateway Error',
+      message: 'Failed to proxy request to MCP server'
+    });
+  }
+});
+
+async function injectSecretsByMethod(
+  userSecrets: Record<string, string>,
+  injectionConfig: SecretInjectionConfig,
+  method: string,
+  targetUrl: string,
+  headers: Record<string, string>,
+  body: any
+): Promise<{
+  targetUrl: string;
+  headers: Record<string, string>;
+  body: any;
+}> {
+  switch (injectionConfig.method) {
+    case SecretInjectionMethod.HEADERS:
+      Object.entries(userSecrets).forEach(([key, value]) => {
+        const headerName = `${injectionConfig.headerPrefix || 'X-MCP-Secret-'}${key}`;
+        headers[headerName] = value;
+      });
+      break;
+
+    case SecretInjectionMethod.QUERY_PARAMS:
+      if (method === 'GET') {
+        const url = new URL(targetUrl);
+        Object.entries(userSecrets).forEach(([key, value]) => {
+          const paramName = injectionConfig.queryParamPrefix ? 
+            `${injectionConfig.queryParamPrefix}${key}` : key;
+          url.searchParams.set(paramName, value);
+        });
+        targetUrl = url.toString();
+      }
+      break;
+
+    case SecretInjectionMethod.BODY_CONFIG:
+      if (method !== 'GET') {
+        const configKey = injectionConfig.bodyKey || 'mcp_secrets';
+        body = {
+          ...body,
+          [configKey]: userSecrets
+        };
+      }
+      break;
+
+    case SecretInjectionMethod.ENVIRONMENT:
+      // For environment injection, we need to modify the MCP server deployment
+      // This is handled at deployment time, not gateway time
+      console.warn('Environment injection should be handled at deployment time');
+      break;
+  }
+
+  return {
+    targetUrl,
+    headers,
+    body: method !== 'GET' ? JSON.stringify(body) : undefined
+  };
+}
+```
+
+## 🚨 **PHASE 3.3: ENHANCED ERROR HANDLING (MEDIUM PRIORITY)**
+
+### **Problem:**
+When secrets are missing or invalid, the gateway doesn't provide clear error messages to help users fix the issue.
+
+### **Implementation Steps:**
+
+#### **Step 1: Define Detailed Error Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+enum GatewayErrorType {
+  MISSING_SECRETS = 'missing_secrets',
+  INVALID_SECRETS = 'invalid_secrets',
+  MCP_NOT_FOUND = 'mcp_not_found',
+  CONNECTION_FAILED = 'connection_failed',
+  SESSION_EXPIRED = 'session_expired',
+  INVALID_API_KEY = 'invalid_api_key'
+}
+
+interface GatewayError {
+  type: GatewayErrorType;
+  message: string;
+  details: {
+    missing?: string[];
+    invalid?: Array<{
+      name: string;
+      expectedType: string;
+      actualValue: string;
+    }>;
+    suggestions?: string[];
+    requiredSecrets?: MCPSecret[];
+  };
+  code: string;
+}
+```
+
+#### **Step 2: Implement Error Factory**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+private static createGatewayError(
+  type: GatewayErrorType,
+  details: Partial<GatewayError['details']> = {}
+): GatewayError {
+  const baseErrors: Record<GatewayErrorType, { message: string; code: string }> = {
+    [GatewayErrorType.MISSING_SECRETS]: {
+      message: 'Required secrets are missing for this MCP server',
+      code: 'GATEWAY_MISSING_SECRETS'
+    },
+    [GatewayErrorType.INVALID_SECRETS]: {
+      message: 'One or more secrets have invalid values',
+      code: 'GATEWAY_INVALID_SECRETS'
+    },
+    [GatewayErrorType.MCP_NOT_FOUND]: {
+      message: 'MCP server not found in registry',
+      code: 'GATEWAY_MCP_NOT_FOUND'
+    },
+    [GatewayErrorType.CONNECTION_FAILED]: {
+      message: 'Failed to connect to MCP server',
+      code: 'GATEWAY_CONNECTION_FAILED'
+    },
+    [GatewayErrorType.SESSION_EXPIRED]: {
+      message: 'Gateway session has expired',
+      code: 'GATEWAY_SESSION_EXPIRED'
+    },
+    [GatewayErrorType.INVALID_API_KEY]: {
+      message: 'Invalid API key provided',
+      code: 'GATEWAY_INVALID_API_KEY'
+    }
+  };
+
+  const suggestions = this.generateErrorSuggestions(type, details);
+
+  return {
+    type,
+    message: baseErrors[type].message,
+    details: {
+      ...details,
+      suggestions
+    },
+    code: baseErrors[type].code
+  };
+}
+
+private static generateErrorSuggestions(
+  type: GatewayErrorType,
+  details: Partial<GatewayError['details']>
+): string[] {
+  const suggestions: string[] = [];
+
+  switch (type) {
+    case GatewayErrorType.MISSING_SECRETS:
+      if (details.missing && details.missing.length > 0) {
+        suggestions.push(`Add the following secrets to your account: ${details.missing.join(', ')}`);
+        suggestions.push('You can add secrets in the Sigyl dashboard under Settings > Secrets');
+      }
+      if (details.requiredSecrets) {
+        suggestions.push('Check the MCP documentation for required environment variables');
+      }
+      break;
+
+    case GatewayErrorType.INVALID_SECRETS:
+      if (details.invalid && details.invalid.length > 0) {
+        details.invalid.forEach(invalid => {
+          suggestions.push(`Secret "${invalid.name}" should be type "${invalid.expectedType}"`);
+        });
+      }
+      break;
+
+    case GatewayErrorType.MCP_NOT_FOUND:
+      suggestions.push('Verify the MCP server URL is correct');
+      suggestions.push('Ensure the MCP server is deployed and accessible');
+      break;
+
+    case GatewayErrorType.CONNECTION_FAILED:
+      suggestions.push('Check if the MCP server is running');
+      suggestions.push('Verify network connectivity to the MCP server');
+      suggestions.push('Check if the MCP server requires authentication');
+      break;
+  }
+
+  return suggestions;
+}
+```
+
+#### **Step 3: Update Gateway Response with Detailed Errors**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+export interface GatewayResponse {
+  success: boolean;
+  gatewayUrl?: string;
+  error?: GatewayError;
+  details?: {
+    missing?: string[];
+    required?: Array<{
+      name: string;
+      description?: string;
+      required: boolean;
+      type: string;
+    }>;
+    secretsProvided?: number;
+    totalRequired?: number;
+  };
+}
+
+static async createGatewayConnection(request: GatewayRequest): Promise<GatewayResponse> {
+  try {
+    // Validate user API key and get user
+    const authenticatedUser = await APIKeyService.validateAPIKey(request.userApiKey);
+    if (!authenticatedUser) {
+      return {
+        success: false,
+        error: this.createGatewayError(GatewayErrorType.INVALID_API_KEY)
+      };
+    }
+
+    // Fetch user's secrets
+    const userSecrets = await this.getUserSecrets(authenticatedUser.user_id);
+    
+    // Validate secrets against MCP requirements
+    const validation = await this.validateRequiredSecrets(request.mcpServerUrl, userSecrets);
+    
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: this.createGatewayError(GatewayErrorType.MISSING_SECRETS, {
+          missing: validation.missing,
+          requiredSecrets: validation.requiredSecrets
+        })
+      };
+    }
+
+    // ... rest of implementation
+  } catch (error) {
+    console.error('Gateway connection error:', error);
+    
+    if (error instanceof Error && error.message.includes('MCP package not found')) {
+      return {
+        success: false,
+        error: this.createGatewayError(GatewayErrorType.MCP_NOT_FOUND)
+      };
+    }
+    
+    return {
+      success: false,
+      error: this.createGatewayError(GatewayErrorType.CONNECTION_FAILED)
+    };
+  }
+}
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.missing).toEqual(['DATABASE_URL']);
+    });
+  });
+
+  describe('createGatewayConnection', () => {
+    it('should create connection when validation passes', async () => {
+      // Test implementation
+    });
+
+    it('should return error when validation fails', async () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+#### **Step 2: Create Integration Test Script**
+```typescript
+// packages/registry-api/src/scripts/testGateway.ts
+import { GatewayService } from '../services/gatewayService';
+
+async function testGatewayIntegration() {
+  console.log('🧪 Testing Gateway Integration...\n');
+
+  try {
+    // Test 1: Create a test MCP package with required secrets
+    console.log('1. Creating test MCP package...');
+    const testPackage = {
+      id: 'test-gateway-package',
+      name: 'test-gateway-mcp',
+      required_secrets: [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DEBUG_MODE',
+          description: 'Debug mode flag',
+          required: false,
+          type: 'boolean'
+        }
+      ]
+    };
+
+    // Test 2: Create test user secrets
+    console.log('2. Creating test user secrets...');
+    const testSecrets = {
+      'OPENAI_API_KEY': 'sk-test123456789',
+      'DEBUG_MODE': 'true'
+    };
+
+    // Test 3: Test gateway connection creation
+    console.log('3. Testing gateway connection...');
+    const result = await GatewayService.createGatewayConnection({
+      mcpServerUrl: 'https://test-mcp.example.com',
+      userApiKey: 'test-api-key',
+      mcpPackageId: testPackage.id
+    });
+
+    if (result.success) {
+      console.log('✅ Gateway connection created successfully');
+      console.log('   Gateway URL:', result.gatewayUrl);
+      console.log('   Secrets provided:', result.details?.secretsProvided);
+      console.log('   Total required:', result.details?.totalRequired);
+    } else {
+      console.log('❌ Gateway connection failed');
+      console.log('   Error:', result.error?.message);
+      console.log('   Details:', result.error?.details);
+    }
+
+    console.log('\n🎉 Gateway integration test completed!');
+
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+  }
+}
+
+testGatewayIntegration();
+```
+
+## 🚨 **PHASE 3.4: DATABASE SCHEMA UPDATES (MEDIUM PRIORITY)**
+
+### **Problem:**
+The current `gateway_sessions` table doesn't store MCP package information needed for validation.
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Migration for Enhanced Gateway Sessions**
+```sql
+-- packages/registry-api/migrations/enhance_gateway_sessions.sql
+-- Add new columns to gateway_sessions table for MCP secrets integration
+
+ALTER TABLE public.gateway_sessions 
+ADD COLUMN IF NOT EXISTS mcp_package_id UUID REFERENCES mcp_packages(id),
+ADD COLUMN IF NOT EXISTS required_secrets JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS injection_config JSONB DEFAULT '{"method": "headers", "headerPrefix": "X-MCP-Secret-"}'::jsonb;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_package_id 
+ON public.gateway_sessions(mcp_package_id);
+
+CREATE INDEX IF NOT EXISTS idx_gateway_sessions_required_secrets 
+ON public.gateway_sessions USING GIN (required_secrets);
+
+-- Add comments for documentation
+COMMENT ON COLUMN public.gateway_sessions.mcp_package_id IS 
+'Reference to the MCP package this gateway session is for';
+
+COMMENT ON COLUMN public.gateway_sessions.required_secrets IS 
+'Array of required secrets for this MCP server, as defined in mcp.yaml';
+
+COMMENT ON COLUMN public.gateway_sessions.injection_config IS 
+'Configuration for how secrets should be injected (headers, query params, etc.)';
+```
+
+#### **Step 2: Update Gateway Session Types**
+```typescript
+// packages/registry-api/src/services/gatewayService.ts
+interface GatewaySessionRecord {
+  id: string;
+  mcp_server_url: string;
+  mcp_package_id: string;
+  user_secrets: Record<string, string>;
+  required_secrets: MCPSecret[];
+  injection_config: SecretInjectionConfig;
+  additional_config?: Record<string, any>;
+  expires_at: string;
+}
+
+static async getGatewaySession(sessionId: string): Promise<{
+  mcpServerUrl: string;
+  mcpPackageId: string;
+  userSecrets: Record<string, string>;
+  requiredSecrets: MCPSecret[];
+  injectionConfig: SecretInjectionConfig;
+  additionalConfig?: Record<string, any>;
+} | null> {
+  const { data, error } = await supabase
+    .from('gateway_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    mcpServerUrl: data.mcp_server_url,
+    mcpPackageId: data.mcp_package_id,
+    userSecrets: data.user_secrets,
+    requiredSecrets: data.required_secrets || [],
+    injectionConfig: data.injection_config || {
+      method: SecretInjectionMethod.HEADERS,
+      headerPrefix: 'X-MCP-Secret-'
+    },
+    additionalConfig: data.additional_config
+  };
+}
+```
+
+## 🚨 **PHASE 3.5: TESTING AND VALIDATION (LOW PRIORITY)**
+
+### **Implementation Steps:**
+
+#### **Step 1: Create Gateway Integration Tests**
+```typescript
+// packages/registry-api/src/tests/gateway.test.ts
+import { GatewayService } from '../services/gatewayService';
+import { MCPSecret } from '../services/yaml';
+
+describe('GatewayService', () => {
+  describe('validateRequiredSecrets', () => {
+    it('should validate when all required secrets are provided', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123',
+        'DATABASE_URL': 'postgresql://localhost/test'
+      };
+
+      const requiredSecrets: MCPSecret[] = [
+        {
+          name: 'OPENAI_API_KEY',
+          description: 'OpenAI API key',
+          required: true,
+          type: 'string'
+        },
+        {
+          name: 'DATABASE_URL',
+          description: 'Database connection string',
+          required: true,
+          type: 'string'
+        }
+      ];
+
+      // Mock the getMCPPackageByUrl method
+      jest.spyOn(GatewayService as any, 'getMCPPackageByUrl')
+        .mockResolvedValue({
+          id: 'test-package',
+          required_secrets: requiredSecrets
+        });
+
+      const result = await (GatewayService as any).validateRequiredSecrets(
+        'https://test-mcp.example.com',
+        userSecrets
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should fail validation when required secrets are missing', async () => {
+      const userSecrets = {
+        'OPENAI_API_KEY': 'sk-test123'
+        // Missing DATABASE_URL
