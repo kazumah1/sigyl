@@ -1,7 +1,7 @@
 import { MCPSecurityValidator } from '../security/validator';
 import { SecurityReport } from '../types/security';
 import { SigylConfigUnion, NodeRuntimeConfig, ContainerRuntimeConfig } from '../types/config';
-import { GoogleAuth, JWT } from 'google-auth-library';
+import { GoogleAuth, JWT, OAuth2Client } from 'google-auth-library';
 import * as fs from 'fs';
 
 export interface CloudRunDeploymentRequest {
@@ -52,12 +52,12 @@ export class CloudRunService {
     // Initialize Google Cloud authentication using Application Default Credentials
     // This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS environment variable
     this.auth = new GoogleAuth({
+      keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
       scopes: [
         'https://www.googleapis.com/auth/cloud-platform',
         'https://www.googleapis.com/auth/cloudbuild',
         'https://www.googleapis.com/auth/run.admin'
-      ],
-      projectId: this.projectId
+      ]
     });
   }
 
@@ -73,29 +73,23 @@ export class CloudRunService {
     console.log('  Working directory:', process.cwd());
     
     try {
-      // Create a fresh GoogleAuth instance each time to ensure environment variables are picked up
-      const auth = new GoogleAuth({
-        scopes: [
-          'https://www.googleapis.com/auth/cloud-platform',
-          'https://www.googleapis.com/auth/cloudbuild',
-          'https://www.googleapis.com/auth/run.admin'
-        ],
-        projectId: this.projectId
-      });
-      
-      const client = await auth.getClient();
-      const result = await client.getAccessToken();
-      let token: string | undefined;
-      if (typeof result === 'string') {
-        token = result;
-      } else if (result && typeof result === 'object' && 'token' in result) {
-        token = result.token as string | undefined;
-      }
-      if (!token) {
-        throw new Error('OAuth token retrieval failed');
-      }
-      console.log('[CloudRunService] getAccessToken success - token length:', token.length);
-      return token;
+      // Create a fresh JWT instance each time to ensure environment variables are picked up
+      const {JWT} = require('google-auth-library');
+      const fs = require('fs');
+      const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      const keys = JSON.parse(fs.readFileSync(keyFile, 'utf8'));
+
+      const client = new JWT({
+        email: keys.client_email,
+        key: keys.private_key,
+        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+      })
+      const url = `https://dns.googleapis.com/dns/v1/projects/${keys.project_id}`;
+      const res = await client.fetch({ url });
+      console.log('[DNS info] ', res.data);
+
+      console.log('[CloudRunService] getAccessToken success - token:', client.credentials.access_token);
+      return client.credentials.access_token;
     } catch (error) {
       console.error('[CloudRunService] getAccessToken failed:', error);
       throw error;
