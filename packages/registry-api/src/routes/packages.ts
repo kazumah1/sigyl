@@ -166,8 +166,8 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response): Promise<
   }
 });
 
-// GET /api/v1/packages - Get all packages (requires admin permission)
-router.get('/', requirePermissions(['admin']), async (_req: Request, res: Response): Promise<void> => {
+// GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
+router.get('/', optionalAuth, async (_req: Request, res: Response): Promise<void> => {
   try {
     const packages = await packageService.getAllPackages();
     

@@ -19,6 +19,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3001',
   'http://localhost:8080', 
+  'http://localhost:8081',  // Frontend is running on this port
   'http://localhost:5173',
   process.env.CORS_ORIGIN
 ].filter((origin): origin is string => Boolean(origin));

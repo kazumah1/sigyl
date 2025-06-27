@@ -1,14 +1,16 @@
 import express, { Request, Response } from 'express';
-import { RailwayService, RailwayConfig } from '@sigil/container-builder';
+import { CloudRunService, CloudRunConfig } from '@sigil/container-builder';
 import { PackageService } from '../services/packageService';
 
 const router = express.Router();
 const packageService = new PackageService();
 
-// Railway configuration
-const RAILWAY_CONFIG: RailwayConfig = {
-  apiToken: process.env.RAILWAY_API_TOKEN || '',
-  ...(process.env.RAILWAY_API_URL && { apiUrl: process.env.RAILWAY_API_URL })
+// Google Cloud Run configuration
+const CLOUD_RUN_CONFIG: CloudRunConfig = {
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
+  region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
+  serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
+  keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
 };
 
 /**
@@ -22,11 +24,11 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
 
     console.log(`📋 Fetching logs for deployment ${id}...`);
 
-    // Check if Railway API token is configured
-    if (!RAILWAY_CONFIG.apiToken) {
+    // Check if Google Cloud credentials are configured
+    if (!CLOUD_RUN_CONFIG.projectId) {
       return res.status(503).json({
         success: false,
-        error: 'Railway service not configured'
+        error: 'Google Cloud Run service not configured'
       });
     }
 
@@ -39,23 +41,22 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
       });
     }
 
-    // Get service ID from deployment metadata (if stored)
-    // For now, we'll simulate this since we need to enhance the deployment storage
-    const serviceId = deployment.id; // This would be the Railway service ID in production
+    // Get service name from deployment metadata
+    const serviceName = deployment.id; // This would be the Cloud Run service name in production
 
-    // Initialize Railway service
-    const railwayService = new RailwayService(RAILWAY_CONFIG);
+    // Initialize Cloud Run service
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
     try {
-      // Get deployment logs from Railway
-      const logs = await railwayService.getDeploymentLogs(serviceId, Number(limit));
+      // Get deployment logs from Cloud Logging
+      const logs = await cloudRunService.getDeploymentLogs(serviceName, Number(limit));
       
       // Filter logs by timestamp if 'since' parameter provided
       let filteredLogs = logs;
       if (since) {
         const sinceDate = new Date(since as string);
         filteredLogs = logs.filter(log => {
-          // Parse timestamp from log entry (Railway logs include timestamps)
+          // Parse timestamp from log entry (Cloud Logging includes timestamps)
           const logMatch = log.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
           if (logMatch) {
             const logDate = new Date(logMatch[0]);
@@ -71,7 +72,7 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
         success: true,
         data: {
           deploymentId: id,
-          serviceId,
+          serviceName,
           logs: filteredLogs,
           totalLogs: filteredLogs.length,
           limit: Number(limit),
@@ -79,34 +80,34 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
         }
       });
 
-    } catch (railwayError) {
-      console.error('❌ Railway logs error:', railwayError);
+    } catch (cloudRunError) {
+      console.error('❌ Google Cloud Run logs error:', cloudRunError);
       
-      // Return mock logs if Railway API fails
+      // Return mock logs if Google Cloud API fails
       res.json({
         success: true,
         data: {
           deploymentId: id,
-          serviceId,
+          serviceName,
           logs: [
-            `${new Date().toISOString()} [INFO] MCP server starting...`,
-            `${new Date().toISOString()} [INFO] Listening on port $PORT`,
-            `${new Date().toISOString()} [INFO] MCP endpoint available at /mcp`,
-            `${new Date().toISOString()} [INFO] Health check passed`
+            `${new Date().toISOString()} INFO MCP server starting...`,
+            `${new Date().toISOString()} INFO Listening on port 8080`,
+            `${new Date().toISOString()} INFO MCP endpoint available at /mcp`,
+            `${new Date().toISOString()} INFO Health check passed`
           ],
           totalLogs: 4,
           limit: Number(limit),
           since: since || null,
-          note: 'Railway API unavailable - showing simulated logs'
+          note: 'Google Cloud Run API unavailable - showing simulated logs'
         }
       });
     }
 
   } catch (error) {
-    console.error('❌ Get logs error:', error);
+    console.error('❌ Logs error:', error);
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get deployment logs'
+      error: error instanceof Error ? error.message : 'Failed to fetch deployment logs'
     });
   }
 });
@@ -197,11 +198,11 @@ router.post('/:id/restart', async (req: Request, res: Response) => {
 
     console.log(`🔄 Restarting deployment ${id}...`);
 
-    // Check if Railway API token is configured
-    if (!RAILWAY_CONFIG.apiToken) {
+    // Check if Google Cloud credentials are configured
+    if (!CLOUD_RUN_CONFIG.projectId) {
       return res.status(503).json({
         success: false,
-        error: 'Railway service not configured'
+        error: 'Google Cloud Run service not configured'
       });
     }
 
@@ -214,36 +215,45 @@ router.post('/:id/restart', async (req: Request, res: Response) => {
       });
     }
 
-    // Initialize Railway service
-    // const railwayService = new RailwayService(RAILWAY_CONFIG);
+    // Initialize Cloud Run service
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
     try {
-      // For now, simulate restart operation
-      // In production, this would call Railway's service restart API
-      console.log('🔄 Simulating service restart...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get service name from deployment
+      const serviceName = deployment.id; // This would be the Cloud Run service name in production
+      
+      // Restart the service
+      const restarted = await cloudRunService.restartService(serviceName);
+      
+      if (restarted) {
+        // Update deployment status
+        await packageService.updateDeploymentHealth(id, 'unknown', new Date().toISOString());
 
-      // Update deployment status
-      await packageService.updateDeploymentHealth(id, 'unknown', new Date().toISOString());
+        console.log('✅ Service restart initiated');
 
-      console.log('✅ Service restart initiated');
+        res.json({
+          success: true,
+          data: {
+            deploymentId: id,
+            serviceName,
+            action: 'restart',
+            status: 'initiated',
+            message: 'Service restart has been initiated. Health status will be updated shortly.',
+            initiatedAt: new Date().toISOString()
+          }
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to restart service via Google Cloud Run API'
+        });
+      }
 
-      res.json({
-        success: true,
-        data: {
-          deploymentId: id,
-          action: 'restart',
-          status: 'initiated',
-          message: 'Service restart has been initiated. Health status will be updated shortly.',
-          initiatedAt: new Date().toISOString()
-        }
-      });
-
-    } catch (railwayError) {
-      console.error('❌ Railway restart error:', railwayError);
+    } catch (cloudRunError) {
+      console.error('❌ Google Cloud Run restart error:', cloudRunError);
       res.status(500).json({
         success: false,
-        error: 'Failed to restart service via Railway API'
+        error: 'Failed to restart service via Google Cloud Run API'
       });
     }
 
@@ -267,11 +277,11 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     console.log(`🗑️ Deleting deployment ${id}${force ? ' (forced)' : ''}...`);
 
-    // Check if Railway API token is configured
-    if (!RAILWAY_CONFIG.apiToken) {
+    // Check if Google Cloud credentials are configured
+    if (!CLOUD_RUN_CONFIG.projectId) {
       return res.status(503).json({
         success: false,
-        error: 'Railway service not configured'
+        error: 'Google Cloud Run service not configured'
       });
     }
 
@@ -284,45 +294,45 @@ router.delete('/:id', async (req: Request, res: Response) => {
       });
     }
 
-    // Initialize Railway service
-    const railwayService = new RailwayService(RAILWAY_CONFIG);
+    // Initialize Cloud Run service
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
     try {
-      // Get service ID from deployment metadata
-      const serviceId = deployment.id; // This would be the Railway service ID in production
+      // Get service name from deployment metadata
+      const serviceName = deployment.id; // This would be the Cloud Run service name in production
 
-      // Delete service from Railway
-      const deleted = await railwayService.deleteService(serviceId);
+      // Delete service from Google Cloud Run
+      const deleted = await cloudRunService.deleteService(serviceName);
       
       if (deleted) {
         // Update deployment status in database
         await packageService.updateDeploymentStatus(id, 'inactive');
         
-        console.log('✅ Service deleted from Railway');
+        console.log('✅ Service deleted from Google Cloud Run');
 
         res.json({
           success: true,
           data: {
             deploymentId: id,
-            serviceId,
+            serviceName,
             action: 'delete',
             status: 'completed',
-            message: 'Deployment has been successfully deleted from Railway.',
+            message: 'Deployment has been successfully deleted from Google Cloud Run.',
             deletedAt: new Date().toISOString()
           }
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'Failed to delete service from Railway'
+          error: 'Failed to delete service from Google Cloud Run'
         });
       }
 
-    } catch (railwayError) {
-      console.error('❌ Railway delete error:', railwayError);
+    } catch (cloudRunError) {
+      console.error('❌ Google Cloud Run delete error:', cloudRunError);
       
       if (force) {
-        // Force delete from database even if Railway API fails
+        // Force delete from database even if Google Cloud API fails
         await packageService.updateDeploymentStatus(id, 'failed');
         
         res.json({
@@ -331,14 +341,14 @@ router.delete('/:id', async (req: Request, res: Response) => {
             deploymentId: id,
             action: 'force_delete',
             status: 'completed',
-            message: 'Deployment marked as deleted in database (Railway API unavailable).',
+            message: 'Deployment marked as deleted in database (Google Cloud Run API unavailable).',
             deletedAt: new Date().toISOString()
           }
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'Failed to delete service via Railway API. Use ?force=true to force delete.'
+          error: 'Failed to delete service via Google Cloud Run API. Use ?force=true to force delete.'
         });
       }
     }

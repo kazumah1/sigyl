@@ -1,11 +1,13 @@
-import { RailwayService, RailwayConfig, RailwayDeploymentRequest } from '@sigil/container-builder';
+import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest } from '@sigil/container-builder';
 import { supabase } from '../config/database';
 import { decrypt } from '../utils/encryption';
 
-// Railway configuration
-const RAILWAY_CONFIG: RailwayConfig = {
-  apiToken: process.env.RAILWAY_API_TOKEN || '',
-  ...(process.env.RAILWAY_API_URL && { apiUrl: process.env.RAILWAY_API_URL })
+// Google Cloud Run configuration
+const CLOUD_RUN_CONFIG: CloudRunConfig = {
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
+  region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
+  serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
+  keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
 };
 
 export interface DeploymentRequest {
@@ -20,61 +22,67 @@ export interface DeploymentRequest {
 export interface DeploymentResult {
   success: boolean;
   deploymentUrl?: string;
-  serviceId?: string;
+  serviceName?: string;
   error?: string;
   securityReport?: any;
 }
 
 /**
- * Fetch and decrypt user secrets from database
+ * Fetch user secrets for deployment
  */
 async function fetchUserSecrets(userId: string, selectedSecrets?: string[]): Promise<Record<string, string>> {
   try {
-    let secretsQuery = supabase
+    let query = supabase
       .from('mcp_secrets')
-      .select('key, value')
+      .select('name, encrypted_value')
       .eq('user_id', userId);
-    
-    // If specific secrets are selected, filter by them
+
+    // Filter by selected secrets if provided
     if (selectedSecrets && selectedSecrets.length > 0) {
-      secretsQuery = secretsQuery.in('id', selectedSecrets);
+      query = query.in('name', selectedSecrets);
     }
-    
-    const { data: secrets, error } = await secretsQuery;
-    
+
+    const { data: secrets, error } = await query;
+
     if (error) {
-      console.warn('Failed to fetch secrets:', error);
+      console.error('❌ Failed to fetch user secrets:', error);
       return {};
     }
-    
+
     if (!secrets || secrets.length === 0) {
+      console.log('ℹ️ No secrets found for user');
       return {};
     }
-    
-    // Decrypt secrets and return as environment variables
-    const decryptedSecrets = secrets.map((secret: { key: string; value: string }) => ({
-      key: secret.key,
-      value: decrypt(secret.value)
-    }));
-    
-    return Object.fromEntries(decryptedSecrets.map((s: { key: string; value: string }) => [s.key, s.value]));
-    
+
+    // Decrypt secrets
+    const decryptedSecrets: Record<string, string> = {};
+    for (const secret of secrets) {
+      try {
+        decryptedSecrets[secret.name] = decrypt(secret.encrypted_value);
+      } catch (decryptError) {
+        console.error(`❌ Failed to decrypt secret ${secret.name}:`, decryptError);
+        // Skip this secret rather than failing the entire deployment
+      }
+    }
+
+    return decryptedSecrets;
+
   } catch (error) {
-    console.error('Error fetching user secrets:', error);
+    console.error('❌ Error fetching user secrets:', error);
     return {};
   }
 }
 
 /**
- * Deploy MCP repository to Railway with security validation and secrets management
+ * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
 export async function deployRepo(request: DeploymentRequest): Promise<DeploymentResult> {
   try {
-    console.log('🚀 Starting Railway deployment for:', request.repoName);
+    console.log('🚀 Starting Google Cloud Run deployment for:', request.repoName);
 
-    // Check if Railway API token is configured
-    if (!RAILWAY_CONFIG.apiToken) {
-      throw new Error('Railway API token not configured. Set RAILWAY_API_TOKEN environment variable.');
+    // Check if Google Cloud credentials are configured
+    if (!CLOUD_RUN_CONFIG.projectId) {
+      throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
     }
 
     // Fetch user secrets if userId is provided
@@ -90,11 +98,11 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       console.log(`✅ Added ${Object.keys(userSecrets).length} secrets to deployment environment`);
     }
 
-    // Initialize Railway service
-    const railwayService = new RailwayService(RAILWAY_CONFIG);
+    // Initialize Cloud Run service
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
-    // Prepare Railway deployment request with MCP-specific configuration
-    const railwayRequest: RailwayDeploymentRequest = {
+    // Prepare Cloud Run deployment request with MCP-specific configuration
+    const cloudRunRequest: CloudRunDeploymentRequest = {
       repoUrl: request.repoUrl,
       repoName: request.repoName,
       branch: request.branch || 'main',
@@ -112,26 +120,26 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
 
     console.log('🔒 Deploying with security validation...');
 
-    // Deploy to Railway with integrated security validation
-    const railwayResult = await railwayService.deployMCPServer(railwayRequest);
+    // Deploy to Cloud Run with integrated security validation
+    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
 
-    if (!railwayResult.success) {
-      console.error('❌ Railway deployment failed:', railwayResult.error);
+    if (!cloudRunResult.success) {
+      console.error('❌ Google Cloud Run deployment failed:', cloudRunResult.error);
       return {
         success: false,
-        error: railwayResult.error || 'Railway deployment failed',
-        securityReport: railwayResult.securityReport
+        error: cloudRunResult.error || 'Google Cloud Run deployment failed',
+        securityReport: cloudRunResult.securityReport
       };
     }
 
-    console.log('✅ Successfully deployed to Railway:', railwayResult.deploymentUrl);
-    console.log('🔗 MCP endpoint available at:', `${railwayResult.deploymentUrl}/mcp`);
+    console.log('✅ Successfully deployed to Google Cloud Run:', cloudRunResult.deploymentUrl);
+    console.log('🔗 MCP endpoint available at:', `${cloudRunResult.deploymentUrl}/mcp`);
 
     return {
       success: true,
-      ...(railwayResult.deploymentUrl && { deploymentUrl: railwayResult.deploymentUrl }),
-      ...(railwayResult.serviceId && { serviceId: railwayResult.serviceId }),
-      ...(railwayResult.securityReport && { securityReport: railwayResult.securityReport })
+      ...(cloudRunResult.deploymentUrl && { deploymentUrl: cloudRunResult.deploymentUrl }),
+      ...(cloudRunResult.serviceName && { serviceName: cloudRunResult.serviceName }),
+      ...(cloudRunResult.securityReport && { securityReport: cloudRunResult.securityReport })
     };
 
   } catch (error) {
@@ -166,7 +174,7 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
     url: result.deploymentUrl,
     service: {
       url: result.deploymentUrl,
-      id: result.serviceId
+      id: result.serviceName
     }
   };
 }
