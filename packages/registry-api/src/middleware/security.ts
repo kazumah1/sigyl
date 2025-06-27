@@ -45,8 +45,10 @@ export const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
+      'http://localhost:8080',  // Frontend Vite dev server
       'https://localhost:3000',
       'https://localhost:5173',
+      'https://localhost:8080',
       process.env.FRONTEND_URL,
       process.env.PRODUCTION_URL,
       // Add your production domains here

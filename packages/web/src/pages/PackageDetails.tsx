@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -214,10 +213,11 @@ const PackageDetails = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-4">
-            <Button
+            <Button 
+              size="lg" 
               onClick={handleDownload}
               disabled={isDownloading}
-              className="bg-white hover:bg-gray-100 text-black font-semibold px-8"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8"
             >
               {isDownloading ? 'Installing...' : 'Install & Deploy'}
             </Button>
