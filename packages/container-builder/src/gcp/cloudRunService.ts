@@ -13,6 +13,8 @@ export interface CloudRunDeploymentRequest {
   serviceName?: string;
   /** Sigyl configuration from sigyl.yaml */
   sigylConfig?: SigylConfigUnion;
+  /** GitHub token for repository access */
+  githubToken?: string;
 }
 
 export interface CloudRunDeploymentResult {
@@ -128,7 +130,7 @@ export class CloudRunService {
    * Validate MCP security before deployment
    */
   private async validateSecurity(request: CloudRunDeploymentRequest): Promise<SecurityReport> {
-    const validator = new MCPSecurityValidator();
+    const validator = new MCPSecurityValidator(request.githubToken);
     return await validator.validateMCPSecurity(request.repoUrl, request.branch);
   }
 
