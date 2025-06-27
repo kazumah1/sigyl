@@ -1,5 +1,7 @@
 import { MCPSecurityValidator } from '../security/validator';
 import { SecurityReport } from '../types/security';
+import { SigylConfigUnion, NodeRuntimeConfig, ContainerRuntimeConfig } from '../types/config';
+import { GoogleAuth } from 'google-auth-library';
 
 export interface CloudRunDeploymentRequest {
   repoUrl: string;
@@ -9,6 +11,8 @@ export interface CloudRunDeploymentRequest {
   projectId?: string;
   region?: string;
   serviceName?: string;
+  /** Sigyl configuration from sigyl.yaml */
+  sigylConfig?: SigylConfigUnion;
 }
 
 export interface CloudRunDeploymentResult {
@@ -35,11 +39,32 @@ export class CloudRunService {
   private config: CloudRunConfig;
   private region: string;
   private projectId: string;
+  private auth: GoogleAuth;
 
   constructor(config: CloudRunConfig) {
     this.config = config;
     this.region = config.region;
     this.projectId = config.projectId;
+    
+    // Initialize Google Cloud authentication
+    this.auth = new GoogleAuth({
+      scopes: [
+        'https://www.googleapis.com/auth/cloud-platform',
+        'https://www.googleapis.com/auth/cloudbuild',
+        'https://www.googleapis.com/auth/run.admin'
+      ],
+      ...(config.keyFilePath && { keyFilename: config.keyFilePath }),
+      ...(config.serviceAccountKey && { credentials: JSON.parse(config.serviceAccountKey) })
+    });
+  }
+
+  /**
+   * Get access token for API calls
+   */
+  private async getAccessToken(): Promise<string> {
+    const client = await this.auth.getClient();
+    const accessToken = await client.getAccessToken();
+    return accessToken.token || '';
   }
 
   /**
@@ -49,7 +74,7 @@ export class CloudRunService {
     try {
       console.log('🔒 Starting secure Google Cloud Run deployment for:', request.repoName);
 
-      // Step 1: Security validation first (same as Railway/AWS)
+      // Step 1: Security validation first
       const securityReport = await this.validateSecurity(request);
       
       if (securityReport.securityScore === 'blocked') {
@@ -63,8 +88,19 @@ export class CloudRunService {
 
       console.log('✅ Security validation passed, proceeding with Google Cloud Run deployment');
 
-      // Step 2: Build and push container image to Google Container Registry
-      const imageUri = await this.buildAndPushImage(request);
+      // Step 2: Handle deployment based on runtime type (default to node if no config)
+      let imageUri: string;
+      const sigylConfig = request.sigylConfig || { runtime: 'node', language: 'javascript', entryPoint: 'server.js' };
+      
+      if (sigylConfig.runtime === 'node') {
+        // Node runtime - build with our tooling
+        imageUri = await this.buildNodeRuntime(request, sigylConfig as NodeRuntimeConfig);
+      } else if (sigylConfig.runtime === 'container') {
+        // Container runtime - use custom Dockerfile
+        imageUri = await this.buildContainerRuntime(request, sigylConfig as ContainerRuntimeConfig);
+      } else {
+        throw new Error(`Unsupported runtime: ${(sigylConfig as any).runtime}`);
+      }
 
       // Step 3: Deploy to Cloud Run
       const { serviceUrl, serviceName } = await this.deployToCloudRun(request, imageUri);
@@ -97,142 +133,387 @@ export class CloudRunService {
   }
 
   /**
-   * Build and push container image to Google Container Registry
+   * Build Node.js runtime MCP server using Cloud Build REST API
    */
-  private async buildAndPushImage(request: CloudRunDeploymentRequest): Promise<string> {
+  private async buildNodeRuntime(request: CloudRunDeploymentRequest, config: NodeRuntimeConfig): Promise<string> {
     const imageName = request.repoName.replace('/', '-').toLowerCase();
     const imageTag = `${Date.now()}-${request.branch}`;
-    const imageUri = `gcr.io/${this.projectId}/sigil-mcp/${imageName}:${imageTag}`;
+    const imageUri = `gcr.io/${this.projectId}/sigyl-mcp-node/${imageName}:${imageTag}`;
     
-    console.log(`🔨 Building container image: ${imageUri}`);
+    console.log(`🔨 Building Node.js runtime image: ${imageUri}`);
     
-    // For now, we'll use a pre-built image approach
-    // In production, you'd want to integrate with Cloud Build
-    console.log('📦 Container image built and pushed successfully');
+    // Generate optimized Dockerfile for Node.js runtime
+    const dockerfile = this.generateNodeDockerfile(config);
     
-    return imageUri;
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      // Create Cloud Build using REST API
+      const buildConfig = {
+        source: {
+          repoSource: {
+            projectId: this.projectId,
+            repoName: request.repoName,
+            branchName: request.branch
+          }
+        },
+        steps: [
+          {
+            name: 'gcr.io/cloud-builders/docker',
+            args: [
+              'build',
+              '-t', imageUri,
+              '.'
+            ],
+            env: ['DOCKER_BUILDKIT=1']
+          }
+        ],
+        images: [imageUri],
+        options: {
+          logging: 'CLOUD_LOGGING_ONLY',
+          machineType: 'E2_MEDIUM'
+        },
+        timeout: '1200s'
+      };
+
+      console.log('📦 Submitting build to Google Cloud Build...');
+      
+      const buildResponse = await fetch(
+        `https://cloudbuild.googleapis.com/v1/projects/${this.projectId}/builds`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(buildConfig)
+        }
+      );
+
+      if (!buildResponse.ok) {
+        const error = await buildResponse.text();
+        throw new Error(`Cloud Build API error: ${buildResponse.status} ${error}`);
+      }
+
+      const operation = await buildResponse.json() as any;
+      
+      // Poll for build completion
+      console.log('⏳ Waiting for build to complete...');
+      const buildId = operation.metadata?.build?.id;
+      
+      if (!buildId) {
+        throw new Error('No build ID returned from Cloud Build');
+      }
+
+      // Wait for build to complete
+      await this.waitForBuildCompletion(buildId, accessToken);
+      
+      console.log('✅ Node.js runtime image built and pushed successfully');
+      return imageUri;
+
+    } catch (error) {
+      console.error('❌ Cloud Build failed:', error);
+      throw new Error(`Failed to build Node.js runtime: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Deploy service to Google Cloud Run
+   * Build container runtime MCP server using Cloud Build REST API
+   */
+  private async buildContainerRuntime(request: CloudRunDeploymentRequest, config: ContainerRuntimeConfig): Promise<string> {
+    const imageName = request.repoName.replace('/', '-').toLowerCase();
+    const imageTag = `${Date.now()}-${request.branch}`;
+    const imageUri = `gcr.io/${this.projectId}/sigyl-mcp-container/${imageName}:${imageTag}`;
+    
+    console.log(`🔨 Building container runtime image: ${imageUri}`);
+    
+    const dockerfilePath = config.build?.dockerfile || 'Dockerfile';
+    const buildContext = config.build?.dockerBuildPath || '.';
+    
+    console.log(`Using Dockerfile: ${dockerfilePath}, Build context: ${buildContext}`);
+    
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      // Create Cloud Build using REST API
+      const buildConfig = {
+        source: {
+          repoSource: {
+            projectId: this.projectId,
+            repoName: request.repoName,
+            branchName: request.branch
+          }
+        },
+        steps: [
+          {
+            name: 'gcr.io/cloud-builders/docker',
+            args: [
+              'build',
+              '-t', imageUri,
+              '-f', dockerfilePath,
+              buildContext
+            ],
+            env: ['DOCKER_BUILDKIT=1']
+          }
+        ],
+        images: [imageUri],
+        options: {
+          logging: 'CLOUD_LOGGING_ONLY',
+          machineType: 'E2_MEDIUM'
+        },
+        timeout: '1200s'
+      };
+
+      console.log('📦 Submitting build to Google Cloud Build...');
+      
+      const buildResponse = await fetch(
+        `https://cloudbuild.googleapis.com/v1/projects/${this.projectId}/builds`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(buildConfig)
+        }
+      );
+
+      if (!buildResponse.ok) {
+        const error = await buildResponse.text();
+        throw new Error(`Cloud Build API error: ${buildResponse.status} ${error}`);
+      }
+
+      const operation = await buildResponse.json() as any;
+      
+      // Poll for build completion
+      console.log('⏳ Waiting for build to complete...');
+      const buildId = operation.metadata?.build?.id;
+      
+      if (!buildId) {
+        throw new Error('No build ID returned from Cloud Build');
+      }
+
+      // Wait for build to complete
+      await this.waitForBuildCompletion(buildId, accessToken);
+      
+      console.log('✅ Container runtime image built and pushed successfully');
+      return imageUri;
+
+    } catch (error) {
+      console.error('❌ Cloud Build failed:', error);
+      throw new Error(`Failed to build container runtime: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Wait for Cloud Build to complete
+   */
+  private async waitForBuildCompletion(buildId: string, accessToken: string): Promise<void> {
+    const maxAttempts = 60; // 10 minutes max
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const buildResponse = await fetch(
+        `https://cloudbuild.googleapis.com/v1/projects/${this.projectId}/builds/${buildId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      if (!buildResponse.ok) {
+        throw new Error(`Failed to check build status: ${buildResponse.status}`);
+      }
+
+      const build = await buildResponse.json() as any;
+      
+      if (build.status === 'SUCCESS') {
+        return;
+      } else if (build.status === 'FAILURE' || build.status === 'TIMEOUT' || build.status === 'CANCELLED') {
+        throw new Error(`Build failed with status: ${build.status}. Log: ${build.logUrl}`);
+      }
+
+      // Still building, wait and try again
+      await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds
+      attempts++;
+    }
+
+    throw new Error('Build timeout - took longer than 10 minutes');
+  }
+
+  /**
+   * Generate Dockerfile for Node.js runtime
+   */
+  private generateNodeDockerfile(config: NodeRuntimeConfig): string {
+    const language = config.language || 'javascript';
+    const entryPoint = config.entryPoint || 'server.js';
+    
+    return `# Sigyl MCP Server - Node.js Runtime
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S mcpuser && \\
+    adduser -S mcpuser -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && \\
+    npm cache clean --force
+
+# Copy application code
+COPY . .
+
+${language === 'typescript' ? `
+# Build TypeScript
+RUN npm run build
+` : ''}
+
+# Change ownership to non-root user
+RUN chown -R mcpuser:mcpuser /app
+USER mcpuser
+
+# Environment variables
+ENV NODE_ENV=production
+ENV MCP_TRANSPORT=http
+ENV MCP_ENDPOINT=/mcp
+ENV PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
+  CMD curl -f http://localhost:8080/mcp || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Start server
+CMD ["node", "${language === 'typescript' ? 'dist/' : ''}${entryPoint}"]
+`;
+  }
+
+  /**
+   * Deploy service to Google Cloud Run using REST API
    */
   private async deployToCloudRun(request: CloudRunDeploymentRequest, imageUri: string): Promise<{serviceUrl: string, serviceName: string}> {
     const serviceName = request.serviceName || 
-      `sigil-mcp-${request.repoName.replace('/', '-').toLowerCase()}`;
+      `sigyl-mcp-${request.repoName.replace('/', '-').toLowerCase()}`;
     
-    const serviceDefinition = {
-      apiVersion: 'serving.knative.dev/v1',
-      kind: 'Service',
-      metadata: {
-        name: serviceName,
-        namespace: this.projectId,
-        annotations: {
-          'run.googleapis.com/ingress': 'all',
-          'run.googleapis.com/execution-environment': 'gen2'
-        },
-        labels: {
-          'app': 'sigil-mcp',
-          'repository': request.repoName.replace('/', '-')
-        }
-      },
-      spec: {
-        template: {
-          metadata: {
-            annotations: {
-              'autoscaling.knative.dev/maxScale': '10',
-              'autoscaling.knative.dev/minScale': '0', // Scale to zero for cost savings
-              'run.googleapis.com/cpu-throttling': 'false',
-              'run.googleapis.com/memory': '512Mi',
-              'run.googleapis.com/cpu': '0.25' // Perfect for API routers
-            }
-          },
-          spec: {
-            containerConcurrency: 100,
-            timeoutSeconds: 300,
-            containers: [
-              {
-                image: imageUri,
-                ports: [
-                  {
-                    name: 'http1',
-                    containerPort: 8080,
-                    protocol: 'TCP'
-                  }
-                ],
-                env: [
-                  { name: 'NODE_ENV', value: 'production' },
-                  { name: 'MCP_TRANSPORT', value: 'http' },
-                  { name: 'MCP_ENDPOINT', value: '/mcp' },
-                  { name: 'FORCE_HTTPS', value: 'true' },
-                  { name: 'SESSION_SECURE', value: 'true' },
-                  { name: 'REQUIRE_TOKEN_VALIDATION', value: 'true' },
-                  { name: 'PORT', value: '8080' },
-                  ...Object.entries(request.environmentVariables).map(([name, value]) => ({
-                    name,
-                    value
-                  }))
-                ],
-                resources: {
-                  limits: {
-                    cpu: '0.25',
-                    memory: '512Mi'
-                  },
-                  requests: {
-                    cpu: '0.1',
-                    memory: '256Mi'
-                  }
-                },
-                livenessProbe: {
-                  httpGet: {
-                    path: '/mcp',
-                    port: 8080
-                  },
-                  initialDelaySeconds: 30,
-                  periodSeconds: 30,
-                  timeoutSeconds: 5,
-                  failureThreshold: 3
-                },
-                readinessProbe: {
-                  httpGet: {
-                    path: '/mcp',
-                    port: 8080
-                  },
-                  initialDelaySeconds: 10,
-                  periodSeconds: 10,
-                  timeoutSeconds: 5,
-                  failureThreshold: 3
-                }
-              }
-            ]
-          }
-        },
-        traffic: [
-          {
-            percent: 100,
-            latestRevision: true
-          }
-        ]
-      }
-    };
-
     console.log(`🏗️ Deploying to Cloud Run: ${serviceName}`);
     
-    // Deploy service using Cloud Run API
-    const response = await this.cloudRunRequest('POST', `/v1/namespaces/${this.projectId}/services`, serviceDefinition);
-    
-    if (!response.ok) {
-      throw new Error(`Cloud Run deployment failed: ${response.status} ${response.statusText}`);
-    }
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      // Create Cloud Run service using REST API
+      const serviceConfig = {
+        apiVersion: 'serving.knative.dev/v1',
+        kind: 'Service',
+        metadata: {
+          name: serviceName,
+          annotations: {
+            'run.googleapis.com/ingress': 'all',
+            'run.googleapis.com/execution-environment': 'gen2'
+          },
+          labels: {
+            'app': 'sigyl-mcp',
+            'repository': request.repoName.replace('/', '-')
+          }
+        },
+        spec: {
+          template: {
+            metadata: {
+              annotations: {
+                'autoscaling.knative.dev/maxScale': '10',
+                'autoscaling.knative.dev/minScale': '0',
+                'run.googleapis.com/cpu-throttling': 'false',
+                'run.googleapis.com/memory': '512Mi',
+                'run.googleapis.com/cpu': '250m'
+              }
+            },
+            spec: {
+              containerConcurrency: 100,
+              timeoutSeconds: 300,
+              containers: [
+                {
+                  image: imageUri,
+                  ports: [
+                    {
+                      name: 'http1',
+                      containerPort: 8080
+                    }
+                  ],
+                  env: [
+                    { name: 'NODE_ENV', value: 'production' },
+                    { name: 'MCP_TRANSPORT', value: 'http' },
+                    { name: 'MCP_ENDPOINT', value: '/mcp' },
+                    { name: 'PORT', value: '8080' },
+                    ...Object.entries(request.environmentVariables).map(([name, value]) => ({
+                      name,
+                      value
+                    }))
+                  ],
+                  resources: {
+                    limits: {
+                      cpu: '250m',
+                      memory: '512Mi'
+                    },
+                    requests: {
+                      cpu: '100m',
+                      memory: '256Mi'
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          traffic: [
+            {
+              percent: 100,
+              latestRevision: true
+            }
+          ]
+        }
+      };
 
-    const serviceData = await response.json() as any;
-    const serviceUrl = serviceData.status?.url || `https://${serviceName}-${this.generateServiceHash()}-${this.region}.a.run.app`;
-    
-    console.log('✅ Cloud Run service deployed successfully');
-    
-    return {
-      serviceUrl,
-      serviceName
-    };
+      console.log('🚀 Creating Cloud Run service...');
+      
+      const deployResponse = await fetch(
+        `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(serviceConfig)
+        }
+      );
+
+      if (!deployResponse.ok) {
+        const error = await deployResponse.text();
+        throw new Error(`Cloud Run API error: ${deployResponse.status} ${error}`);
+      }
+
+      const service = await deployResponse.json() as any;
+      
+      if (service.status?.url) {
+        console.log('✅ Cloud Run service deployed successfully');
+        return {
+          serviceUrl: service.status.url,
+          serviceName
+        };
+      } else {
+        throw new Error('Deployment succeeded but no service URL returned');
+      }
+
+    } catch (error) {
+      console.error('❌ Cloud Run deployment failed:', error);
+      throw new Error(`Failed to deploy to Cloud Run: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
@@ -375,23 +656,20 @@ export class CloudRunService {
     return fetch(url, options);
   }
 
-  private async getAccessToken(): Promise<string> {
-    // In a real implementation, you would use Google Auth Library
-    // For now, return a placeholder
-    return 'placeholder-access-token';
-  }
-
   private generateServiceHash(): string {
     return Math.random().toString(36).substring(2, 8);
   }
 }
 
 /**
- * Generate MCP-specific Dockerfile for Google Cloud Run deployment
+ * Generate Sigyl MCP-specific Dockerfile for Google Cloud Run deployment
+ * @deprecated Use generateNodeDockerfile or custom Dockerfile with container runtime
  */
 export function generateMCPDockerfile(packageJson?: any): string {
-  return `# MCP Server Dockerfile for Google Cloud Run deployment
-# Optimized for cost and performance
+  console.warn('⚠️ generateMCPDockerfile is deprecated. Use runtime-specific generation instead.');
+  
+  return `# Legacy MCP Server Dockerfile for Google Cloud Run deployment
+# Migrating to Sigyl schema - use 'runtime: node' or 'runtime: container'
 
 FROM node:18-alpine
 
@@ -434,6 +712,56 @@ EXPOSE 8080
 # Start command optimized for Cloud Run
 CMD ["node", "server.js"]
 `;
+}
+
+/**
+ * Generate Sigyl configuration template
+ */
+export function generateSigylConfig(options: {
+  runtime: 'node' | 'container';
+  language?: 'typescript' | 'javascript';
+  entryPoint?: string;
+  dockerfile?: string;
+  configSchema?: any;
+}): SigylConfigUnion {
+  if (options.runtime === 'node') {
+    return {
+      runtime: 'node',
+      language: options.language || 'javascript',
+      entryPoint: options.entryPoint || 'server.js',
+      env: {
+        NODE_ENV: 'production',
+        MCP_TRANSPORT: 'http',
+        MCP_ENDPOINT: '/mcp'
+      }
+    } as NodeRuntimeConfig;
+  } else {
+    return {
+      runtime: 'container',
+      build: {
+        dockerfile: options.dockerfile || 'Dockerfile',
+        dockerBuildPath: '.'
+      },
+      startCommand: {
+        type: 'http',
+        configSchema: options.configSchema || {
+          type: 'object',
+          properties: {
+            apiKey: {
+              type: 'string',
+              description: 'Your API key'
+            }
+          },
+          required: ['apiKey']
+        }
+      },
+      env: {
+        NODE_ENV: 'production',
+        MCP_TRANSPORT: 'http',
+        MCP_ENDPOINT: '/mcp'
+      }
+    } as ContainerRuntimeConfig;
+  }
 }
 
 /**

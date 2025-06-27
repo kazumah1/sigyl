@@ -33,8 +33,30 @@ const MCPMetadataSchema = z.object({
   secrets: z.array(MCPSecretSchema).optional(),
 })
 
+// Zod schema for the new Sigyl configuration
+const SigylConfigSchema = z.object({
+  runtime: z.enum(['node', 'container']),
+  env: z.record(z.string()).optional(),
+  // Node runtime specific fields
+  language: z.enum(['typescript', 'javascript']).optional(),
+  entryPoint: z.string().optional(),
+  build: z.object({
+    command: z.string().optional(),
+    outputDir: z.string().optional(),
+    dockerfile: z.string().optional(),
+    dockerBuildPath: z.string().optional(),
+  }).optional(),
+  // Container runtime specific fields
+  startCommand: z.object({
+    type: z.literal('http'),
+    configSchema: z.record(z.any()).optional(),
+    exampleConfig: z.record(z.any()).optional(),
+  }).optional(),
+})
+
 export type MCPYaml = z.infer<typeof MCPMetadataSchema>
 export type MCPSecret = z.infer<typeof MCPSecretSchema>
+export type SigylConfig = z.infer<typeof SigylConfigSchema>
 
 export async function fetchMCPYaml(
   owner: string,
@@ -59,4 +81,39 @@ export async function fetchMCPYaml(
     )
   }
   return result.data
+}
+
+export async function fetchSigylYaml(
+  owner: string,
+  repo: string,
+  branch = 'main',
+  token?: string
+): Promise<SigylConfig> {
+  const octokit = new Octokit({ auth: token })
+  
+  try {
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'sigyl.yaml',
+      ref: branch,
+    }) as any
+
+    const file = Buffer.from(data.content, 'base64').toString('utf-8')
+    const parsed = yaml.load(file)
+    const result = SigylConfigSchema.safeParse(parsed)
+    
+    if (!result.success) {
+      throw new Error(
+        'Invalid sigyl.yaml structure: ' + JSON.stringify(result.error.format(), null, 2)
+      )
+    }
+    
+    return result.data
+  } catch (error: any) {
+    if (error.status === 404) {
+      throw new Error('sigyl.yaml not found in repository')
+    }
+    throw error
+  }
 }
