@@ -32,6 +32,76 @@ The Sigyl MCP Platform enables developers to deploy Model Context Protocol (MCP)
 
 ---
 
+## 🎨 UI/UX Improvements
+
+### Blue Accent Color Implementation - DECEMBER 18, 2024
+- **Objective:** Add trustworthy blue accent colors to replace the current black/white theme
+- **Implementation:** 
+  - Added 4 blue color palettes to `tailwind.config.ts`: Classic Blue, Trust Blue, Ocean Blue, and Navy Blue
+  - Each palette includes 11 shades (50-950) for comprehensive color options
+  - Created `BlueColorTester` component at `/colors` route for interactive color testing
+  - Added safelist to Tailwind config to ensure dynamic color classes are included in build
+- **Color Palettes Added:**
+  - `blue-*` - Standard, reliable blue tones
+  - `trust-blue-*` - Light, approachable blue tones  
+  - `ocean-blue-*` - Deep, professional blue tones
+  - `navy-blue-*` - Corporate, serious blue tones
+- **Testing:** Interactive component displays each palette with UI examples (buttons, badges, links, cards)
+- **Next Steps:** Select preferred blue shade and implement across existing UI components
+
+### Blue Accent Color Selection & Implementation - COMPLETED
+- **Selected Color:** Classic Blue 500 (`#3b82f6`) for trustworthiness and professional appeal
+- **Implementation Completed:**
+  - Updated primary button styles in `index.css` to use blue-500 with blue-600 hover
+  - Applied blue-500 to main CTAs: "Get Started Free", "Deploy Now" buttons on Index page
+  - Updated "Install & Deploy" button in PackageDetails component
+  - Applied blue-500 to important action buttons in NotFound and Secrets pages
+  - Updated hover states and accent colors to use blue-400 for consistency
+  - Maintained existing blue color palettes for future use
+- **Cleanup:** Removed BlueColorTester component and /colors route after selection
+- **Status:** ✅ COMPLETE - Blue accent color successfully implemented across key UI elements
+
+### UI/UX Fixes & CORS Resolution - DECEMBER 18, 2024
+- **Button Functionality Fixed:**
+  - Added navigation logic to "Get Started Free" button → routes to `/deploy`
+  - Added navigation logic to "View Documentation" button → routes to `/docs`
+  - Updated "View Documentation" button styling with transparent background, white border, and white text
+  - Added smooth hover effect that inverts to white background with black text
+- **CORS Configuration Fixed:**
+  - Updated `packages/registry-api/src/middleware/security.ts` to include `localhost:8080`
+  - Frontend runs on port 8080 (per vite.config.ts) but CORS was only allowing 3000/5173
+  - Added both HTTP and HTTPS variants for development
+- **Status:** ✅ COMPLETE - Navigation working and CORS errors resolved
+
+### Authentication Flow Separation - DECEMBER 18, 2024
+- **Problem:** Login page was forcing GitHub App installation on every login (terrible UX for returning users)
+- **Solution:** Separated login and signup flows:
+  - **Login Tab:** Regular GitHub OAuth via Supabase for returning users (no app reinstallation)
+  - **Sign Up Tab:** GitHub App installation flow for new users (grants repository access)
+  - **Admin Access:** Moved to collapsible section to reduce UI clutter
+- **Implementation:**
+  - Updated `packages/web/src/pages/Login.tsx` with tabbed interface
+  - Added `handleGitHubLogin()` for regular OAuth using `supabase.auth.signInWithOAuth`
+  - Kept existing `handleGitHubAppSignup()` for first-time setup
+  - Used blue-500 for login button, white for signup to match design system
+- **Status:** ✅ COMPLETE - Much better UX for returning users
+
+### GitHub App Access Restoration Fix - DECEMBER 18, 2024
+- **Problem:** After regular GitHub OAuth login, users were still prompted to install GitHub App on deploy page
+- **Root Cause:** AuthContext wasn't checking for existing GitHub App installations when OAuth users logged in
+- **Solution:** Enhanced AuthContext to restore GitHub App access for OAuth users:
+  - Added `loadExistingGitHubAppAccounts()` function that checks both localStorage and database
+  - Queries `github_installations` table by `account_login` (GitHub username)
+  - Restores `githubAccounts` and `activeGitHubAccount` state
+  - Stores restored accounts in localStorage for faster future access
+- **Implementation:** 
+  - Updated `packages/web/src/contexts/AuthContext.tsx`
+  - Function runs when OAuth users log in and during initial session loading
+  - Database query: `supabase.from('github_installations').select('*').eq('account_login', githubUsername)`
+- **Status:** ✅ COMPLETE - Returning users now have seamless GitHub App access after OAuth login
+
+---
+
 ## 📦 Tech Stack Status
 | Component         | Stack                        | Status & Notes                                  |
 |-------------------|------------------------------|-------------------------------------------------|

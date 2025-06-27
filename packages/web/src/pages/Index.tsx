@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -71,14 +70,16 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <Button 
               size="lg" 
-              className="bg-white hover:bg-gray-100 text-black font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate('/deploy')}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-4 text-lg"
             >
               Get Started Free
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-gray-600 text-white hover:bg-gray-900 font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate('/docs')}
+              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black font-semibold px-8 py-4 text-lg transition-all duration-300"
             >
               View Documentation
             </Button>
@@ -101,7 +102,7 @@ const Index = () => {
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span className="text-green-400 font-medium">E-commerce Integration deployed successfully</span>
                     </div>
-                    <div className="text-blue-400">Handling 1.2K requests/min across 12 endpoints</div>
+                    <div className="text-blue-500">Handling 1.2K requests/min across 12 endpoints</div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-400">
@@ -195,7 +196,7 @@ const Index = () => {
           </p>
           <Button 
             onClick={() => navigate('/deploy')}
-            className="btn-primary text-lg px-8 py-4"
+            className="bg-blue-500 hover:bg-blue-600 text-white text-lg px-8 py-4"
           >
             Deploy Now
             <ArrowRight className="ml-2 w-5 h-5" />

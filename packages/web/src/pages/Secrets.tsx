@@ -28,17 +28,31 @@ const Secrets = () => {
   const [formData, setFormData] = useState<SecretFormData>({ key: '', value: '' });
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
 
-  // Dark theme matching the landing page
-  const currentTheme = {
-    bg: 'bg-black',
-    text: 'text-white',
-    accent: 'text-indigo-400',
-    card: 'bg-gray-900/50 border-gray-800',
-    solid: 'text-indigo-400',
-    gradient: 'from-indigo-500 to-pink-500',
-    button: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    buttonSecondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+  const themes = {
+    light: {
+      bg: 'bg-white',
+      text: 'text-gray-900',
+      textSecondary: 'text-gray-600',
+      card: 'bg-gray-50 border-gray-200',
+      cardHover: 'hover:bg-gray-100',
+      input: 'bg-white border-gray-300 text-gray-900',
+      button: 'bg-blue-500 hover:bg-blue-600 text-white',
+      buttonSecondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 border border-gray-300'
+    },
+    dark: {
+      bg: 'bg-black',
+      text: 'text-white',
+      textSecondary: 'text-gray-300',
+      card: 'bg-gray-900/50 border-gray-800',
+      cardHover: 'hover:bg-gray-800/50',
+      input: 'bg-gray-800 border-gray-700 text-white',
+      button: 'bg-blue-500 hover:bg-blue-600 text-white',
+      buttonSecondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700',
+      accent: 'text-blue-400'
+    }
   };
+
+  const currentTheme = themes.dark;
 
   const fetchSecrets = async () => {
     if (!user?.access_token) return;
@@ -176,7 +190,7 @@ const Secrets = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen ${currentTheme.bg} ${currentTheme.text}`}>
+      <div className={`min-h-screen ${themes.dark.bg} ${themes.dark.text}`}>
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-800 rounded w-1/4 mb-8"></div>
@@ -192,11 +206,11 @@ const Secrets = () => {
   }
 
   return (
-    <div className={`min-h-screen ${currentTheme.bg} ${currentTheme.text}`}>
+    <div className={`min-h-screen ${themes.dark.bg} ${themes.dark.text}`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className={`text-4xl font-bold ${currentTheme.accent} mb-2`}>
+          <h1 className={`text-4xl font-bold ${themes.dark.accent} mb-2`}>
             Secrets Manager
           </h1>
           <p className="text-gray-400 text-lg">
@@ -209,7 +223,7 @@ const Secrets = () => {
           <div className="mb-6">
             <Button 
               onClick={() => setShowForm(true)}
-              className={`${currentTheme.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
+              className={`${themes.dark.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add New Secret
@@ -219,9 +233,9 @@ const Secrets = () => {
 
         {/* Add/Edit Secret Form */}
         {showForm && (
-          <Card className={`${currentTheme.card} mb-6`}>
+          <Card className={`${themes.dark.card} mb-6`}>
             <CardHeader>
-              <CardTitle className={currentTheme.text}>
+              <CardTitle className={themes.dark.text}>
                 {editingId ? 'Edit Secret' : 'Add New Secret'}
               </CardTitle>
               <CardDescription className="text-gray-400">
@@ -234,7 +248,7 @@ const Secrets = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="key" className={`${currentTheme.text} font-bold tracking-tight`}>
+                  <Label htmlFor="key" className={`${themes.dark.text} font-bold tracking-tight`}>
                     Environment Variable Name
                   </Label>
                   <Input
@@ -243,7 +257,7 @@ const Secrets = () => {
                     placeholder="OPENAI_API_KEY"
                     value={formData.key}
                     onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value.toUpperCase() }))}
-                    className={`${currentTheme.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
+                    className={`${themes.dark.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
                     pattern="^[A-Z_][A-Z0-9_]*$"
                     title="Must be uppercase letters, numbers, and underscores only, starting with a letter or underscore"
                   />
@@ -253,7 +267,7 @@ const Secrets = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="value" className={`${currentTheme.text} font-bold tracking-tight`}>
+                  <Label htmlFor="value" className={`${themes.dark.text} font-bold tracking-tight`}>
                     Secret Value
                   </Label>
                   <Input
@@ -262,7 +276,7 @@ const Secrets = () => {
                     placeholder="sk-..."
                     value={formData.value}
                     onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                    className={`${currentTheme.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
+                    className={`${themes.dark.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
                     required
                   />
                   <p className="text-sm text-gray-500 mt-1">
@@ -273,7 +287,7 @@ const Secrets = () => {
                 <div className="flex space-x-3">
                   <Button 
                     type="submit"
-                    className={`${currentTheme.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
+                    className={`${themes.dark.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
                   >
                     {editingId ? (
                       <>
@@ -291,7 +305,7 @@ const Secrets = () => {
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    className={`${currentTheme.buttonSecondary} font-bold tracking-tight`}
+                    className={`${themes.dark.buttonSecondary} font-bold tracking-tight`}
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -305,7 +319,7 @@ const Secrets = () => {
         {/* Secrets List */}
         <div className="space-y-4">
           {secrets.length === 0 ? (
-            <Card className={`${currentTheme.card}`}>
+            <Card className={`${themes.dark.card}`}>
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <div className="text-gray-500 mb-4">
@@ -319,7 +333,7 @@ const Secrets = () => {
                   </p>
                   <Button 
                     onClick={() => setShowForm(true)}
-                    className={`${currentTheme.button} font-bold tracking-tight`}
+                    className={`${themes.dark.button} font-bold tracking-tight`}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Your First Secret
@@ -329,7 +343,7 @@ const Secrets = () => {
             </Card>
           ) : (
             secrets.map((secret) => (
-              <Card key={secret.id} className={`${currentTheme.card}`}>
+              <Card key={secret.id} className={`${themes.dark.card}`}>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -384,7 +398,7 @@ const Secrets = () => {
         </div>
 
         {/* Security Notice */}
-        <Card className={`${currentTheme.card} mt-8`}>
+        <Card className={`${themes.dark.card} mt-8`}>
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
               <div className="text-yellow-400 mt-0.5">
