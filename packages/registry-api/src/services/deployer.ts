@@ -150,7 +150,9 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         PORT: '8080'
       },
       // Pass the sigyl configuration with proper casting
-      sigylConfig: sigylConfig as SigylConfigUnion
+      sigylConfig: sigylConfig as SigylConfigUnion,
+      // Pass the GitHub token for security validation
+      githubToken: request.githubToken
     };
 
     console.log('🔒 Deploying with security validation...');
