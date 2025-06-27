@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Key, Plus, Copy, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { APIKeyService, APIKey, CreateAPIKeyRequest } from '@/services/apiKeyService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface APIKeysManagerProps {
   workspaceId: string;
@@ -19,6 +20,8 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Fetch API keys on component mount
   useEffect(() => {
@@ -49,18 +52,16 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
       setIsCreating(true);
       const request: CreateAPIKeyRequest = {
         name: newKeyName,
-        permissions: ['read', 'write'], // Default permissions
+        permissions: ['read', 'write'],
       };
       
       const result = await APIKeyService.createAPIKey(request);
       
-      // Store the full API key temporarily for display
       setNewlyCreatedKey(result.api_key);
-      
-      // Add the new key to the list
+      setShowKeyModal(true);
       setApiKeys(prev => [{
         ...result.key,
-        is_active: true, // New keys are always active
+        is_active: true,
         last_used: undefined
       }, ...prev]);
       setNewKeyName('');
@@ -90,6 +91,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleDeleteKey = async (id: string) => {
+    setDeleteConfirmId(null);
     try {
       await APIKeyService.deleteAPIKey(id);
       setApiKeys(prev => prev.filter(key => key.id !== id));
@@ -193,6 +195,49 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
           </Button>
         </div>
 
+        {/* API Key Modal - show only once after creation */}
+        <Dialog open={showKeyModal} onOpenChange={(open) => {
+          if (!open) {
+            setShowKeyModal(false);
+            setNewlyCreatedKey(null);
+          }
+        }}>
+          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8">
+            <DialogHeader className="w-full text-center">
+              <DialogTitle className="text-2xl font-bold mb-2">Your new API key</DialogTitle>
+            </DialogHeader>
+            <div className="w-full flex flex-col items-center gap-4">
+              <code
+                className="text-lg font-mono bg-gray-900 px-6 py-4 rounded-lg text-green-400 border border-green-700 break-all select-all shadow-md w-full text-center"
+                style={{ wordBreak: 'break-all' }}
+              >
+                {newlyCreatedKey}
+              </code>
+              <span className="text-base text-yellow-400 text-center font-medium px-2">
+                Copy this key now. <span className="font-bold">You will not be able to see it again!</span>
+              </span>
+            </div>
+            <div className="w-full flex flex-row items-center justify-center gap-4 mt-2">
+              <Button
+                onClick={() => {
+                  if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
+                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
+                }}
+                className="bg-gradient-to-r from-green-500 to-yellow-500 text-white px-6 py-2 font-semibold rounded shadow hover:from-green-600 hover:to-yellow-600"
+              >
+                Copy
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
+                className="px-6 py-2 font-semibold rounded shadow"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* API Keys List */}
         <div className="space-y-4">
           {apiKeys.length === 0 ? (
@@ -229,49 +274,36 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                 
                 <div className="flex items-center justify-between mb-2">
                   <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded">
-                    {showKeys[apiKey.id] ? 
-                      (newlyCreatedKey && apiKey.id === apiKeys[0]?.id ? newlyCreatedKey : `sk_${apiKey.key_prefix}...`) : 
-                      maskKey(`sk_${apiKey.key_prefix}...`)
-                    }
+                    {`${apiKey.key_prefix}...`}
                   </code>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleKeyVisibility(apiKey.id)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      {showKeys[apiKey.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                    {newlyCreatedKey && apiKey.id === apiKeys[0]?.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopyKey(newlyCreatedKey)}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    )}
                     {apiKey.is_active ? (
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
                         onClick={() => handleDeactivateKey(apiKey.id)}
-                        className="text-gray-400 hover:text-yellow-400"
+                        className="px-4 py-2 font-semibold rounded bg-yellow-600 text-white hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 border border-yellow-700 shadow"
                       >
                         Deactivate
                       </Button>
                     ) : (
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
-                        onClick={() => handleDeleteKey(apiKey.id)}
-                        className="text-gray-400 hover:text-red-400"
+                        disabled
+                        className="px-4 py-2 font-semibold rounded bg-gray-700 text-gray-300 border border-gray-600 shadow cursor-not-allowed"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        Deactivated
                       </Button>
                     )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setDeleteConfirmId(apiKey.id)}
+                      className="px-4 py-2 font-semibold rounded bg-red-600 text-white hover:bg-red-500 focus:ring-2 focus:ring-red-400 border border-red-700 shadow"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" /> Delete
+                    </Button>
                   </div>
                 </div>
                 
@@ -279,6 +311,26 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                   <span>Permissions: {formatPermissions(apiKey.permissions)}</span>
                   <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
                 </div>
+                {/* Delete confirmation dialog */}
+                {deleteConfirmId === apiKey.id && (
+                  <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+                    <DialogContent className="max-w-md mx-auto bg-gray-900 border border-gray-700 shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
+                      <DialogHeader className="w-full text-center mb-2">
+                        <DialogTitle className="text-2xl font-bold text-white mb-2">Delete API Key</DialogTitle>
+                      </DialogHeader>
+                      <div className="w-full flex flex-col items-center gap-2">
+                        <p className="text-lg text-red-400 font-semibold text-center mb-1">
+                          Are you sure you want to <span className="font-bold">permanently delete</span> this API key?
+                        </p>
+                        <p className="text-base text-gray-400 text-center mb-2">This action cannot be undone.</p>
+                      </div>
+                      <div className="w-full flex flex-row items-center justify-center gap-6 mt-2">
+                        <Button variant="destructive" onClick={() => handleDeleteKey(apiKey.id)} className="px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
+                        <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             ))
           )}

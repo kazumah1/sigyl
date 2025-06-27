@@ -25,6 +25,7 @@ export class PackageService {
         author_id: packageData.author_id,
         source_api_url: packageData.source_api_url,
         tags: packageData.tags || [],
+        required_secrets: packageData.required_secrets || [],
         downloads_count: 0
       })
       .select()

@@ -97,6 +97,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
       description: metadata.description,
       source_api_url: repoUrl,
       tags: ['github', 'deployed', 'railway'],
+      required_secrets: metadata.secrets || [],
       tools: metadata.tools?.map(tool => ({
         tool_name: tool.name,
         description: tool.description,

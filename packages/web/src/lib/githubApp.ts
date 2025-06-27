@@ -40,7 +40,7 @@ export interface MCPTool {
 const GITHUB_APP_CONFIG = {
   appId: import.meta.env.VITE_GITHUB_APP_ID || '1459404',
   appName: import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev',
-  registryApiUrl: import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000',
+  registryApiUrl: import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1',
 }
 
 /**
@@ -67,7 +67,7 @@ export async function handleGitHubAppCallback(installationId: string, code: stri
   access_token: string;
 }> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/callback?installation_id=${installationId}&code=${code}`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/callback?installation_id=${installationId}&code=${code}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ export function checkForGitHubAppCallback(): {
  */
 export async function fetchRepositoriesWithApp(installationId: number): Promise<GitHubAppRepository[]> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/installations/${installationId}/repositories`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/repositories`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -149,7 +149,7 @@ export async function getMCPConfigWithApp(
   repo: string
 ): Promise<MCPMetadata | null> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/installations/${installationId}/repositories/${owner}/${repo}/mcp`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/repositories/${owner}/${repo}/mcp`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -180,7 +180,7 @@ export async function deployMCPWithApp(
   branch: string = 'main'
 ): Promise<any> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/installations/${installationId}/deploy`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/deploy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export async function deployMCPWithApp(
  */
 export async function getInstallationInfo(installationId: number): Promise<GitHubAppInstallation | null> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/installations/${installationId}`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -269,7 +269,7 @@ export async function checkExistingInstallation(githubUsername: string): Promise
   githubUsername?: string;
 }> {
   try {
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/check-installation/${githubUsername}`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/check-installation/${githubUsername}`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -300,7 +300,7 @@ export async function getOAuthUrlForExistingInstallation(
     if (redirectUri) params.append('redirect_uri', redirectUri);
     if (state) params.append('state', state);
 
-    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/api/v1/github/oauth-url/${installationId}?${params.toString()}`, {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/oauth-url/${installationId}?${params.toString()}`, {
       headers: {
         'Content-Type': 'application/json',
       },

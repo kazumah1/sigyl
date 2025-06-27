@@ -2,6 +2,14 @@ import { Octokit } from 'octokit'
 import yaml from 'js-yaml'
 import { z } from 'zod'
 
+// Zod schema for required secrets
+const MCPSecretSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  required: z.boolean().default(true),
+  type: z.enum(['string', 'number', 'boolean']).default('string'),
+})
+
 // Zod schema matching the CLI's mcp.yaml output
 const MCPToolSchema = z.object({
   name: z.string(),
@@ -21,9 +29,12 @@ const MCPMetadataSchema = z.object({
   version: z.string(),
   port: z.number(),
   tools: z.array(MCPToolSchema),
+  // Optional secrets section
+  secrets: z.array(MCPSecretSchema).optional(),
 })
 
 export type MCPYaml = z.infer<typeof MCPMetadataSchema>
+export type MCPSecret = z.infer<typeof MCPSecretSchema>
 
 export async function fetchMCPYaml(
   owner: string,
