@@ -16,36 +16,31 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate()
   const location = useLocation()
   const hasRedirected = useRef(false)
-  const [isStable, setIsStable] = useState(false)
+  
+  // Check for admin session
+  const [adminSession] = useState(() => {
+    const adminData = localStorage.getItem('admin_session');
+    return adminData ? JSON.parse(adminData) : null;
+  });
 
   useEffect(() => {
     console.log('ProtectedRoute state:', { 
       loading, 
       hasUser: !!user, 
+      hasAdminSession: !!adminSession,
       pathname: location.pathname,
       hasRedirected: hasRedirected.current 
     })
     
-    if (!loading && !user && !hasRedirected.current) {
+    if (!loading && !user && !adminSession && !hasRedirected.current) {
       console.log('Redirecting to login from:', location.pathname)
       localStorage.setItem('intended_page', location.pathname)
       hasRedirected.current = true
       navigate('/login')
     }
-  }, [loading, user, navigate, location.pathname])
+  }, [loading, user, adminSession, navigate, location.pathname])
 
-  // Add a small delay to prevent flickering when authentication state changes
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        console.log('Setting authentication state as stable')
-        setIsStable(true)
-      }, 200)
-      return () => clearTimeout(timer)
-    }
-  }, [loading, user])
-
-  if (loading || !isStable) {
+  if (loading) {
     console.log('ProtectedRoute: Showing loading state')
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -57,8 +52,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     )
   }
 
-  if (!user) {
-    console.log('ProtectedRoute: No user, showing redirect state')
+  if (!user && !adminSession) {
+    console.log('ProtectedRoute: No user or admin session, showing redirect state')
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -69,7 +64,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     )
   }
 
-  console.log('ProtectedRoute: User authenticated, rendering children')
+  console.log('ProtectedRoute: User or admin authenticated, rendering children')
   return <>{children}</>
 }
 

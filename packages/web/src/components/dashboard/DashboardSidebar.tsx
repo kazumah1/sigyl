@@ -35,13 +35,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
     { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
   ];
 
-  const platformItems = [
-    { icon: Home, label: 'Home', path: '/' },
-    { icon: Store, label: 'Marketplace', path: '/marketplace' },
-    { icon: BookOpen, label: 'Docs', path: '/docs' },
-    { icon: FileText, label: 'Blog', path: '/blog' },
-  ];
-
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return location.pathname === '/dashboard' && !location.search;
@@ -100,39 +93,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
         </div>
 
         <Separator className="bg-gray-800" />
-
-        <div>
-          {!collapsed && (
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Platform
-            </h3>
-          )}
-          <nav className="space-y-1">
-            {platformItems.map((item) => {
-              const IconComponent = item.icon;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative group ${
-                    location.pathname === item.path
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <IconComponent className="w-4 h-4 flex-shrink-0" />
-                  {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
-                  {collapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
-                      {item.label}
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
       </div>
     </div>
   );

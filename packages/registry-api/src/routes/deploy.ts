@@ -130,17 +130,17 @@ router.post('/deploy', async (req: Request, res: Response) => {
     
     // Handle specific error types
     if (error.message && error.message.toLowerCase().includes('not accessible')) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Repository is private or inaccessible. Please ensure the GitHub App has access to this repository.'
       });
     } else if (error.message && error.message.toLowerCase().includes('google cloud')) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Google Cloud Run deployment service is not configured. Please contact support.'
       });
     } else {
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false,
         error: error.message || 'Internal server error' 
       });

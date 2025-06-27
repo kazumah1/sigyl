@@ -33,7 +33,7 @@ router.get('/check-installation/:githubUsername', async (req, res) => {
     }
   } catch (error) {
     console.error('Error checking installation:', error);
-    res.status(500).json({ error: 'Failed to check installation' });
+    return res.status(500).json({ error: 'Failed to check installation' });
   }
 });
 
@@ -60,7 +60,7 @@ router.get('/oauth-url/:installationId', async (req, res) => {
     res.json({ oauthUrl });
   } catch (error) {
     console.error('Error generating OAuth URL:', error);
-    res.status(500).json({ error: 'Failed to generate OAuth URL' });
+    return res.status(500).json({ error: 'Failed to generate OAuth URL' });
   }
 });
 
