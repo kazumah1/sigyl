@@ -3,18 +3,14 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "allowJs": true,
     "outDir": "./",
     "rootDir": "./",
     "strict": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": [
-    "*.ts",
-    "tools/*.ts"
+    "*.ts"
   ],
   "exclude": [
     "node_modules",

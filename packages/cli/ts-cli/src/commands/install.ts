@@ -16,7 +16,7 @@ interface InstallOptions {
 export function createInstallCommand(): Command {
 	return new Command("install")
 		.description("Install generated MCP servers in Claude Desktop")
-		.argument("[server-path]", "Path to the generated MCP server (default: .mcp-generated/server.js)")
+		.argument("[server-path]", "Path to the generated MCP server (default: template-mcp/server.js)")
 		.option("-n, --name <name>", "Custom name for the server in Claude Desktop")
 		.option("-l, --list", "List currently installed MCP servers")
 		.option("-r, --remove <name>", "Remove an MCP server from Claude Desktop")

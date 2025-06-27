@@ -52,124 +52,145 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 }
 
 async function generateMCPConfig(options: InitOptions): Promise<void> {
+	// Use the Smithery/MCP config schema and header as in the attached mcp.yaml
 	const config = {
-		name: options.name,
-		description: "Template MCP server with sample tools",
-		version: "1.0.0",
-		tools: [
-			{
-				name: "hello_world",
-				description: "Say hello to someone",
-				inputSchema: {
-					type: "object",
-					properties: {
-						name: {
-							type: "string",
-							description: "The name of the person to greet"
-						}
+		runtime: "node",
+		startCommand: {
+			type: "http",
+			configSchema: {
+				type: "object",
+				required: ["apiKey", "environment"],
+				properties: {
+					apiKey: {
+						type: "string",
+						title: "MCP API Key",
+						description: "Your MCP API key (required)"
 					},
-					required: ["name"]
-				}
-			},
-			{
-				name: "get_user_info",
-				description: "Get user information from a mock API",
-				inputSchema: {
-					type: "object",
-					properties: {
-						userId: {
-							type: "number",
-							description: "The user ID to fetch information for"
-						}
+					serviceName: {
+						type: "string",
+						title: "Service Name",
+						default: "my-mcp-service",
+						description: "Name of the MCP-compatible service"
 					},
-					required: ["userId"]
+					logLevel: {
+						type: "string",
+						title: "Log Level",
+						default: "info",
+						enum: ["debug", "info", "warn", "error"],
+						description: "Logging verbosity level"
+					},
+					timeout: {
+						type: "number",
+						title: "Timeout",
+						description: "Request timeout in seconds",
+						default: 30,
+						minimum: 1,
+						maximum: 300
+					},
+					enableMetrics: {
+						type: "boolean",
+						title: "Enable Metrics",
+						description: "Enable metrics collection",
+						default: false
+					},
+					allowedClients: {
+						type: "array",
+						title: "Allowed Clients",
+						description: "List of client IDs allowed to access the server",
+						items: { type: "string" },
+						default: []
+					},
+					customSettings: {
+						type: "object",
+						title: "Custom Settings",
+						description: "Advanced custom settings for the server",
+						properties: {
+							maxConnections: { type: "number", default: 100 },
+							useCache: { type: "boolean", default: true }
+						},
+						default: {}
+					},
+					environment: {
+						type: "string",
+						title: "Environment",
+						description: "Deployment environment",
+						enum: ["development", "staging", "production"],
+						default: "development"
+					}
 				}
 			}
-		]
-	}
+		}
+	};
 
-	const yamlContent = yaml.stringify(config, { indent: 2 })
-	writeFileSync(join(options.outDir, "mcp.yaml"), yamlContent)
+	const yamlHeader = `# Smithery/MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n# See https://smithery.ai/docs/use/session-config for more info.\n`;
+	const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
+	writeFileSync(join(options.outDir, "mcp.yaml"), yamlContent);
 }
 
 async function generateTypeScriptServer(options: InitOptions): Promise<void> {
-	const serverCode = `import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+	const serverCode = `/**
+ * Auto-generated MCP Server (template)
+ * 
+ * This server provides a template tool for you to customize.
+ * To add a new tool, use the template at the bottom of this file.
+ */
 
-export default function createStatelessServer({ config }: { config: any }) {
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { z } from "zod"
+
+// ============================================================================
+// SERVER CONFIGURATION
+// ============================================================================
+
+export default function createStatelessServer({
+	config,
+}: {
+	config: any;
+}) {
 	const server = new McpServer({
-		name: "${options.name}",
+		name: "generated-mcp-server",
 		version: "1.0.0",
 	});
 
-	// Example tool 1: Simple greeting (no external API calls)
+	// ============================================================================
+	// TEMPLATE TOOL
+	// ============================================================================
+	// Replace or add more tools as needed.
+
 	server.tool(
-		"hello_world",
-		"Say hello to someone",
+		"reverseString",
+		"Reverse a string value",
 		{
-			name: z.string().describe("The name of the person to greet"),
+			value: z.string().describe("String to reverse"),
 		},
-		async ({ name }) => {
+		async ({ value }) => {
 			return {
-				content: [{ type: "text", text: \`Hello, \${name}!\` }],
+				content: [
+					{ type: "text", text: value.split("").reverse().join("") }
+				]
 			};
 		}
 	);
 
-	// Example tool 2: HTTP request to external API
-	server.tool(
-		"get_user_info",
-		"Get user information from a mock API",
-		{
-			userId: z.number().describe("The user ID to fetch information for"),
-		},
-		async ({ userId }) => {
-			try {
-				// Make HTTP request to external API
-				const response = await fetch(\`https://jsonplaceholder.typicode.com/users/\${userId}\`);
-				
-				if (!response.ok) {
-					throw new Error(\`HTTP error! status: \${response.status}\`);
-				}
-				
-				const userData = await response.json();
-				
-				return {
-					content: [
-						{
-							type: "text",
-							text: \`User Information:\\n\\nName: \${userData.name}\\nEmail: \${userData.email}\\nCompany: \${userData.company?.name || 'N/A'}\\nWebsite: \${userData.website || 'N/A'}\`
-						}
-					]
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: \`Error fetching user info: \${error.message}\`
-						}
-					]
-				};
-			}
-		}
-	);
-
-	// Add more tools here...
-
 	return server.server;
 }
+
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 async function main() {
 	const server = createStatelessServer({ config: {} });
+	console.log("🚀 MCP Server starting...");
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
+	console.log("✅ MCP Server connected and ready");
 }
 
 main().catch((error) => {
-	console.error("Server error:", error);
+	console.error("❌ Server error:", error);
 	process.exit(1);
 });
 `;
@@ -182,7 +203,7 @@ main().catch((error) => {
 		version: "1.0.0",
 		type: "module",
 		main: "server.js",
-		description: "Template MCP server with sample tools",
+		description: "Template MCP server with a sample tool",
 		scripts: {
 			build: "tsc",
 			start: "node server.js"
@@ -198,6 +219,23 @@ main().catch((error) => {
 	};
 
 	writeFileSync(join(options.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
+
+	// Always generate a valid tsconfig.json for TypeScript/ESM compatibility
+	const tsConfig = {
+		compilerOptions: {
+			target: "ES2020",
+			module: "ESNext",
+			moduleResolution: "node",
+			outDir: "./",
+			rootDir: "./",
+			strict: true,
+			esModuleInterop: true,
+			skipLibCheck: true
+		},
+		include: ["*.ts"],
+		exclude: ["node_modules", "*.js"]
+	};
+	writeFileSync(join(options.outDir, "tsconfig.json"), JSON.stringify(tsConfig, null, 2));
 }
 
 async function generateJavaScriptServer(options: InitOptions): Promise<void> {
