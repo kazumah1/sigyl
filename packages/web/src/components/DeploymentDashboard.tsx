@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Pause, Square, RefreshCw, Server, Zap, Users, BarChart3 } from 'lucide-react';
+import { Play, Pause, Square, RefreshCw, Server, Zap, Users, BarChart3, ExternalLink, Trash2 } from 'lucide-react';
+import deploymentService, { DeploymentStatus } from "@/services/deploymentService";
 
 interface DeploymentStats {
   totalDeployments: number;
@@ -13,18 +13,8 @@ interface DeploymentStats {
   avgResponseTime: number;
 }
 
-interface Deployment {
-  id: string;
-  name: string;
-  status: 'running' | 'stopped' | 'error' | 'deploying';
-  url: string;
-  lastDeployed: string;
-  requests: number;
-  responseTime: number;
-}
-
 export const DeploymentDashboard = () => {
-  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [deployments, setDeployments] = useState<DeploymentStatus[]>([]);
   const [stats, setStats] = useState<DeploymentStats>({
     totalDeployments: 0,
     activeDeployments: 0,
@@ -32,115 +22,115 @@ export const DeploymentDashboard = () => {
     avgResponseTime: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Mock data - replace with actual API calls
-        const mockDeployments: Deployment[] = [
-          {
-            id: '1',
-            name: 'Agent-001',
-            status: 'running',
-            url: 'http://agent-001.sigyl.ai',
-            lastDeployed: '2024-07-15T12:00:00Z',
-            requests: 12345,
-            responseTime: 0.05,
-          },
-          {
-            id: '2',
-            name: 'Agent-002',
-            status: 'stopped',
-            url: 'http://agent-002.sigyl.ai',
-            lastDeployed: '2024-07-10T18:30:00Z',
-            requests: 6789,
-            responseTime: 0.08,
-          },
-          {
-            id: '3',
-            name: 'Agent-003',
-            status: 'error',
-            url: 'http://agent-003.sigyl.ai',
-            lastDeployed: '2024-07-20T09:15:00Z',
-            requests: 500,
-            responseTime: 1.2,
-          },
-          {
-            id: '4',
-            name: 'Agent-004',
-            status: 'deploying',
-            url: 'http://agent-004.sigyl.ai',
-            lastDeployed: '2024-07-22T14:45:00Z',
-            requests: 0,
-            responseTime: 0,
-          },
-        ];
-
-        const mockStats: DeploymentStats = {
-          totalDeployments: 4,
-          activeDeployments: 2,
-          totalRequests: 19634,
-          avgResponseTime: 0.34,
-        };
-
-        setDeployments(mockDeployments);
-        setStats(mockStats);
-      } catch (error) {
-        console.error("Failed to fetch deployments:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchDeployments();
   }, []);
 
-  const handleAction = async (id: string, action: 'start' | 'stop' | 'restart') => {
+  const fetchDeployments = async () => {
+    setIsLoading(true);
     try {
-      // Mock API call - replace with actual API call
-      console.log(`Performing action ${action} on deployment ${id}`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const deploymentData = await deploymentService.getDeployments();
+      setDeployments(deploymentData);
+      
+      // Calculate stats from real data
+      const totalDeployments = deploymentData.length;
+      const activeDeployments = deploymentData.filter(d => d.status === 'running').length;
+      const totalRequests = deploymentData.reduce((sum, d) => sum + d.metrics.requests, 0);
+      const avgResponseTime = deploymentData.length > 0 
+        ? deploymentData.reduce((sum, d) => sum + (d.metrics.cpu / 100), 0) / deploymentData.length 
+        : 0;
 
-      // Update deployment status based on action
-      setDeployments(prevDeployments =>
-        prevDeployments.map(deployment => {
-          if (deployment.id === id) {
-            switch (action) {
-              case 'start':
-                return { ...deployment, status: 'running' };
-              case 'stop':
-                return { ...deployment, status: 'stopped' };
-              case 'restart':
-                return { ...deployment, status: 'deploying' };
-              default:
-                return deployment;
-            }
-          }
-          return deployment;
-        })
-      );
+      setStats({
+        totalDeployments,
+        activeDeployments,
+        totalRequests,
+        avgResponseTime
+      });
+    } catch (error) {
+      console.error("Failed to fetch deployments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAction = async (id: string, action: 'start' | 'stop' | 'restart' | 'delete') => {
+    setActionLoading(id);
+    try {
+      let success = false;
+      
+      switch (action) {
+        case 'restart':
+          success = await deploymentService.restartDeployment(id);
+          break;
+        case 'delete':
+          success = await deploymentService.deleteDeployment(id);
+          break;
+        case 'start':
+        case 'stop':
+          // These would need additional backend endpoints
+          console.warn(`Action ${action} not yet implemented`);
+          success = false;
+          break;
+      }
+
+      if (success) {
+        // Refresh deployments after successful action
+        await fetchDeployments();
+      } else {
+        console.error(`Failed to perform action ${action} on deployment ${id}`);
+      }
     } catch (error) {
       console.error(`Failed to perform action ${action} on deployment ${id}:`, error);
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running': return 'bg-green-500';
-      case 'stopped': return 'bg-gray-500';
-      case 'error': return 'bg-red-500';
-      case 'deploying': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+      case 'running':
+      case 'active': 
+        return 'bg-green-500';
+      case 'stopped': 
+        return 'bg-gray-500';
+      case 'failed': 
+        return 'bg-red-500';
+      case 'deploying':
+      case 'pending': 
+        return 'bg-yellow-500';
+      default: 
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'running':
+      case 'active': 
+        return 'default';
+      case 'stopped': 
+        return 'secondary';
+      case 'failed': 
+        return 'destructive';
+      case 'deploying':
+      case 'pending': 
+        return 'secondary';
+      default: 
+        return 'secondary';
     }
   };
 
   const getActionIcon = (status: string) => {
     switch (status) {
-      case 'running': return Pause;
-      case 'stopped': return Play;
-      default: return RefreshCw;
+      case 'running':
+      case 'active': 
+        return Pause;
+      case 'stopped': 
+        return Play;
+      default: 
+        return RefreshCw;
     }
   };
 
@@ -190,7 +180,7 @@ export const DeploymentDashboard = () => {
             <CardDescription>Total requests served across all deployments</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRequests}</div>
+            <div className="text-2xl font-bold">{stats.totalRequests.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -198,7 +188,7 @@ export const DeploymentDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4" />
-              <span>Avg. Response Time</span>
+              <span>Avg Response Time</span>
             </CardTitle>
             <CardDescription>Average response time across all deployments</CardDescription>
           </CardHeader>
@@ -208,96 +198,110 @@ export const DeploymentDashboard = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Deployments</CardTitle>
-          <CardDescription>List of all deployments and their status</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  URL
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Deployed
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Requests
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Response Time
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {deployments.map((deployment) => {
-                const ActionIcon = getActionIcon(deployment.status);
-                return (
-                  <tr key={deployment.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{deployment.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={getStatusColor(deployment.status)}>
-                        {deployment.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <a
-                        href={deployment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:text-blue-700"
-                      >
-                        {deployment.url}
-                      </a>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(deployment.lastDeployed).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {deployment.requests}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {deployment.responseTime.toFixed(2)}s
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Deployments</h2>
+          <Button onClick={fetchDeployments} variant="outline" size="sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+
+        {deployments.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Server className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No deployments yet</h3>
+              <p className="text-gray-600 mb-4">Deploy your first MCP server to get started</p>
+              <Button onClick={() => window.location.href = '/deploy'}>
+                Deploy MCP Server
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {deployments.map((deployment) => (
+              <Card key={deployment.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${getStatusColor(deployment.status)}`} />
+                      <span>{deployment.name}</span>
+                    </CardTitle>
+                    <Badge variant={getStatusBadgeVariant(deployment.status)}>
+                      {deployment.status}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    Last updated: {new Date(deployment.updatedAt).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {deployment.url && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">URL:</span>
+                        <a 
+                          href={deployment.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 flex items-center text-sm"
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View
+                        </a>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Requests:</span>
+                        <div>{deployment.metrics.requests.toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <span className="font-medium">Errors:</span>
+                        <div>{deployment.metrics.errors}</div>
+                      </div>
+                      <div>
+                        <span className="font-medium">CPU:</span>
+                        <div>{deployment.metrics.cpu.toFixed(1)}%</div>
+                      </div>
+                      <div>
+                        <span className="font-medium">Memory:</span>
+                        <div>{deployment.metrics.memory.toFixed(1)}%</div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2 pt-2">
                       <Button
+                        size="sm"
                         variant="outline"
-                        size="icon"
-                        onClick={() => handleAction(deployment.id, deployment.status === 'running' ? 'stop' : 'start')}
-                        disabled={deployment.status === 'deploying'}
-                      >
-                        <ActionIcon className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="ml-2"
                         onClick={() => handleAction(deployment.id, 'restart')}
-                        disabled={deployment.status === 'deploying'}
+                        disabled={actionLoading === deployment.id}
                       >
-                        <RefreshCw className="w-4 h-4" />
+                        {actionLoading === deployment.id ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
                       </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                      
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleAction(deployment.id, 'delete')}
+                        disabled={actionLoading === deployment.id}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

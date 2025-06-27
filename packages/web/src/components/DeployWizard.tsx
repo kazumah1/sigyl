@@ -10,13 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Github, GitBranch, Star, Eye, EyeOff, CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Rocket, Shield } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { fetchUserRepos, GitHubRepo, fetchMCPMetadata, MCPMetadata } from "@/lib/github"
-import { DeploymentService, DeploymentRequest, DeploymentResult } from "../../../web-frontend/src/services/deploymentService"
-
-interface Secret {
-  id: string;
-  key: string;
-  created_at: string;
-}
+import deploymentService, { DeploymentRequest, DeploymentResult } from "@/services/deploymentService"
+import secretsService, { Secret } from "@/services/secretsService"
 
 interface DeployWizardProps {
   onDeploy?: (deployment: DeploymentRequest) => void
@@ -37,7 +32,7 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   
-  // NEW: Secrets state
+  // Secrets state
   const [secrets, setSecrets] = useState<Secret[]>([])
   const [selectedSecrets, setSelectedSecrets] = useState<string[]>([])
   const [loadingSecrets, setLoadingSecrets] = useState(false)
@@ -46,7 +41,7 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
   useEffect(() => {
     if (user && session?.provider_token) {
       loadRepositories()
-      loadSecrets() // NEW: Load secrets
+      loadSecrets()
     }
   }, [user, session])
 
@@ -59,24 +54,12 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
     }
   }, [selectedRepo, session])
 
-  // NEW: Load user secrets
+  // Load user secrets using the secrets service
   const loadSecrets = async () => {
-    if (!session?.access_token) return;
-
     setLoadingSecrets(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/secrets`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setSecrets(result.data);
-      }
+      const userSecrets = await secretsService.getSecrets();
+      setSecrets(userSecrets);
     } catch (error) {
       console.error('Error fetching secrets:', error);
     } finally {
@@ -127,14 +110,11 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
         repoName: selectedRepo.full_name,
         branch: selectedBranch,
         env: mcpMetadata ? { PORT: mcpMetadata.port.toString() } : {},
-        metadata: mcpMetadata || undefined,
-        githubToken: session.provider_token,
-        // NEW: Include selected secrets
-        selectedSecrets: selectedSecrets.length > 0 ? selectedSecrets : undefined
+        githubToken: session.provider_token
       }
 
-      // Use the actual deployment service
-      const result = await DeploymentService.deployMCPServer(deploymentRequest)
+      // Use the updated deployment service
+      const result = await deploymentService.deployFromGitHub(deploymentRequest)
       
       setDeployResult(result)
       
@@ -160,10 +140,10 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
     setMcpMetadata(null)
     setDeployError(null)
     setDeployResult(null)
-    setSelectedSecrets([]) // NEW: Reset selected secrets
+    setSelectedSecrets([])
   }
 
-  // NEW: Handle secret selection
+  // Handle secret selection
   const handleSecretToggle = (secretId: string) => {
     setSelectedSecrets(prev => 
       prev.includes(secretId) 
@@ -489,16 +469,12 @@ const DeployWizard: React.FC<DeployWizardProps> = ({ onDeploy }) => {
                 <AlertDescription className="text-green-700 dark:text-green-400">
                   <strong>Deployment Successful!</strong><br />
                   Your MCP server is now live at: <a href={deployResult.deploymentUrl} target="_blank" rel="noopener noreferrer" className="underline">{deployResult.deploymentUrl}</a><br />
-                  {deployResult.registryId === 'registry-offline' ? (
+                  {deployResult.packageId ? (
+                    <>Package ID: {deployResult.packageId}</>
+                  ) : (
                     <span className="text-amber-600 dark:text-amber-400">
                       ⚠️ Registry offline - deployment succeeded but not yet registered
                     </span>
-                  ) : deployResult.registryId === 'registry-error' ? (
-                    <span className="text-amber-600 dark:text-amber-400">
-                      ⚠️ Registry error - deployment succeeded but registration failed
-                    </span>
-                  ) : (
-                    <>Registry ID: {deployResult.registryId}</>
                   )}
                 </AlertDescription>
               </Alert>
