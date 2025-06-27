@@ -1,7 +1,7 @@
 # Sigyl MCP Platform - Development Plan
 
 **Last Updated**: December 18, 2024  
-**Status**: Pre-Launch Ready - Google Cloud Run Migration Complete
+**Status**: Pre-Launch Ready - Production Deployment Strategy Complete
 
 ## Project Overview
 
@@ -27,11 +27,14 @@ The Sigil MCP Platform enables developers to deploy Model Context Protocol (MCP)
    - Real-time deployment status
 
 3. **Backend Registry API** - COMPLETE
-   - Express.js REST API
+   - Express.js REST API with comprehensive security middleware
    - GitHub App integration for repository access
    - Supabase database for user profiles and secrets
    - Secure secrets encryption/decryption
    - Deployment orchestration with Google Cloud Run
+   - Health check endpoints (`/health`, `/health/detailed`)
+   - Rate limiting and CORS protection
+   - Environment validation script (added but skipping for launch)
 
 4. **Container Builder Package** - COMPLETE
    - MCP-specific Docker image generation
@@ -44,26 +47,78 @@ The Sigil MCP Platform enables developers to deploy Model Context Protocol (MCP)
    - User profiles, GitHub installations, MCP secrets tables
    - Proper indexing and relationships
 
-### 🚀 Ready for Launch
+6. **Production Deployment Infrastructure** - COMPLETE ✨
+   - Production Dockerfile for registry API
+   - Docker build optimization with multi-stage builds
+   - Automated deployment script (`deploy.sh`)
+   - Vercel configuration for frontend deployment
+   - Health checks and deployment verification
+   - Security-hardened containers (non-root user)
 
-**Pre-Launch Checklist:**
-- [x] Google Cloud Run deployment pipeline working
-- [x] GitHub App authentication and repository access
-- [x] Frontend UI for deployment workflow
-- [x] Security validation system
-- [x] Secrets management
-- [x] Database schema and migrations
-- [x] Documentation and setup guides
-- [x] TypeScript compilation without errors
-- [x] Cost optimization (60-75% savings vs Railway)
+## 🚀 Production Deployment Strategy
 
-**Launch Day Requirements:**
-- [x] Google Cloud project configured with APIs enabled
-- [x] Service account credentials set up
-- [x] Environment variables configured
-- [x] Database deployed and accessible
-- [x] Frontend deployment ready
-- [x] GitHub App registered and configured
+### **Architecture**
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
+│   Frontend      │    │   Registry API   │    │     Database        │
+│   (Vercel)      │────│ (Google Cloud    │────│    (Supabase)       │
+│                 │    │     Run)         │    │   (Managed SaaS)    │
+└─────────────────┘    └──────────────────┘    └─────────────────────┘
+```
+
+### **Components & Deployment Targets**
+
+#### 1. **Backend API** (`packages/registry-api`)
+- **Platform**: Google Cloud Run
+- **Image**: Docker container (multi-stage build)
+- **Configuration**: 
+  - CPU: 0.5 vCPU, Memory: 512MB
+  - Auto-scaling: 0-10 instances
+  - Health checks integrated
+  - Environment variables injected from secrets
+
+#### 2. **Frontend** (`packages/web`)
+- **Platform**: Vercel (recommended) or Netlify
+- **Type**: Static site (Vite build)
+- **Features**: 
+  - CDN distribution
+  - Automatic deployments from Git
+  - Environment variable management
+  - SPA routing configured
+
+#### 3. **Database**
+- **Platform**: Supabase (already deployed)
+- **Status**: ✅ Production ready
+
+### **Deployment Commands**
+
+```bash
+# Full deployment
+./deploy.sh
+
+# Backend only
+./deploy.sh backend
+
+# Frontend only  
+./deploy.sh frontend
+
+# Verify deployment
+./deploy.sh verify
+```
+
+### **MCP Server URL Structure**
+
+**Deployed MCP servers get Google Cloud Run URLs:**
+- Format: `https://SERVICE_NAME-PROJECT_ID.REGION.run.app`
+- Example: `https://my-mcp-server-abc123-sigyll.us-central1.run.app`
+- MCP Endpoint: `https://SERVICE_NAME-PROJECT_ID.REGION.run.app/mcp`
+
+**Project Configuration:**
+- Project ID: `sigyll`
+- Region: `us-central1`
+- Service names: Generated from repo name + random hash
+
+**Future Enhancement:** Custom domains could provide URLs like `https://my-mcp.sigyl.dev`
 
 ## Architecture Overview
 
