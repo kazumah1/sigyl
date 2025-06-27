@@ -9,71 +9,118 @@ import deployRouter from './routes/deploy';
 import deploymentsRouter from './routes/deployments';
 import secretsRouter from './routes/secrets';
 import gatewayRouter from './routes/gateway';
+import healthRouter from './routes/health';
 import { APIResponse } from './types';
+import {
+  generalRateLimit,
+  authRateLimit,
+  deploymentRateLimit,
+  corsOptions,
+  validateContentType,
+  validateRequestSize,
+  securityHeaders,
+  errorHandler,
+  requestLogger
+} from './middleware/security';
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Trust proxy for accurate IP addresses behind load balancers
+app.set('trust proxy', 1);
 
-// CORS configuration
-const allowedOrigins = [
-  'http://localhost:3001',
-  'http://localhost:8080', 
-  'http://localhost:8081',  // Frontend is running on this port
-  'http://localhost:5173',
-  process.env.CORS_ORIGIN
-].filter((origin): origin is string => Boolean(origin));
+// Request logging (before other middleware for complete logs)
+app.use(requestLogger);
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+// Security headers
+app.use(securityHeaders);
+
+// Helmet for additional security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.github.com", "https://*.supabase.co"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
 }));
 
-// Logging middleware
-app.use(morgan('combined'));
+// CORS configuration with enhanced security
+app.use(cors(corsOptions));
+
+// Rate limiting - apply general rate limit to all routes
+app.use(generalRateLimit);
+
+// Request validation middleware
+app.use(validateRequestSize);
+app.use(validateContentType);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint
-app.get('/health', (_req, res) => {
-  const response: APIResponse<{ status: string; timestamp: string }> = {
+// Health check endpoints (no rate limiting for monitoring)
+app.use('/health', healthRouter);
+
+// Root endpoint
+app.get('/', (_req, res) => {
+  const response: APIResponse<{ service: string; version: string; status: string }> = {
     success: true,
     data: {
-      status: 'ok',
-      timestamp: new Date().toISOString()
+      service: 'Sigyl MCP Registry API',
+      version: '1.0.0',
+      status: 'production'
     },
-    message: 'Registry API is healthy'
+    message: 'Welcome to the Sigyl MCP Registry API'
   };
   res.json(response);
 });
 
-// API routes
+// API routes with specific rate limiting
 app.use('/api/v1/packages', packagesRouter);
-app.use('/api/v1/github', githubAppRouter);
+app.use('/api/v1/github', authRateLimit, githubAppRouter); // Auth endpoints have stricter limits
 app.use('/api/v1/keys', apiKeysRouter);
-app.use('/api/v1', deployRouter);
+app.use('/api/v1', deploymentRateLimit, deployRouter); // Deployment endpoints have strict limits
 app.use('/api/v1/deployments', deploymentsRouter);
 app.use('/api/v1/secrets', secretsRouter);
 app.use('/api/v1/gateway', gatewayRouter);
 
-// Root endpoint
-app.get('/', (_req, res) => {
-  const response: APIResponse<{ service: string; version: string }> = {
+// API documentation endpoint
+app.get('/api', (_req, res) => {
+  const response: APIResponse<{ 
+    endpoints: string[];
+    documentation: string;
+    rateLimits: Record<string, string>;
+  }> = {
     success: true,
     data: {
-      service: 'MCP Registry API',
-      version: '0.1.0'
+      endpoints: [
+        'GET /health - Health check',
+        'GET /health/detailed - Detailed health check',
+        'GET /api/v1/packages - List packages',
+        'POST /api/v1/deploy - Deploy MCP server',
+        'GET /api/v1/github/* - GitHub integration',
+        'GET /api/v1/secrets - Manage secrets',
+      ],
+      documentation: 'https://docs.sigyl.com/api',
+      rateLimits: {
+        general: '100 requests/15min',
+        auth: '10 requests/15min', 
+        deployment: '20 requests/hour'
+      }
     },
-    message: 'Welcome to the MCP Registry API'
+    message: 'Sigyl MCP Registry API - Production Ready'
   };
   res.json(response);
 });
 
-// 404 handler
+// 404 handler with enhanced logging
 app.use('*', (req, res) => {
+  console.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);
+  
   const response: APIResponse<null> = {
     success: false,
     error: 'Not Found',
@@ -82,17 +129,7 @@ app.use('*', (req, res) => {
   res.status(404).json(response);
 });
 
-// Global error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  
-  const response: APIResponse<null> = {
-    success: false,
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  };
-  
-  res.status(500).json(response);
-});
+// Global error handler (use our custom error handler)
+app.use(errorHandler);
 
 export default app; 
