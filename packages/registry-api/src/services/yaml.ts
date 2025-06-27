@@ -65,12 +65,12 @@ export async function fetchMCPYaml(
   token: string
 ): Promise<MCPYaml> {
   const octokit = new Octokit({ auth: token })
-  const { data } = await octokit.repos.getContent({
+  const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
     owner,
     repo,
     path: 'mcp.yaml',
     ref: branch,
-  }) as any
+  })
 
   const file = Buffer.from(data.content, 'base64').toString('utf-8')
   const parsed = yaml.load(file)
@@ -90,14 +90,13 @@ export async function fetchSigylYaml(
   token?: string
 ): Promise<SigylConfig> {
   const octokit = new Octokit({ auth: token })
-  
   try {
-    const { data } = await octokit.repos.getContent({
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner,
       repo,
       path: 'sigyl.yaml',
       ref: branch,
-    }) as any
+    })
 
     const file = Buffer.from(data.content, 'base64').toString('utf-8')
     const parsed = yaml.load(file)

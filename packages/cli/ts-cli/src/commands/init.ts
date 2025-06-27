@@ -179,14 +179,15 @@ export default function createStatelessServer({
 // SERVER STARTUP
 // ============================================================================
 
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
 
 async function main() {
 	const server = createStatelessServer({ config: {} });
 	console.log("🚀 MCP Server starting...");
-	const transport = new StdioServerTransport();
+	const port = process.env.PORT || 8080;
+	const transport = new HttpServerTransport({ port });
 	await server.connect(transport);
-	console.log("✅ MCP Server connected and ready");
+	console.log(`✅ MCP Server connected and ready on port ${port}`);
 }
 
 main().catch((error) => {

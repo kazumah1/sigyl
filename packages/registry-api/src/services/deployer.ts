@@ -31,22 +31,6 @@ export interface DeploymentResult {
 }
 
 /**
- * Generate default Sigyl configuration for Node.js runtime
- */
-function generateDefaultSigylConfig(): SigylConfig {
-  return {
-    runtime: 'node',
-    language: 'javascript',
-    entryPoint: 'server.js',
-    env: {
-      NODE_ENV: 'production',
-      MCP_TRANSPORT: 'http',
-      MCP_ENDPOINT: '/mcp'
-    }
-  };
-}
-
-/**
  * Fetch user secrets for deployment
  */
 async function fetchUserSecrets(userId: string, selectedSecrets?: string[]): Promise<Record<string, string>> {
@@ -114,9 +98,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
       console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
     } catch (error) {
-      console.warn('⚠️ Could not fetch sigyl.yaml, generating default Node.js configuration');
-      // Generate default configuration for Node.js runtime
-      sigylConfig = generateDefaultSigylConfig();
+      console.error('⚠️ Could not fetch sigyl.yaml,', error);
     }
 
     // Fetch user secrets if userId is provided
