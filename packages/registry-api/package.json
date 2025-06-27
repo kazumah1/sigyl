@@ -18,6 +18,8 @@
     "debug:secrets": "ts-node src/scripts/debugSecrets.ts"
   },
   "dependencies": {
+    "@google-cloud/cloudbuild": "^5.1.0",
+    "@google-cloud/run": "^2.1.0",
     "@octokit/rest": "^20.1.2",
     "@sigil/container-builder": "file:../container-builder",
     "@supabase/supabase-js": "^2.38.0",
@@ -26,6 +28,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "google-auth-library": "^10.1.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
