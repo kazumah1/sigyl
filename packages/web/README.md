@@ -18,12 +18,31 @@ npm install
 ```
 
 ### Environment Setup
-1. Create a `.env` file in the root directory:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-VITE_DEBUG=true
+1. Copy the example environment file and configure it:
+```bash
+cp .env.example .env
 ```
+
+2. The `.env` file contains shared configuration for the development team:
+```env
+# Supabase Configuration (Shared across team)
+VITE_SUPABASE_URL=https://zcudhsyvfrlfgqqhjrqv.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdWRoc3l2ZnJsZmdxcWhqcnF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MjkzMDMsImV4cCI6MjA2NjQwNTMwM30.Ta6FaWtEVw28AwVN06EUT-dBHGgRYribqwdqWK7H49A
+
+# Debug mode (Optional)
+VITE_DEBUG=true
+
+# GitHub App Configuration (Shared across team)
+VITE_GITHUB_APP_NAME=sigyl-dev
+VITE_GITHUB_APP_ID=1459404
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAwyxzCp7Yy41dUr1g8soUyCHte5MtPaa+iKNFKmyZFDX7+TTT41vgzmk2+CmXwnOGcMpnvwDD19wCsXjcSb21W/n4btOG2x5Kwku5OdagF7JrqpruBAjH+j1Zx2mhNxQguOc+xzHX5NUoJjw0PGAn0lWT+pRTVV2/2dy2TPWfGerqyz9I0jjDRuZkwVMCbhOYjIcGiqA/9j/AwIkD64zEArrz/B/7gItG0yppd+95eJPb9Es6Zsi98GWlQlFFdZ0ofV72jbfgLzQ2OLBIS8mUNr8dGADNmgVCwXR8Px79gIsr32x7TRpoDjrCNzREtEqWx3fB6lkTXLH1z3foCQOSBwIDAQABAoIBAQCViaf3Gi/W/c/kBg+S1jxH/p67UM+X7fsMK7RhxeUftCEEFnLGP24mGD0ytIN/TA5Uuu/0SzzCVeKGYai+oyiieQrctxsbJcF3zpbzdrsgjOarR5tX4fZ+h6UTAZ6w2a4cnaje7BSTUrI5YWVQYQgBwunnUt/qhzLoVJAktQiazKi6LyAGSi6Gi28zkKQndDncmi9QUWdtMIImQjfRtyWQPoz0y3uUe7TbwJPwLZ2d6KKIgK1Pjm5Pqt9u23SDTJGUsFtC6SRvj+8s5wje1p6pIPv4EsIP3wvlchs6l+iWzXXhDegYUuN+7hgh5X6jc81Zw72J2LKlaklTcKSlzak5AoGBAO3cFEU2JujWuAvoXv60Pem6AtV3iSeFQHtN5uK696Vbtwp67CSyKk9chxVE/SSX5vSxFS43znmWnXVle/bbt53WUys+e6TcVbZXUY5Nh9zCME+D+qusEi9AtKWpClHOKiIrRLbV4hi77+L8Xdz5AUJDzlM65InznsE5wg3SWJ3tAoGBANIO+hmh0c30M4SccpSwoV937L4ZxTk1yohuITGXXn7N0qQtL4jDCJyYLBohfgvAFK/UBtfzTwLktECOR4wkzdM0cS8XenmR9BEMtZ4huRM12cxateE6pcMN/K7KZLz/Kf0AVHFjVjUD50Q8rg3/O+2BeBhBndxlBGLSkEhf+5FDAoGAWqbCrvIJeDnFIPypn6bv5bD3vYV2JzK4tYWmFgktsr62ju70KrQgPejErs2BML4Xzm/i459vOJW3YvOPgDCS1TvGrLd+hgFXRUwYEATqX68+nD9vfJfywkGF15EKFs1c73LQGGKBbe3KahbGax4XZbrT2pKaYR0RBxFNLNla3q0CgYBIJurTSRkWxC25/D8DQdR8RWYlOhbbetWRnTpnUHRDoOu7vJn6I4Zs89aPmzcPmMcrhiXrrRSCxq7HeQHiFDGnjnOciMYhQCvpozvvyeiKJoiLnpQ3eM4J6LGqzCFFqRmiel3dSaUWT3j22/x0NzVzOXidw9xN6WVCDyVD5sKnwKBgQCxdgM/FxNMFlYE7IufaRqH4xH6aEmaybB8OPgivZ7EG2X7qGiGxfuGPxzqeS2MKAedsiATkOAaCv+WqKV+EAmZNUVEdQgJdWIYHxpPzUKBWTVl/BSFOlj3bSdEtgHgQ0v60lUkgxl+2dSQLUe80n6tAkhf/VLHZwWXRgRyyfPOHA==\n-----END RSA PRIVATE KEY-----"
+GITHUB_CLIENT_SECRET=a20f634c1afc841b69bd68424032c3dc522024cc
+
+# Registry API (Shared across team)
+VITE_REGISTRY_API_URL=http://localhost:3000/api/v1
+```
+
+**Note**: This configuration uses a shared Supabase project and GitHub App for the development team. All developers can use the same `.env` file.
 
 2. Get your Supabase credentials:
    - Go to [supabase.com](https://supabase.com)
@@ -31,19 +50,26 @@ VITE_DEBUG=true
    - Go to Settings → API
    - Copy Project URL and anon public key
 
-3. Set up GitHub OAuth:
+3. Set up GitHub OAuth and GitHub App:
    - Go to [GitHub Developer Settings](https://github.com/settings/developers)
    - Create new OAuth App
    - Set Homepage URL: `http://localhost:8088`
    - Set Authorization callback URL: `http://localhost:8088/auth/callback`
    - Copy Client ID and Client Secret
+   - Create a GitHub App for deployment functionality
+   - Generate a private key for the GitHub App
+   - Note the App ID
 
 4. Configure Supabase Authentication:
    - Go to your Supabase project → Authentication → Providers
    - Enable GitHub provider
    - Add your GitHub OAuth Client ID and Client Secret
 
-5. Set up database tables (run in Supabase SQL Editor):
+5. Set up the Registry API:
+   - Ensure the registry API is running on the specified URL
+   - The API should provide MCP server templates and deployment endpoints
+
+6. Set up database tables (run in Supabase SQL Editor):
 ```sql
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
@@ -89,6 +115,43 @@ CREATE TABLE IF NOT EXISTS marketplace_items (
 npm run dev
 ```
 Visit `http://localhost:8088`
+
+## 🔧 Environment Variables
+
+### Required Variables
+
+#### Supabase Configuration
+- **`VITE_SUPABASE_URL`**: Your Supabase project URL
+  - Get from: Supabase Dashboard → Settings → API → Project URL
+- **`VITE_SUPABASE_ANON_KEY`**: Your Supabase anonymous/public key
+  - Get from: Supabase Dashboard → Settings → API → Project API keys → anon public
+
+#### GitHub Configuration
+- **`VITE_GITHUB_APP_NAME`**: Name of your GitHub App
+  - Set this to your GitHub App's name (e.g., "sigyl-dev")
+- **`VITE_GITHUB_APP_ID`**: Your GitHub App ID
+  - Get from: GitHub App settings page
+- **`GITHUB_PRIVATE_KEY`**: Your GitHub App's private key
+  - Generate from: GitHub App settings → Private keys → Generate private key
+  - Must be in PEM format with newlines escaped as `\n`
+- **`GITHUB_CLIENT_SECRET`**: Your GitHub OAuth App client secret
+  - Get from: GitHub OAuth App settings
+
+#### Registry API
+- **`VITE_REGISTRY_API_URL`**: URL of your MCP registry API
+  - Default: `http://localhost:3000/api/v1`
+  - Must be running for MCP template loading and deployments
+
+### Optional Variables
+- **`VITE_DEBUG`**: Enable debug mode
+  - Set to `true` for development debugging
+  - Default: `false`
+
+### Security Notes
+- Never commit your `.env` file to version control
+- The `.env` file is already in `.gitignore`
+- Keep your GitHub private key secure
+- Rotate secrets regularly in production
 
 ## 🏗️ Architecture Overview
 

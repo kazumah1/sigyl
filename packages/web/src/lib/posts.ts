@@ -16,7 +16,8 @@ export interface BlogPost {
 }
 
 // Import all markdown files from the posts directory
-const postModules = import.meta.glob('../posts/*.md?raw', { eager: true });
+const postModules = import.meta.glob('@/posts/*.md?raw', { eager: true });
+console.log('[DEBUG] postModules:', postModules);
 
 export function getSortedPostsData(): BlogPost[] {
   const posts: BlogPost[] = [];
@@ -26,13 +27,15 @@ export function getSortedPostsData(): BlogPost[] {
     for (const path in postModules) {
       try {
         const file = postModules[path] as any;
-        const slug = path.replace('../posts/', '').replace('.md', '');
+        const slug = path.replace('@/posts/', '').replace('.md', '');
         
         // Skip template file
         if (slug === '_template') continue;
         
         // Use file as string if possible, otherwise use file.default
         const rawContent = typeof file === 'string' ? file : file.default;
+        console.log(`[DEBUG] Processing file: ${path}, slug: ${slug}`);
+        console.log('[DEBUG] Raw content:', rawContent);
         
         // Parse frontmatter and content
         const { data, content } = matter(rawContent);
@@ -53,15 +56,15 @@ export function getSortedPostsData(): BlogPost[] {
 
         posts.push(post);
       } catch (error) {
-        console.error(`Error processing post ${path}:`, error);
+        console.error(`[DEBUG] Error processing post ${path}:`, error);
         // Continue processing other posts even if one fails
       }
     }
-
+    console.log('[DEBUG] Final posts array:', posts);
     // Sort by date (newest first)
     return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
-    console.error('Error loading blog posts:', error);
+    console.error('[DEBUG] Error loading blog posts:', error);
     return [];
   }
 }
