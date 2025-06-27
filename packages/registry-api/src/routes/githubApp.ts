@@ -248,16 +248,38 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
   try {
     const { installationId } = req.params;
     
+    console.log('=== GET REPOSITORIES DEBUG ===');
+    console.log('Requested installation ID:', installationId);
+    console.log('GitHub App ID:', process.env.GITHUB_APP_ID);
+    console.log('GitHub Private Key present:', !!process.env.GITHUB_PRIVATE_KEY);
+    console.log('GitHub Private Key length:', process.env.GITHUB_PRIVATE_KEY?.length || 0);
+    
     if (!installationId) {
       return res.status(400).json({ error: 'Installation ID is required' });
     }
 
+    if (!process.env.GITHUB_APP_ID || !process.env.GITHUB_PRIVATE_KEY) {
+      console.error('Missing GitHub App credentials');
+      return res.status(500).json({ 
+        success: false,
+        error: 'Server configuration error',
+        message: 'GitHub App credentials not configured'
+      });
+    }
+
     // Get installation token
+    console.log('Generating JWT for GitHub App...');
     const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
+    console.log('JWT generated successfully');
+    
+    console.log('Requesting installation access token for installation:', installationId);
     const installToken = await getInstallationAccessToken(jwt, Number(installationId));
+    console.log('Installation access token received');
     
     // Fetch repositories from GitHub
+    console.log('Fetching repositories...');
     const repos = await listRepos(installToken);
+    console.log('Repositories fetched successfully, count:', repos.length);
     
     // Check for MCP files in each repository
     const reposWithMCP = await Promise.all(
@@ -306,11 +328,34 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
       data: reposWithMCP
     });
   } catch (error) {
+    console.error('=== REPOSITORIES ERROR ===');
     console.error('Error fetching repositories:', error);
+    
+    // Enhanced error response
+    let errorMessage = 'Failed to fetch repositories';
+    let errorDetails = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Not Found')) {
+        errorMessage = 'GitHub App installation not found';
+        errorDetails = `Installation ID ${req.params.installationId} does not exist or the GitHub App does not have access to it. This could mean:\n` +
+                      '1. The GitHub App was uninstalled\n' +
+                      '2. The installation ID is incorrect\n' +
+                      '3. The GitHub App credentials are wrong\n' +
+                      '4. The installation belongs to a different GitHub App';
+      } else if (error.message.includes('Bad credentials')) {
+        errorMessage = 'GitHub App authentication failed';
+        errorDetails = 'Invalid GitHub App ID or private key';
+      }
+    }
+    
     res.status(500).json({ 
       success: false,
-      error: 'Failed to fetch repositories',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage,
+      message: errorDetails,
+      installationId: req.params.installationId,
+      githubAppId: process.env.GITHUB_APP_ID,
+      hasPrivateKey: !!process.env.GITHUB_PRIVATE_KEY
     });
   }
 });
@@ -420,7 +465,25 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
     const { installationId } = req.params;
     const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
     
+    console.log('📝 Deployment request received:', {
+      installationId,
+      repoUrl,
+      owner,
+      repo,
+      branch,
+      userId,
+      selectedSecrets: selectedSecrets ? Object.keys(selectedSecrets) : [],
+      environmentVariables: environmentVariables ? Object.keys(environmentVariables) : []
+    });
+    
     if (!installationId || !repoUrl || !owner || !repo) {
+      console.error('❌ Missing required fields:', {
+        installationId: !!installationId,
+        repoUrl: !!repoUrl,
+        owner: !!owner,
+        repo: !!repo
+      });
+      
       return res.status(400).json({ 
         success: false,
         error: 'Installation ID, repository URL, owner, and repo are required' 
@@ -446,6 +509,13 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
       selectedSecrets,
       githubToken: installToken
     };
+
+    console.log('📦 Deploying with request:', {
+      repoUrl,
+      repoName: `${owner}/${repo}`,
+      branch,
+      hasGithubToken: !!installToken
+    });
 
     // Deploy to Google Cloud Run
     const deploymentResult = await deployRepo(deploymentRequest);
