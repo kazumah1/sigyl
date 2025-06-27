@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Index from './pages/Index';
 import Blog from './pages/Blog';
+import BlogPostPage from './pages/BlogPostPage';
 import Deploy from './pages/Deploy';
 import Marketplace from './pages/Marketplace';
 import PackageDetails from './pages/PackageDetails';
@@ -26,6 +27,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
