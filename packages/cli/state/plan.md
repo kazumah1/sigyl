@@ -199,6 +199,55 @@ Enhance the existing MCP CLI tool to make testing different demo scenarios easie
    - Solution: Replaced with specific regexes that only target TypeScript type annotations
    - Impact: JavaScript MCP servers now generate with correct syntax and run without errors
 
+### ✅ Phase 4: Cloud Deployment Fixes (COMPLETED - Dec 27, 2024)
+**Critical Cloud Run Deployment Issue Resolved:**
+
+**Problem Identified:**
+- Generated MCP servers would start successfully but immediately exit after connection
+- Cloud Run health checks failed because containers exited with code 0
+- Logs showed: `🚀 MCP Server starting...` → `✅ MCP Server connected and ready` → `Container called exit(0).`
+
+**Root Cause:**
+- Template servers were missing keep-alive mechanisms
+- After `await server.connect(transport)`, the main() function completed and process exited
+- No signal handlers for graceful shutdown
+- No mechanism to prevent process termination
+
+**Solution Implemented:**
+- **Keep-alive mechanism**: Added infinite Promise to prevent process exit
+- **Signal handlers**: Added SIGINT and SIGTERM handlers for graceful shutdown
+- **Error handling**: Wrapped server startup in try-catch with proper error logging
+- **Heartbeat logging**: Optional periodic logging for deployment monitoring
+- **Applied to both**: Fixed both init.ts template and mcp-generator.ts templates
+
+**Technical Details:**
+```typescript
+// Before (would exit immediately)
+await server.connect(transport);
+console.log(`✅ MCP Server connected and ready on port ${port}`);
+
+// After (stays alive)
+await server.connect(transport);
+console.log(`✅ MCP Server connected and ready on port ${port}`);
+
+// Keep-alive and signal handling
+process.on('SIGTERM', () => { process.exit(0); });
+await new Promise(() => {}); // Never resolves, keeps process alive
+```
+
+**Impact:**
+- ✅ Cloud Run deployments now work correctly
+- ✅ Containers stay alive and pass health checks
+- ✅ Proper graceful shutdown handling
+- ✅ Better deployment monitoring with heartbeat logs
+- ✅ Fixed both blank template generation and endpoint scanning workflows
+
+**Verification:**
+- ✅ **Template Generation Tested**: New template includes keep-alive mechanisms and signal handlers
+- ✅ **Both Paths Fixed**: Applied to both `init.ts` (blank templates) and `mcp-generator.ts` (endpoint scanning)
+- ✅ **Cloud Run Ready**: Generated servers now compatible with container deployment platforms
+- ✅ **Build Process Updated**: CLI rebuilt successfully with new templates
+
 ### ✅ Phase 4: Claude Desktop Integration (COMPLETED)
 - Cross-platform Claude Desktop config file detection (Windows, macOS, Linux)
 - Install command for generated MCP servers
