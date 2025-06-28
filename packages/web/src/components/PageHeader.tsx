@@ -7,19 +7,36 @@ import { useAuth } from '@/contexts/AuthContext';
 const PageHeader = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  // Add admin session check
+  const adminSession = (() => {
+    try {
+      const adminData = localStorage.getItem('admin_session');
+      return adminData ? JSON.parse(adminData) : null;
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div 
-            className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"
-            onClick={() => navigate('/')}
-          >
-            SIGYL
+          <div className="flex items-center space-x-4">
+            <div 
+              className="cursor-pointer flex items-center" 
+              onClick={() => navigate('/')}
+            >
+              <img src="/test_6.png" alt="SIGYL Logo" className="w-8 h-8 rounded-full object-cover shadow-sm" style={{background:'#18181b'}} />
+            </div>
+            <div 
+              className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"
+              onClick={() => navigate('/')}
+            >
+              SIGYL
+            </div>
           </div>
           <nav className="flex items-center space-x-8">
-            {user && (
+            {(user || adminSession) && (
               <button 
                 onClick={() => navigate('/dashboard')}
                 className="text-gray-300 hover:text-white font-medium transition-colors"

@@ -67,7 +67,8 @@ const Index = () => {
             <Button 
               size="lg" 
               onClick={() => navigate('/deploy')}
-              className="w-full sm:w-auto bg-white text-black border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 font-semibold hover:bg-gray-100 hover:text-black transition-colors min-h-[48px] touch-manipulation"
+              className="w-full sm:w-auto bg-white text-black border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold hover:bg-gray-100 hover:text-black transition-colors min-h-[48px] touch-manipulation font-[500]" 
+              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
             >
               Get Started Free
             </Button>
@@ -75,7 +76,7 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               onClick={() => navigate('/docs')}
-              className="w-full sm:w-auto btn-modern min-h-[48px] touch-manipulation"
+              className="w-full sm:w-auto btn-modern min-h-[48px] touch-manipulation text-lg font-semibold"
             >
               View Documentation
             </Button>
@@ -142,7 +143,7 @@ const Index = () => {
       {/* Stats Section - Mobile Optimized */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{width:'100%', minHeight:'480px sm:560px', padding:'2rem 0 sm:2.5rem 0', background:'rgba(255,255,255,0.10)'}}>
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{width:'100%', minHeight:'620px', padding:'3.5rem 0', background:'rgba(255,255,255,0.10)'}}>
             <img src="/Test_4.png" alt="Stats Tab Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:0.92}} />
             <div className="relative z-10 w-full flex flex-col items-center px-4">
               <div className="text-center mb-6 sm:mb-8 w-full">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -30,7 +29,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Visits and Tool Calls Over Time */}
-      <Card className="bg-gray-900/50 border-gray-800 col-span-1 lg:col-span-2">
+      <Card className="bg-gray-900/50 border-gray-800 col-span-1 lg:col-span-2 overflow-hidden relative">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-green-400" />
@@ -41,9 +40,9 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-80">
+          <ChartContainer config={chartConfig} className="h-72 md:h-80 overflow-hidden relative p-2 md:p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={visitData}>
+              <LineChart data={visitData} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis 
                   dataKey="date" 
@@ -73,7 +72,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
       </Card>
 
       {/* Tool Usage Distribution */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-gray-900/50 border-gray-800 overflow-hidden relative">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-400" />
@@ -84,9 +83,9 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-64">
+          <ChartContainer config={chartConfig} className="h-56 md:h-64 overflow-hidden relative p-2 md:p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={toolUsageData}>
+              <BarChart data={toolUsageData} margin={{ top: 16, right: 24, left: 0, bottom: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis 
                   dataKey="name" 
@@ -106,7 +105,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
       </Card>
 
       {/* Server Status Distribution */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-gray-900/50 border-gray-800 overflow-hidden relative">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Server className="w-5 h-5 text-purple-400" />
@@ -117,14 +116,14 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-64">
+          <ChartContainer config={chartConfig} className="h-56 md:h-64 overflow-hidden relative p-2 md:p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                 <Pie
                   data={serverStatusData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={70}
                   dataKey="count"
                   nameKey="status"
                 >
