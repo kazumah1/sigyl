@@ -5,6 +5,26 @@ import { InstallationService } from '../services/installationService';
 import { fetchMCPYaml } from '../services/yaml';
 import fetch from 'node-fetch';
 
+interface GitHubTokenResponse {
+  access_token: string;
+  expires_in?: number;
+  token_type: string;
+}
+
+interface GitHubUser {
+  id: number;
+  login: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+  type?: string;
+}
+
+interface GitHubOrg {
+  name?: string;
+  login: string;
+}
+
 const router = express.Router();
 const userInstallationService = new UserInstallationService();
 const installationService = new InstallationService();
@@ -87,7 +107,7 @@ router.get('/callback', async (req, res) => {
         code,
       })
     });
-    const tokenData = await tokenRes.json();
+    const tokenData = await tokenRes.json() as GitHubTokenResponse;
     console.log('GitHub token exchange response:', tokenData);
     if (!tokenData.access_token) {
       return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData });
@@ -97,7 +117,7 @@ router.get('/callback', async (req, res) => {
     const userRes = await fetch('https://api.github.com/user', {
       headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
     });
-    const user = await userRes.json();
+    const user = await userRes.json() as GitHubUser;
 
     // Fetch installation info to determine if this is an org and get org display name
     let accountLogin = user.login;
@@ -109,7 +129,7 @@ router.get('/callback', async (req, res) => {
           headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
         });
         if (orgRes.ok) {
-          const org = await orgRes.json();
+          const org = await orgRes.json() as GitHubOrg;
           console.log('Fetched org details:', org); // Debug log
           if (org.name) {
             accountLogin = org.name;
