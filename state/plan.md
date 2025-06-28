@@ -120,6 +120,25 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 3. **Enhanced Animations**: Micro-interactions and smooth transitions
 4. **Dark Mode Polish**: Ensure consistent theming
 
+**Supabase Integration and IAM Automation**
+- ✅ Fixed: Deploy flow now fully connects Google Cloud Run deployments to Supabase tables
+    - author_id is now always a valid UUID from the profiles table (GitHub ID is mapped automatically)
+    - required_secrets and optional_secrets are extracted from sigyl.yaml and stored in the registry
+    - Tool input schemas are auto-extracted from Zod and stored
+- ✅ Fixed: IAM policy for Cloud Run services is now programmatically updated to allow unauthenticated invocations (allUsers as run.invoker)
+    - Robust logging and verification ensure unauthenticated access is enabled after every deploy
+    - No more manual UI steps required for public endpoints
+
+### 🛠️ Outstanding/To-Do
+
+- 🔧 Ensure all CLI-generated templates (including blank and scan modes) use HttpServerTransport for HTTP/Cloud Run compatibility.
+- 🔧 Consider refactoring CLI to always use generator logic for all templates, avoiding static template drift.
+- 🔧 Add more robust error handling and user feedback for missing or misconfigured sigyl.yaml in the deployment pipeline.
+- 🔧 Continue to monitor for any edge cases in build/deploy flow, especially with custom user repos or non-standard project structures.
+- [ ] Test SDK can connect to a running MCP server and list its tools
+    - Previously, the test tried to use connect/getTools, but this was not compatible with the MCP server API
+    - Now, the test directly calls the /tools/list endpoint on the MCP server using axios, as per the MCP spec, and prints the available tools
+
 ### 🎯 Success Metrics
 
 - ✅ CSS compilation errors eliminated
@@ -187,4 +206,3 @@ The platform is now significantly more polished with a cohesive dark theme, exce
 
 3. **Advanced UI Elements**
    - `MarketplaceModal.tsx`: Better package discovery
-   - `

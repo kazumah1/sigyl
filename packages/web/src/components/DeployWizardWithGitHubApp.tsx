@@ -173,7 +173,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
         })
       }, 8000)
       
-      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch)
+      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch, user?.id)
       
       // Step 5: Complete
       setDeploymentProgress({

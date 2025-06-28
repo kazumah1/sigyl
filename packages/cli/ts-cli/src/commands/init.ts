@@ -5,6 +5,8 @@ import * as yaml from "yaml"
 import ora from "ora"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
+import express from "express"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 
 export interface InitOptions {
 	outDir: string
@@ -55,6 +57,7 @@ async function generateMCPConfig(options: InitOptions): Promise<void> {
 	// Use the MCP config schema and header as in the attached sigyl.yaml
 	const config = {
 		runtime: "node",
+		language: options.serverLanguage || "typescript",
 		startCommand: {
 			type: "http",
 			configSchema: {
@@ -135,7 +138,9 @@ async function generateTypeScriptServer(options: InitOptions): Promise<void> {
  * To add a new tool, use the template at the bottom of this file.
  */
 
+import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
 
 // ============================================================================
@@ -179,56 +184,25 @@ export default function createStatelessServer({
 // SERVER STARTUP
 // ============================================================================
 
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+const app = express();
+app.use(express.json());
 
-async function main() {
+app.post('/mcp', async (req, res) => {
 	const server = createStatelessServer({ config: {} });
-	console.log("🚀 MCP Server starting...");
-	
-	const port = process.env.PORT || 8080;
-	const transport = new HttpServerTransport({ port });
-	
-	try {
-		await server.connect(transport);
-		console.log(\`✅ MCP Server connected and ready on port \${port}\`);
-		
-		// Keep the process alive
-		console.log("🔄 Server running... Press Ctrl+C to stop");
-		
-		// Graceful shutdown handling
-		process.on('SIGINT', () => {
-			console.log('\\n⏹️ Received SIGINT, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		process.on('SIGTERM', () => {
-			console.log('\\n⏹️ Received SIGTERM, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		// Keep alive with periodic logging (optional)
-		setInterval(() => {
-			console.log(\`💓 Server heartbeat - listening on port \${port}\`);
-		}, 60000); // Log every minute
-		
-		// Prevent the process from exiting
-		await new Promise((resolve) => {
-			// This promise never resolves, keeping the process alive
-			// The only way to exit is through signal handlers above
-		});
-		
-	} catch (error) {
-		console.error("❌ Failed to start server:", error);
-		process.exit(1);
-	}
-}
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+	res.on('close', () => {
+		transport.close();
+		server.close();
+	});
+	await server.connect(transport);
+	await transport.handleRequest(req, res, req.body);
+});
 
-main().catch((error) => {
-	console.error("❌ Server error:", error);
-	process.exit(1);
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port);
 });
 `;
-
 	writeFileSync(join(options.outDir, "server.ts"), serverCode)
 
 	// Generate package.json for the server
@@ -244,11 +218,13 @@ main().catch((error) => {
 		},
 		dependencies: {
 			"@modelcontextprotocol/sdk": "^1.10.1",
-			"zod": "^3.22.0"
+			"zod": "^3.22.0",
+			"express": "^4.18.2"
 		},
 		devDependencies: {
 			"typescript": "^5.0.0",
-			"@types/node": "^20.0.0"
+			"@types/node": "^20.0.0",
+			"@types/express": "^4.17.17"
 		}
 	};
 
