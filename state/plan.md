@@ -58,6 +58,15 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 **Environment Variable Handling**
 - ✅ Fixed: Environment variable handling and Cloud Run reserved variable filtering.
 
+**Supabase Integration and IAM Automation**
+- ✅ Fixed: Deploy flow now fully connects Google Cloud Run deployments to Supabase tables
+    - author_id is now always a valid UUID from the profiles table (GitHub ID is mapped automatically)
+    - required_secrets and optional_secrets are extracted from sigyl.yaml and stored in the registry
+    - Tool input schemas are auto-extracted from Zod and stored
+- ✅ Fixed: IAM policy for Cloud Run services is now programmatically updated to allow unauthenticated invocations (allUsers as run.invoker)
+    - Robust logging and verification ensure unauthenticated access is enabled after every deploy
+    - No more manual UI steps required for public endpoints
+
 ### 🛠️ Outstanding/To-Do
 
 - 🔧 Ensure all CLI-generated templates (including blank and scan modes) use HttpServerTransport for HTTP/Cloud Run compatibility.
