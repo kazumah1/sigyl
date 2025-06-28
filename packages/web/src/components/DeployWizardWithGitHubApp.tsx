@@ -111,7 +111,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch)
+      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch, user?.id)
       
       // Call the onDeploy callback
       onDeploy?.(result)

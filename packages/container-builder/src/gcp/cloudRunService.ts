@@ -479,6 +479,71 @@ CMD ["node", "server.js"]
   }
 
   /**
+   * Set IAM policy to allow unauthenticated invocations (allUsers as roles/run.invoker)
+   */
+  async allowUnauthenticated(serviceName: string): Promise<void> {
+    const accessToken = await this.getAccessToken();
+    const baseUrl = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`;
+
+    console.log(`[CloudRunService] Fetching current IAM policy for service: ${serviceName}`);
+    // Get the current IAM policy
+    const getPolicyResp = await fetch(`${baseUrl}:getIamPolicy`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    if (!getPolicyResp.ok) {
+      const errText = await getPolicyResp.text();
+      console.error(`[CloudRunService] Failed to fetch IAM policy: ${errText}`);
+      throw new Error(`Failed to fetch IAM policy: ${errText}`);
+    }
+    const policy = await getPolicyResp.json() as any;
+
+    // Add allUsers as invoker if not already present
+    policy.bindings = policy.bindings || [];
+    if (!policy.bindings.some((b: any) => b.role === 'roles/run.invoker' && b.members && b.members.includes('allUsers'))) {
+      policy.bindings.push({
+        role: 'roles/run.invoker',
+        members: ['allUsers']
+      });
+      console.log('[CloudRunService] Adding allUsers as run.invoker');
+    } else {
+      console.log('[CloudRunService] allUsers already present as run.invoker');
+    }
+
+    // Set the updated policy
+    console.log('[CloudRunService] Setting updated IAM policy...');
+    const setPolicyResp = await fetch(`${baseUrl}:setIamPolicy`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ policy })
+    });
+    if (!setPolicyResp.ok) {
+      const errText = await setPolicyResp.text();
+      console.error(`[CloudRunService] Failed to set IAM policy: ${errText}`);
+      throw new Error(`Failed to set IAM policy: ${errText}`);
+    }
+    console.log('[CloudRunService] IAM policy updated. Verifying...');
+    // Fetch the policy again to verify
+    const verifyPolicyResp = await fetch(`${baseUrl}:getIamPolicy`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    if (!verifyPolicyResp.ok) {
+      const errText = await verifyPolicyResp.text();
+      console.error(`[CloudRunService] Failed to verify IAM policy: ${errText}`);
+      throw new Error(`Failed to verify IAM policy: ${errText}`);
+    }
+    const verifyPolicy = await verifyPolicyResp.json();
+    console.log('[CloudRunService] Final IAM policy:', JSON.stringify(verifyPolicy, null, 2));
+    if (!JSON.stringify(verifyPolicy).includes('allUsers')) {
+      console.warn('[CloudRunService] Warning: allUsers not present in final IAM policy!');
+    } else {
+      console.log('[CloudRunService] allUsers is present as run.invoker. Unauthenticated access should work.');
+    }
+  }
+
+  /**
    * Deploy service to Google Cloud Run using REST API
    */
   private async deployToCloudRun(request: CloudRunDeploymentRequest, imageUri: string): Promise<{serviceUrl: string, serviceName: string}> {
@@ -643,6 +708,8 @@ CMD ["node", "server.js"]
       }
       if (serviceUrl) {
         console.log('✅ Cloud Run service deployed successfully');
+        // Patch: Allow unauthenticated invocations
+        await this.allowUnauthenticated(serviceName);
         return {
           serviceUrl,
           serviceName

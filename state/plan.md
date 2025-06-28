@@ -64,6 +64,9 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 - 🔧 Consider refactoring CLI to always use generator logic for all templates, avoiding static template drift.
 - 🔧 Add more robust error handling and user feedback for missing or misconfigured sigyl.yaml in the deployment pipeline.
 - 🔧 Continue to monitor for any edge cases in build/deploy flow, especially with custom user repos or non-standard project structures.
+- [ ] Test SDK can connect to a running MCP server and list its tools
+    - Previously, the test tried to use connect/getTools, but this was not compatible with the MCP server API
+    - Now, the test directly calls the /tools/list endpoint on the MCP server using axios, as per the MCP spec, and prints the available tools
 
 ### 🚀 Launch Readiness
 
