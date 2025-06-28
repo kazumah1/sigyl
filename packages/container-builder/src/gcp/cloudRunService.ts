@@ -77,19 +77,36 @@ export class CloudRunService {
       const {JWT} = require('google-auth-library');
       const fs = require('fs');
       const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      
+      if (!keyFile) {
+        throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable not set');
+      }
+      
+      if (!fs.existsSync(keyFile)) {
+        throw new Error(`Service account key file not found: ${keyFile}`);
+      }
+      
       const keys = JSON.parse(fs.readFileSync(keyFile, 'utf8'));
+      
+      if (!keys.client_email || !keys.private_key) {
+        throw new Error('Invalid service account key file: missing client_email or private_key');
+      }
 
       const client = new JWT({
         email: keys.client_email,
         key: keys.private_key,
         scopes: ['https://www.googleapis.com/auth/cloud-platform']
-      })
-      const url = `https://dns.googleapis.com/dns/v1/projects/${keys.project_id}`;
-      const res = await client.fetch({ url });
-      console.log('[DNS info] ', res.data);
-
-      console.log('[CloudRunService] getAccessToken success - token:', client.credentials.access_token);
-      return client.credentials.access_token;
+      });
+      
+      // Get access token directly without making unnecessary API calls
+      const {token} = await client.getAccessToken();
+      
+      if (!token) {
+        throw new Error('Failed to obtain access token from JWT client');
+      }
+      
+      console.log('[CloudRunService] getAccessToken success - token obtained');
+      return token;
     } catch (error) {
       console.error('[CloudRunService] getAccessToken failed:', error);
       throw error;
@@ -176,56 +193,74 @@ export class CloudRunService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create Cloud Build configuration that pulls from GitHub and builds a Docker image
+      // Create Cloud Build configuration that downloads source from GitHub using token
       const buildConfig = {
-        source: {
-          gitSource: {
-            url: request.repoUrl,
-            revision: request.branch
-          }
-        },
         steps: [
-          // Step 1: Create a Dockerfile for the MCP server
+          // Step 1: Download source from GitHub using the token
+          {
+            name: 'gcr.io/cloud-builders/curl',
+            args: [
+              '-L',
+              '-H', `Authorization: token ${request.githubToken}`,
+              '-o', 'source.tar.gz',
+              `https://api.github.com/repos/${request.repoName}/tarball/${request.branch}`
+            ]
+          },
+          // Step 2: Extract the source
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
+            ]
+          },
+          // Step 3: Create a Dockerfile for the MCP server
           {
             name: 'gcr.io/cloud-builders/docker',
             entrypoint: 'bash',
             args: [
               '-c',
               `cat > Dockerfile << 'EOF'
-# Sigyl MCP Server - Node.js Runtime 1
+# Sigyl MCP Server - Node.js Runtime
 FROM node:18-alpine
 
-# Set working directory 2
+# Set working directory
 WORKDIR /app
 
-# Create non-root user for security 3
+# Create non-root user for security
 RUN addgroup -g 1001 -S mcpuser && \
     adduser -S mcpuser -u 1001
 
-# Copy package files 4
+# Copy package files first for better caching
 COPY package*.json ./
 
-# Install all dependencies (including dev) for build
+# Install all dependencies (including dev) for TypeScript compilation
 RUN if [ -f package-lock.json ]; then \
       npm ci; \
     else \
       npm install; \
     fi && npm cache clean --force
 
-# Copy application code 6
-COPY . .
+# Copy TypeScript configuration and source files
+COPY tsconfig.json ./
+COPY *.ts ./
+COPY sigyl.yaml ./
 
 ${config.language === 'typescript' ? `
-# Build TypeScript if needed 7
-RUN npm run build || echo "No build script found"
-# Debug: List files after build 8
-RUN ls -l /app
+# Build TypeScript - compile to JavaScript
+RUN npm run build
+# Debug: List files after build to verify compilation
+RUN echo "=== Files after TypeScript compilation ===" && ls -la /app && echo "=== Looking for server.js ===" && ls -la server.js 2>/dev/null || echo "server.js not found!"
 ` : ''}
 
-# Prune devDependencies for smaller image
+# Copy any remaining files (in case there are other assets)
+COPY . .
+
+# Prune devDependencies for smaller image (after build)
 RUN npm prune --production
 
-# Change ownership to non-root user 7
+# Change ownership to non-root user
 RUN chown -R mcpuser:mcpuser /app
 USER mcpuser
 
@@ -233,6 +268,7 @@ USER mcpuser
 ENV NODE_ENV=production
 ENV MCP_TRANSPORT=http
 ENV MCP_ENDPOINT=/mcp
+ENV PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
@@ -241,12 +277,12 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 # Expose port
 EXPOSE 8080
 
-# Start server
+# Start server - the compiled server.js should be in the root directory
 CMD ["node", "server.js"]
 EOF`
             ]
           },
-          // Step 2: Build the Docker image
+          // Step 4: Build the Docker image
           {
             name: 'gcr.io/cloud-builders/docker',
             args: [
@@ -320,15 +356,29 @@ EOF`
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create Cloud Build configuration that pulls from GitHub and builds using existing Dockerfile
+      // Create Cloud Build configuration that downloads source from GitHub using token
       const buildConfig = {
-        source: {
-          gitSource: {
-            url: request.repoUrl,
-            revision: request.branch
-          }
-        },
         steps: [
+          // Step 1: Download source from GitHub using the token
+          {
+            name: 'gcr.io/cloud-builders/curl',
+            args: [
+              '-L',
+              '-H', `Authorization: token ${request.githubToken}`,
+              '-o', 'source.tar.gz',
+              `https://api.github.com/repos/${request.repoName}/tarball/${request.branch}`
+            ]
+          },
+          // Step 2: Extract the source
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
+            ]
+          },
+          // Step 3: Build using existing Dockerfile
           {
             name: 'gcr.io/cloud-builders/docker',
             args: [
@@ -566,7 +616,7 @@ CMD ["node", "server.js"]
           },
           labels: {
             'app': 'sigyl-mcp',
-            'repository': request.repoName.replace('/', '-')
+            'repository': request.repoName.replace('/', '-').toLowerCase()
           }
         },
         spec: {
