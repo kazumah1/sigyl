@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -634,8 +636,6 @@ button, a, input, select, textarea {
 .liquid-glass-dashboard.enhanced-glass-panel div {
   text-shadow: 0 2px 12px rgba(0,0,0,0.32);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap');
 
 .hero-heading {
   font-family: 'Space Grotesk', Inter, system-ui, sans-serif;

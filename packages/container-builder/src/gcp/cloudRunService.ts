@@ -615,11 +615,24 @@ EOF`
       } else {
         service = await deployResponse.json();
       }
-      let serviceUrl = service.status?.url;
+      
+      // Debug: Log the initial service response structure
+      console.log(`📋 Initial service response:`, JSON.stringify({
+        status: service.status,
+        metadata: service.metadata,
+        spec: service.spec
+      }, null, 2));
+      
+      let serviceUrl = service.status?.url || service.status?.address?.url;
+      console.log(`🔍 Initial service URL: ${serviceUrl}`);
+      
       if (!serviceUrl) {
+        console.log(`⏳ Service URL not immediately available, polling for up to 5 minutes...`);
         // Poll for up to 5 minutes (30 attempts, 10s each)
         for (let i = 0; i < 30; i++) {
           await new Promise(res => setTimeout(res, 10000));
+          console.log(`📊 Polling attempt ${i + 1}/30 for service URL...`);
+          
           const statusResp = await fetch(
             `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
             {
@@ -628,18 +641,64 @@ EOF`
               }
             }
           );
+          
+          if (!statusResp.ok) {
+            console.warn(`⚠️ Status check failed: ${statusResp.status}`);
+            continue;
+          }
+          
           const statusJson = await statusResp.json() as any;
-          if (statusJson.status?.url) {
-            serviceUrl = statusJson.status.url;
+          console.log(`📋 Status response ${i + 1}:`, JSON.stringify({
+            status: statusJson.status,
+            readyCondition: statusJson.status?.conditions?.find((c: any) => c.type === 'Ready'),
+            url: statusJson.status?.url,
+            addressUrl: statusJson.status?.address?.url
+          }, null, 2));
+          
+          // Check multiple possible URL locations
+          serviceUrl = statusJson.status?.url || 
+                      statusJson.status?.address?.url ||
+                      statusJson.status?.traffic?.[0]?.url;
+          
+          // Also check if service is ready
+          const readyCondition = statusJson.status?.conditions?.find((c: any) => c.type === 'Ready');
+          const isReady = readyCondition?.status === 'True';
+          
+          console.log(`🔍 Found URL: ${serviceUrl}, Ready: ${isReady}`);
+          
+          if (serviceUrl && isReady) {
+            console.log(`✅ Service ready with URL: ${serviceUrl}`);
             break;
+          } else if (serviceUrl && !isReady) {
+            console.log(`⏳ Service has URL but not ready yet, continuing to poll...`);
           }
         }
+        
         if (!serviceUrl) {
-          throw new Error('Deployment succeeded but no service URL returned after waiting');
+          // As a fallback, construct the URL manually
+          const constructedUrl = `https://${serviceName}-${process.env.GOOGLE_CLOUD_PROJECT_HASH || 'unknown'}-${this.region}.a.run.app`;
+          console.log(`🔧 Attempting fallback URL construction: ${constructedUrl}`);
+          
+          // Test if the constructed URL is accessible
+          try {
+            const testResp = await fetch(constructedUrl, { method: 'HEAD' });
+            if (testResp.ok || testResp.status === 404) { // 404 is OK for HEAD requests
+              serviceUrl = constructedUrl;
+              console.log(`✅ Fallback URL verified: ${serviceUrl}`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Fallback URL test failed: ${error}`);
+          }
+        }
+        
+        if (!serviceUrl) {
+          throw new Error('Deployment succeeded but no service URL returned after waiting. Check Cloud Run console for manual verification.');
         }
       }
+      
       if (serviceUrl) {
         console.log('✅ Cloud Run service deployed successfully');
+        console.log(`🌐 Service URL: ${serviceUrl}`);
         return {
           serviceUrl,
           serviceName

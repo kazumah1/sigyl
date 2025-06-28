@@ -17,7 +17,22 @@ export interface GitHubAppRepository {
   description: string | null
   html_url: string
   has_mcp: boolean
+  has_sigyl: boolean
   mcp_files: string[]
+  mcp_config?: {
+    name: string
+    description: string
+    version: string
+    port: number
+    tools_count: number
+    required_secrets: any[]
+  } | null
+  sigyl_config?: {
+    runtime: 'node' | 'container'
+    language?: 'typescript' | 'javascript'
+    entryPoint?: string
+    hasStartCommand: boolean
+  } | null
 }
 
 export interface MCPMetadata {
