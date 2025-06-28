@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -35,7 +35,9 @@ import {
   Database,
   Network,
   Cpu,
-  HardDrive
+  HardDrive,
+  Rocket,
+  Loader2
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,9 +84,31 @@ const MCPPackagePage = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'success' | 'failed'>('idle');
+  const [deploymentProgress, setDeploymentProgress] = useState<{
+    step: number;
+    stepName: string;
+    message: string;
+    isComplete: boolean;
+  }>({
+    step: 0,
+    stepName: '',
+    message: '',
+    isComplete: false
+  });
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
+  const isDeploying = searchParams.get('deploying') === 'true';
+
+  const deploymentSteps = [
+    { name: 'Security Scan', description: 'Analyzing repository for security issues' },
+    { name: 'Build Setup', description: 'Preparing build environment' },
+    { name: 'Container Build', description: 'Building and pushing container image' },
+    { name: 'Cloud Deploy', description: 'Deploying to Google Cloud Run' },
+    { name: 'Service Ready', description: 'Configuring and starting service' }
+  ];
 
   useEffect(() => {
     if (id) {
@@ -141,6 +165,84 @@ const MCPPackagePage = () => {
     }
   }, [id, user, isNewDeployment]);
 
+  // Handle deployment progress tracking
+  useEffect(() => {
+    if (isDeploying && isOwner) {
+      setDeploymentStatus('deploying');
+      
+      // Simulate deployment progress
+      const simulateDeployment = async () => {
+        try {
+          // Step 1: Security Scan
+          setDeploymentProgress({
+            step: 1,
+            stepName: deploymentSteps[0].name,
+            message: deploymentSteps[0].description,
+            isComplete: false
+          });
+          setDeploymentLogs(prev => [...prev, '🔒 Starting security validation...']);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Step 2: Build Setup
+          setDeploymentProgress({
+            step: 2,
+            stepName: deploymentSteps[1].name,
+            message: deploymentSteps[1].description,
+            isComplete: false
+          });
+          setDeploymentLogs(prev => [...prev, '📦 Preparing build environment...']);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          // Step 3: Container Build
+          setDeploymentProgress({
+            step: 3,
+            stepName: deploymentSteps[2].name,
+            message: deploymentSteps[2].description,
+            isComplete: false
+          });
+          setDeploymentLogs(prev => [...prev, '🔨 Building and pushing container image...']);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          // Step 4: Cloud Deploy
+          setDeploymentProgress({
+            step: 4,
+            stepName: deploymentSteps[3].name,
+            message: deploymentSteps[3].description,
+            isComplete: false
+          });
+          setDeploymentLogs(prev => [...prev, '☁️ Deploying to Google Cloud Run...']);
+          await new Promise(resolve => setTimeout(resolve, 4000));
+          
+          // Step 5: Complete
+          setDeploymentProgress({
+            step: 5,
+            stepName: deploymentSteps[4].name,
+            message: 'Deployment completed successfully!',
+            isComplete: true
+          });
+          setDeploymentLogs(prev => [...prev, '✅ Service deployed successfully!']);
+          setDeploymentStatus('success');
+          
+          // Update package status
+          if (pkg) {
+            setPackage(prev => prev ? {
+              ...prev,
+              deployment_status: 'running',
+              service_url: 'https://example-mcp-server-abc123.run.app'
+            } : null);
+          }
+          
+        } catch (error) {
+          setDeploymentError(error instanceof Error ? error.message : 'Deployment failed');
+          setDeploymentStatus('failed');
+          setDeploymentLogs(prev => [...prev, '❌ Deployment failed. Please check the logs and try again.']);
+        }
+      };
+      
+      simulateDeployment();
+    }
+  }, [isDeploying, isOwner, deploymentSteps, pkg]);
+
   const handleRate = async (rating: number) => {
     if (!pkg || !user) {
       toast.error('Please log in to rate packages');
@@ -185,6 +287,15 @@ const MCPPackagePage = () => {
       setDeploymentLogs(prev => [...prev, `🔄 Logs refreshed at ${new Date().toLocaleTimeString()}`]);
       setIsRefreshing(false);
     }, 1000);
+  };
+
+  const handleRetryDeployment = () => {
+    setDeploymentStatus('idle');
+    setDeploymentError(null);
+    setDeploymentProgress({ step: 0, stepName: '', message: '', isComplete: false });
+    setDeploymentLogs([]);
+    // Navigate back to deploy page to retry
+    navigate('/deploy');
   };
 
   const handleRestartService = () => {
@@ -257,11 +368,99 @@ const MCPPackagePage = () => {
         </Button>
 
         {/* New Deployment Success Alert */}
-        {isNewDeployment && pkg.deployment_status === 'running' && (
+        {isNewDeployment && (pkg.deployment_status === 'running' || deploymentStatus === 'success') && (
           <Alert className="mb-6 border-green-500 bg-green-500/10">
             <CheckCircle className="h-4 w-4 text-green-500" />
             <AlertDescription className="text-green-400">
               🎉 Your MCP server has been deployed successfully! It's now running and ready to use.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Deployment Progress Section */}
+        {isDeploying && isOwner && deploymentStatus === 'deploying' && (
+          <Card className="mb-6 bg-gray-900/50 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Rocket className="w-5 h-5 text-blue-500" />
+                Deploying Your MCP Server
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                {pkg?.name} → Google Cloud Run
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Progress Steps */}
+                <div className="space-y-3">
+                  {deploymentSteps.map((step, index) => {
+                    const stepNumber = index + 1;
+                    const isActive = deploymentProgress.step === stepNumber;
+                    const isComplete = deploymentProgress.step > stepNumber;
+                    
+                    return (
+                      <div key={step.name} className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                          isComplete 
+                            ? 'bg-green-500 text-white' 
+                            : isActive 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-700 text-gray-400'
+                        }`}>
+                          {isComplete ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : isActive ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <span className="text-sm font-semibold">{stepNumber}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className={`font-medium transition-colors ${
+                            isActive ? 'text-white' : isComplete ? 'text-green-400' : 'text-gray-400'
+                          }`}>
+                            {step.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {isActive ? deploymentProgress.message : step.description}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-500"
+                    style={{ 
+                      width: `${(deploymentProgress.step / deploymentSteps.length) * 100}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Deployment Error Alert */}
+        {deploymentStatus === 'failed' && deploymentError && (
+          <Alert className="mb-6 border-red-500 bg-red-500/10">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <AlertDescription className="text-red-400">
+              <div className="space-y-2">
+                <div className="font-semibold">Deployment Failed</div>
+                <div>{deploymentError}</div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetryDeployment}
+                  className="mt-2 border-red-500 text-red-400 hover:bg-red-500/10"
+                >
+                  Try Again
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}

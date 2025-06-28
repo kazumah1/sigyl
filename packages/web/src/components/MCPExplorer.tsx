@@ -183,8 +183,11 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
     }
   }
 
-  const getCategoryIcon = (tags: string[] = []) => {
-    for (const tag of tags) {
+  const getCategoryIcon = (tags?: string[] | null) => {
+    // Ensure tags is an array and handle null/undefined cases
+    const tagArray = Array.isArray(tags) ? tags : []
+    
+    for (const tag of tagArray) {
       if (CATEGORY_ICONS[tag as keyof typeof CATEGORY_ICONS]) {
         return CATEGORY_ICONS[tag as keyof typeof CATEGORY_ICONS]
       }
@@ -231,12 +234,12 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {pkg.tags?.slice(0, 3).map(tag => (
+          {Array.isArray(pkg.tags) && pkg.tags.slice(0, 3).map(tag => (
             <Badge key={tag} variant="secondary" className="bg-indigo-900/50 text-indigo-300 border-indigo-800">
               {tag}
             </Badge>
           ))}
-          {pkg.tags && pkg.tags.length > 3 && (
+          {Array.isArray(pkg.tags) && pkg.tags.length > 3 && (
             <Badge variant="outline" className="text-gray-400">
               +{pkg.tags.length - 3}
             </Badge>
@@ -410,7 +413,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">{selectedPackage.name}</h2>
                 <div className="flex gap-2 flex-wrap mb-1">
-                  {selectedPackage.tags?.map(tag => (
+                  {Array.isArray(selectedPackage.tags) && selectedPackage.tags.map(tag => (
                     <Badge key={tag} variant="secondary" className="bg-indigo-900/50 text-indigo-300 border-indigo-800">
                       {tag}
                     </Badge>

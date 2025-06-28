@@ -585,9 +585,10 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
 
     console.log('✅ Deployment successful:', deploymentResult.deploymentUrl);
 
-    // Return success response
+    // Return success response with package ID
     res.json({
       success: true,
+      packageId: deploymentResult.packageId,
       deploymentUrl: deploymentResult.deploymentUrl,
       serviceName: deploymentResult.serviceName,
       mcpEndpoint: `${deploymentResult.deploymentUrl}/mcp`,

@@ -38,17 +38,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   const [installationError, setInstallationError] = useState<boolean>(false)
-  const [deploymentProgress, setDeploymentProgress] = useState<{
-    step: number;
-    stepName: string;
-    message: string;
-    isComplete: boolean;
-  }>({
-    step: 0,
-    stepName: '',
-    message: '',
-    isComplete: false
-  })
 
   // Load repositories when active account is available
   useEffect(() => {
@@ -116,88 +105,34 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
     // The component will re-render and show the GitHubAppInstall component
   }
 
-  const deploymentSteps = [
-    { name: 'Security Scan', description: 'Analyzing repository for security issues' },
-    { name: 'Build Setup', description: 'Preparing build environment' },
-    { name: 'Container Build', description: 'Building and pushing container image' },
-    { name: 'Cloud Deploy', description: 'Deploying to Google Cloud Run' },
-    { name: 'Service Ready', description: 'Configuring and starting service' }
-  ]
-
   const handleDeploy = async () => {
     if (!selectedRepo || !activeGitHubAccount) return
 
     setDeploying(true)
     setDeployError(null)
-    setDeploymentProgress({ step: 0, stepName: '', message: '', isComplete: false })
 
     try {
-      // Step 1: Security Scan
-      setDeploymentProgress({
-        step: 1,
-        stepName: deploymentSteps[0].name,
-        message: deploymentSteps[0].description,
-        isComplete: false
-      })
-      
-      // Simulate deployment steps with progress updates
       const [owner, repo] = selectedRepo.full_name.split('/')
       
-      // Step 2: Build Setup
-      setTimeout(() => {
-        setDeploymentProgress({
-          step: 2,
-          stepName: deploymentSteps[1].name,
-          message: deploymentSteps[1].description,
-          isComplete: false
-        })
-      }, 2000)
-      
-      // Step 3: Container Build
-      setTimeout(() => {
-        setDeploymentProgress({
-          step: 3,
-          stepName: deploymentSteps[2].name,
-          message: deploymentSteps[2].description,
-          isComplete: false
-        })
-      }, 5000)
-      
-      // Step 4: Cloud Deploy
-      setTimeout(() => {
-        setDeploymentProgress({
-          step: 4,
-          stepName: deploymentSteps[3].name,
-          message: deploymentSteps[3].description,
-          isComplete: false
-        })
-      }, 8000)
-      
+      // Start deployment and immediately redirect to package page
       const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch, user?.id)
-      
-      // Step 5: Complete
-      setDeploymentProgress({
-        step: 5,
-        stepName: deploymentSteps[4].name,
-        message: 'Deployment completed successfully!',
-        isComplete: true
-      })
       
       // Call the onDeploy callback
       onDeploy?.(result)
       
-      console.log('Deployment successful:', result)
+      console.log('Deployment initiated:', result)
       
-      // Redirect to the new MCP package page
-      const packageId = result.packageId || `${owner}-${repo}-${Date.now()}`
-      navigate(`/mcp/${packageId}?new=true`)
+      // Redirect to the new MCP package page using the actual package ID
+      if (result.packageId) {
+        navigate(`/mcp/${result.packageId}?new=true&deploying=true`)
+      } else {
+        // Fallback if no package ID (shouldn't happen with proper backend)
+        const fallbackId = `${owner}-${repo}-${Date.now()}`
+        navigate(`/mcp/${fallbackId}?new=true&deploying=true`)
+      }
     } catch (err) {
       setDeployError(err instanceof Error ? err.message : 'Deployment failed')
-      setDeploymentProgress(prev => ({
-        ...prev,
-        message: 'Deployment failed. Please try again.',
-        isComplete: false
-      }))
+      console.error('Deployment failed:', err)
     } finally {
       setDeploying(false)
     }
@@ -235,100 +170,8 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
     )
   }
 
-  // Deployment Progress Modal Component
-  const DeploymentProgressModal = () => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-2xl border border-gray-700 p-8 max-w-md w-full mx-4">
-        <div className="text-center mb-6">
-          <Rocket className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">Deploying Your MCP Server</h3>
-          <p className="text-gray-400 text-sm">
-            {selectedRepo?.name} → Google Cloud Run
-          </p>
-        </div>
-        
-        <div className="space-y-4 mb-6">
-          {deploymentSteps.map((step, index) => {
-            const stepNumber = index + 1
-            const isActive = deploymentProgress.step === stepNumber
-            const isComplete = deploymentProgress.step > stepNumber
-            const isFailed = deployError && isActive
-            
-            return (
-              <div key={step.name} className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                  isComplete 
-                    ? 'bg-green-500 text-white' 
-                    : isActive 
-                      ? isFailed 
-                        ? 'bg-red-500 text-white' 
-                        : 'bg-blue-500 text-white' 
-                      : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {isComplete ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : isActive ? (
-                    isFailed ? (
-                      <AlertCircle className="w-4 h-4" />
-                    ) : (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    )
-                  ) : (
-                    <span className="text-sm font-semibold">{stepNumber}</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className={`font-medium transition-colors ${
-                    isActive ? 'text-white' : isComplete ? 'text-green-400' : 'text-gray-400'
-                  }`}>
-                    {step.name}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {isActive ? deploymentProgress.message : step.description}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        
-        {deployError && (
-          <Alert className="border-red-500 bg-red-500/10 mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              {deployError}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <div className={`w-full h-2 bg-gray-700 rounded-full overflow-hidden transition-all duration-300`}>
-          <div 
-            className={`h-full transition-all duration-500 ${
-              deployError ? 'bg-red-500' : deploymentProgress.isComplete ? 'bg-green-500' : 'bg-blue-500'
-            }`}
-            style={{ 
-              width: `${deployError ? 100 : (deploymentProgress.step / deploymentSteps.length) * 100}%` 
-            }}
-          />
-        </div>
-        
-        {deploymentProgress.isComplete && (
-          <Button
-            onClick={() => setDeploying(false)}
-            className="w-full mt-4 min-h-[44px] touch-manipulation"
-          >
-            Continue
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* Deployment Progress Modal */}
-      {deploying && <DeploymentProgressModal />}
-      
       {/* Repository Selection with smooth accordion animation */}
       <div className={`overflow-hidden transition-all duration-700 ease-in-out ${
         selectedRepo 
