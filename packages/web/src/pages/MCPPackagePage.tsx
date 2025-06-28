@@ -41,34 +41,9 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
+import { MarketplaceService } from '@/services/marketplaceService';
+import { PackageWithDetails } from '@/types/marketplace';
 import { toast } from 'sonner';
-
-interface MCPPackage {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author: {
-    username: string;
-    id: string;
-  };
-  rating: number;
-  downloads_count: number;
-  last_updated: string;
-  verified: boolean;
-  source_api_url?: string;
-  tools?: any[];
-  screenshots?: string[];
-  deployment_status?: 'deploying' | 'running' | 'stopped' | 'error';
-  service_url?: string;
-  logs?: string[];
-  metrics?: {
-    cpu_usage: number;
-    memory_usage: number;
-    requests_per_minute: number;
-    uptime: string;
-  };
-}
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,7 +51,7 @@ const MCPPackagePage = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   
-  const [pkg, setPackage] = useState<MCPPackage | null>(null);
+  const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -112,58 +87,52 @@ const MCPPackagePage = () => {
 
   useEffect(() => {
     if (id) {
-      // Simulate loading package data
-      // In real implementation, this would fetch from your API
-      setTimeout(() => {
-        const mockPackage: MCPPackage = {
-          id,
-          name: 'Example MCP Server',
-          description: 'A powerful MCP server that provides advanced functionality for AI assistants.',
-          version: '1.0.0',
-          author: {
-            username: user?.email?.split('@')[0] || 'Unknown',
-            id: user?.id || 'unknown'
-          },
-          rating: 4.5,
-          downloads_count: 1234,
-          last_updated: new Date().toISOString(),
-          verified: true,
-          source_api_url: 'https://github.com/example/mcp-server',
-          tools: [
-            { name: 'file_operations', description: 'Read, write, and manage files on the system' },
-            { name: 'web_search', description: 'Search the web for current information' },
-            { name: 'database_query', description: 'Query databases and retrieve data' }
-          ],
-          deployment_status: isNewDeployment ? 'deploying' : 'running',
-          service_url: isNewDeployment ? undefined : 'https://example-mcp-server-abc123.run.app',
-          logs: isNewDeployment ? [
-            '🚀 Starting deployment...',
-            '📦 Building container image...',
-            '🔒 Security validation passed',
-            '☁️ Deploying to Google Cloud Run...',
-            '✅ Service deployed successfully!',
-            '🌐 Service URL: https://example-mcp-server-abc123.run.app'
-          ] : [
-            '✅ Service is running normally',
-            '📊 15 requests processed in the last minute',
-            '💾 Memory usage: 45%',
-            '⚡ CPU usage: 12%'
-          ],
-          metrics: {
-            cpu_usage: 12,
-            memory_usage: 45,
-            requests_per_minute: 15,
-            uptime: '2 days, 14 hours'
-          }
-        };
-        
-        setPackage(mockPackage);
-        setIsOwner(mockPackage.author.id === user?.id);
-        setDeploymentLogs(mockPackage.logs || []);
-        setLoading(false);
-      }, 1000);
+      loadPackageData();
     }
-  }, [id, user, isNewDeployment]);
+  }, [id, user]);
+
+  const loadPackageData = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    try {
+      const packageData = await MarketplaceService.getPackageById(id);
+      
+      if (packageData) {
+        setPackage(packageData);
+        setIsOwner(packageData.author_id === user?.id);
+        
+        // Set deployment logs if available
+        if (packageData.deployments && packageData.deployments.length > 0) {
+          const activeDeployment = packageData.deployments.find(d => d.status === 'active');
+          if (activeDeployment) {
+            setDeploymentLogs([
+              '✅ Service is running normally',
+              `🌐 Service URL: ${activeDeployment.deployment_url}`,
+              '📊 Monitoring deployment health...'
+            ]);
+          }
+        }
+      } else {
+        // Package not found - this will trigger the "not found" UI
+        setPackage(null);
+      }
+    } catch (error) {
+      console.error('Failed to load package data:', error);
+      
+      // Check if it's a 404 error
+      if (error instanceof Error && error.message.includes('404')) {
+        // Package not found - this will trigger the "not found" UI
+        setPackage(null);
+      } else {
+        // Other error - show toast and set package to null
+        toast.error('Failed to load package data. Please try again.');
+        setPackage(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle deployment progress tracking
   useEffect(() => {
@@ -223,14 +192,8 @@ const MCPPackagePage = () => {
           setDeploymentLogs(prev => [...prev, '✅ Service deployed successfully!']);
           setDeploymentStatus('success');
           
-          // Update package status
-          if (pkg) {
-            setPackage(prev => prev ? {
-              ...prev,
-              deployment_status: 'running',
-              service_url: 'https://example-mcp-server-abc123.run.app'
-            } : null);
-          }
+          // Reload package data to get updated deployment info
+          await loadPackageData();
           
         } catch (error) {
           setDeploymentError(error instanceof Error ? error.message : 'Deployment failed');
@@ -274,9 +237,12 @@ const MCPPackagePage = () => {
   };
 
   const handleCopyServiceUrl = () => {
-    if (pkg?.service_url) {
-      navigator.clipboard.writeText(pkg.service_url);
-      toast.success('Service URL copied to clipboard!');
+    if (pkg?.deployments && pkg.deployments.length > 0) {
+      const activeDeployment = pkg.deployments.find(d => d.status === 'active');
+      if (activeDeployment) {
+        navigator.clipboard.writeText(activeDeployment.deployment_url);
+        toast.success('Service URL copied to clipboard!');
+      }
     }
   };
 
@@ -336,16 +302,30 @@ const MCPPackagePage = () => {
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <PageHeader />
         <div className="container mx-auto px-6 py-8 mt-16">
-          <div className="flex flex-col items-center justify-center h-64 space-y-4">
-            <div className="text-xl">MCP Package not found</div>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/marketplace')}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Marketplace
-            </Button>
+          <div className="flex flex-col items-center justify-center h-64 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="text-2xl font-bold text-white">MCP Package not found</div>
+              <p className="text-gray-400 max-w-md">
+                The package you're looking for doesn't exist or may have been removed.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/marketplace')}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Marketplace
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard')}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -368,7 +348,7 @@ const MCPPackagePage = () => {
         </Button>
 
         {/* New Deployment Success Alert */}
-        {isNewDeployment && (pkg.deployment_status === 'running' || deploymentStatus === 'success') && (
+        {isNewDeployment && deploymentStatus === 'success' && (
           <Alert className="mb-6 border-green-500 bg-green-500/10">
             <CheckCircle className="h-4 w-4 text-green-500" />
             <AlertDescription className="text-green-400">
@@ -474,41 +454,34 @@ const MCPPackagePage = () => {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
-                {pkg.verified && (
-                  <Badge className="bg-green-500/20 text-green-400 flex items-center gap-1">
-                    <Shield className="w-3 h-3" />
-                    Verified
-                  </Badge>
-                )}
                 {isOwner && (
                   <Badge className="bg-blue-500/20 text-blue-400 flex items-center gap-1">
                     <User className="w-3 h-3" />
                     Owner
                   </Badge>
                 )}
-                {pkg.deployment_status && (
+                {pkg.deployments && pkg.deployments.length > 0 && (
                   <Badge className={`flex items-center gap-1 ${
-                    pkg.deployment_status === 'running' ? 'bg-green-500/20 text-green-400' :
-                    pkg.deployment_status === 'deploying' ? 'bg-yellow-500/20 text-yellow-400' :
-                    pkg.deployment_status === 'error' ? 'bg-red-500/20 text-red-400' :
+                    pkg.deployments.some(d => d.status === 'active') ? 'bg-green-500/20 text-green-400' :
+                    pkg.deployments.some(d => d.status === 'failed') ? 'bg-red-500/20 text-red-400' :
                     'bg-gray-500/20 text-gray-400'
                   }`}>
-                    {pkg.deployment_status === 'running' ? <CheckCircle className="w-3 h-3" /> :
-                     pkg.deployment_status === 'deploying' ? <Clock className="w-3 h-3" /> :
-                     pkg.deployment_status === 'error' ? <AlertCircle className="w-3 h-3" /> :
+                    {pkg.deployments.some(d => d.status === 'active') ? <CheckCircle className="w-3 h-3" /> :
+                     pkg.deployments.some(d => d.status === 'failed') ? <AlertCircle className="w-3 h-3" /> :
                      <Pause className="w-3 h-3" />}
-                    {pkg.deployment_status.charAt(0).toUpperCase() + pkg.deployment_status.slice(1)}
+                    {pkg.deployments.some(d => d.status === 'active') ? 'Running' :
+                     pkg.deployments.some(d => d.status === 'failed') ? 'Failed' : 'Stopped'}
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-4 text-gray-400 mb-4">
                 <span className="flex items-center gap-1">
                   <User className="w-4 h-4" />
-                  by {pkg.author?.username || 'Unknown'}
+                  by {pkg.author_id || 'Unknown'}
                 </span>
                 <span className="flex items-center gap-1">
                   <Package className="w-4 h-4" />
-                  v{pkg.version}
+                  v{pkg.version || '1.0.0'}
                 </span>
                 {!isOwner && (
                   <span className="flex items-center gap-1">
@@ -518,7 +491,7 @@ const MCPPackagePage = () => {
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Updated {new Date(pkg.last_updated).toLocaleDateString()}
+                  Updated {new Date(pkg.updated_at).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -541,8 +514,6 @@ const MCPPackagePage = () => {
                       className={`w-6 h-6 ${
                         star <= (hoveredRating || userRating || 0)
                           ? 'fill-yellow-400 text-yellow-400'
-                          : star <= pkg.rating
-                          ? 'fill-yellow-400/50 text-yellow-400/50'
                           : 'text-gray-600'
                       }`}
                     />
@@ -550,7 +521,7 @@ const MCPPackagePage = () => {
                 ))}
               </div>
               <span className="text-gray-400">
-                {pkg.rating.toFixed(1)} average rating
+                Rate this package
                 {userRating && <span className="ml-2 text-blue-400">Your rating: {userRating}</span>}
               </span>
             </div>
@@ -560,11 +531,11 @@ const MCPPackagePage = () => {
           <div className="flex gap-4 flex-wrap">
             {isOwner ? (
               <>
-                {pkg.service_url && (
+                {pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
                   <Button
                     onClick={handleCopyServiceUrl}
                     variant="outline"
-                    className="border-green-600 text-green-400 hover:bg-green-600/10"
+                    className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Service URL
@@ -573,7 +544,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleRestartService}
                   variant="outline"
-                  className="border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Restart Service
@@ -581,7 +552,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleStopService}
                   variant="outline"
-                  className="border-yellow-600 text-yellow-400 hover:bg-yellow-600/10"
+                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
                 >
                   <Pause className="w-4 h-4 mr-2" />
                   Stop Service
@@ -589,7 +560,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleDeleteService}
                   variant="outline"
-                  className="border-red-600 text-red-400 hover:bg-red-600/10"
+                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Service
@@ -601,7 +572,7 @@ const MCPPackagePage = () => {
                   size="lg" 
                   onClick={handleDownload}
                   disabled={isDownloading}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8"
+                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200 font-semibold px-8"
                 >
                   {isDownloading ? 'Installing...' : 'Install & Deploy'}
                 </Button>
@@ -609,7 +580,7 @@ const MCPPackagePage = () => {
                   <Button
                     onClick={() => window.open(pkg.source_api_url, '_blank')}
                     variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                    className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
                   >
                     <Github className="w-4 h-4 mr-2" />
                     View on GitHub
@@ -660,29 +631,6 @@ const MCPPackagePage = () => {
                       <p className="text-gray-300 leading-relaxed">{pkg.description}</p>
                     </CardContent>
                   </Card>
-
-                  {pkg.screenshots && pkg.screenshots.length > 0 && (
-                    <Card className="bg-gray-900/50 border-gray-800">
-                      <CardHeader>
-                        <CardTitle className="text-white">Screenshots</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {pkg.screenshots.map((screenshot, index) => (
-                            <img
-                              key={index}
-                              src={screenshot}
-                              alt={`Screenshot ${index + 1}`}
-                              className="w-full h-48 object-cover rounded-lg border border-gray-700"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               </TabsContent>
 
@@ -831,102 +779,6 @@ const MCPPackagePage = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Service Status (Owner Only) */}
-            {isOwner && pkg.metrics && (
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Service Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Status</span>
-                    <Badge className={
-                      pkg.deployment_status === 'running' ? 'bg-green-500/20 text-green-400' :
-                      pkg.deployment_status === 'deploying' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
-                    }>
-                      {pkg.deployment_status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Uptime</span>
-                    <span className="text-white">{pkg.metrics.uptime}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Requests/min</span>
-                    <span className="text-white">{pkg.metrics.requests_per_minute}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Performance Metrics (Owner Only) */}
-            {isOwner && pkg.metrics && (
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-400 text-sm">CPU Usage</span>
-                      <span className="text-white text-sm">{pkg.metrics.cpu_usage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${pkg.metrics.cpu_usage}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-400 text-sm">Memory Usage</span>
-                      <span className="text-white text-sm">{pkg.metrics.memory_usage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${pkg.metrics.memory_usage}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Service URL (Owner Only) */}
-            {isOwner && pkg.service_url && (
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Service URL
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gray-800 p-3 rounded border border-gray-700">
-                    <code className="text-green-400 text-sm break-all">{pkg.service_url}</code>
-                  </div>
-                  <Button
-                    onClick={handleCopyServiceUrl}
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-3 border-gray-600 text-gray-300 hover:bg-gray-800"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy URL
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Package Info */}
             <Card className="bg-gray-900/50 border-gray-800">
               <CardHeader>
@@ -938,15 +790,15 @@ const MCPPackagePage = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Version</span>
-                  <span className="text-white">{pkg.version}</span>
+                  <span className="text-white">{pkg.version || '1.0.0'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Author</span>
-                  <span className="text-white">{pkg.author?.username}</span>
+                  <span className="text-white">{pkg.author_id || 'Unknown'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Last Updated</span>
-                  <span className="text-white">{new Date(pkg.last_updated).toLocaleDateString()}</span>
+                  <span className="text-white">{new Date(pkg.updated_at).toLocaleDateString()}</span>
                 </div>
                 {!isOwner && (
                   <div className="flex items-center justify-between">

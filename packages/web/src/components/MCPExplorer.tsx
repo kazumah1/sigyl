@@ -37,15 +37,15 @@ interface MCPExplorerProps {
 }
 
 const CATEGORY_ICONS = {
-  frameworks: <Code className="w-6 h-6 text-indigo-400" />,
-  apis: <Zap className="w-6 h-6 text-indigo-400" />,
-  agents: <Globe className="w-6 h-6 text-indigo-400" />,
-  tools: <Database className="w-6 h-6 text-indigo-400" />,
-  connectors: <MessageSquare className="w-6 h-6 text-indigo-400" />,
-  templates: <ShoppingCart className="w-6 h-6 text-indigo-400" />,
-  database: <Database className="w-6 h-6 text-indigo-400" />,
-  ai: <Zap className="w-6 h-6 text-indigo-400" />,
-  integration: <Mail className="w-6 h-6 text-indigo-400" />
+  frameworks: <Code className="w-6 h-6 text-blue-400" />,
+  apis: <Zap className="w-6 h-6 text-blue-400" />,
+  agents: <Globe className="w-6 h-6 text-blue-400" />,
+  tools: <Database className="w-6 h-6 text-blue-400" />,
+  connectors: <MessageSquare className="w-6 h-6 text-blue-400" />,
+  templates: <ShoppingCart className="w-6 h-6 text-blue-400" />,
+  database: <Database className="w-6 h-6 text-blue-400" />,
+  ai: <Zap className="w-6 h-6 text-blue-400" />,
+  integration: <Mail className="w-6 h-6 text-blue-400" />
 }
 
 export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
@@ -192,7 +192,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         return CATEGORY_ICONS[tag as keyof typeof CATEGORY_ICONS]
       }
     }
-    return <Code className="w-6 h-6 text-indigo-400" />
+    return <Code className="w-6 h-6 text-blue-400" />
   }
 
   const getStatusIcon = (deployments: any[] = []) => {
@@ -206,10 +206,11 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   const renderPackageCard = (pkg: MCPPackage, index: number) => (
     <Card
       key={pkg.id}
-      className="bg-gray-900/50 border-gray-800 hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 group relative overflow-hidden"
+      className="bg-gray-900/50 border-gray-800 hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 group relative overflow-hidden cursor-pointer"
       style={{ animationDelay: `${index * 100}ms` }}
+      onClick={() => navigate(`/mcp/${pkg.id}`)}
     >
-      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
       <CardHeader className="relative z-10">
         <div className="flex items-center justify-between">
@@ -235,7 +236,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
 
         <div className="flex flex-wrap gap-2 mb-4">
           {Array.isArray(pkg.tags) && pkg.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="secondary" className="bg-indigo-900/50 text-indigo-300 border-indigo-800">
+            <Badge key={tag} variant="secondary" className="bg-blue-900/50 text-blue-300 border-blue-800">
               {tag}
             </Badge>
           ))}
@@ -250,29 +251,8 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
           <div className="text-sm text-gray-400">
             {new Date(pkg.created_at).toLocaleDateString()}
           </div>
-          <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="bg-gray-800 hover:bg-gray-700 text-white border-gray-700"
-              onClick={() => handleViewDetails(pkg)}
-            >
-              <ExternalLink className="w-4 h-4 mr-1" />
-              Details
-            </Button>
-            <Button 
-              size="sm" 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              onClick={() => handleInstall(pkg)}
-              disabled={installing === pkg.id}
-            >
-              {installing === pkg.id ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4 mr-1" />
-              )}
-              {installing === pkg.id ? 'Installing...' : 'Install'}
-            </Button>
+          <div className="text-sm text-blue-400 group-hover:text-blue-300 transition-colors">
+            Click to view details →
           </div>
         </div>
       </CardContent>
@@ -291,7 +271,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
           <div className="max-w-4xl mx-auto">
             <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 animate-fade-in tracking-tight">
               MCP 
-              <span className="text-indigo-600"> Explorer</span>
+              <span className="text-blue-600"> Explorer</span>
             </h1>
             <p className="text-xl text-white opacity-70 mb-8 animate-fade-in delay-200">
               Discover and install Model Context Protocol servers. Connect your AI to the world.
@@ -308,7 +288,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                   placeholder="Search MCP servers, tools, integrations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-3 text-lg border-2 bg-gray-900/80 backdrop-blur-sm border-gray-700 focus:border-indigo-500 text-white"
+                  className="pl-10 py-3 text-lg border-2 bg-gray-900/80 backdrop-blur-sm border-gray-700 focus:border-blue-500 text-white"
                 />
               </div>
               <Button variant="outline" className="px-6 py-3 border-2 bg-gray-900/80 backdrop-blur-sm border-gray-700 text-white font-bold tracking-tight">
@@ -326,7 +306,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                   onClick={() => setSelectedCategory(category)}
                   className={`capitalize px-4 py-2 transition-all duration-300 hover:scale-105 animate-fade-in font-bold tracking-tight bg-gray-900/80 backdrop-blur-sm ${
                     selectedCategory === category 
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
                       : 'bg-gray-800 hover:bg-gray-700 text-white border-gray-700'
                   }`}
                   style={{ animationDelay: `${800 + index * 100}ms` }}
@@ -343,15 +323,15 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-gray-900/80 backdrop-blur-sm border-gray-700">
-                <TabsTrigger value="discover" className="text-white data-[state=active]:bg-indigo-600">
+                <TabsTrigger value="discover" className="text-white data-[state=active]:bg-blue-600">
                   <Globe className="w-4 h-4 mr-2" />
                   Discover
                 </TabsTrigger>
-                <TabsTrigger value="popular" className="text-white data-[state=active]:bg-indigo-600">
+                <TabsTrigger value="popular" className="text-white data-[state=active]:bg-blue-600">
                   <Heart className="w-4 h-4 mr-2" />
                   Popular
                 </TabsTrigger>
-                <TabsTrigger value="trending" className="text-white data-[state=active]:bg-indigo-600">
+                <TabsTrigger value="trending" className="text-white data-[state=active]:bg-blue-600">
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Trending
                 </TabsTrigger>
@@ -360,7 +340,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               <TabsContent value="discover" className="mt-8">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
                     <span className="ml-2 text-white">Loading MCP packages...</span>
                   </div>
                 ) : (
@@ -414,7 +394,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 <h2 className="text-2xl font-bold text-white mb-1">{selectedPackage.name}</h2>
                 <div className="flex gap-2 flex-wrap mb-1">
                   {Array.isArray(selectedPackage.tags) && selectedPackage.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="bg-indigo-900/50 text-indigo-300 border-indigo-800">
+                    <Badge key={tag} variant="secondary" className="bg-blue-900/50 text-blue-300 border-blue-800">
                       {tag}
                     </Badge>
                   ))}
@@ -485,7 +465,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 <Button
                   onClick={() => handleInstall(selectedPackage)}
                   disabled={installing === selectedPackage.id}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition"
                 >
                   {installing === selectedPackage.id ? (
                     <>

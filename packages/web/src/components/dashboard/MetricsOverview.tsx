@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Users, Server, TrendingUp } from 'lucide-react';
+import { Activity, Users, Server, TrendingUp, Globe, Zap, Clock, CheckCircle } from 'lucide-react';
 
 interface Metrics {
   totalVisits: number;
@@ -15,54 +14,68 @@ interface MetricsOverviewProps {
 }
 
 const MetricsOverview: React.FC<MetricsOverviewProps> = ({ metrics }) => {
-  const cards = [
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  const metricCards = [
     {
       title: 'Total Visits',
-      value: metrics.totalVisits.toLocaleString(),
-      icon: Activity,
-      color: 'text-green-400',
-      change: '+12%'
+      value: formatNumber(metrics.totalVisits),
+      icon: Users,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-400/20',
+      description: 'Total page visits this month'
     },
     {
       title: 'Tool Calls',
-      value: metrics.totalToolCalls.toLocaleString(),
-      icon: TrendingUp,
-      color: 'text-blue-400',
-      change: '+8%'
+      value: formatNumber(metrics.totalToolCalls),
+      icon: Zap,
+      color: 'text-green-400',
+      bgColor: 'bg-green-400/20',
+      description: 'API calls made to MCP servers'
     },
     {
       title: 'Active Servers',
       value: metrics.activeServers.toString(),
       icon: Server,
       color: 'text-purple-400',
-      change: '+2'
+      bgColor: 'bg-purple-400/20',
+      description: 'Currently running MCP servers'
     },
     {
       title: 'Integrations',
       value: metrics.totalIntegrations.toString(),
-      icon: Users,
-      color: 'text-yellow-400',
-      change: '+5'
+      icon: Globe,
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-400/20',
+      description: 'Total deployed integrations'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {cards.map((card, index) => {
-        const IconComponent = card.icon;
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {metricCards.map((metric, index) => {
+        const IconComponent = metric.icon;
         return (
-          <Card key={index} className="border-indigo-600/40">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
-                {card.title}
-              </CardTitle>
-              <IconComponent className={`w-4 h-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{card.value}</div>
-              <p className="text-xs text-gray-400 mt-1">
-                <span className={card.color}>{card.change}</span> from last month
-              </p>
+          <Card key={index} className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-1">{metric.title}</p>
+                  <p className="text-3xl font-bold text-white mb-1">{metric.value}</p>
+                  <p className="text-xs text-gray-500">{metric.description}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                  <IconComponent className={`w-6 h-6 ${metric.color}`} />
+                </div>
+              </div>
             </CardContent>
           </Card>
         );
