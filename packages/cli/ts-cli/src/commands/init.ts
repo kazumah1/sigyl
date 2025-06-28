@@ -184,10 +184,43 @@ import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
 async function main() {
 	const server = createStatelessServer({ config: {} });
 	console.log("🚀 MCP Server starting...");
+	
 	const port = process.env.PORT || 8080;
 	const transport = new HttpServerTransport({ port });
-	await server.connect(transport);
-	console.log(`✅ MCP Server connected and ready on port ${port}`);
+	
+	try {
+		await server.connect(transport);
+		console.log(\`✅ MCP Server connected and ready on port \${port}\`);
+		
+		// Keep the process alive
+		console.log("🔄 Server running... Press Ctrl+C to stop");
+		
+		// Graceful shutdown handling
+		process.on('SIGINT', () => {
+			console.log('\\n⏹️ Received SIGINT, shutting down gracefully...');
+			process.exit(0);
+		});
+		
+		process.on('SIGTERM', () => {
+			console.log('\\n⏹️ Received SIGTERM, shutting down gracefully...');
+			process.exit(0);
+		});
+		
+		// Keep alive with periodic logging (optional)
+		setInterval(() => {
+			console.log(\`💓 Server heartbeat - listening on port \${port}\`);
+		}, 60000); // Log every minute
+		
+		// Prevent the process from exiting
+		await new Promise((resolve) => {
+			// This promise never resolves, keeping the process alive
+			// The only way to exit is through signal handlers above
+		});
+		
+	} catch (error) {
+		console.error("❌ Failed to start server:", error);
+		process.exit(1);
+	}
 }
 
 main().catch((error) => {
