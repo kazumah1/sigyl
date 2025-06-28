@@ -246,3 +246,7 @@ temp/
 fastmcp/
 *.mcp-generated/
 python-sdk/
+# Large image files (excluding packages/web/public/)
+images/
+Test_5.png
+*.csv
