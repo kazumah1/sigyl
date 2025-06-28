@@ -148,6 +148,24 @@ async function testRealisticSDK() {
     console.log('❌ Direct connection failed (expected):', error instanceof Error ? error.message : 'Unknown error');
   }
 
+  // Test 8: Test with an MCP server
+  console.log('\n8️⃣ Testing with an MCP server...');
+  try {
+    // The MCP server exposes a /tools/list endpoint for tool discovery (per MCP spec)
+    const mcpServerUrl = 'https://sigyl-mcp-kazumah1-mcp-test-lrzo3avokq-uc.a.run.app';
+    const toolsListUrl = `${mcpServerUrl.replace(/\/$/, '')}/tools/list`;
+    const response = await (await import('axios')).default.post(toolsListUrl, {}, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer sk_d0674111ab93e4115812eef4be3e71762c2ae4c1eadfe86da383d2bac4bd8c1f'
+      }
+    });
+    console.log('✅ MCP server tools:', response.data.tools || response.data);
+    console.log('✅ MCP server connected');
+  } catch (error) {
+    console.log('❌ MCP server connection failed:', error instanceof Error ? error.message : error?.toString() || 'Unknown error');
+  }
+
   console.log('\n🎉 Realistic SDK testing completed!');
   console.log('\n📋 Summary:');
   console.log('✅ Public operations (search, get package) work without API keys');

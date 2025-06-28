@@ -177,7 +177,8 @@ export async function deployMCPWithApp(
   installationId: number,
   owner: string,
   repo: string,
-  branch: string = 'main'
+  branch: string = 'main',
+  userId?: string
 ): Promise<any> {
   try {
     const repoUrl = `https://github.com/${owner}/${repo}`;
@@ -187,7 +188,8 @@ export async function deployMCPWithApp(
       owner,
       repo,
       branch,
-      repoUrl
+      repoUrl,
+      userId
     });
     
     const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/deploy`, {
@@ -200,6 +202,7 @@ export async function deployMCPWithApp(
         owner,
         repo,
         branch,
+        ...(userId ? { userId } : {})
       }),
     })
 

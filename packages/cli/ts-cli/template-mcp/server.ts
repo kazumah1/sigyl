@@ -5,7 +5,9 @@
  * To add a new tool, use the template at the bottom of this file.
  */
 
+import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
 
 // ============================================================================
@@ -49,51 +51,21 @@ export default function createStatelessServer({
 // SERVER STARTUP
 // ============================================================================
 
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+const app = express();
+app.use(express.json());
 
-async function main() {
+app.post('/mcp', async (req, res) => {
 	const server = createStatelessServer({ config: {} });
-	console.log("🚀 MCP Server starting...");
-	
-	const port = process.env.PORT || 8080;
-	const transport = new HttpServerTransport({ port });
-	
-	try {
-		await server.connect(transport);
-		console.log(`✅ MCP Server connected and ready on port ${port}`);
-		
-		// Keep the process alive
-		console.log("🔄 Server running... Press Ctrl+C to stop");
-		
-		// Graceful shutdown handling
-		process.on('SIGINT', () => {
-			console.log('\n⏹️ Received SIGINT, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		process.on('SIGTERM', () => {
-			console.log('\n⏹️ Received SIGTERM, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		// Keep alive with periodic logging (optional)
-		setInterval(() => {
-			console.log(`💓 Server heartbeat - listening on port ${port}`);
-		}, 60000); // Log every minute
-		
-		// Prevent the process from exiting
-		await new Promise((resolve) => {
-			// This promise never resolves, keeping the process alive
-			// The only way to exit is through signal handlers above
-		});
-		
-	} catch (error) {
-		console.error("❌ Failed to start server:", error);
-		process.exit(1);
-	}
-}
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+	res.on('close', () => {
+		transport.close();
+		server.close();
+	});
+	await server.connect(transport);
+	await transport.handleRequest(req, res, req.body);
+});
 
-main().catch((error) => {
-	console.error("❌ Server error:", error);
-	process.exit(1);
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port);
 });

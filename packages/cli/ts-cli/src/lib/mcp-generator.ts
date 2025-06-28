@@ -3,6 +3,8 @@ import { join } from "node:path"
 import * as yaml from "yaml"
 import { verboseLog } from "../logger"
 import type { ExpressEndpoint } from "./express-scanner"
+import express from "express"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 
 export interface MCPGenerationOptions {
 	appPort?: string
@@ -243,53 +245,26 @@ ${this.generateParameterHandling(endpoint)}
 // SERVER STARTUP
 // ============================================================================
 
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+import express from "express"
 
-async function main() {
-	const server = createStatelessServer({ config: {} });
-	console.log("🚀 MCP Server starting...");
-	const port = process.env.PORT || 8080;
-	const transport = new HttpServerTransport({ port });
-	
-	try {
-		await server.connect(transport);
-		console.log(\`✅ MCP Server connected and ready on port \${port}\`);
-		
-		// Keep the process alive
-		console.log("🔄 Server running... Press Ctrl+C to stop");
-		
-		// Graceful shutdown handling
-		process.on('SIGINT', () => {
-			console.log('\\n⏹️ Received SIGINT, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		process.on('SIGTERM', () => {
-			console.log('\\n⏹️ Received SIGTERM, shutting down gracefully...');
-			process.exit(0);
-		});
-		
-		// Keep alive with periodic logging (optional)
-		setInterval(() => {
-			console.log(\`💓 Server heartbeat - listening on port \${port}\`);
-		}, 60000); // Log every minute
-		
-		// Prevent the process from exiting
-		await new Promise((resolve) => {
-			// This promise never resolves, keeping the process alive
-			// The only way to exit is through signal handlers above
-		});
-		
-	} catch (error) {
-		console.error("❌ Failed to start server:", error);
-		process.exit(1);
-	}
-}
+const app = express()
+app.use(express.json())
 
-main().catch((error) => {
-	console.error("❌ Server error:", error);
-	process.exit(1);
-});
+app.post('/mcp', async (req, res) => {
+	const server = createStatelessServer({ config: {} })
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+	res.on('close', () => {
+		transport.close()
+		server.close()
+	})
+	await server.connect(transport)
+	await transport.handleRequest(req, res, req.body)
+})
+
+const port = process.env.PORT || 8080
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port)
+})
 `;
 
 		writeFileSync(join(this.outDir, "server.ts"), serverCode);
@@ -308,7 +283,9 @@ main().catch((error) => {
 			},
 			dependencies: {
 				"@modelcontextprotocol/sdk": "^1.10.1",
-				"zod": "^3.22.0"
+				"zod": "^3.22.0",
+				"express": "^4.18.2",
+				"@types/express": "^4.17.33"
 			},
 			devDependencies: {
 				"typescript": "^5.0.0",
@@ -640,213 +617,3 @@ export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise
 			// Generate plain JS handler (no types)
 			const pathReplacements = endpoint.parameters?.filter(p => p.location === "path").map(param => 
 				`\t\turl = url.replace(":${param.name}", String(args.${param.name}) || "");`
-			).join('\n') || ''
-			
-			const queryParams = endpoint.parameters?.filter(p => p.location === "query").map(param => 
-				`\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`
-			).join('\n') || ''
-			
-			const bodyHandling = ['POST', 'PUT', 'PATCH'].includes(endpoint.method) ? 
-				`\t\tif (args.body) {\n\t\t\toptions.body = JSON.stringify(args.body)\n\t\t}` : 
-				'\t\t// No body for GET requests'
-			
-			return `// Tool handler for ${endpoint.method} ${endpoint.path}
-
-export async function ${toolName}(args = {}) {
-	try {
-		const baseUrl = "http://localhost:${appPort}"
-		let url = "${endpoint.path}"
-		
-${pathReplacements}
-		
-		const queryParams = new URLSearchParams()
-${queryParams}
-		
-		if (queryParams.toString()) {
-			url += "?" + queryParams.toString()
-		}
-		
-		const fullUrl = baseUrl + url
-		const options = {
-			method: "${endpoint.method}",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		}
-		
-${bodyHandling}
-		
-		const response = await fetch(fullUrl, options)
-		const result = await response.text()
-		
-		return {
-			content: [
-				{
-					type: "text",
-					text: "Request: " + options.method + " " + fullUrl + "\\nResponse: " + result
-				}
-			]
-		}
-	} catch (error) {
-		return {
-			content: [
-				{
-					type: "text",
-					text: \`Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
-				}
-			]
-		}
-	}
-}`
-		} else {
-			// Python version
-			return `# Tool handler for ${endpoint.method} ${endpoint.path}
-async def ${toolName}(args):
-	# TODO: Implement Python handler
-	pass
-`
-		}
-	}
-
-	private generateToolArgInterface(endpoint: ExpressEndpoint): string {
-		const toolName = this.generateToolName(endpoint)
-		const properties: string[] = []
-		let hasRequiredParams = false
-		
-		// Add path and query parameters
-		if (endpoint.parameters) {
-			for (const param of endpoint.parameters) {
-				const tsType = this.mapTypeToTypeScript(param.type)
-				const isRequired = param.required || param.location === "path" // Path params are always required
-				const optional = isRequired ? "" : "?"
-				if (isRequired) hasRequiredParams = true
-				properties.push(`\t${param.name}${optional}: ${tsType}`)
-			}
-		}
-		
-		// Add request body for POST/PUT/PATCH requests
-		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-			if (endpoint.requestBody && endpoint.requestBody.properties) {
-				const bodyProperties = Object.entries(endpoint.requestBody.properties)
-					.map(([key, value]) => {
-						const tsType = this.mapTypeToTypeScript(value.type)
-						const optional = endpoint.requestBody?.required?.includes(key) ? "" : "?"
-						return `\t\t${key}${optional}: ${tsType}`
-					})
-					.join('\n')
-				
-				properties.push(`\tbody?: {\n${bodyProperties}\n\t}`)
-			} else {
-				properties.push(`\tbody?: any`)
-			}
-		}
-		
-		if (properties.length === 0) {
-			return `interface ${toolName}Args {}`
-		}
-		
-		// Generate the interface
-		const interfaceCode = `interface ${toolName}Args {
-${properties.join('\n')}
-}`
-		
-		// Also return whether we have required params for function signature
-		return interfaceCode
-	}
-
-	private mapTypeToTypeScript(type: string): string {
-		// Map JSON Schema types to TypeScript types
-		switch (type.toLowerCase()) {
-			case "string": return "string"
-			case "number": return "number"
-			case "boolean": return "boolean"
-			case "array": return "any[]"
-			case "object": return "any"
-			case "date": return "string"
-			case "any": return "any"
-			case "unknown": return "any"
-			default: return "any" // Default for custom types
-		}
-	}
-
-	private generateZodShapeObject(endpoint: ExpressEndpoint): string {
-		const properties: string[] = [];
-		// Add path and query parameters
-		if (endpoint.parameters) {
-			for (const param of endpoint.parameters) {
-				const zodType = this.mapTypeToZod(param.type);
-				const optional = param.required ? "" : ".optional()";
-				if (zodType === "object") {
-					properties.push(`\t${param.name}: z.${zodType}({})${optional}`);
-				} else {
-					properties.push(`\t${param.name}: z.${zodType}()${optional}`);
-				}
-			}
-		}
-		// Add request body for POST/PUT/PATCH requests
-		if (["POST", "PUT", "PATCH"].includes(endpoint.method)) {
-			if (endpoint.requestBody && endpoint.requestBody.properties) {
-				const bodyProperties = Object.entries(endpoint.requestBody.properties)
-					.map(([key, value]) => {
-						const zodType = this.mapTypeToZod(value.type);
-						const optional = endpoint.requestBody?.required?.includes(key) ? "" : ".optional()";
-						if (zodType === "object") {
-							return `\t\t${key}: z.${zodType}({})${optional}`;
-						} else {
-							return `\t\t${key}: z.${zodType}()${optional}`;
-						}
-					})
-					.join(',\n');
-				properties.push(`\tbody: z.object({\n${bodyProperties}\n\t}).optional()`);
-			} else {
-				properties.push(`\tbody: z.object({}).optional()`);
-			}
-		}
-		if (properties.length === 0) {
-			return `{}`;
-		}
-		return `{
-${properties.join(',\n')}
-\t}`;
-	}
-
-	private mapTypeToZod(type: string): string {
-		// Map JSON Schema types to Zod types
-		switch (type.toLowerCase()) {
-			case "string": return "string"
-			case "number": return "number"
-			case "boolean": return "boolean"
-			case "array": return "array"
-			case "object": return "object"
-			case "date": return "string"
-			case "any": return "any"
-			case "unknown": return "any"
-			default: return "any" // Default for custom types
-		}
-	}
-
-	private generateParameterHandling(endpoint: ExpressEndpoint): string {
-		const lines: string[] = [];
-		// Handle path parameters
-		if (endpoint.parameters) {
-			for (const param of endpoint.parameters) {
-				if (param.location === "path") {
-					lines.push(`\t\t\t// Replace path parameter :${param.name}`);
-					lines.push(`\t\t\trequestOptions.url = requestOptions.url.replace(":${param.name}", String(args.${param.name}) || "");`);
-				} else if (param.location === "query") {
-					lines.push(`\t\t\t// Add query parameter ${param.name}`);
-					lines.push(`\t\t\tif (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`);
-				} else if (param.location === "body") {
-					lines.push(`\t\t\t// Add body parameter ${param.name}`);
-					lines.push(`\t\t\tif (args.${param.name} !== undefined) bodyParams.${param.name} = args.${param.name};`);
-				}
-			}
-		}
-		// Handle request body for POST/PUT/PATCH requests
-		if (["POST", "PUT", "PATCH"].includes(endpoint.method)) {
-			lines.push(`\t\t\t// Add request body`);
-			lines.push(`\t\t\tif (args.body) Object.assign(bodyParams, args.body);`);
-		}
-		return lines.join('\n');
-	}
-} 
