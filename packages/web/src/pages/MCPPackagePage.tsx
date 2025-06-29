@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -390,6 +390,18 @@ const MCPPackagePage = () => {
     }
     setSecretErrors({});
   };
+
+  // Cursor deep link handler
+  const handleCursorInstall = useCallback(() => {
+    if (!pkg || !pkg.deployments) return;
+    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
+    if (activeDeployment && activeDeployment.deployment_url) {
+      const deepLink = `cursor://install-mcp?url=${encodeURIComponent(activeDeployment.deployment_url)}`;
+      window.location.href = deepLink;
+    } else {
+      toast.error('No active deployment URL found for this MCP server.');
+    }
+  }, [pkg]);
 
   if (loading) {
     return (
@@ -1157,9 +1169,38 @@ const MCPPackagePage = () => {
                   <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
                     <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
                   </Button>
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
-                    <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
-                  </Button>
+                  {(() => {
+                    const name = pkg?.name;
+                    const sourceApiUrl = pkg?.source_api_url;
+                    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
+                    let configBase64 = '';
+                    try {
+                      configBase64 = btoa(JSON.stringify(config));
+                    } catch {}
+                    const deepLink = name && sourceApiUrl && configBase64
+                      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
+                      : '';
+                    return (
+                      <a
+                        href={deepLink || '#'}
+                        style={{ display: 'inline-block', width: '100%' }}
+                        onClick={e => {
+                          if (!name || !sourceApiUrl) {
+                            e.preventDefault();
+                            toast.error('No MCP package name or deployed server URL found for this server.');
+                          }
+                        }}
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full flex items-center gap-2 justify-start pl-4"
+                          type="button"
+                        >
+                          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+                        </Button>
+                      </a>
+                    );
+                  })()}
                   <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
                     <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
                   </Button>

@@ -7,6 +7,12 @@ import {
   invoke,
   registerMCP 
 } from './src/index';
+
+// search registry
+// get package
+// get tools from package
+// invoke tools
+// 
 import type { MCPPackage, MCPTool } from './src/types';
 
 async function testRealisticSDK() {
