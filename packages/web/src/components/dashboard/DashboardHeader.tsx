@@ -54,6 +54,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
               Docs
             </button>
             <button 
+              onClick={() => navigate('/pricing')}
+              className="text-gray-300 hover:text-white font-medium transition-colors"
+            >
+              Pricing
+            </button>
+            <button 
               onClick={() => navigate('/blog')}
               className="text-gray-300 hover:text-white font-medium transition-colors"
             >

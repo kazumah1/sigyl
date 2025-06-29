@@ -75,10 +75,10 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/docs')}
+              onClick={() => navigate('/marketplace')}
               className="w-full sm:w-auto btn-modern min-h-[48px] touch-manipulation text-lg font-semibold"
             >
-              View Documentation
+              Marketplace
             </Button>
           </div>
 
