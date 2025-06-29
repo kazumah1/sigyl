@@ -44,6 +44,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MarketplaceService } from '@/services/marketplaceService';
 import { PackageWithDetails } from '@/types/marketplace';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,6 +73,15 @@ const MCPPackagePage = () => {
     isComplete: false
   });
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editFields, setEditFields] = useState({
+    name: '',
+    version: '',
+    description: '',
+    logo_url: '',
+    screenshots: '', // comma-separated URLs
+  });
+  const [saving, setSaving] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -90,6 +100,20 @@ const MCPPackagePage = () => {
       loadPackageData();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (pkg && isOwner) {
+      setEditFields({
+        name: pkg.name,
+        version: pkg.version || '',
+        description: pkg.description || '',
+        logo_url: pkg.logo_url || '',
+        screenshots: Array.isArray(pkg.screenshots)
+          ? (pkg.screenshots as string[]).join(',')
+          : (pkg.screenshots || ''),
+      });
+    }
+  }, [pkg, isOwner]);
 
   const loadPackageData = async () => {
     if (!id) return;
@@ -281,6 +305,42 @@ const MCPPackagePage = () => {
     }
   };
 
+  const handleEditFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditFields((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleApplyEdit = async () => {
+    if (!pkg) return;
+    setSaving(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('mcp_packages')
+        .update({
+          name: editFields.name,
+          version: editFields.version,
+          description: editFields.description,
+          logo_url: editFields.logo_url,
+          screenshots: editFields.screenshots
+            ? editFields.screenshots.split(',').map((s) => s.trim())
+            : [],
+        })
+        .eq('id', pkg.id);
+      if (updateError) {
+        toast.error(updateError.message);
+      } else {
+        toast.success('Package updated successfully!');
+        setEditMode(false);
+        // Optionally reload package data
+        await loadPackageData();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update package');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -346,6 +406,37 @@ const MCPPackagePage = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to {isOwner ? 'Dashboard' : 'Marketplace'}
         </Button>
+
+        {/* Edit Button (Owner Only) */}
+        {isOwner && !editMode && (
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={() => setEditMode(true)}
+              className="bg-blue-600 text-white"
+            >
+              Edit
+            </Button>
+          </div>
+        )}
+        {isOwner && editMode && (
+          <div className="flex justify-end mb-4 gap-2">
+            <Button
+              onClick={handleApplyEdit}
+              className="bg-green-600 text-white"
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Apply'}
+            </Button>
+            <Button
+              onClick={() => setEditMode(false)}
+              variant="ghost"
+              className="text-gray-400"
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
 
         {/* New Deployment Success Alert */}
         {isNewDeployment && deploymentStatus === 'success' && (
@@ -453,7 +544,17 @@ const MCPPackagePage = () => {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="name"
+                    value={editFields.name}
+                    onChange={handleEditFieldChange}
+                    className="text-4xl font-bold text-white bg-gray-800 border border-gray-700 rounded px-2 py-1 w-full mb-2"
+                  />
+                ) : (
+                  <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
+                )}
                 {isOwner && (
                   <Badge className="bg-blue-500/20 text-blue-400 flex items-center gap-1">
                     <User className="w-3 h-3" />
@@ -548,7 +649,7 @@ const MCPPackagePage = () => {
             </span>
             <span className="flex items-center gap-1">
               <Package className="w-4 h-4" />
-              v{pkg.version || '1.0.0'}
+              v{editMode ? editFields.version || '1.0.0' : pkg.version || '1.0.0'}
             </span>
             {!isOwner && (
               <span className="flex items-center gap-1">
@@ -629,7 +730,16 @@ const MCPPackagePage = () => {
                       <CardTitle className="text-white">Description</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-300 leading-relaxed">{pkg.description}</p>
+                      {editMode ? (
+                        <textarea
+                          name="description"
+                          value={editFields.description}
+                          onChange={handleEditFieldChange}
+                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-300 leading-relaxed">{pkg.description}</p>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -791,7 +901,17 @@ const MCPPackagePage = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Version</span>
-                  <span className="text-white">{pkg.version || '1.0.0'}</span>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="version"
+                      value={editFields.version}
+                      onChange={handleEditFieldChange}
+                      className="w-24 px-2 py-1 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    />
+                  ) : (
+                    <span className="text-white">{pkg.version || '1.0.0'}</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Author</span>
@@ -800,6 +920,34 @@ const MCPPackagePage = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Last Updated</span>
                   <span className="text-white">{new Date(pkg.updated_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Logo URL</span>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="logo_url"
+                      value={editFields.logo_url}
+                      onChange={handleEditFieldChange}
+                      className="w-full px-2 py-1 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    />
+                  ) : (
+                    <span className="text-white break-all">{pkg.logo_url || '-'}</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Screenshots</span>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="screenshots"
+                      value={editFields.screenshots}
+                      onChange={handleEditFieldChange}
+                      className="w-full px-2 py-1 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    />
+                  ) : (
+                    <span className="text-white break-all">{Array.isArray(pkg.screenshots) ? pkg.screenshots.join(', ') : pkg.screenshots || '-'}</span>
+                  )}
                 </div>
                 {!isOwner && (
                   <div className="flex items-center justify-between">

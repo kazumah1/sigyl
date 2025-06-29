@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import {
   Copy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 interface MCPServer {
   id: string;
@@ -36,6 +37,17 @@ interface MCPServersListProps {
 
 const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = false }) => {
   const navigate = useNavigate();
+  const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
+  const [editFields, setEditFields] = useState({
+    name: '',
+    version: '',
+    description: '',
+    logo_url: '',
+    screenshots: '', // comma-separated URLs
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const getStatusIcon = (status: string, deploymentStatus: string) => {
     if (deploymentStatus === 'deploying') {
@@ -71,6 +83,61 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     // TODO: Show toast notification
+  };
+
+  const handleEditClick = (server: MCPServer) => {
+    setEditingServer(server);
+    setEditFields({
+      name: server.name,
+      version: (server as any).version || '',
+      description: server.description,
+      logo_url: (server as any).logo_url || '',
+      screenshots: Array.isArray((server as any).screenshots)
+        ? ((server as any).screenshots as string[]).join(',')
+        : ((server as any).screenshots || ''),
+    });
+    setError(null);
+  };
+
+  const handleEditFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditFields((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSave = async () => {
+    if (!editingServer) return;
+    setSaving(true);
+    setError(null);
+    try {
+      // Update mcp_packages in Supabase
+      const { error: updateError } = await supabase
+        .from('mcp_packages')
+        .update({
+          name: editFields.name,
+          version: editFields.version,
+          description: editFields.description,
+          logo_url: editFields.logo_url,
+          screenshots: editFields.screenshots
+            ? editFields.screenshots.split(',').map((s) => s.trim())
+            : [],
+        })
+        .eq('id', editingServer.id);
+      if (updateError) {
+        setError(updateError.message);
+      } else {
+        setEditingServer(null);
+        setRefreshKey((k) => k + 1); // trigger parent refresh if needed
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update server');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingServer(null);
+    setError(null);
   };
 
   return (
@@ -198,6 +265,15 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditClick(server)}
+                    className="text-gray-400 hover:text-blue-400 hover:bg-blue-400/10"
+                    title="Edit server"
+                  >
+                    Edit
+                  </Button>
                 </div>
               </div>
             </div>
@@ -219,6 +295,73 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
             </div>
           )}
         </div>
+
+        {/* Edit Modal (simple inline modal) */}
+        {editingServer && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 w-full max-w-lg relative">
+              <h2 className="text-xl font-bold text-white mb-4">Edit MCP Server</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={editFields.name}
+                    onChange={handleEditFieldChange}
+                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 mb-1">Version</label>
+                  <input
+                    type="text"
+                    name="version"
+                    value={editFields.version}
+                    onChange={handleEditFieldChange}
+                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 mb-1">Description</label>
+                  <textarea
+                    name="description"
+                    value={editFields.description}
+                    onChange={handleEditFieldChange}
+                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 mb-1">Logo URL</label>
+                  <input
+                    type="text"
+                    name="logo_url"
+                    value={editFields.logo_url}
+                    onChange={handleEditFieldChange}
+                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 mb-1">Screenshots (comma-separated URLs)</label>
+                  <input
+                    type="text"
+                    name="screenshots"
+                    value={editFields.screenshots}
+                    onChange={handleEditFieldChange}
+                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                  />
+                </div>
+                {error && <div className="text-red-400 text-sm">{error}</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button onClick={handleEditCancel} variant="ghost" className="text-gray-400">Cancel</Button>
+                <Button onClick={handleEditSave} className="bg-blue-600 text-white" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
