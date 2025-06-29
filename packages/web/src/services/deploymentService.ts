@@ -444,6 +444,30 @@ class DeploymentService {
       errors
     };
   }
+
+  /**
+   * Redeploy an existing deployment (rebuild and update existing Cloud Run service)
+   */
+  async redeployDeployment(id: string): Promise<{ success: boolean; logs?: string[] }> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/deployments/${id}/redeploy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        console.error('Failed to redeploy deployment:', result.error);
+        return { success: false, logs: result.logs || [] };
+      }
+      console.log('✅ Redeploy succeeded:', result);
+      return { success: true, logs: result.logs || [] };
+    } catch (error) {
+      console.error('Failed to redeploy deployment:', error);
+      return { success: false };
+    }
+  }
 }
 
 export default new DeploymentService();

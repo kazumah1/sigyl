@@ -364,3 +364,154 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
     }
   };
 }
+
+/**
+ * Redeploy an existing MCP server (rebuild and update existing Cloud Run service)
+ * - Does NOT create a new Cloud Run service or new mcp_packages/mcp_tools rows
+ * - Only updates the existing service and DB rows
+ */
+export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName, packageId }: {
+  repoUrl: string;
+  repoName: string;
+  branch: string;
+  env: Record<string, string>;
+  serviceName: string;
+  packageId: string;
+}): Promise<{ success: boolean; deploymentUrl?: string; logs?: string[]; error?: string }> {
+  const logs: string[] = [];
+  try {
+    logs.push(`🔄 Starting redeploy for service: ${serviceName}`);
+    // Check Cloud Run config
+    if (!CLOUD_RUN_CONFIG.projectId) {
+      throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
+    }
+    // Fetch latest sigyl.yaml and mcp.yaml
+    const [owner, repo] = repoName.split('/');
+    let sigylConfig, mcpYaml;
+    try {
+      logs.push('📋 Fetching sigyl.yaml configuration...');
+      sigylConfig = await fetchSigylYaml(owner, repo, branch, undefined);
+      logs.push('✅ Found sigyl.yaml configuration');
+    } catch (error) {
+      logs.push('⚠️ Could not fetch sigyl.yaml');
+    }
+    try {
+      logs.push('📋 Fetching mcp.yaml configuration...');
+      mcpYaml = await fetchMCPYaml(owner, repo, branch, '');
+      logs.push('✅ Found mcp.yaml configuration');
+    } catch (error) {
+      logs.push('⚠️ Could not fetch mcp.yaml');
+    }
+    // Prepare env
+    let deploymentEnv = { ...env };
+    // Initialize Cloud Run service
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
+    // Prepare Cloud Run deployment request
+    const cloudRunRequest: CloudRunDeploymentRequest = {
+      repoUrl,
+      repoName,
+      branch,
+      environmentVariables: {
+        ...deploymentEnv,
+        ...((sigylConfig && sigylConfig.env) ? sigylConfig.env : {}),
+        NODE_ENV: 'production',
+        MCP_TRANSPORT: 'http',
+        MCP_ENDPOINT: '/mcp',
+        PORT: '8080'
+      },
+      sigylConfig: sigylConfig as SigylConfigUnion,
+      serviceName // Use the existing service name
+    };
+    logs.push('🔒 Redeploying with security validation...');
+    // Redeploy to Cloud Run (rebuild and update existing service)
+    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
+    if (!cloudRunResult.success) {
+      logs.push('❌ Google Cloud Run redeploy failed');
+      return { success: false, error: cloudRunResult.error, logs };
+    }
+    logs.push('✅ Successfully redeployed to Google Cloud Run');
+    // Update mcp_packages and mcp_tools (not insert)
+    // Fetch tools from the deployed server
+    let tools: any[] = [];
+    try {
+      const toolsResp = await fetch(`${cloudRunResult.deploymentUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream'
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/list',
+          params: {}
+        })
+      });
+      const text = await toolsResp.text();
+      const match = text.match(/data: (\{.*\})/);
+      let toolsData: any = {};
+      if (match) {
+        toolsData = JSON.parse(match[1]);
+      } else {
+        try { toolsData = JSON.parse(text); } catch {}
+      }
+      if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools)) {
+        tools = toolsData.result.tools;
+      }
+      logs.push('✅ Tools fetched from MCP server');
+    } catch (err) {
+      logs.push('❌ Error fetching tools from MCP server');
+    }
+    // Update mcp_packages
+    const mcpPackagesPayload = {
+      name: mcpYaml?.name || repoName,
+      slug: repoName,
+      version: mcpYaml?.version || null,
+      description: mcpYaml?.description || null,
+      source_api_url: cloudRunResult.deploymentUrl || null,
+      tags: (mcpYaml && 'tags' in mcpYaml) ? (mcpYaml as any).tags : null,
+      logo_url: (mcpYaml && 'logo_url' in mcpYaml) ? (mcpYaml as any).logo_url : null,
+      screenshots: (mcpYaml && 'screenshots' in mcpYaml) ? (mcpYaml as any).screenshots : null,
+      tools: tools as any[],
+      category: (mcpYaml && 'category' in mcpYaml) ? (mcpYaml as any).category : 'general',
+      verified: false,
+      updated_at: new Date().toISOString()
+    };
+    const { error: pkgError } = await supabase
+      .from('mcp_packages')
+      .update(mcpPackagesPayload)
+      .eq('id', packageId);
+    if (pkgError) {
+      logs.push('❌ Failed to update mcp_packages');
+    } else {
+      logs.push('✅ Updated mcp_packages');
+    }
+    // Update mcp_tools
+    if (packageId && tools.length > 0) {
+      // Remove old tools for this package
+      await supabase.from('mcp_tools').delete().eq('package_id', packageId);
+      for (const tool of tools) {
+        await supabase.from('mcp_tools').upsert({
+          package_id: packageId,
+          tool_name: tool.name,
+          description: tool.description || null,
+          input_schema: tool.inputSchema || null,
+          output_schema: tool.outputSchema || null
+        });
+      }
+      logs.push('✅ Updated mcp_tools');
+    }
+    return {
+      success: true,
+      deploymentUrl: cloudRunResult.deploymentUrl,
+      logs
+    };
+  } catch (error) {
+    logs.push('❌ Redeploy failed');
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      logs
+    };
+  }
+}

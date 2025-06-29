@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import deploymentService from '@/services/deploymentService';
+import { toast } from 'sonner';
 
 interface MCPServer {
   id: string;
@@ -48,6 +50,13 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [localServers, setLocalServers] = useState(servers);
+  const [redeployingId, setRedeployingId] = useState<string | null>(null);
+
+  // Keep localServers in sync with prop
+  React.useEffect(() => {
+    setLocalServers(servers);
+  }, [servers]);
 
   const getStatusIcon = (status: string, deploymentStatus: string) => {
     if (deploymentStatus === 'deploying') {
@@ -75,9 +84,36 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
     return <Badge className="bg-gray-400/20 text-gray-400 border-gray-400/20 text-xs px-2 py-1 whitespace-nowrap">Inactive</Badge>;
   };
 
-  const handleServerAction = (action: string, serverId: string) => {
-    // TODO: Implement server actions
-    console.log(`${action} server ${serverId}`);
+  const handleServerAction = async (action: string, serverId: string) => {
+    if (action === 'delete') {
+      if (!window.confirm('Are you sure you want to delete this server? This will also remove the service from Google Cloud.')) return;
+      toast.info('Deleting server...');
+      const success = await deploymentService.deleteDeployment(serverId);
+      if (success) {
+        toast.success('Server deleted and removed from Google Cloud!');
+        setLocalServers((prev) => prev.filter((s) => s.id !== serverId));
+      } else {
+        toast.error('Failed to delete server.');
+      }
+    } else if (action === 'stop') {
+      toast.info('Stopping server is not yet implemented.');
+    } else if (action === 'redeploy') {
+      setRedeployingId(serverId);
+      toast.info('Redeploying server...');
+      const result = await deploymentService.redeployDeployment(serverId);
+      setRedeployingId(null);
+      if (result.success) {
+        toast.success('Server redeployed successfully!');
+        if (result.logs && result.logs.length > 0) {
+          console.log('Redeploy logs:', result.logs.join('\n'));
+        }
+      } else {
+        toast.error('Failed to redeploy server.');
+        if (result.logs && result.logs.length > 0) {
+          console.error('Redeploy logs:', result.logs.join('\n'));
+        }
+      }
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -163,8 +199,13 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {servers.map((server) => (
-            <div key={server.id} className="bg-gray-800/30 border border-gray-700 rounded-lg p-6 hover:border-gray-600 transition-colors">
+          {localServers.map((server) => (
+            <div
+              key={server.id}
+              className="bg-gray-800/30 border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-colors cursor-pointer group"
+              onClick={() => navigate(`/mcp/${server.id}`)}
+              style={{ position: 'relative' }}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1 min-w-0">
                   <div className="mt-1">
@@ -172,7 +213,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-white font-semibold text-lg truncate">{server.name}</h3>
+                      <h3 className="text-white font-semibold text-lg truncate group-hover:text-blue-400 transition-colors">{server.name}</h3>
                       {getStatusBadge(server.status, server.deployment_status)}
                     </div>
                     <p className="text-gray-400 text-sm mb-3 line-clamp-2">{server.description}</p>
@@ -209,37 +250,18 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                 </div>
                 
                 <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                  {detailed && server.endpoint_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(server.endpoint_url, '_blank')}
-                      className="text-gray-400 hover:text-white hover:bg-gray-700"
-                      title="Open endpoint"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                  )}
                   
                   {detailed && server.status === 'active' && (
                     <>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleServerAction('restart', server.id)}
-                        className="text-gray-400 hover:text-white hover:bg-gray-700"
-                        title="Restart server"
+                        onClick={(e) => { e.stopPropagation(); handleServerAction('redeploy', server.id); }}
+                        className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
+                        title="Redeploy server"
+                        disabled={redeployingId === server.id}
                       >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleServerAction('stop', server.id)}
-                        className="text-gray-400 hover:text-white hover:bg-gray-700"
-                        title="Stop server"
-                      >
-                        <Square className="w-4 h-4" />
+                        {redeployingId === server.id ? 'Redeploying...' : 'Redeploy'}
                       </Button>
                     </>
                   )}
@@ -248,38 +270,37 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleServerAction('start', server.id)}
+                      onClick={(e) => { e.stopPropagation(); handleServerAction('start', server.id); }}
                       className="text-gray-400 hover:text-white hover:bg-gray-700"
                       title="Start server"
                     >
                       <Play className="w-4 h-4" />
                     </Button>
                   )}
-                  
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleServerAction('delete', server.id)}
-                    className="text-gray-400 hover:text-red-400 hover:bg-red-400/10"
-                    title="Delete server"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditClick(server)}
+                    onClick={(e) => { e.stopPropagation(); handleEditClick(server); }}
                     className="text-gray-400 hover:text-blue-400 hover:bg-blue-400/10"
                     title="Edit server"
                   >
                     Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleServerAction('delete', server.id); }}
+                    className="text-gray-400 hover:text-red-400 hover:bg-red-400/10"
+                    title="Delete server"
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>
             </div>
           ))}
           
-          {servers.length === 0 && (
+          {localServers.length === 0 && (
             <div className="text-center py-12">
               <Server className="w-16 h-16 mx-auto mb-4 text-gray-600" />
               <h3 className="text-xl font-semibold text-white mb-2">No MCP servers deployed yet</h3>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Plus, TrendingUp, Activity, Server, Users, Globe, Zap } from 'lucide-react';
+import { Settings, Plus, TrendingUp, Activity, Server, Users, Globe, Zap, Lock, Github, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -27,10 +27,10 @@ const Dashboard = () => {
     workspace, 
     mcpServers, 
     metrics,
-    analyticsData,
     loading, 
     error,
-    refetch 
+    refetch,
+    analyticsData
   } = useDashboardData();
 
   const activeTab = searchParams.get('tab') || 'overview';
@@ -63,6 +63,13 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      // TODO: Call delete account API
+      alert('Account deletion not implemented.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex">
@@ -104,8 +111,7 @@ const Dashboard = () => {
               {[
                 { id: 'overview', label: 'Overview', icon: TrendingUp },
                 { id: 'servers', label: 'Servers', icon: Server },
-                { id: 'analytics', label: 'Analytics', icon: Activity },
-                { id: 'secrets', label: 'Secrets', icon: Settings },
+                { id: 'secrets', label: 'Secrets', icon: Lock },
                 { id: 'settings', label: 'Settings', icon: Settings }
               ].map((tab) => {
                 const IconComponent = tab.icon;
@@ -170,25 +176,11 @@ const Dashboard = () => {
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
-                            <Settings className="w-6 h-6 text-green-400" />
+                            <Lock className="w-6 h-6 text-green-400" />
                           </div>
                           <div>
                             <h3 className="text-white font-semibold">Manage Secrets</h3>
                             <p className="text-gray-400 text-sm">Configure environment variables</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group" onClick={() => handleTabChange('analytics')}>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-colors">
-                            <Activity className="w-6 h-6 text-purple-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-white font-semibold">View Analytics</h3>
-                            <p className="text-gray-400 text-sm">Monitor usage and performance</p>
                           </div>
                         </div>
                       </CardContent>
@@ -270,44 +262,54 @@ const Dashboard = () => {
 
               {/* Settings Tab */}
               {activeTab === 'settings' && (
-                <Card className="bg-gray-900/50 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
-                      Workspace Settings
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Manage your workspace configuration and preferences
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="text-sm font-medium text-gray-300">Workspace Name</label>
-                          <p className="text-white mt-1 text-lg">{workspace?.name || 'Loading...'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-300">Workspace Slug</label>
-                          <p className="text-white mt-1 text-lg font-mono">{workspace?.slug || 'Loading...'}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-300">Description</label>
-                        <p className="text-gray-400 mt-1">{workspace?.description || 'No description provided'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-300">Created</label>
-                        <p className="text-gray-400 mt-1">
-                          {workspace?.created_at ? new Date(workspace.created_at).toLocaleDateString() : 'Unknown'}
-                        </p>
-                      </div>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white border-0">
-                        Update Settings
-                      </Button>
+                <div className="flex justify-center items-center min-h-[60vh]">
+                  <div className="w-full max-w-lg bg-gray-900/80 rounded-xl shadow-lg p-8 border border-gray-800">
+                    <div className="mb-8">
+                      <CardTitle className="text-3xl font-bold flex items-center gap-2 mb-2 text-white">
+                        <Settings className="w-7 h-7 text-blue-400" />
+                        Account Settings
+                      </CardTitle>
+                      <CardDescription className="text-gray-400 text-lg">
+                        Manage your account settings and preferences
+                      </CardDescription>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {/* Username */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-semibold text-gray-300 mb-1">Username</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={user?.user_metadata?.user_name || ''}
+                        disabled
+                      />
+                    </div>
+
+                    {/* Provider Info */}
+                    <div className="mb-8">
+                      <div className="bg-gray-800/80 border border-gray-700 text-gray-200 rounded-lg px-4 py-3 flex items-center gap-2">
+                        <Github className="w-5 h-5 mr-1" />
+                        <span>You signed in with <span className="font-semibold flex items-center gap-1"><Github className="w-4 h-4 inline-block mr-1" />GitHub</span>. Your password is managed by your provider.</span>
+                      </div>
+                    </div>
+
+                    <hr className="my-8 border-gray-700" />
+
+                    {/* Danger Zone */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-red-400 font-semibold">
+                        <AlertTriangle className="w-5 h-5" />
+                        Danger Zone
+                      </div>
+                      <button
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        onClick={handleDeleteAccount}
+                      >
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </>
           )}

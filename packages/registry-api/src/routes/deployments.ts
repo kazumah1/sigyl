@@ -434,4 +434,56 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Redeploy deployment service (rebuild and update existing Cloud Run service)
+ * POST /api/v1/deployments/:id/redeploy
+ */
+router.post('/:id/redeploy', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log(`🔄 Redeploying deployment ${id}...`);
+
+    // Get deployment info from database
+    const deployment = await packageService.getDeploymentById(id);
+    if (!deployment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Deployment not found'
+      });
+    }
+
+    // Call redeployRepo in deployer service
+    const result = await require('../services/deployer').redeployRepo({
+      repoUrl: deployment.repo_url,
+      repoName: deployment.repo_name,
+      branch: deployment.branch || 'main',
+      env: deployment.env || {},
+      serviceName: deployment.id, // Use deployment id as service name
+      packageId: deployment.package_id
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Redeploy failed',
+        logs: result.logs || []
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Redeploy succeeded',
+      logs: result.logs || [],
+      deploymentUrl: result.deploymentUrl
+    });
+  } catch (error) {
+    console.error('Error redeploying deployment:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to redeploy deployment',
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 export default router; 

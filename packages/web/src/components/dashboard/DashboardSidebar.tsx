@@ -24,7 +24,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
   const dashboardItems = [
     { icon: Home, label: 'Overview', path: '/dashboard' },
     { icon: Server, label: 'Servers', path: '/dashboard?tab=servers' },
-    { icon: Activity, label: 'Analytics', path: '/dashboard?tab=analytics' },
     { icon: Lock, label: 'Secrets', path: '/dashboard?tab=secrets' },
     { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
   ];
