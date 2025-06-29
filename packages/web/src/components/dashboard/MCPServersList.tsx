@@ -177,21 +177,22 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   };
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="bg-black/80 border border-white/10 shadow-2xl rounded-2xl backdrop-blur-lg">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Server className="w-5 h-5" />
+            <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+              <Server className="w-5 h-5 text-white" />
               MCP Servers
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-gray-300" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
               Manage your Model Context Protocol server deployments
             </CardDescription>
           </div>
           <Button 
             onClick={() => navigate('/deploy')}
-            className="btn-modern"
+            className="btn-modern bg-black text-white border-white/20 hover:bg-neutral-900 hover:text-white shadow-lg font-semibold rounded-xl"
+            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
           >
             Deploy New Server
           </Button>
@@ -202,7 +203,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
           {localServers.map((server) => (
             <div
               key={server.id}
-              className="bg-gray-800/30 border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-colors cursor-pointer group"
+              className="card-modern rounded-xl p-6 hover:border-white/20 transition-colors cursor-pointer group"
               onClick={() => navigate(`/mcp/${server.id}`)}
               style={{ position: 'relative' }}
             >
@@ -213,17 +214,17 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-white font-semibold text-lg truncate group-hover:text-blue-400 transition-colors">{server.name}</h3>
+                      <h3 className="text-white font-semibold text-lg truncate transition-colors" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>{server.name}</h3>
                       {getStatusBadge(server.status, server.deployment_status)}
                     </div>
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{server.description}</p>
+                    <p className="text-gray-300 text-sm mb-3 line-clamp-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>{server.description}</p>
                     
                     {detailed && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <GitBranch className="w-3 h-3" />
-                            <span className="truncate max-w-[200px] font-mono">{server.github_repo}</span>
+                            <span className="truncate max-w-[200px] font-mono text-gray-400">{server.github_repo}</span>
                           </span>
                           <span>Created {new Date(server.created_at).toLocaleDateString()}</span>
                         </div>
@@ -231,7 +232,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                         {server.endpoint_url && (
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-500">Endpoint:</span>
-                            <code className="text-xs bg-gray-900 px-2 py-1 rounded text-blue-400 font-mono">
+                            <code className="text-xs bg-black/80 px-2 py-1 rounded text-purple-400 font-mono">
                               {server.endpoint_url}
                             </code>
                             <Button
@@ -271,7 +272,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                       variant="ghost"
                       size="sm"
                       onClick={(e) => { e.stopPropagation(); handleServerAction('start', server.id); }}
-                      className="text-gray-400 hover:text-white hover:bg-gray-700"
+                      className="text-gray-400 hover:text-white hover:bg-neutral-900"
                       title="Start server"
                     >
                       <Play className="w-4 h-4" />
@@ -281,7 +282,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); handleEditClick(server); }}
-                    className="text-gray-400 hover:text-blue-400 hover:bg-blue-400/10"
+                    className="text-gray-400 hover:text-purple-400 hover:bg-purple-400/10"
                     title="Edit server"
                   >
                     Edit
@@ -302,14 +303,15 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
           
           {localServers.length === 0 && (
             <div className="text-center py-12">
-              <Server className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-              <h3 className="text-xl font-semibold text-white mb-2">No MCP servers deployed yet</h3>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              <Server className="w-16 h-16 mx-auto mb-4 text-gray-700" />
+              <h3 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>No MCP servers deployed yet</h3>
+              <p className="text-gray-300 mb-6 max-w-md mx-auto" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                 Get started by deploying your first MCP server. Connect to external APIs, databases, and services with ease.
               </p>
               <Button 
                 onClick={() => navigate('/deploy')}
-                className="btn-modern"
+                className="btn-modern bg-black text-white border-white/20 hover:bg-neutral-900 hover:text-white shadow-lg font-semibold rounded-xl"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
               >
                 Deploy Your First Server
               </Button>
@@ -320,56 +322,56 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
         {/* Edit Modal (simple inline modal) */}
         {editingServer && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 w-full max-w-lg relative">
-              <h2 className="text-xl font-bold text-white mb-4">Edit MCP Server</h2>
+            <div className="bg-black/90 border border-white/10 rounded-2xl p-8 w-full max-w-lg relative shadow-2xl backdrop-blur-lg">
+              <h2 className="text-xl font-bold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Edit MCP Server</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-1">Name</label>
+                  <label className="block text-gray-300 mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Name</label>
                   <input
                     type="text"
                     name="name"
                     value={editFields.name}
                     onChange={handleEditFieldChange}
-                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-1">Version</label>
+                  <label className="block text-gray-300 mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Version</label>
                   <input
                     type="text"
                     name="version"
                     value={editFields.version}
                     onChange={handleEditFieldChange}
-                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-1">Description</label>
+                  <label className="block text-gray-300 mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Description</label>
                   <textarea
                     name="description"
                     value={editFields.description}
                     onChange={handleEditFieldChange}
-                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-1">Logo URL</label>
+                  <label className="block text-gray-300 mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Logo URL</label>
                   <input
                     type="text"
                     name="logo_url"
                     value={editFields.logo_url}
                     onChange={handleEditFieldChange}
-                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-1">Screenshots (comma-separated URLs)</label>
+                  <label className="block text-gray-300 mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Screenshots (comma-separated URLs)</label>
                   <input
                     type="text"
                     name="screenshots"
                     value={editFields.screenshots}
                     onChange={handleEditFieldChange}
-                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+                    className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none"
                   />
                 </div>
                 {error && <div className="text-red-400 text-sm">{error}</div>}

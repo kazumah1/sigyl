@@ -1,22 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import { supabase } from './config/database';
-import { APIKeyService } from './services/apiKeyService';
+import express, { Request, Response, NextFunction } from 'express';
+import { supabase } from '../config/database';
+import { APIKeyService } from '../services/apiKeyService';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ success: true, message: 'Server is running' });
-});
+const router = express.Router();
 
 // Custom middleware to support both API key and GitHub App token auth
-const authenticateWorkspace = async (req: any, res: any, next: any) => {
+const authenticateWorkspace = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -81,7 +70,7 @@ const authenticateWorkspace = async (req: any, res: any, next: any) => {
 };
 
 // PATCH /api/v1/workspaces/:id - Update workspace name
-app.patch('/api/v1/workspaces/:id', authenticateWorkspace, async (req: any, res: any) => {
+router.patch('/:id', authenticateWorkspace, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -126,8 +115,4 @@ app.patch('/api/v1/workspaces/:id', authenticateWorkspace, async (req: any, res:
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-}); 
+export default router; 

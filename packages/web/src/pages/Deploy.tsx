@@ -30,33 +30,33 @@ const Deploy = () => {
   };
 
   const DeployContent = () => (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'} transition-colors duration-300`}>
-      <InteractiveBackground theme={theme} onThemeChange={() => {}} />
-      
+    <div className="min-h-screen bg-black text-white font-sans relative overflow-hidden">
+      <div className="liquid-glass-blob blob-1" />
+      <div className="liquid-glass-blob blob-2" />
+      <div className="liquid-glass-blob blob-3" />
       <PageHeader />
-
-      <div className="pt-24 pb-20">
-        {/* Hero Section */}
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="text-center mb-12">
-            <h1 className={`text-4xl md:text-5xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>
+      <div className="pt-28 pb-20">
+        <div className="max-w-5xl mx-auto px-6">
+          {/* Hero Section */}
+          <div className="mb-12 text-center max-w-2xl mx-auto">
+            <h1 className="hero-heading text-4xl sm:text-5xl lg:text-6xl font-bold mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.02em', lineHeight: '1.08' }}>
               Deploy Your MCP Server
             </h1>
-            <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} max-w-2xl mx-auto mb-6`}>
-              Connect your GitHub repository and deploy your MCP server with enterprise-grade reliability. 
-              Get started in minutes with our streamlined deployment process.
+            <p className="hero-subheading text-lg sm:text-xl text-gray-300 font-normal mb-8" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', lineHeight: '1.5' }}>
+              Connect your GitHub repository and deploy your MCP server with enterprise-grade reliability. Get started in minutes with our streamlined deployment process.
             </p>
-            
+          </div>
+          {/* Glassy Card for Account Selector and Wizard */}
+          <div className="w-full max-w-2xl bg-white/5 backdrop-blur-lg border border-white/15 rounded-2xl shadow-2xl mx-auto p-8 flex flex-col gap-8" style={{ boxShadow: '0 8px 32px 0 rgba(0,0,0,0.28)' }}>
             {/* GitHub Account Selector */}
-            <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="flex flex-col gap-2">
               {user && (
-                <div className={`flex items-center justify-center gap-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <span className="text-sm">Deploying as: {user.user_metadata?.user_name || user.email}</span>
+                <div className="text-gray-400 text-sm mb-1">
+                  Deploying as: <span className="font-medium text-white">{user.user_metadata?.user_name || user.email}</span>
                 </div>
               )}
-              
-              <div className="w-full max-w-md">
-                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                   GitHub Account
                 </label>
                 <GitHubAccountSelector 
@@ -64,17 +64,13 @@ const Deploy = () => {
                   className="w-full"
                 />
               </div>
-              
               {activeGitHubAccount && (
-                <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Using repositories from: <span className="font-medium">{activeGitHubAccount.username}</span>
+                <div className="text-sm text-gray-400 mt-1">
+                  Using repositories from: <span className="font-medium text-white">{activeGitHubAccount.username}</span>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Deployment Wizard */}
-          <div className="flex justify-center">
+            {/* Sleek Deployment Wizard */}
             <DeployWizardWithGitHubApp onDeploy={handleDeploy} />
           </div>
         </div>

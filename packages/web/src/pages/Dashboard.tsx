@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings, Plus, TrendingUp, Activity, Server, Users, Globe, Zap, Lock, Github, AlertTriangle, Phone, MessageSquare, Video, Plug, Wrench, Cloud, Bug, Lightbulb, Shield, Database, Network, Cpu, HardDrive, Monitor, BarChart3, GitBranch, Key, Eye, EyeOff, RefreshCw, Play, Pause, StopCircle, Settings2, Download, Upload, Code, Terminal, GitPullRequest, GitCommit, GitMerge, GitBranch as GitBranchIcon, GitPullRequest as GitPullRequestIcon, GitCommit as GitCommitIcon, GitMerge as GitMergeIcon } from 'lucide-react';
@@ -12,6 +12,7 @@ import SecretsManager from '@/components/dashboard/SecretsManager';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 import MetricsOverview from '@/components/dashboard/MetricsOverview';
 import PageHeader from '@/components/PageHeader';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -71,6 +72,84 @@ const Dashboard = () => {
     }
   };
 
+  const [workspaceNameInput, setWorkspaceNameInput] = useState(workspace?.name || '');
+  const [isOwner, setIsOwner] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
+
+  // Update isOwner and workspaceNameInput when workspace changes
+  useEffect(() => {
+    if (workspace) {
+      setWorkspaceNameInput(workspace.name || '');
+      
+      // Check if current user is the owner
+      const currentUserId = adminSession?.id || user?.id;
+      const isCurrentUserOwner = workspace.owner_id === currentUserId || 
+                                (adminSession && workspace.owner_id === 'admin') ||
+                                (user?.user_metadata?.github_id && workspace.owner_id === `github_${user.user_metadata.github_id}`);
+      
+      console.log('Workspace owner check:', {
+        workspaceOwnerId: workspace.owner_id,
+        currentUserId,
+        adminSession: !!adminSession,
+        userGithubId: user?.user_metadata?.github_id,
+        isCurrentUserOwner
+      });
+      
+      setIsOwner(isCurrentUserOwner);
+    }
+  }, [workspace, adminSession, user]);
+
+  const handleSaveWorkspaceName = async () => {
+    if (isSaving || workspaceNameInput.trim() === '' || workspaceNameInput === workspace?.name) return;
+
+    console.log('Saving workspace name:', {
+      workspaceId: workspace?.id,
+      newName: workspaceNameInput,
+      currentName: workspace?.name,
+      isOwner
+    });
+
+    setIsSaving(true);
+
+    try {
+      const githubToken = localStorage.getItem('github_app_access_token');
+      if (!githubToken) {
+        toast.error('No GitHub token available. Please sign in again.');
+        return;
+      }
+      
+      console.log('Making PATCH request to update workspace name...');
+      
+      const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/workspaces/${workspace.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${githubToken}`
+        },
+        body: JSON.stringify({ name: workspaceNameInput })
+      });
+      
+      console.log('Response status:', res.status);
+      
+      const result = await res.json();
+      console.log('Response result:', result);
+      
+      if (result.success) {
+        toast.success('Workspace name updated!');
+        refetch();
+      } else {
+        toast.error(result.error || 'Failed to update workspace name');
+      }
+    } catch (err) {
+      console.error('Error saving workspace name:', err);
+      toast.error('Failed to update workspace name');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black flex">
       <DashboardSidebar 
@@ -106,8 +185,8 @@ const Dashboard = () => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="mb-8">
-            <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-lg border border-gray-800">
+          <div className="w-full flex justify-center mt-8 mb-10">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-white/10 bg-black" style={{ minWidth: 700 }}>
               {[
                 { id: 'overview', label: 'Overview', icon: TrendingUp },
                 { id: 'servers', label: 'Servers', icon: Server },
@@ -256,29 +335,57 @@ const Dashboard = () => {
 
               {/* Settings Tab */}
           {activeTab === 'settings' && (
-                <Card className="card-modern max-w-xl mx-auto">
+                <Card className="card-modern max-w-xl mx-auto bg-black/80 border border-white/10 shadow-xl backdrop-blur-xl">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-gray-400" />
+                <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                      <Settings className="w-5 h-5 text-white" />
                   Workspace Settings
                 </CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardDescription className="text-gray-300" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                       Manage your workspace settings and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                        <div className="text-gray-300 font-medium mb-1">Workspace Name</div>
-                        <div className="text-white bg-gray-800 rounded-md px-4 py-2">{workspace?.name || 'Workspace'}</div>
+                        <div className="text-white font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Workspace Name</div>
+                        <div className="flex gap-3 items-center">
+                          <input
+                            type="text"
+                            value={workspaceNameInput}
+                            onChange={e => setWorkspaceNameInput(e.target.value)}
+                            disabled={!isOwner || isSaving}
+                            className="text-white bg-black/70 rounded-xl px-4 py-3 font-semibold text-lg shadow-inner border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all w-full"
+                            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}
+                          />
+                          {isOwner && (
+                            <button
+                              onClick={handleSaveWorkspaceName}
+                              disabled={isSaving || workspaceNameInput.trim() === '' || workspaceNameInput === workspace?.name}
+                              className="btn-modern px-6 py-3 rounded-xl font-semibold text-white bg-white/10 hover:bg-white/20 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                            >
+                              {isSaving ? 'Saving...' : 'Save'}
+                            </button>
+                          )}
+                        </div>
                   </div>
                   <div>
-                        <div className="text-gray-300 font-medium mb-1">Owner</div>
-                        <div className="text-white bg-gray-800 rounded-md px-4 py-2">{workspace?.owner || 'Owner'}</div>
-                      </div>
-                      <Button variant="destructive" onClick={handleDeleteAccount} className="mt-6">Delete Account</Button>
+                    <div className="text-white font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Owner</div>
+                    <div className="flex flex-col gap-1">
+                      <input
+                        type="text"
+                        value={workspace?.owner_id || ''}
+                        disabled
+                        className="text-white bg-black/70 rounded-xl px-4 py-3 font-semibold text-lg shadow-inner border border-white/10 w-full opacity-60 cursor-not-allowed"
+                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}
+                      />
+                      <span className="text-gray-400 text-sm" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Signed in as <span className="text-white font-semibold">{currentUserName}</span></span>
                     </div>
-                  </CardContent>
+                  </div>
+                  <Button variant="destructive" onClick={handleDeleteAccount} className="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl px-6 py-3 shadow-lg transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Delete Account</Button>
+                </div>
+              </CardContent>
                 </Card>
               )}
 
@@ -755,9 +862,9 @@ const Dashboard = () => {
                             <h3 className="text-white font-semibold text-lg mb-2">Suggest MCP Improvements</h3>
                             <p className="text-gray-400 text-sm leading-relaxed">Influence our roadmap and shape the future of MCP</p>
                           </div>
-                </div>
-              </CardContent>
-            </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   <div className="text-center mt-12">

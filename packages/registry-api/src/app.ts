@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import packagesRouter from './routes/packages';
 import githubAppRouter from './routes/githubApp';
 import apiKeysRouter from './routes/apiKeys';
@@ -10,6 +9,7 @@ import deploymentsRouter from './routes/deployments';
 import secretsRouter from './routes/secrets';
 import gatewayRouter from './routes/gateway';
 import healthRouter from './routes/health';
+import workspacesRouter from './routes/workspaces';
 import { APIResponse } from './types';
 import {
   generalRateLimit,
@@ -87,6 +87,7 @@ app.use('/api/v1', deploymentRateLimit, deployRouter); // Deployment endpoints h
 app.use('/api/v1/deployments', deploymentsRouter);
 app.use('/api/v1/secrets', secretsRouter);
 app.use('/api/v1/gateway', gatewayRouter);
+app.use('/api/v1/workspaces', workspacesRouter);
 
 // API documentation endpoint
 app.get('/api', (_req, res) => {

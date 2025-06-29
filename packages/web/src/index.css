@@ -680,3 +680,13 @@ button, a, input, select, textarea {
   font-weight: 500;
   letter-spacing: 0.01em;
 }
+
+/* Force API key input and button to pure white */
+.force-white-input::placeholder {
+  color: white !important;
+  opacity: 1 !important;
+}
+.force-white-btn, .force-white-btn * {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+}
