@@ -16,8 +16,6 @@ const Marketplace = () => {
           <MCPExplorer searchBarRef={searchBarRef} />
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

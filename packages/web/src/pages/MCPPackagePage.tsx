@@ -41,7 +41,8 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  MessageCircle
+  MessageCircle,
+  Copy as CopyIcon
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,6 +96,9 @@ const MCPPackagePage = () => {
   const [secretFields, setSecretFields] = useState<{ [key: string]: string }>({});
   const [secretErrors, setSecretErrors] = useState<{ [k: string]: string }>({});
   const [showOptionalSecrets, setShowOptionalSecrets] = useState(false);
+  const [showClaudeInline, setShowClaudeInline] = useState(false);
+  const [claudeCommand, setClaudeCommand] = useState('');
+  const [claudeCopied, setClaudeCopied] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -403,6 +407,8 @@ const MCPPackagePage = () => {
     }
   }, [pkg]);
 
+  const cellStyle = { minWidth: 220, maxWidth: 220, width: 220, minHeight: 44, maxHeight: 44, height: 44, boxSizing: 'border-box' as const };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -683,12 +689,14 @@ const MCPPackagePage = () => {
             ) : (
               <>
                 <Button 
-                  size="lg" 
-                  onClick={handleInstallClick}
-                  disabled={isDownloading}
-                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200 font-semibold px-8"
+                  size="lg"
+                  onClick={() => {
+                    // ... existing code ...
+                  }}
+                  disabled={loading}
+                  className="w-full flex items-center gap-2 justify-center"
                 >
-                  {isDownloading ? 'Installing...' : 'Install & Deploy'}
+                  {/* ... button content ... */}
                 </Button>
                 {pkg.source_api_url && (
                   <Button
@@ -1158,53 +1166,80 @@ const MCPPackagePage = () => {
           {installStep === 2 && (
             <div className="flex flex-col h-full min-h-[380px]" style={{height: '100%'}}>
               <div className="text-xl font-semibold mb-4 text-center">Choose Installation Method</div>
+              <div className="text-gray-400 text-sm mb-4 text-center">
+                Click on a method and run the revealed command in your terminal.
+              </div>
               <div className="flex-1 flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                <div className="grid grid-cols-2 gap-4" style={{ gridTemplateColumns: 'repeat(2, 220px)' }}>
+                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
                     <Globe className="w-5 h-5" /> HTTP API
                   </Button>
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
                     <img src="/typescript.png" alt="TypeScript SDK" className="w-5 h-5" /> SDK (TypeScript)
                   </Button>
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
                     <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
                   </Button>
+                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
+                    <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+                  </Button>
                   {(() => {
-                    const name = pkg?.name;
-                    const sourceApiUrl = pkg?.source_api_url;
-                    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
-                    let configBase64 = '';
-                    try {
-                      configBase64 = btoa(JSON.stringify(config));
-                    } catch {}
-                    const deepLink = name && sourceApiUrl && configBase64
-                      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
-                      : '';
+                    if (showClaudeInline) {
+                      return (
+                        <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                          <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" />
+                          {claudeCopied ? (
+                            <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                          ) : (
+                            <code
+                              className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                              style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                              title={claudeCommand}
+                            >
+                              {claudeCommand}
+                            </code>
+                          )}
+                          <button
+                            className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
+                            onClick={() => {
+                              navigator.clipboard.writeText(claudeCommand);
+                              setClaudeCopied(true);
+                              setTimeout(() => {
+                                setClaudeCopied(false);
+                                setShowClaudeInline(false);
+                              }, 1000);
+                            }}
+                            aria-label="Copy command"
+                          >
+                            <CopyIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      );
+                    }
                     return (
-                      <a
-                        href={deepLink || '#'}
-                        style={{ display: 'inline-block', width: '100%' }}
-                        onClick={e => {
-                          if (!name || !sourceApiUrl) {
-                            e.preventDefault();
-                            toast.error('No MCP package name or deployed server URL found for this server.');
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2 justify-start pl-4"
+                        style={cellStyle}
+                        onClick={() => {
+                          const name = pkg?.name || 'my-mcp-server';
+                          let serverPath = '.mcp-generated/server.js';
+                          if (pkg?.deployments && pkg.deployments.length > 0) {
+                            const activeDeployment = pkg.deployments.find(d => d.status === 'active');
+                            if (activeDeployment && activeDeployment.deployment_url) {
+                              serverPath = activeDeployment.deployment_url;
+                            }
                           }
+                          const command = `sigyl install --client claude --name "${name}" "${serverPath}"`;
+                          setClaudeCommand(command);
+                          setShowClaudeInline(true);
                         }}
                       >
-                        <Button
-                          variant="outline"
-                          className="w-full flex items-center gap-2 justify-start pl-4"
-                          type="button"
-                        >
-                          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
-                        </Button>
-                      </a>
+                        <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
+                      </Button>
                     );
                   })()}
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
-                    <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
-                  </Button>
-                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
                     <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
                   </Button>
                 </div>
