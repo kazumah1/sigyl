@@ -63,6 +63,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [fullApiKeys, setFullApiKeys] = useState<{ [id: string]: string }>(() => {
+    const stored = localStorage.getItem('sigyl_full_api_keys');
+    return stored ? JSON.parse(stored) : {};
+  });
   
   // Form state for secrets
   const [formData, setFormData] = useState({
@@ -285,6 +289,11 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         last_used: undefined
       }, ...prev]);
       setNewKeyName('');
+      setFullApiKeys(prev => {
+        const updated = { ...prev, [result.key.id]: result.api_key };
+        localStorage.setItem('sigyl_full_api_keys', JSON.stringify(updated));
+        return updated;
+      });
       
       toast({
         title: "API Key Created",
@@ -307,6 +316,12 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     try {
       await APIKeyService.deleteAPIKey(id);
       setApiKeys(prev => prev.filter(key => key.id !== id));
+      setFullApiKeys(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        localStorage.setItem('sigyl_full_api_keys', JSON.stringify(updated));
+        return updated;
+      });
       toast({
         title: "API Key Deleted",
         description: "API key has been permanently deleted.",
@@ -352,6 +367,14 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     { key: 'JWT_SECRET', description: 'JWT signing secret', placeholder: 'your-secret-key' },
     { key: 'REDIS_URL', description: 'Redis connection string', placeholder: 'redis://...' },
   ];
+
+  // Helper to get the full key for display if just created
+  const getFullKeyForDisplay = (apiKey: APIKey) => {
+    if (newlyCreatedKey && apiKeys.length > 0 && apiKeys[0].id === apiKey.id) {
+      return newlyCreatedKey;
+    }
+    return null;
+  };
 
   return (
     <Card className="bg-gray-900/50 border-gray-800">
@@ -508,72 +531,92 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               </div>
             ) : (
               <div className="space-y-4">
-                {apiKeys.map((apiKey) => (
-                  <div key={apiKey.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-white font-medium">{apiKey.name}</h3>
-                        <Badge 
-                          variant={apiKey.is_active ? "secondary" : "outline"} 
-                          className="text-xs"
-                        >
-                          {apiKey.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {apiKey.last_used ? (
-                          <Badge variant="secondary" className="text-xs">
-                            Last used {new Date(apiKey.last_used).toLocaleDateString()}
+                {apiKeys.map((apiKey) => {
+                  const fullKey = getFullKeyForDisplay(apiKey);
+                  return (
+                    <div key={apiKey.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-white font-medium">{apiKey.name}</h3>
+                          <Badge 
+                            variant={apiKey.is_active ? "secondary" : "outline"} 
+                            className="text-xs"
+                          >
+                            {apiKey.is_active ? "Active" : "Inactive"}
                           </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {apiKey.last_used ? (
+                            <Badge variant="secondary" className="text-xs">
+                              Last used {new Date(apiKey.last_used).toLocaleDateString()}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Never used
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mb-2">
+                        {fullKey ? (
+                          <>
+                            <code className="text-sm font-mono text-green-400 bg-gray-900 px-3 py-1 rounded select-all">
+                              {fullKey}
+                            </code>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(fullKey);
+                                toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
+                              }}
+                              className="ml-2 bg-gradient-to-r from-green-500 to-yellow-500 text-white px-3 py-1 font-semibold rounded shadow hover:from-green-600 hover:to-yellow-600"
+                            >
+                              Copy
+                            </Button>
+                          </>
                         ) : (
-                          <Badge variant="outline" className="text-xs">
-                            Never used
-                          </Badge>
+                          <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded">
+                            {`${apiKey.key_prefix}...`}
+                          </code>
                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mb-2">
-                      <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded">
-                        {`${apiKey.key_prefix}...`}
-                      </code>
-                      <div className="flex items-center gap-2">
-                        {apiKey.is_active ? (
+                        <div className="flex items-center gap-2">
+                          {apiKey.is_active ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleDeactivateApiKey(apiKey.id)}
+                              className="px-4 py-2 font-semibold rounded bg-yellow-600 text-white hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 border border-yellow-700 shadow"
+                            >
+                              Deactivate
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              disabled
+                              className="px-4 py-2 font-semibold rounded bg-gray-700 text-gray-300 border border-gray-600 shadow cursor-not-allowed"
+                            >
+                              Deactivated
+                            </Button>
+                          )}
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => handleDeactivateApiKey(apiKey.id)}
-                            className="px-4 py-2 font-semibold rounded bg-yellow-600 text-white hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 border border-yellow-700 shadow"
+                            onClick={() => setDeleteConfirmId(apiKey.id)}
+                            className="px-4 py-2 font-semibold rounded bg-red-600 text-white hover:bg-red-500 focus:ring-2 focus:ring-red-400 border border-red-700 shadow"
                           >
-                            Deactivate
+                            <Trash2 className="w-4 h-4 mr-1" /> Delete
                           </Button>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            disabled
-                            className="px-4 py-2 font-semibold rounded bg-gray-700 text-gray-300 border border-gray-600 shadow cursor-not-allowed"
-                          >
-                            Deactivated
-                          </Button>
-                        )}
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => setDeleteConfirmId(apiKey.id)}
-                          className="px-4 py-2 font-semibold rounded bg-red-600 text-white hover:bg-red-500 focus:ring-2 focus:ring-red-400 border border-red-700 shadow"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" /> Delete
-                        </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Permissions: {formatPermissions(apiKey.permissions)}</span>
+                        <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>Permissions: {formatPermissions(apiKey.permissions)}</span>
-                      <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>

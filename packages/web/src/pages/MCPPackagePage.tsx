@@ -53,6 +53,8 @@ import { supabase } from '@/lib/supabase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { v4 as uuidv4 } from 'uuid';
+import { APIKeyService, APIKey } from '@/services/apiKeyService';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -99,6 +101,23 @@ const MCPPackagePage = () => {
   const [showClaudeInline, setShowClaudeInline] = useState(false);
   const [claudeCommand, setClaudeCommand] = useState('');
   const [claudeCopied, setClaudeCopied] = useState(false);
+  const [showVSCodeInline, setShowVSCodeInline] = useState(false);
+  const [vsCodeCommand, setVSCodeCommand] = useState("");
+  const [vsCodeCopied, setVSCodeCopied] = useState(false);
+  const [installProfile, setInstallProfile] = useState('');
+  const [installApiKey, setInstallApiKey] = useState('');
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [apiKeysLoading, setApiKeysLoading] = useState(false);
+  const [fullApiKeys, setFullApiKeys] = useState<{ [id: string]: string }>(() => {
+    const stored = localStorage.getItem('sigyl_full_api_keys');
+    return stored ? JSON.parse(stored) : {};
+  });
+  const [showHttpApiInline, setShowHttpApiInline] = useState(false);
+  const [httpApiCopied, setHttpApiCopied] = useState(false);
+  const [httpApiUrl, setHttpApiUrl] = useState('');
+  const [showJsonConfig, setShowJsonConfig] = useState(false);
+  const [jsonConfigCopied, setJsonConfigCopied] = useState(false);
+  const [jsonConfig, setJsonConfig] = useState('');
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -131,6 +150,36 @@ const MCPPackagePage = () => {
       });
     }
   }, [pkg, isOwner]);
+
+  // Fetch API keys and set profile on install modal open
+  useEffect(() => {
+    if (showInstallModal && user) {
+      setInstallProfile(user.id);
+      setApiKeysLoading(true);
+      APIKeyService.getAPIKeys()
+        .then(keys => {
+          setApiKeys(keys);
+          setInstallApiKey('');
+          // If any full keys are in localStorage, load them
+          const stored = localStorage.getItem('sigyl_full_api_keys');
+          if (stored) {
+            setFullApiKeys(JSON.parse(stored));
+          }
+        })
+        .catch(() => setApiKeys([]))
+        .finally(() => setApiKeysLoading(false));
+    }
+  }, [showInstallModal, user]);
+
+  // Keep fullApiKeys in sync with localStorage if it changes elsewhere
+  useEffect(() => {
+    const syncFullKeys = () => {
+      const stored = localStorage.getItem('sigyl_full_api_keys');
+      if (stored) setFullApiKeys(JSON.parse(stored));
+    };
+    window.addEventListener('storage', syncFullKeys);
+    return () => window.removeEventListener('storage', syncFullKeys);
+  }, []);
 
   const loadPackageData = async () => {
     if (!id) return;
@@ -394,18 +443,6 @@ const MCPPackagePage = () => {
     }
     setSecretErrors({});
   };
-
-  // Cursor deep link handler
-  const handleCursorInstall = useCallback(() => {
-    if (!pkg || !pkg.deployments) return;
-    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
-    if (activeDeployment && activeDeployment.deployment_url) {
-      const deepLink = `cursor://install-mcp?url=${encodeURIComponent(activeDeployment.deployment_url)}`;
-      window.location.href = deepLink;
-    } else {
-      toast.error('No active deployment URL found for this MCP server.');
-    }
-  }, [pkg]);
 
   const cellStyle = { minWidth: 220, maxWidth: 220, width: 220, minHeight: 44, maxHeight: 44, height: 44, boxSizing: 'border-box' as const };
 
@@ -688,15 +725,13 @@ const MCPPackagePage = () => {
               </>
             ) : (
               <>
-                <Button 
-                  size="lg"
-                  onClick={() => {
-                    // ... existing code ...
-                  }}
+                <Button
+                  onClick={handleInstallClick}
+                  className="bg-purple-600 text-white hover:bg-purple-700 transition-all duration-200 font-semibold px-8"
                   disabled={loading}
-                  className="w-full flex items-center gap-2 justify-center"
+                  size="lg"
                 >
-                  {/* ... button content ... */}
+                  Install & Deploy
                 </Button>
                 {pkg.source_api_url && (
                   <Button
@@ -1171,77 +1206,283 @@ const MCPPackagePage = () => {
               </div>
               <div className="flex-1 flex items-center justify-center">
                 <div className="grid grid-cols-2 gap-4" style={{ gridTemplateColumns: 'repeat(2, 220px)' }}>
-                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
-                    <Globe className="w-5 h-5" /> HTTP API
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
-                    <img src="/typescript.png" alt="TypeScript SDK" className="w-5 h-5" /> SDK (TypeScript)
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
-                    <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
-                    <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
-                  </Button>
-                  {(() => {
-                    if (showClaudeInline) {
-                      return (
-                        <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
-                          <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" />
-                          {claudeCopied ? (
-                            <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
-                          ) : (
-                            <code
-                              className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
-                              style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-                              title={claudeCommand}
-                            >
-                              {claudeCommand}
-                            </code>
-                          )}
-                          <button
-                            className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
-                            onClick={() => {
-                              navigator.clipboard.writeText(claudeCommand);
-                              setClaudeCopied(true);
-                              setTimeout(() => {
-                                setClaudeCopied(false);
-                                setShowClaudeInline(false);
-                              }, 1000);
-                            }}
-                            aria-label="Copy command"
-                          >
-                            <CopyIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      );
-                    }
-                    return (
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-2 justify-start pl-4"
-                        style={cellStyle}
+                  {/* HTTP API Button/Command logic */}
+                  {showHttpApiInline ? (
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                      <Globe className="w-5 h-5" />
+                      {httpApiCopied ? (
+                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                      ) : (
+                        <code
+                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                          title={httpApiUrl}
+                        >
+                          {httpApiUrl}
+                        </code>
+                      )}
+                      <button
+                        className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
-                          const name = pkg?.name || 'my-mcp-server';
-                          let serverPath = '.mcp-generated/server.js';
-                          if (pkg?.deployments && pkg.deployments.length > 0) {
-                            const activeDeployment = pkg.deployments.find(d => d.status === 'active');
-                            if (activeDeployment && activeDeployment.deployment_url) {
-                              serverPath = activeDeployment.deployment_url;
-                            }
+                          navigator.clipboard.writeText(httpApiUrl);
+                          setHttpApiCopied(true);
+                          setTimeout(() => {
+                            setHttpApiCopied(false);
+                            setShowHttpApiInline(false);
+                          }, 1000);
+                        }}
+                        aria-label="Copy HTTP API URL"
+                      >
+                        <CopyIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 justify-start pl-4"
+                      style={cellStyle}
+                      onClick={() => {
+                        // Build the HTTP API URL
+                        const baseUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
+                        const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
+                        const profileId = user?.id || '';
+                        let url = '';
+                        if (baseUrl && apiKey && profileId) {
+                          // Ensure https://
+                          let fullUrl = baseUrl;
+                          if (!/^https?:\/\//.test(fullUrl)) {
+                            fullUrl = 'https://' + fullUrl.replace(/^\/*/, '');
                           }
-                          const command = `sigyl install --client claude --name "${name}" "${serverPath}"`;
-                          setClaudeCommand(command);
-                          setShowClaudeInline(true);
+                          url = `${fullUrl}?api_key=${encodeURIComponent(apiKey)}&profile=${encodeURIComponent(profileId)}`;
+                        }
+                        setHttpApiUrl(url);
+                        setShowHttpApiInline(true);
+                      }}
+                      disabled={!pkg?.source_api_url || !user?.id || apiKeys.length === 0}
+                    >
+                      <Globe className="w-5 h-5" /> HTTP API
+                    </Button>
+                  )}
+                  {/* End HTTP API logic */}
+                  {/* VS Code Button/Command logic */}
+                  {showVSCodeInline ? (
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                      <img src="/vscode.png" alt="VS Code" className="w-5 h-5" />
+                      {vsCodeCopied ? (
+                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                      ) : (
+                        <code
+                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                          title={vsCodeCommand}
+                        >
+                          {vsCodeCommand}
+                        </code>
+                      )}
+                      <button
+                        className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
+                        onClick={() => {
+                          navigator.clipboard.writeText(vsCodeCommand);
+                          setVSCodeCopied(true);
+                          setTimeout(() => {
+                            setVSCodeCopied(false);
+                            setShowVSCodeInline(false);
+                          }, 1000);
+                        }}
+                        aria-label="Copy command"
+                      >
+                        <CopyIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 justify-start pl-4"
+                      style={cellStyle}
+                      onClick={() => {
+                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                        const profileId = user?.id || '';
+                        let vscodeApiKey = '';
+                        if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
+                          vscodeApiKey = fullApiKeys[apiKeys[0].id];
+                        } else {
+                          vscodeApiKey = apiKeys[0]?.key_prefix || '';
+                        }
+                        const command = `sigyl/cli install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
+                        setVSCodeCommand(command);
+                        setShowVSCodeInline(true);
+                      }}
+                      disabled={!user?.id || apiKeys.length === 0}
+                    >
+                      <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
+                    </Button>
+                  )}
+                  {/* End VS Code logic */}
+                  {/* Claude Desktop button/field logic */}
+                  {showClaudeInline ? (
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                      <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" />
+                      {claudeCopied ? (
+                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                      ) : (
+                        <code
+                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                          title={claudeCommand}
+                        >
+                          {claudeCommand}
+                        </code>
+                      )}
+                      <button
+                        className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
+                        onClick={() => {
+                          navigator.clipboard.writeText(claudeCommand);
+                          setClaudeCopied(true);
+                          setTimeout(() => {
+                            setClaudeCopied(false);
+                            setShowClaudeInline(false);
+                          }, 1000);
+                        }}
+                        aria-label="Copy command"
+                      >
+                        <CopyIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 justify-start pl-4"
+                      style={cellStyle}
+                      onClick={() => {
+                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                        const profileId = user?.id || '';
+                        let claudeApiKey = '';
+                        if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
+                          claudeApiKey = fullApiKeys[apiKeys[0].id];
+                        } else {
+                          claudeApiKey = apiKeys[0]?.key_prefix || '';
+                        }
+                        const command = `sigyl/cli install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
+                        setClaudeCommand(command);
+                        setShowClaudeInline(true);
+                      }}
+                      disabled={!user?.id || apiKeys.length === 0}
+                    >
+                      <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
+                    </Button>
+                  )}
+                  {/* If no full API key is available, show a message to the user */}
+                  {apiKeys.length === 0 && (
+                    <div className="text-red-400 text-xs mb-2">
+                      No API key found. Please create an API key in your dashboard to use the install command.
+                    </div>
+                  )}
+                  {(() => {
+                    // Cursor button (deep link logic)
+                    const name = pkg?.name;
+                    const sourceApiUrl = pkg?.source_api_url;
+                    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
+                    let configBase64 = '';
+                    try {
+                      configBase64 = btoa(JSON.stringify(config));
+                    } catch {}
+                    const deepLink = name && sourceApiUrl && configBase64
+                      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
+                      : '';
+                    return (
+                      <a
+                        href={deepLink || '#'}
+                        style={{ display: 'inline-block', width: '100%' }}
+                        onClick={e => {
+                          if (!name || !sourceApiUrl) {
+                            e.preventDefault();
+                            toast.error('No MCP package name or deployed server URL found for this server.');
+                          }
                         }}
                       >
-                        <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
-                      </Button>
+                        <Button
+                          variant="outline"
+                          className="flex items-center gap-2 justify-start pl-4"
+                          style={cellStyle}
+                          type="button"
+                        >
+                          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+                        </Button>
+                      </a>
                     );
                   })()}
-                  <Button variant="outline" className="flex items-center gap-2 justify-start pl-4" style={cellStyle}>
-                    <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
-                  </Button>
+                  {/* JSON/Config Button/Field logic */}
+                  <>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 justify-start pl-4"
+                      style={cellStyle}
+                      onClick={() => {
+                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                        const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
+                        const profileId = user?.id || '';
+                        const configObj = {
+                          [pkgName]: {
+                            command: "npx",
+                            args: [
+                              "-y",
+                              "sigyl/cli@latest",
+                              "run",
+                              pkgName,
+                              "--key",
+                              apiKey,
+                              "--profile",
+                              profileId
+                            ]
+                          }
+                        };
+                        setJsonConfig(JSON.stringify(configObj, null, 2));
+                        setShowJsonConfig(true);
+                      }}
+                      disabled={!user?.id || apiKeys.length === 0}
+                    >
+                      <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
+                    </Button>
+                    {/* JSON Config Modal/Menu */}
+                    {showJsonConfig && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                        <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="text-lg font-semibold text-white flex items-center gap-2">
+                              <span className="font-mono text-lg">{'{ }'}</span> MCP Server JSON Config
+                            </div>
+                            <button
+                              className="text-gray-400 hover:text-white text-xl font-bold focus:outline-none"
+                              onClick={() => setShowJsonConfig(false)}
+                              aria-label="Close"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <pre className="bg-gray-800 text-green-400 rounded p-4 text-sm overflow-x-auto max-h-80 mb-4 select-all">
+                            {jsonConfig}
+                          </pre>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              className="flex items-center gap-2"
+                              onClick={() => {
+                                navigator.clipboard.writeText(jsonConfig);
+                                setJsonConfigCopied(true);
+                                setTimeout(() => setJsonConfigCopied(false), 1200);
+                              }}
+                            >
+                              <CopyIcon className="w-4 h-4" />
+                              {jsonConfigCopied ? 'Copied!' : 'Copy JSON'}
+                            </Button>
+                            <Button variant="ghost" onClick={() => setShowJsonConfig(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 </div>
               </div>
               <DialogFooter className="mt-8">

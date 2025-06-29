@@ -4,8 +4,8 @@ import {
   MCPConnectSDK, 
   searchPackages, 
   getPackage,
-  invoke,
-  registerMCP 
+  invoke
+  // registerMCP // Removed, no longer exported
 } from './src/index';
 
 // search registry
@@ -54,31 +54,31 @@ async function testRealisticSDK() {
   }
 
   // Test 3: Register a test package with tools
-  console.log('\n3️⃣ Testing package registration...');
-  try {
-    const newPackage = await registerMCP({
-      name: 'sdk-test-package',
-      description: 'A test package for SDK testing',
-      tags: ['test', 'sdk', 'demo'],
-      tools: [{
-        tool_name: 'echo',
-        description: 'Echo back the input',
-        input_schema: { message: 'string' },
-        output_schema: { response: 'string' }
-      }, {
-        tool_name: 'reverse',
-        description: 'Reverse the input text',
-        input_schema: { text: 'string' },
-        output_schema: { reversed: 'string' }
-      }]
-    }, 'sk_d5d397c82cba044cf5ac7571b849cdec81c7e485f3f4144e072bf800212a6b33', { registryUrl });
+  // console.log('\n3️⃣ Testing package registration...');
+  // try {
+  //   const newPackage = await registerMCP({
+  //     name: 'sdk-test-package',
+  //     description: 'A test package for SDK testing',
+  //     tags: ['test', 'sdk', 'demo'],
+  //     tools: [{
+  //       tool_name: 'echo',
+  //       description: 'Echo back the input',
+  //       input_schema: { message: 'string' },
+  //       output_schema: { response: 'string' }
+  //     }, {
+  //       tool_name: 'reverse',
+  //       description: 'Reverse the input text',
+  //       input_schema: { text: 'string' },
+  //       output_schema: { reversed: 'string' }
+  //     }]
+  //   }, 'sk_d5d397c82cba044cf5ac7571b849cdec81c7e485f3f4144e072bf800212a6b33', { registryUrl });
 
-    console.log('✅ Package registered:', newPackage.name);
-    console.log('   ID:', newPackage.id);
-    console.log('   Created at:', newPackage.created_at);
-  } catch (error) {
-    console.log('❌ Package registration failed:', error instanceof Error ? error.message : 'Unknown error');
-  }
+  //   console.log('✅ Package registered:', newPackage.name);
+  //   console.log('   ID:', newPackage.id);
+  //   console.log('   Created at:', newPackage.created_at);
+  // } catch (error) {
+  //   console.log('❌ Package registration failed:', error instanceof Error ? error.message : 'Unknown error');
+  // }
 
   // Test 4: Search for our test package
   console.log('\n4️⃣ Testing search for our test package...');
@@ -171,6 +171,26 @@ async function testRealisticSDK() {
     console.log('✅ MCP server connected');
   } catch (error) {
     console.log('❌ MCP server connection failed:', error instanceof Error ? error.message : error?.toString() || 'Unknown error');
+  }
+
+  // Test 9: Smithery-style Client/Transport connect
+  console.log('\n9️⃣ Testing Smithery-style Client/Transport connect...');
+  try {
+    // Connect to a package using the new connect function
+    const client = await connect('sdk-test-package', { registryUrl });
+
+    // Invoke the 'echo' tool
+    const echoResult = await client.invoke('echo', { message: 'Hello, world!' });
+    console.log('✅ Echo tool result:', echoResult);
+
+    // Invoke the 'reverse' tool
+    const reverseResult = await client.invoke('reverse', { text: 'Hello, world!' });
+    console.log('✅ Reverse tool result:', reverseResult);
+
+    // Close the client (not strictly necessary for HTTP, but good practice)
+    await client.close();
+  } catch (error) {
+    console.log('❌ Smithery-style connect test failed:', error instanceof Error ? error.message : 'Unknown error');
   }
 
   console.log('\n🎉 Realistic SDK testing completed!');

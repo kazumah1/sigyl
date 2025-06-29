@@ -12,6 +12,8 @@ export interface MCPPackage {
   downloads_count: number
   created_at: string
   updated_at: string
+  logo_url?: string;
+  screenshots?: string[] | string;
 }
 
 export interface MCPDeployment {
@@ -43,6 +45,8 @@ export interface PackageWithDetails extends MCPPackage {
     required: boolean;
     [key: string]: any;
   }>
+  logo_url?: string;
+  screenshots?: string[] | string;
 }
 
 export interface PackageSearchResult {

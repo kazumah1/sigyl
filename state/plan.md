@@ -3,6 +3,34 @@
 ## Project Overview
 Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintaining all functionality. The platform enables users to deploy MCP (Model Context Protocol) servers with a simplified configuration approach.
 
+## Deep Link & Install Command Status (MCPPackagePage, CLI, Web UI)
+
+### ✅ Completed
+- **Cursor, VS Code, Claude Install Commands:**
+  - Install modal generates copy-paste CLI commands for all supported clients.
+  - Commands now include both `--key` and `--profile` for proper authentication and user context.
+  - JSON config for MCP server is available in a pretty-printed, copyable modal for advanced/manual installs.
+- **HTTP API Deep Link:**
+  - HTTP API button generates a copyable HTTPS URL for the MCP server, including `api_key` and `profile` as query parameters, using the deployed server's `source_api_url`.
+- **Cursor Deep Link:**
+  - Cursor install button generates a deep link for Cursor app, using the MCP server's name and config.
+- **Security Note:**
+  - Current approach exposes API key in the install command for convenience. This is a temporary solution; future plans include OAuth-based login for improved security and UX.
+
+### 🟡 In Progress / To-Do
+- **OAuth Login Flow:**
+  - Implement browser-based or CLI-based OAuth login to avoid exposing API keys in install commands.
+  - Store tokens securely for seamless CLI usage (like Vercel/GitHub CLI).
+- **Further UX Polish:**
+  - Improve error handling and user guidance for deep link and install flows.
+  - Add more contextual help and documentation in the install modal.
+- **Mobile/Accessibility Polish:**
+  - Ensure all install/deep link features are mobile-friendly and accessible.
+- **Testing:**
+  - Comprehensive testing of all deep link/install flows across supported clients and platforms.
+
+---
+
 ## Key Changes from Smithery
 1. **Configuration**: Using `sigyl.yaml` instead of `mcp.yaml`
 2. **Runtime Types**: `node|container` instead of `typescript`  
@@ -453,3 +481,7 @@ The platform is now significantly more polished with a cohesive dark theme, exce
 - All references to 'mcp-scan' in CLI output, help, and documentation have been replaced with 'sigyl'.
 - The developer is now clearly informed (in CLI output, README, and generated code) how to change the Express API address/port for the generated MCP server using the APP_BASE_URL environment variable.
 - Example usage and comments are provided in both the generated code and CLI output.
+
+## Security Note: CLI API Key Exposure
+
+Currently, the CLI install command auto-fills and exposes the user's API key in the copyable command for convenience and a seamless install experience. This is a temporary solution. In the future, OAuth-based authentication should be implemented to avoid exposing API keys and to improve both security and user experience, following industry best practices (see Vercel CLI, GitHub CLI, etc.).

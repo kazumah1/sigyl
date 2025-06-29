@@ -11,6 +11,7 @@ import inspectCommand from "./commands/inspect"
 import { integrateWithExpress } from "./commands/integrate"
 import { existsSync, rmSync } from "node:fs"
 import { join } from "node:path"
+import inquirer from "inquirer"
 
 const program = new Command()
 
@@ -212,6 +213,83 @@ program
 			process.exit(1)
 		}
 	})
+
+// ============================================================================
+// WIZARD Command - Launch interactive setup wizard
+// ============================================================================
+program
+	.command("wizard")
+	.description("Launch interactive setup wizard")
+	.action(async () => {
+		console.log(chalk.cyan("\nWelcome to the Sigyl Interactive Wizard!\n"));
+		let exit = false;
+		while (!exit) {
+			const { action } = await inquirer.prompt([
+				{
+					type: "list",
+					name: "action",
+					message: "What do you want to do?",
+					choices: [
+						{ name: "Generate a blank template MCP server", value: "init" },
+						{ name: "Generate an MCP server from an express app", value: "integrate" },
+						{ name: "Run the MCP Inspector", value: "inspect" },
+						{ name: "Install MCP server in client", value: "install" },
+						{ name: "Clean generated files", value: "clean" },
+						{ name: "Exit", value: "exit" }
+					]
+				}
+			]);
+			switch (action) {
+				case "init": {
+					const { out, language, name } = await inquirer.prompt([
+						{ type: "input", name: "out", message: "Output directory:", default: ".mcp-generated" },
+						{ type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" },
+						{ type: "input", name: "name", message: "Server name:", default: "my-mcp-server" }
+					]);
+					await initTemplate({ outDir: out, serverLanguage: language, name });
+					break;
+				}
+				case "integrate": {
+					const { directory, out, endpoint, language } = await inquirer.prompt([
+						{ type: "input", name: "directory", message: "Express app directory:", default: "." },
+						{ type: "input", name: "out", message: "Output directory:", default: ".sigyl-mcp" },
+						{ type: "input", name: "endpoint", message: "MCP endpoint path:", default: "/mcp" },
+						{ type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" }
+					]);
+					await integrateWithExpress({ directory, outDir: out, serverLanguage: language, endpoint });
+					break;
+				}
+				case "inspect": {
+					const { serverPath } = await inquirer.prompt([
+						{ type: "input", name: "serverPath", message: "Path or URL to MCP server:", default: ".sigyl-mcp/integration" }
+					]);
+					await inspectCommand([], serverPath);
+					break;
+				}
+				case "install": {
+					console.log(chalk.yellow("\nPlease use the 'install' command directly for advanced options.\n"));
+					break;
+				}
+				case "clean": {
+					const { out } = await inquirer.prompt([
+						{ type: "input", name: "out", message: "Output directory to clean:", default: ".mcp-generated" }
+					]);
+					if (existsSync(out)) {
+						rmSync(out, { recursive: true, force: true });
+						console.log(chalk.green(`✅ Cleaned ${out} directory`));
+					} else {
+						console.log(chalk.yellow(`⚠️  Directory ${out} not found`));
+					}
+					break;
+				}
+				case "exit":
+				default:
+					exit = true;
+					console.log(chalk.cyan("Goodbye!"));
+					break;
+			}
+		}
+	});
 
 // ============================================================================
 // ERROR HANDLING
