@@ -121,14 +121,18 @@ server = client.servers.create(
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Liquid Glass Blobs */}
+      <div className="liquid-glass-blob blob-1" />
+      <div className="liquid-glass-blob blob-2" />
+      <div className="liquid-glass-blob blob-3" />
       <PageHeader />
       
-      <div className="container mx-auto px-6 py-8 mt-16">
+      <div className="container mx-auto px-6 py-8 mt-16 relative z-10">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold mb-4 gradient-text">Documentation</h1>
-          <p className="text-xl text-gray-400 max-w-3xl">
+        <div className="mb-12 text-left flex flex-col gap-3 sm:gap-5 max-w-2xl">
+          <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl mb-0" style={{lineHeight:'1.08', letterSpacing:'-0.02em'}}>Documentation</h1>
+          <p className="hero-subheading text-lg sm:text-xl text-gray-300 font-normal w-full text-left" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif', lineHeight:'1.5', marginTop:'0.25em'}}>
             Everything you need to know about building, deploying, and managing MCP servers with SIGYL.
           </p>
         </div>
@@ -150,7 +154,7 @@ server = client.servers.create(
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="card-modern p-6 sticky top-8">
-              <h3 className="text-lg font-semibold mb-4">Categories</h3>
+              <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Categories</h3>
               <nav className="space-y-2">
                 {categories.map((category) => {
                   const IconComponent = category.icon;
@@ -179,12 +183,12 @@ server = client.servers.create(
               <div className="space-y-8">
                 {/* Quick Start */}
                 <section>
-                  <h2 className="text-3xl font-bold mb-6">Quick Start Guides</h2>
+                  <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Quick Start Guides</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {quickStartGuides.map((guide, index) => {
                       const IconComponent = guide.icon;
                       return (
-                        <Card key={index} className="bg-gray-900/50 border-gray-800 hover:bg-gray-800/50 transition-all duration-300 hover-lift cursor-pointer">
+                        <Card key={index} className="card-modern hover-lift cursor-pointer">
                           <CardHeader>
                             <div className="flex items-center gap-3 mb-2">
                               <div className="p-2 bg-white/10 rounded-lg">
@@ -200,18 +204,17 @@ server = client.servers.create(
                                 </Badge>
                               </div>
                             </div>
-                            <CardTitle className="text-white">{guide.title}</CardTitle>
-                            <CardDescription className="text-gray-400">
+                            <CardTitle className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                              {guide.title}
+                            </CardTitle>
+                            <CardDescription className="text-gray-300">
                               {guide.description}
                             </CardDescription>
                           </CardHeader>
                           <CardContent>
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1 text-sm text-gray-400">
-                                <Clock className="w-3 h-3" />
-                                {guide.duration}
-                              </span>
-                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <div className="flex items-center gap-2 text-sm text-gray-400">
+                              <Clock className="w-4 h-4" />
+                              {guide.duration}
                             </div>
                           </CardContent>
                         </Card>
@@ -220,21 +223,55 @@ server = client.servers.create(
                   </div>
                 </section>
 
-                {/* Installation */}
+                {/* API Reference */}
                 <section>
-                  <h2 className="text-3xl font-bold mb-6">Installation</h2>
-                  <div className="card-modern p-6">
-                    <h3 className="text-xl font-semibold mb-4">Install the SIGYL CLI</h3>
-                    <div className="bg-gray-950 rounded-lg p-4 mb-4">
-                      <code className="text-green-400">npm install -g @sigyl/cli</code>
-                    </div>
-                    <p className="text-gray-400 mb-4">
-                      The SIGYL CLI provides everything you need to create, deploy, and manage your MCP servers.
-                    </p>
-                    <Button className="btn-primary">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View CLI Documentation
-                    </Button>
+                  <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>API Reference</h2>
+                  <div className="space-y-4">
+                    {apiEndpoints.map((endpoint, index) => (
+                      <Card key={index} className="card-modern">
+                        <CardHeader>
+                          <div className="flex items-center gap-3">
+                            <Badge className={`text-xs ${
+                              endpoint.method === 'GET' ? 'bg-green-500/20 text-green-400' :
+                              endpoint.method === 'POST' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {endpoint.method}
+                            </Badge>
+                            <code className="text-sm font-mono text-white bg-gray-800 px-2 py-1 rounded">
+                              {endpoint.endpoint}
+                            </code>
+                          </div>
+                          <CardTitle className="text-lg" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                            {endpoint.description}
+                          </CardTitle>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                  </div>
+                </section>
+
+                {/* SDK Examples */}
+                <section>
+                  <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>SDK Examples</h2>
+                  <div className="space-y-6">
+                    {sdkExamples.map((example, index) => (
+                      <Card key={index} className="card-modern">
+                        <CardHeader>
+                          <CardTitle className="text-xl" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                            {example.language}
+                          </CardTitle>
+                          <CardDescription className="text-gray-300">
+                            {example.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                            <code className="text-sm text-gray-300">{example.code}</code>
+                          </pre>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </section>
               </div>
@@ -242,95 +279,53 @@ server = client.servers.create(
 
             {selectedCategory === 'api-reference' && (
               <div className="space-y-8">
-                <section>
-                  <h2 className="text-3xl font-bold mb-6">API Reference</h2>
-                  <p className="text-gray-400 mb-8">
-                    Complete reference for the SIGYL REST API. All endpoints require authentication via API key.
-                  </p>
-
-                  <div className="space-y-4">
-                    {apiEndpoints.map((endpoint, index) => (
-                      <Card key={index} className="bg-gray-900/50 border-gray-800">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-4 mb-3">
-                            <Badge className={`text-xs font-mono ${
-                              endpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400' :
-                              endpoint.method === 'POST' ? 'bg-green-500/20 text-green-400' :
-                              endpoint.method === 'PUT' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-red-500/20 text-red-400'
-                            }`}>
-                              {endpoint.method}
-                            </Badge>
-                            <code className="text-white font-mono">{endpoint.endpoint}</code>
-                            <Badge variant="outline" className="text-xs text-gray-400 border-gray-600">
-                              {endpoint.category}
-                            </Badge>
-                          </div>
-                          <p className="text-gray-400">{endpoint.description}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-3xl font-bold mb-6">SDKs & Examples</h2>
-                  <div className="space-y-6">
-                    {sdkExamples.map((example, index) => (
-                      <Card key={index} className="bg-gray-900/50 border-gray-800">
-                        <CardHeader>
-                          <CardTitle className="text-white flex items-center gap-2">
-                            <Code className="w-5 h-5" />
-                            {example.language}
-                          </CardTitle>
-                          <CardDescription className="text-gray-400">
-                            {example.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="bg-gray-950 rounded-lg p-4 overflow-x-auto">
-                            <pre className="text-sm">
-                              <code className="text-gray-300">{example.code}</code>
-                            </pre>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            )}
-
-            {/* Other category content would be similar */}
-            {selectedCategory !== 'getting-started' && selectedCategory !== 'api-reference' && (
-              <div className="text-center py-16">
-                <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Documentation Coming Soon</h3>
-                <p className="text-gray-400">
-                  We're working on comprehensive documentation for this section.
+                <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>API Reference</h2>
+                <p className="text-gray-300 text-lg">
+                  Complete API documentation for integrating with SIGYL's platform.
                 </p>
+                {/* Add more API reference content here */}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Community Section */}
-        <div className="mt-16">
-          <div className="card-modern p-8 text-center">
-            <Users className="w-12 h-12 text-white mx-auto mb-4" />
-            <h3 className="text-2xl font-bold mb-4">Need Help?</h3>
-            <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
-              Join our community of developers building with SIGYL. Get help, share your projects, and contribute to the ecosystem.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button className="btn-secondary">
-                <GitBranch className="w-4 h-4 mr-2" />
-                GitHub Discussions
-              </Button>
-              <Button className="btn-primary">
-                Join Discord
-              </Button>
-            </div>
+            {selectedCategory === 'deployment' && (
+              <div className="space-y-8">
+                <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Deployment Guide</h2>
+                <p className="text-gray-300 text-lg">
+                  Learn how to deploy your MCP servers to production environments.
+                </p>
+                {/* Add more deployment content here */}
+              </div>
+            )}
+
+            {selectedCategory === 'security' && (
+              <div className="space-y-8">
+                <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Security</h2>
+                <p className="text-gray-300 text-lg">
+                  Best practices for securing your MCP integrations and deployments.
+                </p>
+                {/* Add more security content here */}
+              </div>
+            )}
+
+            {selectedCategory === 'integrations' && (
+              <div className="space-y-8">
+                <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Integrations</h2>
+                <p className="text-gray-300 text-lg">
+                  Connect with popular services and APIs through our integration library.
+                </p>
+                {/* Add more integrations content here */}
+              </div>
+            )}
+
+            {selectedCategory === 'advanced' && (
+              <div className="space-y-8">
+                <h2 className="text-3xl font-bold mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Advanced Topics</h2>
+                <p className="text-gray-300 text-lg">
+                  Advanced techniques and patterns for building sophisticated MCP applications.
+                </p>
+                {/* Add more advanced content here */}
+              </div>
+            )}
           </div>
         </div>
       </div>

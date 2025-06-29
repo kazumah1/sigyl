@@ -82,9 +82,12 @@ const Blog = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="min-h-screen bg-black text-white relative overflow-hidden">
+        <div className="liquid-glass-blob blob-1" />
+        <div className="liquid-glass-blob blob-2" />
+        <div className="liquid-glass-blob blob-3" />
         <PageHeader />
-        <div className="container mx-auto px-6 py-8 mt-16">
+        <div className="container mx-auto px-6 py-8 mt-16 relative z-10">
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg">Loading blog posts...</div>
           </div>
@@ -95,14 +98,17 @@ const Blog = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="min-h-screen bg-black text-white relative overflow-hidden">
+        <div className="liquid-glass-blob blob-1" />
+        <div className="liquid-glass-blob blob-2" />
+        <div className="liquid-glass-blob blob-3" />
         <PageHeader />
-        <div className="container mx-auto px-6 py-8 mt-16">
+        <div className="container mx-auto px-6 py-8 mt-16 relative z-10">
           <div className="text-center py-12">
             <div className="text-red-400 text-lg mb-4">{error}</div>
             <Button
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="btn-modern"
             >
               Retry
             </Button>
@@ -113,16 +119,19 @@ const Blog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Liquid Glass Blobs */}
+      <div className="liquid-glass-blob blob-1" />
+      <div className="liquid-glass-blob blob-2" />
+      <div className="liquid-glass-blob blob-3" />
       <PageHeader />
       
-      <div className="container mx-auto px-6 py-8 mt-16">
+      <div className="container mx-auto px-6 py-8 mt-16 relative z-10">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold mb-4 gradient-text">SIGYL Blog</h1>
-          <p className="text-xl text-gray-400 max-w-3xl">
-            Insights, tutorials, and updates from the SIGYL team and community. 
-            Stay up to date with the latest in MCP technology.
+        <div className="mb-12 text-left flex flex-col gap-3 sm:gap-5 max-w-2xl">
+          <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl mb-0" style={{lineHeight:'1.08', letterSpacing:'-0.02em'}}>SIGYL Blog</h1>
+          <p className="hero-subheading text-lg sm:text-xl text-gray-300 font-normal w-full" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif', lineHeight:'1.5', marginTop:'0.25em'}}>
+            Insights, tutorials, and updates from the SIGYL team and community. Stay up to date with the latest in MCP technology.
           </p>
         </div>
 
@@ -190,40 +199,44 @@ const Blog = () => {
           <div className="mb-12">
             <Link
               to={`/blog/${featuredPost.slug}`}
-              className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+              className="block group focus:outline-none focus:ring-2 focus:ring-white rounded-xl"
               aria-label={`Read blog post: ${featuredPost.title}`}
               style={{ textDecoration: 'none' }}
             >
-              <Card className="bg-gray-900/50 border-gray-800 overflow-hidden hover:bg-gray-800/50 transition-all duration-300 hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer">
+              <Card className="card-modern overflow-hidden hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer">
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   <div className="lg:order-2">
                     <div className="h-64 lg:h-full bg-gradient-to-br from-gray-800 to-gray-900" />
                   </div>
-                  <div className="p-8 lg:order-1">
-                    <Badge className="bg-blue-500/20 text-blue-400 mb-4">Featured</Badge>
-                    <CardTitle className="text-2xl lg:text-3xl font-bold text-white mb-4">
+                  <div className="lg:order-1 p-6 lg:p-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Badge className="text-xs bg-white/10 text-white">
+                        Featured
+                      </Badge>
+                      <Badge className="text-xs bg-gray-500/20 text-gray-300">
+                        {featuredPost.category}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-2xl lg:text-3xl font-bold mb-3 text-white group-hover:text-white transition-colors" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                       {featuredPost.title}
                     </CardTitle>
-                    <CardDescription className="text-gray-400 text-lg mb-6">
+                    <CardDescription className="text-gray-300 text-lg mb-4">
                       {featuredPost.excerpt}
                     </CardDescription>
-                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {featuredPost.author}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
                         {formatDate(featuredPost.date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {featuredPost.readTime}
-                      </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {featuredPost.readTime || '5 min read'}
+                      </div>
                     </div>
-                    <span className="inline-flex items-center text-blue-400 group-hover:text-white transition-colors font-medium">
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </span>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <User className="w-4 h-4" />
+                      {featuredPost.author || 'SIGYL Team'}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -232,52 +245,39 @@ const Blog = () => {
         )}
 
         {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPosts.map((post) => {
-            const IconComponent = getCategoryIcon(post.category);
+            const CategoryIcon = getCategoryIcon(post.category);
             return (
               <Link
                 key={post.slug}
                 to={`/blog/${post.slug}`}
-                className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl h-full"
+                className="block group focus:outline-none focus:ring-2 focus:ring-white rounded-xl"
                 aria-label={`Read blog post: ${post.title}`}
                 style={{ textDecoration: 'none' }}
               >
-                <Card className="bg-gray-900/50 border-gray-800 hover:bg-gray-800/50 transition-all duration-300 hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer h-full">
+                <Card className="card-modern hover-lift group-hover:shadow-lg group-focus:shadow-lg cursor-pointer h-full">
                   <CardHeader>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-white/10 rounded-lg">
-                        <IconComponent className="w-5 h-5 text-white" />
-                      </div>
-                      <Badge className="bg-gray-700/50 text-gray-300 text-xs capitalize">
-                        {post.category.replace('-', ' ')}
+                    <div className="flex items-center gap-2 mb-3">
+                      <CategoryIcon className="w-4 h-4 text-gray-400" />
+                      <Badge className="text-xs bg-gray-500/20 text-gray-300">
+                        {post.category}
                       </Badge>
                     </div>
-                    <CardTitle className="text-white text-lg leading-tight mb-3">
+                    <CardTitle className="text-xl font-bold text-white group-hover:text-white transition-colors" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                       {post.title}
                     </CardTitle>
-                    <CardDescription className="text-gray-400 text-sm">
+                    <CardDescription className="text-gray-300">
                       {post.excerpt}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {post.author}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {post.readTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
+                  <CardContent className="mt-auto">
+                    <div className="flex items-center justify-between text-sm text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
                         {formatDate(post.date)}
-                      </span>
-                      <span className="text-gray-400 group-hover:text-white transition-colors">
-                        <ArrowRight className="w-4 h-4" />
-                      </span>
+                      </div>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </CardContent>
                 </Card>
@@ -286,50 +286,19 @@ const Blog = () => {
           })}
         </div>
 
-        {/* No Results */}
+        {/* Empty State */}
         {filteredPosts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-4">
-              No articles found matching your criteria.
-            </div>
+          <div className="text-center py-16">
+            <div className="text-gray-400 text-lg mb-4">No posts found matching your criteria.</div>
             <Button
-              variant="outline"
               onClick={() => {
                 setSearchQuery('');
                 setSelectedTag('all');
                 setSelectedCategory('all');
               }}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800/50"
+              className="btn-modern"
             >
               Clear Filters
-            </Button>
-          </div>
-        )}
-
-        {/* Newsletter Signup */}
-        <div className="mb-12">
-          <div className="card-modern p-8 text-center max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold mb-4">Stay Updated</h3>
-            <p className="text-gray-400 mb-6">
-              Get the latest SIGYL news, tutorials, and insights delivered to your inbox.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <Input
-                placeholder="Enter your email"
-                className="bg-gray-800/50 border-gray-700 text-white"
-              />
-              <Button className="btn-primary">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Load More */}
-        {filteredPosts.length > 0 && (
-          <div className="text-center">
-            <Button className="btn-secondary">
-              Load More Articles
             </Button>
           </div>
         )}

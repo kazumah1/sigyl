@@ -49,13 +49,13 @@ const Dashboard = () => {
   // Show error state if there's an error
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-red-400 text-lg font-medium">Failed to load dashboard data</div>
           <p className="text-gray-400 max-w-md">{error}</p>
           <Button 
             onClick={refetch} 
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className="btn-modern"
           >
             Try Again
           </Button>
@@ -72,7 +72,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
+    <div className="min-h-screen bg-black flex">
       <DashboardSidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
@@ -86,7 +86,7 @@ const Dashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">
+                <h1 className="hero-heading text-3xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
                   Welcome back, {displayName.split(' ')[0]}!
                 </h1>
                 <p className="text-gray-400">
@@ -96,7 +96,7 @@ const Dashboard = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={() => navigate('/deploy')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white border-0 flex items-center gap-2"
+                  className="btn-modern flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Deploy New Server
@@ -125,7 +125,7 @@ const Dashboard = () => {
                     onClick={() => handleTabChange(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-lg'
+                        ? 'bg-white text-black shadow-lg'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
                     }`}
                   >
@@ -160,12 +160,12 @@ const Dashboard = () => {
                   <MetricsOverview metrics={metrics} />
                   
                   {/* Quick Actions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group" onClick={() => navigate('/deploy')}>
-                      <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="card-modern cursor-pointer group" onClick={() => navigate('/deploy')}>
+                      <CardContent className="p-4">
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Plus className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Plus className="w-6 h-6 text-white" />
                           </div>
                           <div>
                             <h3 className="text-white font-semibold">Deploy New Server</h3>
@@ -175,8 +175,8 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group" onClick={() => handleTabChange('secrets')}>
-                      <CardContent className="p-6">
+                    <Card className="card-modern cursor-pointer group" onClick={() => handleTabChange('secrets')}>
+                      <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
                             <Lock className="w-6 h-6 text-green-400" />
@@ -191,10 +191,10 @@ const Dashboard = () => {
                   </div>
 
                   {/* Recent Activity */}
-                  <Card className="bg-gray-900/50 border-gray-800">
+                  <Card className="card-modern">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-blue-400" />
+                        <Activity className="w-5 h-5 text-white" />
                         Recent Activity
                       </CardTitle>
                       <CardDescription className="text-gray-400">
@@ -232,7 +232,7 @@ const Dashboard = () => {
                             <p>No servers deployed yet</p>
                             <Button 
                               onClick={() => navigate('/deploy')}
-                              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white border-0"
+                              className="mt-4 btn-modern"
                             >
                               Deploy Your First Server
                             </Button>
@@ -256,7 +256,7 @@ const Dashboard = () => {
 
               {/* Settings Tab */}
           {activeTab === 'settings' && (
-                <Card className="bg-gray-900/50 border-gray-800 max-w-xl mx-auto">
+                <Card className="card-modern max-w-xl mx-auto">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                       <Settings className="w-5 h-5 text-gray-400" />
@@ -287,10 +287,10 @@ const Dashboard = () => {
                 <div className="space-y-8 relative">
                   {/* Blurred Analytics Content */}
                   <div className="blur-sm pointer-events-none opacity-50">
-                    <Card className="bg-gray-900/50 border-gray-800">
+                    <Card className="card-modern">
                       <CardHeader>
                         <CardTitle className="text-white flex items-center gap-2">
-                          <Activity className="w-5 h-5 text-blue-400" />
+                          <Activity className="w-5 h-5 text-white" />
                           Usage Analytics
                         </CardTitle>
                         <CardDescription className="text-gray-400">
@@ -305,18 +305,18 @@ const Dashboard = () => {
                         />
                       </CardContent>
                     </Card>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                      <Card className="bg-gray-900/50 border-gray-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                      <Card className="card-modern">
                         <CardHeader>
                           <CardTitle className="text-white">API Usage</CardTitle>
                           <CardDescription className="text-gray-400">Track API call volume and limits</CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-3xl font-bold text-blue-400 mb-2">{metrics?.totalToolCalls?.toLocaleString() || '0'}</div>
+                          <div className="text-3xl font-bold text-white mb-2">{metrics?.totalToolCalls?.toLocaleString() || '0'}</div>
                           <div className="text-gray-400">API calls this month</div>
                         </CardContent>
                       </Card>
-                      <Card className="bg-gray-900/50 border-gray-800">
+                      <Card className="card-modern">
                         <CardHeader>
                           <CardTitle className="text-white">Active Users</CardTitle>
                           <CardDescription className="text-gray-400">Monitor user engagement</CardDescription>
@@ -331,16 +331,16 @@ const Dashboard = () => {
 
                   {/* Overlay with Unlock Button */}
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="text-center bg-gray-900/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
+                    <div className="text-center bg-black/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
                       <div className="mb-6">
-                        <Activity className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-white mb-2">Advanced Analytics</h3>
+                        <Activity className="w-16 h-16 text-white mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Advanced Analytics</h3>
                         <p className="text-gray-400 text-lg max-w-md">
                           Unlock detailed analytics, custom reports, and advanced insights with Enterprise
                         </p>
                       </div>
                       <Button 
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
+                        className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
                         onClick={() => navigate('/pricing')}
                       >
                         Unlock With Enterprise
@@ -357,16 +357,16 @@ const Dashboard = () => {
                   <div className="blur-sm pointer-events-none opacity-50">
                     {/* Header Section */}
                     <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold text-white mb-4">Private MCPs</h2>
+                      <h2 className="hero-heading text-3xl font-bold text-white mb-4" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Private MCPs</h2>
                       <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                         Deploy and manage private MCP servers within your organization's infrastructure
                       </p>
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <Card className="bg-gray-900/50 border-gray-800">
-                        <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-400 text-sm">Active Private MCPs</p>
@@ -379,22 +379,22 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800">
-                        <CardContent className="p-6">
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-400 text-sm">Total Deployments</p>
                               <p className="text-2xl font-bold text-white">47</p>
                             </div>
-                            <div className="p-3 bg-blue-600/20 rounded-lg">
-                              <Cloud className="w-6 h-6 text-blue-400" />
+                            <div className="p-3 bg-white/20 rounded-lg">
+                              <Cloud className="w-6 h-6 text-white" />
                             </div>
                           </div>
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800">
-                        <CardContent className="p-6">
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-400 text-sm">API Calls Today</p>
@@ -407,8 +407,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800">
-                        <CardContent className="p-6">
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-400 text-sm">Uptime</p>
@@ -424,7 +424,7 @@ const Dashboard = () => {
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+                      <Button className="btn-modern flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Deploy New Private MCP
                       </Button>
@@ -443,12 +443,12 @@ const Dashboard = () => {
                     </div>
 
                     {/* Feature Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                              <Shield className="w-6 h-6 text-blue-400" />
+                            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                              <Shield className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-white font-semibold text-lg mb-2">Private Network Isolation</h3>
@@ -458,8 +458,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
                               <Database className="w-6 h-6 text-green-400" />
@@ -472,8 +472,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-colors">
                               <Network className="w-6 h-6 text-purple-400" />
@@ -486,8 +486,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <div className="p-3 bg-yellow-600/20 rounded-lg group-hover:bg-yellow-600/30 transition-colors">
                               <Cpu className="w-6 h-6 text-yellow-400" />
@@ -500,8 +500,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <div className="p-3 bg-red-600/20 rounded-lg group-hover:bg-red-600/30 transition-colors">
                               <Key className="w-6 h-6 text-red-400" />
@@ -514,8 +514,8 @@ const Dashboard = () => {
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                        <CardContent className="p-6">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <div className="p-3 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
                               <HardDrive className="w-6 h-6 text-indigo-400" />
@@ -530,10 +530,10 @@ const Dashboard = () => {
                     </div>
 
                     {/* Analytics Section */}
-                    <Card className="bg-gray-900/50 border-gray-800">
+                    <Card className="card-modern">
                       <CardHeader>
                         <CardTitle className="text-white flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5 text-blue-400" />
+                          <BarChart3 className="w-5 h-5 text-white" />
                           Private MCP Analytics
                         </CardTitle>
                         <CardDescription className="text-gray-400">
@@ -541,9 +541,9 @@ const Dashboard = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="text-center">
-                            <div className="text-3xl font-bold text-blue-400 mb-2">1.2ms</div>
+                            <div className="text-3xl font-bold text-white mb-2">1.2ms</div>
                             <div className="text-gray-400 text-sm">Avg Response Time</div>
                           </div>
                           <div className="text-center">
@@ -563,7 +563,7 @@ const Dashboard = () => {
                     </Card>
 
                     {/* Recent Deployments */}
-                    <Card className="bg-gray-900/50 border-gray-800">
+                    <Card className="card-modern">
                       <CardHeader>
                         <CardTitle className="text-white flex items-center gap-2">
                           <GitCommit className="w-5 h-5 text-green-400" />
@@ -603,20 +603,20 @@ const Dashboard = () => {
 
                   {/* Overlay with Unlock Button */}
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="text-center bg-gray-900/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
+                    <div className="text-center bg-black/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
                       <div className="mb-6">
-                        <Shield className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-white mb-2">Private MCPs</h3>
+                        <Shield className="w-16 h-16 text-white mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Private MCPs</h3>
                         <p className="text-gray-400 text-lg max-w-md">
                           Deploy and manage private MCP servers within your organization's infrastructure with Enterprise
                         </p>
                       </div>
                       <Button 
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
+                        className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
                         onClick={() => navigate('/pricing')}
                       >
                         Unlock With Enterprise
-                      </Button>
+                  </Button>
                     </div>
                   </div>
                 </div>
@@ -626,18 +626,18 @@ const Dashboard = () => {
               {activeTab === 'enterprise-support' && (
                 <div className="space-y-8">
                   <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-white mb-4">Enterprise Support</h2>
+                    <h2 className="hero-heading text-3xl font-bold text-white mb-4" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Enterprise Support</h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                       Unlock premium support and productivity features designed for enterprise teams
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Phone className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Phone className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">24/7 Call Support</h3>
@@ -647,11 +647,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <MessageSquare className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <MessageSquare className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Dedicated Slack Channel</h3>
@@ -661,11 +661,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <MessageSquare className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <MessageSquare className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Dedicated Discord Channel</h3>
@@ -675,11 +675,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Video className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Video className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Zoom Meeting in 15 Minutes</h3>
@@ -689,11 +689,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Plug className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Plug className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Easy Plug & Play Tools</h3>
@@ -703,11 +703,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Wrench className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Wrench className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Custom Tooling</h3>
@@ -717,11 +717,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Cloud className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Cloud className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Cloud Support</h3>
@@ -731,11 +731,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Bug className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Bug className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Debug & Troubleshoot</h3>
@@ -745,24 +745,24 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-600/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/10 group">
-                      <CardContent className="p-6">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Lightbulb className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Lightbulb className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg mb-2">Suggest MCP Improvements</h3>
                             <p className="text-gray-400 text-sm leading-relaxed">Influence our roadmap and shape the future of MCP</p>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                </div>
+              </CardContent>
+            </Card>
                   </div>
 
                   <div className="text-center mt-12">
                     <Button 
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
+                      className="btn-modern font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
                       onClick={() => navigate('/pricing')}
                     >
                       Contact Enterprise Support

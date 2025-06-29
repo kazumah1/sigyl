@@ -191,7 +191,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
           </div>
           <Button 
             onClick={() => navigate('/deploy')}
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className="btn-modern"
           >
             Deploy New Server
           </Button>
@@ -309,7 +309,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               </p>
               <Button 
                 onClick={() => navigate('/deploy')}
-                className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+                className="btn-modern"
               >
                 Deploy Your First Server
               </Button>

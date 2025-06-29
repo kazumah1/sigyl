@@ -17,16 +17,18 @@ const Pricing = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Liquid Glass Blobs */}
+      <div className="liquid-glass-blob blob-1" />
+      <div className="liquid-glass-blob blob-2" />
+      <div className="liquid-glass-blob blob-3" />
       <PageHeader />
-      <div className="min-h-screen bg-[#18181b] flex items-center justify-center px-4 pt-32 pb-20 font-sans">
-        <div className="w-full max-w-6xl">
+      <div className="container mx-auto px-6 py-8 mt-16 relative z-10">
+        <div className="w-full max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-white mb-6" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.02em' }}>
-              Choose Your Plan
-            </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl mb-4">Choose Your Plan</h1>
+            <p className="hero-subheading text-lg sm:text-xl max-w-2xl mx-auto">
               Start with our free tier or unlock enterprise features for your team
             </p>
           </div>
@@ -34,7 +36,7 @@ const Pricing = () => {
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Free Tier */}
-            <div className="rounded-2xl border border-white/10 bg-[#232329] shadow-lg p-10 flex flex-col items-center h-full min-h-[600px]">
+            <div className="card-modern p-10 flex flex-col items-center h-full min-h-[600px]">
               <div className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Free</div>
               <div className="text-gray-400 text-lg mb-2">Perfect for getting started</div>
               <div className="text-4xl font-bold text-white mb-2">$0</div>
@@ -59,7 +61,7 @@ const Pricing = () => {
             </div>
 
             {/* Enterprise Tier */}
-            <div className="rounded-2xl border border-white/10 bg-[#232329] shadow-lg p-10 flex flex-col items-center h-full min-h-[600px]">
+            <div className="card-modern p-10 flex flex-col items-center h-full min-h-[600px]">
               <div className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Enterprise</div>
               <div className="text-gray-400 text-lg mb-2">For teams and organizations</div>
               <div className="text-4xl font-bold text-white mb-2">Custom</div>
@@ -88,7 +90,7 @@ const Pricing = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

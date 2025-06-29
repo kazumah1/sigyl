@@ -22,16 +22,16 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
     },
     toolCalls: {
       label: "Tool Calls",
-      color: "#3b82f6",
+      color: "#ffffff",
     },
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Visits and Tool Calls Over Time */}
-      <Card className="bg-gray-900/50 border-gray-800 col-span-1 lg:col-span-2 overflow-hidden relative">
+      <Card className="card-modern col-span-1 lg:col-span-2 overflow-hidden relative">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-white flex items-center gap-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
             <TrendingUp className="w-5 h-5 text-green-400" />
             Usage Analytics
           </CardTitle>
@@ -61,9 +61,9 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                 <Line 
                   type="monotone" 
                   dataKey="toolCalls" 
-                  stroke="#3b82f6" 
+                  stroke="#ffffff" 
                   strokeWidth={2}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: '#ffffff', strokeWidth: 2, r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -72,10 +72,10 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
       </Card>
 
       {/* Tool Usage Distribution */}
-      <Card className="bg-gray-900/50 border-gray-800 overflow-hidden relative">
+      <Card className="card-modern overflow-hidden relative">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-400" />
+          <CardTitle className="text-white flex items-center gap-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
+            <Activity className="w-5 h-5 text-white" />
             Top Tools
           </CardTitle>
           <CardDescription className="text-gray-400">
@@ -97,7 +97,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                 />
                 <YAxis stroke="#9ca3af" fontSize={12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="calls" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="calls" fill="#ffffff" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -105,9 +105,9 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
       </Card>
 
       {/* Server Status Distribution */}
-      <Card className="bg-gray-900/50 border-gray-800 overflow-hidden relative">
+      <Card className="card-modern overflow-hidden relative">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-white flex items-center gap-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
             <Server className="w-5 h-5 text-purple-400" />
             Server Status
           </CardTitle>
