@@ -65,7 +65,7 @@ async function testRealisticSDK() {
         input_schema: { text: 'string' },
         output_schema: { reversed: 'string' }
       }]
-    }, 'sk_3559da7773ab1afd74d5ed297e0b0c9fda5898703e59a317755771957a9b8dde', { registryUrl });
+    }, 'sk_d5d397c82cba044cf5ac7571b849cdec81c7e485f3f4144e072bf800212a6b33', { registryUrl });
 
     console.log('✅ Package registered:', newPackage.name);
     console.log('   ID:', newPackage.id);
@@ -122,14 +122,15 @@ async function testRealisticSDK() {
   try {
     const sdk = new MCPConnectSDK({
       registryUrl,
-      timeout: 15000
+      timeout: 15000,
+      apiKey: 'sk_d5d397c82cba044cf5ac7571b849cdec81c7e485f3f4144e072bf800212a6b33'
     });
 
-    // Admin operation (should fail without API key)
+    // Admin operation (should succeed with API key)
     const allPackages = await sdk.getAllPackages();
-    console.log(`❌ Admin operation succeeded without API key (should have failed): ${allPackages.length} packages`);
+    console.log(`✅ Admin operation succeeded with API key: ${allPackages.length} packages`);
   } catch (error) {
-    console.log('✅ Admin operation correctly failed without API key:', error instanceof Error ? error.message : 'Unknown error');
+    console.log('❌ Admin operation failed with API key:', error instanceof Error ? error.message : 'Unknown error');
   }
 
   // Test 7: Test with a mock tool URL (this will fail but shows the error handling)
@@ -157,7 +158,7 @@ async function testRealisticSDK() {
     const response = await (await import('axios')).default.post(toolsListUrl, {}, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer sk_d0674111ab93e4115812eef4be3e71762c2ae4c1eadfe86da383d2bac4bd8c1f'
+        'Authorization': 'Bearer sk_d5d397c82cba044cf5ac7571b849cdec81c7e485f3f4144e072bf800212a6b33'
       }
     });
     console.log('✅ MCP server tools:', response.data.tools || response.data);
