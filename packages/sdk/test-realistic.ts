@@ -176,21 +176,37 @@ async function testRealisticSDK() {
   // Test 9: Smithery-style Client/Transport connect
   console.log('\n9️⃣ Testing Smithery-style Client/Transport connect...');
   try {
-    // Connect to a package using the new connect function
-    const client = await connect('sdk-test-package', { registryUrl });
+    // Use the real MCP server package and tool details from the CSV
+    const livePackageName = 'kazumah1/mcp-test';
+    const liveToolName = 'reverseString';
+    const liveInput = { value: 'Hello, world!' };
 
-    // Invoke the 'echo' tool
-    const echoResult = await client.invoke('echo', { message: 'Hello, world!' });
-    console.log('✅ Echo tool result:', echoResult);
+    // Connect to the live package using the new connect function
+    const client = await connect(livePackageName, { registryUrl });
 
-    // Invoke the 'reverse' tool
-    const reverseResult = await client.invoke('reverse', { text: 'Hello, world!' });
-    console.log('✅ Reverse tool result:', reverseResult);
+    // Invoke the 'reverseString' tool
+    const reverseResult = await client.invoke(liveToolName, liveInput);
+    console.log('✅ reverseString tool result:', reverseResult);
 
     // Close the client (not strictly necessary for HTTP, but good practice)
     await client.close();
   } catch (error) {
     console.log('❌ Smithery-style connect test failed:', error instanceof Error ? error.message : 'Unknown error');
+  }
+
+  // Test 10: List available tools using JSON-RPC
+  console.log('\n🔟 Testing tools/list via Smithery-style Client/Transport connect...');
+  try {
+    const livePackageName = 'kazumah1/mcp-test';
+    const client = await connect(livePackageName, { registryUrl });
+
+    // List tools
+    const toolsList = await client.invoke('tools/list', {});
+    console.log('✅ tools/list result:', toolsList);
+
+    await client.close();
+  } catch (error) {
+    console.log('❌ tools/list test failed:', error instanceof Error ? error.message : 'Unknown error');
   }
 
   console.log('\n🎉 Realistic SDK testing completed!');

@@ -13,10 +13,12 @@ export interface Transport {
 export class HttpTransport implements Transport {
   private baseUrl: string;
   private timeout: number;
+  private apiKey?: string;
 
-  constructor(baseUrl: string, timeout: number = 10000) {
+  constructor(baseUrl: string, timeout: number = 10000, apiKey?: string) {
     this.baseUrl = baseUrl;
     this.timeout = timeout;
+    this.apiKey = apiKey;
   }
 
   async connect(): Promise<void> {
@@ -25,13 +27,32 @@ export class HttpTransport implements Transport {
   }
 
   async invokeTool(toolName: string, input: any): Promise<any> {
-    const url = `${this.baseUrl}/${toolName}`;
-    const response = await axios.post(url, input, {
-      timeout: this.timeout,
-      headers: {
-        'Content-Type': 'application/json'
+    // Use JSON-RPC 2.0 to call the tool at /mcp with method 'tools/call'
+    const url = `${this.baseUrl.replace(/\/$/, '')}/mcp`;
+    const payload = {
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: {
+        name: toolName,
+        arguments: input
       }
+    };
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream'
+    };
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+    const response = await axios.post(url, payload, {
+      timeout: this.timeout,
+      headers
     });
+    // Return the result field if present (JSON-RPC)
+    if (response.data && typeof response.data === 'object' && 'result' in response.data) {
+      return response.data.result;
+    }
     return response.data;
   }
 
@@ -76,13 +97,31 @@ export async function connect(
   const { registryUrl = 'http://localhost:3000/api/v1', timeout = 10000 } = options;
   // Get package details from registry
   const packageData = await getPackage(packageName, { registryUrl, timeout });
-  // Find an active deployment
-  const activeDeployment = packageData.deployments.find(d => d.status === 'active');
-  if (!activeDeployment) {
-    throw new Error(`No active deployment found for package '${packageName}'`);
+  console.log('[SDK] Loaded package data:', JSON.stringify(packageData, null, 2));
+
+  // Try to get deployment URL from deployments array (legacy)
+  let deploymentUrl: string | undefined = undefined;
+  if (Array.isArray(packageData.deployments) && packageData.deployments.length > 0) {
+    const activeDeployment = packageData.deployments.find(d => d.status === 'active');
+    if (activeDeployment) {
+      deploymentUrl = activeDeployment.deployment_url;
+      console.log('[SDK] Using deployment_url from deployments array:', deploymentUrl);
+    }
+  }
+  // Fallback: use source_api_url or deployment_url directly from package
+  if (!deploymentUrl) {
+    deploymentUrl = packageData.source_api_url || (packageData as any).deployment_url;
+    console.log('[SDK] Using deployment_url from package record:', deploymentUrl);
+  }
+  if (!deploymentUrl) {
+    console.error('[SDK] No deployment URL found for package:', packageName);
+    throw new Error(`No deployment URL found for package '${packageName}'`);
   }
   // Create transport and client
-  const transport = new HttpTransport(activeDeployment.deployment_url, timeout);
+  console.log('[SDK] Connecting to MCP server at:', deploymentUrl);
+  // Use the provided API key for now
+  const apiKey = 'sk_575b23dd6b6ad801ace640614f181b4428b5263215cd7df0e038537ad7a07144';
+  const transport = new HttpTransport(deploymentUrl, timeout, apiKey);
   const client = new Client();
   await client.connect(transport);
   return client;

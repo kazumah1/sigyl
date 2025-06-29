@@ -3,12 +3,10 @@ import type {
   MCPPackage,
   PackageWithDetails,
   PackageSearchQuery,
-  PackageSearchResult,
-  CreatePackageRequest,
-  ToolFunction
+  PackageSearchResult
 } from './types';
-import { searchPackages, getPackage, registerMCP, invoke, getAllPackagesAdmin } from './registry';
-import { connect, connectDirect } from './connect';
+import { searchPackages, getPackage, invoke, getAllPackagesAdmin } from './registry';
+import { connect, connectDirect, Client } from './connect';
 
 /**
  * MCPConnectSDK - Advanced SDK class for working with MCP registry and tools
@@ -44,53 +42,22 @@ export class MCPConnectSDK {
   }
 
   /**
-   * Register a new MCP package
+   * Smithery-style connect: returns a connected Client instance for a package
    */
-  async registerMCP(packageData: CreatePackageRequest, apiKey?: string): Promise<MCPPackage> {
-    return registerMCP(packageData, apiKey, this.config);
-  }
-
-  /**
-   * Connect to a specific tool in a package
-   */
-  async connect(packageName: string, toolName: string): Promise<ToolFunction> {
-    return connect(packageName, toolName, {
+  async connect(packageName: string): Promise<Client> {
+    return connect(packageName, {
       registryUrl: this.config.registryUrl,
       timeout: this.config.timeout
     });
   }
 
   /**
-   * Connect directly to a tool by URL
+   * Connect directly to a tool by URL (stateless, for backward compatibility)
    */
-  async connectDirect(toolUrl: string): Promise<ToolFunction> {
+  async connectDirect(toolUrl: string) {
     return connectDirect(toolUrl, {
       timeout: this.config.timeout
     });
-  }
-
-  /**
-   * Connect to all tools in a package
-   */
-  async connectAll(packageName: string): Promise<Record<string, ToolFunction>> {
-    const packageData = await this.getPackage(packageName);
-    const tools: Record<string, ToolFunction> = {};
-
-    // Find active deployment
-    const activeDeployment = packageData.deployments.find(d => d.status === 'active');
-    if (!activeDeployment) {
-      throw new Error(`No active deployment found for package '${packageName}'`);
-    }
-
-    // Create tool functions for each tool
-    for (const tool of packageData.tools) {
-      if (tool.tool_name) {
-        const toolUrl = `${activeDeployment.deployment_url}/${tool.tool_name}`;
-        tools[tool.tool_name] = await this.connectDirect(toolUrl);
-      }
-    }
-
-    return tools;
   }
 
   /**
