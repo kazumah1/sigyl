@@ -39,7 +39,9 @@ import {
   Rocket,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText,
+  MessageCircle
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,7 +91,8 @@ const MCPPackagePage = () => {
   const [saving, setSaving] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installStep, setInstallStep] = useState(1);
-  const [secretFields, setSecretFields] = useState({ WEATHER_API_KEY: '', DEBUG: '' });
+  // Dynamic secrets state
+  const [secretFields, setSecretFields] = useState<{ [key: string]: string }>({});
   const [secretErrors, setSecretErrors] = useState<{ [k: string]: string }>({});
   const [showOptionalSecrets, setShowOptionalSecrets] = useState(false);
 
@@ -353,8 +356,16 @@ const MCPPackagePage = () => {
 
   const validateSecrets = () => {
     const errors: { [k: string]: string } = {};
-    if (!secretFields.WEATHER_API_KEY) errors.WEATHER_API_KEY = 'Required';
-    // DEBUG is optional
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets)) {
+      for (const secret of pkg.secrets) {
+        if (secret.required && !secretFields[secret.name]) {
+          errors[secret.name] = 'Required';
+        }
+      }
+    } else {
+      // fallback for old hardcoded fields
+      if (!secretFields.WEATHER_API_KEY) errors.WEATHER_API_KEY = 'Required';
+    }
     setSecretErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -367,7 +378,16 @@ const MCPPackagePage = () => {
   const handleInstallClick = () => {
     setShowInstallModal(true);
     setInstallStep(1);
-    setSecretFields({ WEATHER_API_KEY: '', DEBUG: '' });
+    // Initialize secret fields for all secrets
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets)) {
+      const initialFields: { [key: string]: string } = {};
+      for (const secret of pkg.secrets) {
+        initialFields[secret.name] = '';
+      }
+      setSecretFields(initialFields);
+    } else {
+      setSecretFields({ WEATHER_API_KEY: '', DEBUG: '' });
+    }
     setSecretErrors({});
   };
 
@@ -992,81 +1012,163 @@ const MCPPackagePage = () => {
       </div>
       {/* Install Modal */}
       <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
-        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 380, maxHeight: 600, overflowY: 'auto' }}>
-          <DialogHeader>
-            <DialogTitle>
-              {installStep === 1 ? 'Configure Secrets' : 'Choose Installation Method'}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
           {installStep === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="WEATHER_API_KEY">WEATHER_API_KEY <span className="text-red-400">*</span></Label>
-                <Input
-                  id="WEATHER_API_KEY"
-                  name="WEATHER_API_KEY"
-                  value={secretFields.WEATHER_API_KEY}
-                  onChange={handleSecretChange}
-                  placeholder="Enter your weather API key"
-                  className="mt-1"
-                />
-                {secretErrors.WEATHER_API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.WEATHER_API_KEY}</div>}
-              </div>
-              <div>
-                <button
-                  type="button"
-                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
-                  onClick={() => setShowOptionalSecrets((v) => !v)}
-                  aria-expanded={showOptionalSecrets}
-                >
-                  {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  {showOptionalSecrets ? 'Hide optional secrets' : 'Show optional secrets'}
-                </button>
-                <div
-                  className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'max-h-40 mt-4' : 'max-h-0'}`}
-                >
-                  {showOptionalSecrets && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Configure Secrets</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Render required secrets */}
+                {pkg && pkg.secrets && Array.isArray(pkg.secrets) ? (
+                  <>
+                    {pkg.secrets.filter(s => s.required).map(secret => (
+                      <div key={secret.name}>
+                        <Label htmlFor={secret.name}>
+                          {secret.name} <span className="text-red-400">*</span>
+                          {secret.description && <span className="ml-2 text-xs text-gray-400">{secret.description}</span>}
+                        </Label>
+                        <Input
+                          id={secret.name}
+                          name={secret.name}
+                          value={secretFields[secret.name] || ''}
+                          onChange={handleSecretChange}
+                          placeholder={secret.description || secret.name}
+                          className="mt-1"
+                          type={secret.type === 'number' ? 'number' : 'text'}
+                        />
+                        {secretErrors[secret.name] && <div className="text-red-400 text-xs mt-1">{secretErrors[secret.name]}</div>}
+                      </div>
+                    ))}
+                    {/* Optional secrets toggle */}
+                    {pkg.secrets.some(s => !s.required) && (
+                      <div>
+                        <button
+                          type="button"
+                          className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
+                          onClick={() => setShowOptionalSecrets((v) => !v)}
+                          aria-expanded={showOptionalSecrets}
+                        >
+                          {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          {showOptionalSecrets ? 'Hide optional secrets' : 'Show optional secrets'}
+                        </button>
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'mt-4' : 'max-h-0'}`}
+                          style={showOptionalSecrets ? {} : { maxHeight: 0 }}
+                        >
+                          {showOptionalSecrets && (
+                            <div className="space-y-4">
+                              {pkg.secrets.filter(s => !s.required).map(secret => (
+                                <div key={secret.name}>
+                                  <Label htmlFor={secret.name}>
+                                    {secret.name} (optional)
+                                    {secret.description && <span className="ml-2 text-xs text-gray-400">{secret.description}</span>}
+                                  </Label>
+                                  <Input
+                                    id={secret.name}
+                                    name={secret.name}
+                                    value={secretFields[secret.name] || ''}
+                                    onChange={handleSecretChange}
+                                    placeholder={secret.description || secret.name}
+                                    className="mt-1"
+                                    type={secret.type === 'number' ? 'number' : 'text'}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // fallback for old hardcoded fields
+                  <>
                     <div>
-                      <Label htmlFor="DEBUG">DEBUG (optional)</Label>
+                      <Label htmlFor="WEATHER_API_KEY">WEATHER_API_KEY <span className="text-red-400">*</span></Label>
                       <Input
-                        id="DEBUG"
-                        name="DEBUG"
-                        value={secretFields.DEBUG}
+                        id="WEATHER_API_KEY"
+                        name="WEATHER_API_KEY"
+                        value={secretFields.WEATHER_API_KEY || ''}
                         onChange={handleSecretChange}
-                        placeholder="true or false"
+                        placeholder="Enter your weather API key"
                         className="mt-1"
                       />
+                      {secretErrors.WEATHER_API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.WEATHER_API_KEY}</div>}
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
+                        onClick={() => setShowOptionalSecrets((v) => !v)}
+                        aria-expanded={showOptionalSecrets}
+                      >
+                        {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {showOptionalSecrets ? 'Hide optional secrets' : 'Show optional secrets'}
+                      </button>
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'mt-4' : 'max-h-0'}`}
+                        style={showOptionalSecrets ? {} : { maxHeight: 0 }}
+                      >
+                        {showOptionalSecrets && (
+                          <div>
+                            <Label htmlFor="DEBUG">DEBUG (optional)</Label>
+                            <Input
+                              id="DEBUG"
+                              name="DEBUG"
+                              value={secretFields.DEBUG || ''}
+                              onChange={handleSecretChange}
+                              placeholder="true or false"
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+                <DialogFooter>
+                  <Button
+                    onClick={() => {
+                      if (validateSecrets()) setInstallStep(2);
+                    }}
+                    className="bg-blue-600 text-white"
+                  >
+                    Next
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
+                    Cancel
+                  </Button>
+                </DialogFooter>
               </div>
-              <DialogFooter>
-                <Button
-                  onClick={() => {
-                    if (validateSecrets()) setInstallStep(2);
-                  }}
-                  className="bg-blue-600 text-white"
-                >
-                  Next
-                </Button>
-                <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </div>
+            </>
           )}
           {installStep === 2 && (
-            <div className="space-y-6">
-              <div className="text-lg font-semibold mb-2">Select Installation Method</div>
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" className="w-full">HTTP API</Button>
-                <Button variant="outline" className="w-full">SDK (TypeScript)</Button>
-                <Button variant="outline" className="w-full">VS Code Extension</Button>
-                <Button variant="outline" className="w-full">Cursor</Button>
-                <Button variant="outline" className="w-full">Claude Desktop</Button>
-                <Button variant="outline" className="w-full">JSON/Config</Button>
+            <div className="flex flex-col h-full min-h-[380px]" style={{height: '100%'}}>
+              <div className="text-xl font-semibold mb-4 text-center">Choose Installation Method</div>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="grid grid-cols-2 gap-4">
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <Globe className="w-5 h-5" /> HTTP API
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <img src="/typescript.png" alt="TypeScript SDK" className="w-5 h-5" /> SDK (TypeScript)
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center gap-2 justify-start pl-4">
+                    <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
+                  </Button>
+                </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="mt-8">
                 <Button variant="ghost" onClick={() => setInstallStep(1)}>
                   Back
                 </Button>

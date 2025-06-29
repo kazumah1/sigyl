@@ -121,10 +121,16 @@ export class PackageService {
       throw new Error('Failed to fetch package details');
     }
 
+    // Merge required_secrets and optional_secrets into a single secrets array
+    const requiredSecrets = Array.isArray(packageData.required_secrets) ? packageData.required_secrets.map((s: any) => ({ ...s, required: true })) : [];
+    const optionalSecrets = Array.isArray(packageData.optional_secrets) ? packageData.optional_secrets.map((s: any) => ({ ...s, required: false })) : [];
+    const secrets = [...requiredSecrets, ...optionalSecrets];
+
     return {
       ...packageData,
       deployments: deployments || [],
-      tools: tools || []
+      tools: tools || [],
+      secrets,
     };
   }
 

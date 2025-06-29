@@ -36,6 +36,13 @@ export interface MCPTool {
 export interface PackageWithDetails extends MCPPackage {
   deployments: MCPDeployment[]
   tools: MCPTool[]
+  secrets?: Array<{
+    name: string;
+    description?: string;
+    type?: string;
+    required: boolean;
+    [key: string]: any;
+  }>
 }
 
 export interface PackageSearchResult {
