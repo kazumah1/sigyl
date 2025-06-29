@@ -44,7 +44,9 @@ export async function integrateWithExpress(options: IntegrateOptions): Promise<v
 			console.log(chalk.gray("\n2. Start your Express app normally:"))
 			console.log(chalk.cyan("   npm start"))
 			console.log(chalk.gray("\n3. Test with MCP Inspector:"))
-			console.log(chalk.cyan(`   mcp-scan inspect http://localhost:3000${options.endpoint || '/mcp'}`))
+			console.log(chalk.cyan(`   sigyl inspect http://localhost:3000${options.endpoint || '/mcp'}`))
+			console.log(chalk.yellow("\nℹ️  To change the Express API address/port, set the APP_BASE_URL environment variable when running the generated MCP server. Example:"))
+			console.log(chalk.cyan("  APP_BASE_URL=http://myhost:4000 node server.js"))
 		} else {
 			console.log(chalk.gray("✅ Integration automatically added to your Express app"))
 			console.log(chalk.gray("Start your app and visit /mcp endpoint"))

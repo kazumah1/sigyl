@@ -60,13 +60,13 @@ Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintai
 ### ✅ PRODUCTION READINESS STATUS
 
 **CLI Commands Verified Working:**
-- `mcp-scan scan` - ✅ Scans all demo types, generates container-builder compatible servers
-- `mcp-scan init` - ✅ Creates template servers with correct sigyl.yaml format  
-- `mcp-scan build` - ✅ TypeScript compilation working correctly
-- `mcp-scan clean` - ✅ Cleanup functionality working
-- `mcp-scan inspect` - ✅ Inspector integration available
-- `mcp-scan install` - ✅ Claude Desktop integration commands available
-- `mcp-scan --help` - ✅ Comprehensive help system
+- `sigyl-scan scan` - ✅ Scans all demo types, generates container-builder compatible servers
+- `sigyl-scan init` - ✅ Creates template servers with correct sigyl.yaml format  
+- `sigyl-scan build` - ✅ TypeScript compilation working correctly
+- `sigyl-scan clean` - ✅ Cleanup functionality working
+- `sigyl-scan inspect` - ✅ Inspector integration available
+- `sigyl-scan install` - ✅ Claude Desktop integration commands available
+- `sigyl-scan --help` - ✅ Comprehensive help system
 
 **✅ Customer Ready Features:**
 - Zero-config Express app scanning with proper container-builder integration
@@ -448,3 +448,8 @@ The platform is now significantly more polished with a cohesive dark theme, exce
 
 3. **Advanced UI Elements**
    - `MarketplaceModal.tsx`: Better package discovery
+
+## Update: CLI and Output Consistency
+- All references to 'mcp-scan' in CLI output, help, and documentation have been replaced with 'sigyl'.
+- The developer is now clearly informed (in CLI output, README, and generated code) how to change the Express API address/port for the generated MCP server using the APP_BASE_URL environment variable.
+- Example usage and comments are provided in both the generated code and CLI output.

@@ -55,9 +55,9 @@ async function installServer(serverPath: string | undefined, options: InstallOpt
 		if (!serverPath) {
 			console.log(chalk.yellow("⚠️  No generated MCP server found"))
 			console.log(chalk.blue("💡 Generate a server first with:"))
-			console.log(chalk.gray("   mcp-scan demo --mode scan"))
+			console.log(chalk.gray("   sigyl demo --mode scan"))
 			console.log(chalk.gray("   # or"))
-			console.log(chalk.gray("   mcp-scan scan /path/to/express/app"))
+			console.log(chalk.gray("   sigyl scan /path/to/express/app"))
 		} else {
 			console.error(chalk.red(`❌ Server file not found: ${targetPath}`))
 		}

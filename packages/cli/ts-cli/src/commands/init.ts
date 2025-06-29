@@ -45,7 +45,7 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 		console.log(chalk.gray(`  cd ${options.outDir}`))
 		console.log(chalk.gray("  npm install"))
 		console.log(chalk.gray("  npm run build"))
-		console.log(chalk.gray("  mcp-scan inspect"))
+		console.log(chalk.gray("  sigyl inspect"))
 		
 	} catch (error) {
 		spinner.fail("Template creation failed")

@@ -55,6 +55,18 @@ But we recommend the new `integrate` flow for most users.
 - Express.js application
 - TypeScript (optional, for TypeScript projects)
 
+## ⚙️ Changing the Express API Address/Port
+
+By default, the generated MCP server will call your Express API at `http://localhost:3000`.
+
+**To change this:**
+- Set the `APP_BASE_URL` environment variable when running the generated MCP server. For example:
+
+```bash
+APP_BASE_URL=http://myhost:4000 node server.js
+```
+- Or, edit the generated code in `server.ts`/`server.js` to change the base URL directly.
+
 ## 🤝 Support
 
 - GitHub Issues: [Report bugs or request features](https://github.com/sigyl-platform/sigyl-cli/issues)

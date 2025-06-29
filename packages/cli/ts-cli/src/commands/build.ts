@@ -10,5 +10,5 @@ export interface BuildOptions {
 export async function build(options: BuildOptions): Promise<void> {
 	console.log(chalk.blue("🔨 Building MCP server..."))
 	console.log(chalk.yellow("Build command not yet implemented"))
-	console.log(chalk.gray("Use 'mcp-scan scan' to generate the server first"))
+	console.log(chalk.gray("Use 'sigyl scan' to generate the server first"))
 } 

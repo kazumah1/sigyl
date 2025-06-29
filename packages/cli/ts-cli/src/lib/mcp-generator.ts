@@ -128,8 +128,15 @@ ${endpoints.map(endpoint => {
 		${shape},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
-			const url = \`http://localhost:\${config.appPort || 3000}${endpoint.path}\`;
-			const method = "${endpoint.method.toUpperCase()}";
+			/**
+			 * IMPORTANT: This MCP tool calls your Express API at the address below.
+			 * To change the API base URL (host/port), set the APP_BASE_URL environment variable when starting this server,
+			 * or edit the code below. Default is http://localhost:3000
+			 * Example: APP_BASE_URL=http://myhost:4000 node server.js
+			 */
+			const baseUrl = process.env.APP_BASE_URL || \`http://localhost:${'${config.appPort || 3000}'}\`;
+			const url = \`${'${baseUrl}'}${'${endpoint.path}'}\`;
+			const method = "${'${endpoint.method.toUpperCase()}'}";
 			
 			// Build request options
 			const requestOptions: any = {
