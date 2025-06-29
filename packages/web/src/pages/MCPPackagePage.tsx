@@ -474,60 +474,11 @@ const MCPPackagePage = () => {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-gray-400 mb-4">
-                <span className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
-                  by {pkg.author_id || 'Unknown'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Package className="w-4 h-4" />
-                  v{pkg.version || '1.0.0'}
-                </span>
-                {!isOwner && (
-                  <span className="flex items-center gap-1">
-                    <Download className="w-4 h-4" />
-                    {pkg.downloads_count.toLocaleString()} downloads
-                  </span>
-                )}
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  Updated {new Date(pkg.updated_at).toLocaleDateString()}
-                </span>
+              <div>
+                @{pkg.slug}
               </div>
             </div>
-          </div>
-
-          {/* Rating (only for non-owners) */}
-          {!isOwner && (
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => handleRate(star)}
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(null)}
-                    className="transition-colors"
-                    disabled={!user}
-                  >
-                    <Star
-                      className={`w-6 h-6 ${
-                        star <= (hoveredRating || userRating || 0)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-600'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-              <span className="text-gray-400">
-                Rate this package
-                {userRating && <span className="ml-2 text-blue-400">Your rating: {userRating}</span>}
-              </span>
-            </div>
-          )}
-
-          {/* Action Buttons */}
+            {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
             {isOwner ? (
               <>
@@ -589,6 +540,56 @@ const MCPPackagePage = () => {
               </>
             )}
           </div>
+          </div>
+          <div className="flex items-center gap-4 text-gray-400 mb-4">
+            <span className="flex items-center gap-1">
+              <User className="w-4 h-4" />
+              by {pkg.author_id || 'Unknown'}
+            </span>
+            <span className="flex items-center gap-1">
+              <Package className="w-4 h-4" />
+              v{pkg.version || '1.0.0'}
+            </span>
+            {!isOwner && (
+              <span className="flex items-center gap-1">
+                <Download className="w-4 h-4" />
+                {pkg.downloads_count.toLocaleString()} downloads
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              Updated {new Date(pkg.updated_at).toLocaleDateString()}
+            </span>
+          </div>
+          {/* Rating (only for non-owners) */}
+          {!isOwner && (
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleRate(star)}
+                    onMouseEnter={() => setHoveredRating(star)}
+                    onMouseLeave={() => setHoveredRating(null)}
+                    className="transition-colors"
+                    disabled={!user}
+                  >
+                    <Star
+                      className={`w-6 h-6 ${
+                        star <= (hoveredRating || userRating || 0)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-600'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-gray-400">
+                Rate this package
+                {userRating && <span className="ml-2 text-blue-400">Your rating: {userRating}</span>}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content */}

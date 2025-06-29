@@ -3,6 +3,7 @@
 export interface MCPPackage {
   id: string
   name: string
+  slug: string
   version?: string
   description?: string
   author_id?: string

@@ -87,42 +87,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
         </div>
 
         <Separator className="bg-gray-800" />
-
-        <div>
-          {!collapsed && (
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Quick Actions
-            </h3>
-          )}
-          <nav className="space-y-1">
-            <Link
-              to="/deploy"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 group"
-              title={collapsed ? 'Deploy' : undefined}
-            >
-              <div className="w-4 h-4 flex-shrink-0 bg-blue-600 rounded-sm" />
-              {!collapsed && <span className="whitespace-nowrap">Deploy New Server</span>}
-              {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap border border-gray-700">
-                  Deploy New Server
-                </div>
-              )}
-            </Link>
-            <Link
-              to="/marketplace"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 group"
-              title={collapsed ? 'Marketplace' : undefined}
-            >
-              <div className="w-4 h-4 flex-shrink-0 bg-green-600 rounded-sm" />
-              {!collapsed && <span className="whitespace-nowrap">Browse Marketplace</span>}
-              {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap border border-gray-700">
-                  Browse Marketplace
-                </div>
-              )}
-            </Link>
-          </nav>
-        </div>
       </div>
     </div>
   );

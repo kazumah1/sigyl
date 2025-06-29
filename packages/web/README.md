@@ -482,3 +482,10 @@ const { user, signIn, signOut, loading } = useAuth();
 **Last Updated**: January 2025
 **Status**: Development in Progress
 **Next Milestone**: Real deployment pipeline integration
+
+## Dashboard MCP Server List Behavior
+
+- The dashboard now lists all MCP servers (from the `mcp_packages` table) where the `author_id` matches the current user's profile UUID (from the `profiles` table, matched by `github_id`).
+- This replaces the previous logic that listed servers by workspace.
+- The user's GitHub ID is used to look up their profile UUID, which is then used to filter MCP packages.
+- Only MCP servers/packages created by the logged-in user will appear in their dashboard.

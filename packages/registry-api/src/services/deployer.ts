@@ -266,6 +266,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
         name: mcpYaml?.name || request.repoName,
+        slug: request.repoName,
         version: mcpYaml?.version || null,
         description: mcpYaml?.description || null,
         author_id: authorIdToUse,

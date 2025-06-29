@@ -160,6 +160,9 @@ const PackageDetails = () => {
                   </Badge>
                 )}
               </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">{pkg.slug}</h1>
+              </div>
               <div className="flex items-center gap-4 text-gray-400 mb-4">
                 <span className="flex items-center gap-1">
                   <User className="w-4 h-4" />
@@ -167,7 +170,7 @@ const PackageDetails = () => {
                 </span>
                 <span className="flex items-center gap-1">
                   <Package className="w-4 h-4" />
-                  v{pkg.version}
+                  v{pkg.slug}
                 </span>
                 <span className="flex items-center gap-1">
                   <Download className="w-4 h-4" />

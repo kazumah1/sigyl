@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface MCPPackage {
   id: string;
   name: string;
+  slug: string;
   description: string;
   version: string;
   author_id: string;

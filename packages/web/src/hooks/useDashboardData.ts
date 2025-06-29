@@ -177,34 +177,33 @@ export const useDashboardData = () => {
         workspace = await workspaceService.getOrCreateDemoWorkspace();
       }
 
-      if (workspace) {
-        const [mcpServers, metrics, visitData, toolUsageData, serverStatusData] = await Promise.all([
-          mcpServerService.getMCPServers(workspace.id),
-          analyticsService.getMetrics(workspace.id),
-          analyticsService.getVisitData(workspace.id),
-          analyticsService.getToolUsageData(workspace.id),
-          analyticsService.getServerStatusData(workspace.id)
-        ]);
-
-        setData({
-          workspace,
-          mcpServers,
-          metrics,
-          analyticsData: {
-            visitData,
-            toolUsageData,
-            serverStatusData
-          },
-          loading: false,
-          error: null
-        });
-      } else {
-        setData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'No workspace found and could not create demo workspace'
-        }));
+      // === MCP Servers: Use new logic based on mcp_packages and author_id ===
+      // Get github_id from user metadata (fallback to sub if not present)
+      const githubId = user.user_metadata?.github_id || user.user_metadata?.sub;
+      let mcpServers: MCPServer[] = [];
+      if (githubId) {
+        mcpServers = await mcpServerService.getUserMCPServers(githubId);
       }
+
+      const [metrics, visitData, toolUsageData, serverStatusData] = await Promise.all([
+        analyticsService.getMetrics(workspace.id),
+        analyticsService.getVisitData(workspace.id),
+        analyticsService.getToolUsageData(workspace.id),
+        analyticsService.getServerStatusData(workspace.id)
+      ]);
+
+      setData({
+        workspace,
+        mcpServers,
+        metrics,
+        analyticsData: {
+          visitData,
+          toolUsageData,
+          serverStatusData
+        },
+        loading: false,
+        error: null
+      });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       setData(prev => ({
