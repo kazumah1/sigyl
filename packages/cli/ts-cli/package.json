@@ -1,88 +1,62 @@
 {
-  "name": "@mcp-scan/cli",
+  "name": "@sigyl/cli",
   "version": "1.0.0",
   "type": "commonjs",
   "private": false,
-  "description": "Automatically scan Express/Node.js applications and generate Model Context Protocol (MCP) servers from their endpoints. Zero-config conversion of REST APIs to AI-accessible tools.",
+  "description": "Sigyl CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.",
   "keywords": [
+    "sigyl",
     "mcp",
     "model-context-protocol",
     "express",
     "nodejs",
     "api-scanning",
     "ai-tools",
-    "claude-desktop",
     "rest-api",
     "code-generation",
     "typescript",
     "javascript"
   ],
-  "homepage": "https://github.com/your-org/mcp-scan-cli#readme",
+  "homepage": "https://github.com/sigyl-platform/sigyl-cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/mcp-scan-cli.git"
+    "url": "git+https://github.com/sigyl-platform/sigyl-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/mcp-scan-cli/issues"
+    "url": "https://github.com/sigyl-platform/sigyl-cli/issues"
   },
   "license": "MIT",
   "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com"
+    "name": "Sigyl Team",
+    "email": "support@sigyl.com"
   },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && node build.mjs && chmod +x dist/index.js",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts dev",
-    "test": "tsx src/test-cli.ts",
-    "demo": "tsx src/index.ts demo",
-    "demo:js": "tsx src/index.ts demo --app js",
-    "demo:ts": "tsx src/index.ts demo --app ts",
-    "demo:dev": "tsx src/index.ts demo --mode dev",
-    "init": "tsx src/index.ts init",
-    "init:js": "tsx src/index.ts init --server-language javascript",
-    "scan": "tsx src/index.ts scan",
-    "dev-mode": "tsx src/index.ts dev",
-    "inspect": "tsx src/index.ts inspect",
-    "clean": "tsx src/index.ts clean",
     "prepare": "npm run build",
     "check": "npx @biomejs/biome check --write --unsafe",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build"
   },
   "bin": {
-    "mcp-scan": "dist/index.js"
+    "sigyl": "dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
     "cors": "^2.8.5",
-    "cross-fetch": "^4.1.0",
-    "esbuild": "^0.25.5",
     "express": "^5.1.0",
     "inquirer": "^8.2.6",
-    "inquirer-autocomplete-prompt": "^2.0.0",
-    "lodash": "^4.17.21",
     "ora": "^8.2.0",
     "ts-morph": "^21.0.1",
-    "uuid": "^11.1.0",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
-    "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/inquirer": "^8.2.11",
-    "@types/inquirer-autocomplete-prompt": "^3.0.3",
-    "@types/jest": "^29.5.12",
-    "@types/json-schema": "^7.0.15",
-    "@types/lodash": "^4.17.14",
-    "@types/node": "^14.18.63",
-    "dotenv": "^16.4.7",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
-    "ts-node": "^10.9.1",
+    "@types/node": "^20.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0"
   },

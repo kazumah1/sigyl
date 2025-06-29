@@ -1,273 +1,237 @@
 #!/usr/bin/env node
 
+import { Command } from "commander"
 import chalk from "chalk"
-import inquirer from "inquirer"
-import { spawn } from "node:child_process"
+import { scanAndGenerate } from "./commands/scan"
+import { initTemplate } from "./commands/init"
+import { dev } from "./commands/dev"
+import { createInstallCommand } from "./commands/install"
+import inspectCommand from "./commands/inspect"
+import { integrateWithExpress } from "./commands/integrate"
 import { existsSync, rmSync } from "node:fs"
 import { join } from "node:path"
 
-interface TestOption {
-	name: string
-	value: string
-	description: string
-	command: string
-	background?: boolean
-}
+const program = new Command()
 
-// Determine the correct CLI command for spawning subcommands
-const cliCommand = `${process.execPath} ${process.argv[1]}`;
+program
+	.name("sigyl")
+	.description("Sigyl CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.")
+	.version("1.0.0")
 
-const testOptions: TestOption[] = [
-	{
-		name: "🎯 Demo Mode",
-		value: "demo",
-		description: "Quick demo with included Express apps (JS/TS)",
-		command: `${cliCommand} demo`
-	},
-	{
-		name: "Create Blank Template",
-		value: "init",
-		description: "Create a template MCP server with sample tools",
-		command: `${cliCommand} init`
-	},
-	{
-		name: "Create from Existing App",
-		value: "scan",
-		description: "Scan your own Express app and generate MCP server",
-		command: `${cliCommand} scan`
-	},
-	{
-		name: "🚀 Development Mode",
-		value: "dev",
-		description: "Start dev mode with hot reload and MCP Inspector",
-		command: `${cliCommand} dev`,
-		background: true
-	},
-	{
-		name: "🕵️  Open Inspector",
-		value: "inspect",
-		description: "Launch MCP Inspector UI to test your server",
-		command: `${cliCommand} inspect`
-	},
-	{
-		name: "🧹 Clean Generated Files",
-		value: "clean",
-		description: "Remove template-mcp directory",
-		command: `${cliCommand} clean`
-	}
-]
-
-async function runCommand(command: string, background = false): Promise<void> {
-	return new Promise((resolve, reject) => {
-		console.log(chalk.blue(`\n▶️  Running: ${command}\n`))
-		
-		const [cmd, ...args] = command.split(" ")
-		const childProcess = spawn(cmd, args, {
-			stdio: "inherit",
-			shell: true
-		})
-
-		if (background) {
-			console.log(chalk.yellow("🔄 Process running in background. Press Ctrl+C to stop and return to menu."))
-			
-			const cleanup = () => {
-				childProcess.kill("SIGTERM")
-				console.log(chalk.yellow("\n👋 Stopped background process"))
-				resolve()
-			}
-
-			process.on("SIGINT", cleanup)
-			
-			childProcess.on("exit", () => {
-				process.removeListener("SIGINT", cleanup)
-				resolve()
-			})
-		} else {
-			childProcess.on("exit", (code) => {
-				if (code === 0) {
-					console.log(chalk.green(`\n✅ Command completed successfully\n`))
-					resolve()
-				} else {
-					console.log(chalk.red(`\n❌ Command failed with code ${code}\n`))
-					reject(new Error(`Command failed with code ${code}`))
-				}
-			})
-		}
-
-		childProcess.on("error", (error) => {
-			console.error(chalk.red(`\n❌ Command error: ${error.message}\n`))
-			reject(error)
-		})
-	})
-}
-
-async function showStatus(): Promise<void> {
-	console.log(chalk.blue("\n📊 MCP CLI Status\n"))
-	
-	// Check generated files
-	const generatedDir = "template-mcp"
-	const generatedExists = existsSync(generatedDir)
-	console.log(`Generated Server: ${generatedExists ? chalk.green("✅ Exists") : chalk.yellow("⚠️  Not generated")}`)
-	
-	if (generatedExists) {
-		const serverTs = existsSync(join(generatedDir, "server.ts"))
-		const serverJs = existsSync(join(generatedDir, "server.js"))
-		const mcpYaml = existsSync(join(generatedDir, "sigyl.yaml"))
-		const toolsDir = existsSync(join(generatedDir, "tools"))
-		const packageJson = existsSync(join(generatedDir, "package.json"))
-		
-		console.log(`  - server.ts: ${serverTs ? chalk.green("✅") : chalk.red("❌")}`)
-		console.log(`  - server.js: ${serverJs ? chalk.green("✅") : chalk.red("❌")}`)
-		console.log(`  - sigyl.yaml: ${mcpYaml ? chalk.green("✅") : chalk.red("❌")}`)
-		console.log(`  - tools/: ${toolsDir ? chalk.green("✅") : chalk.red("❌")}`)
-		console.log(`  - package.json: ${packageJson ? chalk.green("✅") : chalk.red("❌")}`)
-	}
-	
-	// Check demo apps
-	const demoJs = existsSync("../demo/package.json")
-	const demoTs = existsSync("../demo-ts/package.json")
-	console.log(`Demo Apps:`)
-	console.log(`  - JavaScript: ${demoJs ? chalk.green("✅") : chalk.red("❌")}`)
-	console.log(`  - TypeScript: ${demoTs ? chalk.green("✅") : chalk.red("❌")}`)
-	
-	console.log()
-}
-
-async function main(): Promise<void> {
-	console.log(chalk.bold.blue("🧪 MCP CLI Test Suite"))
-	console.log(chalk.gray("Simplified testing and development tool\n"))
-
-	while (true) {
+// ============================================================================
+// INTEGRATE Command - Recommended developer flow
+// ============================================================================
+program
+	.command("integrate")
+	.description("Integrate MCP endpoints into your existing Express app (recommended)")
+	.option("--out <directory>", "Output directory for integration code", ".sigyl-mcp")
+	.option("--endpoint <path>", "MCP endpoint path", "/mcp")
+	.option("--auto-add", "(Coming soon) Automatically add integration to your app")
+	.option("-l, --language <language>", "Server language (typescript|javascript)", "typescript")
+	.argument("[directory]", "Directory containing Express app", ".")
+	.action(async (directory: string, options: any) => {
 		try {
-			const { selectedTest } = await inquirer.prompt([
-				{
-					type: "list",
-					name: "selectedTest",
-					message: "What would you like to do?",
-					choices: [
-						...testOptions.map(option => ({
-							name: `${option.name} - ${chalk.gray(option.description)}`,
-							value: option.value
-						})),
-						new inquirer.Separator(),
-						{
-							name: "📊 Show Status",
-							value: "status"
-						},
-						{
-							name: "🚪 Exit",
-							value: "exit"
-						}
-					]
-				}
-			])
-
-			if (selectedTest === "exit") {
-				console.log(chalk.green("👋 Goodbye!"))
-				process.exit(0)
-			}
-
-			if (selectedTest === "status") {
-				await showStatus()
-				continue
-			}
-
-			const testOption = testOptions.find(opt => opt.value === selectedTest)
-			if (!testOption) {
-				console.log(chalk.red("❌ Invalid test option"))
-				continue
-			}
-
-			// Run the command
-			await runCommand(testOption.command, testOption.background)
-
+			console.log(chalk.blue("🔗 Sigyl MCP Integration"))
+			console.log(chalk.gray("Integrating MCP endpoints into your Express app...\n"))
+			await integrateWithExpress({
+				directory,
+				outDir: options.out,
+				serverLanguage: options.language,
+				autoAdd: options.autoAdd,
+				endpoint: options.endpoint
+			})
 		} catch (error) {
-			if (error instanceof Error && error.message.includes("User force closed")) {
-				console.log(chalk.yellow("\n👋 Exiting..."))
-				process.exit(0)
-			}
-			console.error(chalk.red("❌ Test failed:"), error)
-			
-			// Ask if they want to continue
-			const { continueTests } = await inquirer.prompt([
-				{
-					type: "confirm",
-					name: "continueTests",
-					message: "Continue with other tests?",
-					default: true
-				}
-			])
-
-			if (!continueTests) {
-				break
-			}
+			console.error(chalk.red("❌ Integration failed:"), error)
+			process.exit(1)
 		}
-	}
-}
+	})
 
-// Handle Ctrl+C gracefully
-process.on("SIGINT", () => {
-	console.log(chalk.yellow("\n👋 Goodbye!"))
-	process.exit(0)
+// ============================================================================
+// SCAN Command - Legacy/advanced
+// ============================================================================
+program
+	.command("scan")
+	.description("Scan Express application and generate standalone MCP server (legacy)")
+	.argument("[directory]", "Directory to scan (default: current directory)", ".")
+	.option("-o, --out <directory>", "Output directory for generated server", ".mcp-generated")
+	.option("-p, --port <port>", "Port where your Express app runs", "3000")
+	.option("-l, --language <language>", "Server language (typescript|javascript)", "typescript")
+	.option("--framework <framework>", "Web framework (express)", "express")
+	.action(async (directory: string, options: any) => {
+		try {
+			console.log(chalk.blue("🔍 Sigyl MCP Server Generator"))
+			console.log(chalk.gray("Scanning Express application and generating MCP server...\n"))
+			await scanAndGenerate(directory, {
+				outDir: options.out,
+				serverLanguage: options.language,
+				port: options.port,
+				framework: options.framework
+			})
+		} catch (error) {
+			console.error(chalk.red("❌ Scan failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// INIT Command - Create template server (legacy)
+// ============================================================================
+program
+	.command("init")
+	.description("Create a template MCP server with sample tools (legacy)")
+	.option("-o, --out <directory>", "Output directory", ".mcp-generated")
+	.option("-l, --language <language>", "Server language (typescript|javascript)", "typescript")
+	.option("-n, --name <name>", "Server name", "my-mcp-server")
+	.action(async (options: any) => {
+		try {
+			console.log(chalk.blue("🔧 Sigyl MCP Template Generator"))
+			console.log(chalk.gray("Creating template MCP server...\n"))
+			await initTemplate({
+				outDir: options.out,
+				serverLanguage: options.language,
+				name: options.name
+			})
+		} catch (error) {
+			console.error(chalk.red("❌ Template creation failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// DEV Command - Development mode (legacy)
+// ============================================================================
+program
+	.command("dev")
+	.description("Start development mode with hot reload (legacy)")
+	.argument("[directory]", "Directory containing Express app", ".")
+	.option("-p, --port <port>", "MCP server port", "8181")
+	.option("--app-port <port>", "Express app port", "3000")
+	.option("-l, --language <language>", "Server language (typescript|javascript)", "typescript")
+	.option("--no-open", "Don't open MCP Inspector automatically")
+	.action(async (directory: string, options: any) => {
+		try {
+			console.log(chalk.blue("🚀 Sigyl MCP Development Mode"))
+			console.log(chalk.gray("Starting development server with hot reload...\n"))
+			await dev({
+				directory,
+				port: options.port,
+				appPort: options.appPort,
+				serverLanguage: options.language,
+				open: options.open
+			})
+		} catch (error) {
+			console.error(chalk.red("❌ Development mode failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// INSPECT Command - Launch MCP Inspector
+// ============================================================================
+program
+	.command("inspect")
+	.description("Launch MCP Inspector to test your server or endpoint")
+	.argument("[server-path]", "Path or URL to MCP server (default: .sigyl-mcp/integration or .mcp-generated/server.js)", ".sigyl-mcp/integration")
+	.action(async (serverPath: string) => {
+		try {
+			console.log(chalk.blue("🕵️  Sigyl MCP Inspector"))
+			console.log(chalk.gray("Launching MCP Inspector UI...\n"))
+			await inspectCommand([], serverPath)
+		} catch (error) {
+			console.error(chalk.red("❌ Inspector launch failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// INSTALL Command - Install in Claude Desktop (legacy)
+// ============================================================================
+program.addCommand(createInstallCommand())
+
+// ============================================================================
+// CLEAN Command - Clean generated files (legacy)
+// ============================================================================
+program
+	.command("clean")
+	.description("Clean generated MCP server files (legacy)")
+	.option("-o, --out <directory>", "Output directory to clean", ".mcp-generated")
+	.action((options: any) => {
+		try {
+			const outDir = options.out
+			if (existsSync(outDir)) {
+				rmSync(outDir, { recursive: true, force: true })
+				console.log(chalk.green(`✅ Cleaned ${outDir} directory`))
+			} else {
+				console.log(chalk.yellow(`⚠️  Directory ${outDir} not found`))
+			}
+		} catch (error) {
+			console.error(chalk.red("❌ Clean failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// BUILD Command - Build MCP server (legacy)
+// ============================================================================
+program
+	.command("build")
+	.description("Build MCP server from TypeScript to JavaScript (legacy)")
+	.argument("[directory]", "Directory containing MCP server", ".mcp-generated")
+	.action(async (directory: string) => {
+		try {
+			console.log(chalk.blue("🔨 Building Sigyl MCP Server"))
+			console.log(chalk.gray("Compiling TypeScript to JavaScript...\n"))
+			const packageJsonPath = join(directory, "package.json")
+			const tsconfigPath = join(directory, "tsconfig.json")
+			if (!existsSync(packageJsonPath)) {
+				console.error(chalk.red(`❌ No package.json found in ${directory}`))
+				console.log(chalk.blue("💡 Generate a server first with:"))
+				console.log(chalk.gray("   sigyl scan"))
+				process.exit(1)
+			}
+			if (!existsSync(tsconfigPath)) {
+				console.error(chalk.red(`❌ No tsconfig.json found in ${directory}`))
+				process.exit(1)
+			}
+			const { spawn } = await import("node:child_process")
+			const tscProcess = spawn("npx", ["tsc"], {
+				cwd: directory,
+				stdio: "inherit"
+			})
+			tscProcess.on("exit", (code) => {
+				if (code === 0) {
+					console.log(chalk.green("✅ Build completed successfully"))
+				} else {
+					console.error(chalk.red("❌ Build failed"))
+					process.exit(1)
+				}
+			})
+		} catch (error) {
+			console.error(chalk.red("❌ Build failed:"), error)
+			process.exit(1)
+		}
+	})
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+program.configureOutput({
+	writeErr: (str) => process.stderr.write(chalk.red(str)),
+	writeOut: (str) => process.stdout.write(str),
 })
 
-// Subcommand dispatcher
-async function runSubcommand(args: string[]) {
-	const cmd = args[0];
-	if (!cmd) return false; // No subcommand, show menu
+process.on("unhandledRejection", (reason, promise) => {
+	console.error(chalk.red("❌ Unhandled Rejection at:"), promise, chalk.red("reason:"), reason)
+	process.exit(1)
+})
 
-	switch (cmd) {
-		case "init": {
-			const { initTemplate } = await import("./commands/init");
-			// You may want to parse options from args.slice(1) if needed
-			await initTemplate({ outDir: "template-mcp", serverLanguage: "typescript", name: "my-mcp-server" });
-			return true;
-		}
-		case "demo": {
-			const { createDemoCommand } = await import("./commands/demo");
-			// Simulate running the demo command
-			await createDemoCommand().parseAsync(["demo"]);
-			return true;
-		}
-		case "scan": {
-			const { scanAndGenerate } = await import("./commands/scan");
-			await scanAndGenerate("./", { outDir: "template-mcp", serverLanguage: "typescript" });
-			return true;
-		}
-		case "dev": {
-			const { dev } = await import("./commands/dev");
-			await dev({ directory: "./", port: "8181", serverLanguage: "typescript" });
-			return true;
-		}
-		case "inspect": {
-			const inspectCommand = (await import("./commands/inspect")).default;
-			await inspectCommand([]);
-			return true;
-		}
-		case "clean": {
-			const { rmSync, existsSync } = await import("node:fs");
-			const out = "template-mcp";
-			if (existsSync(out)) {
-				rmSync(out, { recursive: true, force: true });
-				console.log("✅ Cleaned template-mcp directory");
-			} else {
-				console.log("⚠️  template-mcp directory not found");
-			}
-			return true;
-		}
-		default:
-			return false; // Unknown command, show menu
-	}
-}
+process.on("uncaughtException", (error) => {
+	console.error(chalk.red("❌ Uncaught Exception:"), error)
+	process.exit(1)
+})
 
 if (require.main === module) {
-	const args = process.argv.slice(2);
-	runSubcommand(args).then((handled) => {
-		if (!handled) {
-			main().catch((error) => {
-				console.error(chalk.red("❌ Test CLI failed:"), error);
-				process.exit(1);
-			});
-		}
-	});
-} 
+	program.parse()
+}
+
+export default program 
