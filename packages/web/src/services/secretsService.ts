@@ -30,13 +30,12 @@ export class SecretsService {
   /**
    * Get authentication headers for API requests
    */
-  private static getAuthHeaders(): HeadersInit {
-    const githubToken = localStorage.getItem('github_app_access_token');
-    if (!githubToken) {
+  private static getAuthHeaders(token: string): HeadersInit {
+    if (!token) {
       throw new Error('No authentication token available');
     }
     return {
-      'Authorization': `Bearer ${githubToken}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
   }
@@ -44,13 +43,13 @@ export class SecretsService {
   /**
    * Get all secrets for the current user
    */
-  static async getSecrets(mcpServerId?: string): Promise<Secret[]> {
+  static async getSecrets(token: string, mcpServerId?: string): Promise<Secret[]> {
     try {
       const url = mcpServerId 
         ? `${REGISTRY_API_BASE}/secrets?mcp_server_id=${mcpServerId}`
         : `${REGISTRY_API_BASE}/secrets`;
       const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -67,10 +66,10 @@ export class SecretsService {
   /**
    * Get a specific secret by ID
    */
-  static async getSecret(id: string): Promise<Secret> {
+  static async getSecret(token: string, id: string): Promise<Secret> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/secrets/${id}`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -87,11 +86,11 @@ export class SecretsService {
   /**
    * Create a new secret
    */
-  static async createSecret(request: CreateSecretRequest): Promise<Secret> {
+  static async createSecret(token: string, request: CreateSecretRequest): Promise<Secret> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/secrets`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
         body: JSON.stringify(request),
       });
       if (!response.ok) {
@@ -109,11 +108,11 @@ export class SecretsService {
   /**
    * Update an existing secret
    */
-  static async updateSecret(id: string, request: UpdateSecretRequest): Promise<Secret> {
+  static async updateSecret(token: string, id: string, request: UpdateSecretRequest): Promise<Secret> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/secrets/${id}`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
         body: JSON.stringify(request),
       });
       if (!response.ok) {
@@ -131,11 +130,11 @@ export class SecretsService {
   /**
    * Delete a secret
    */
-  static async deleteSecret(id: string): Promise<void> {
+  static async deleteSecret(token: string, id: string): Promise<void> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/secrets/${id}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -150,9 +149,9 @@ export class SecretsService {
   /**
    * Get secrets as environment variables for MCP server deployment
    */
-  static async getSecretsAsEnvVars(mcpServerId: string): Promise<Record<string, string>> {
+  static async getSecretsAsEnvVars(token: string, mcpServerId: string): Promise<Record<string, string>> {
     try {
-      const secrets = await this.getSecrets(mcpServerId);
+      const secrets = await this.getSecrets(token, mcpServerId);
       const envVars: Record<string, string> = {};
       secrets.forEach(secret => {
         envVars[secret.key] = secret.value;

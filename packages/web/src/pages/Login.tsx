@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Github, Key, Loader2, Shield, UserPlus, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
+import { APIKeyService } from '@/services/apiKeyService';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signInWithGitHubApp } = useAuth();
+  const { signInWithGitHubApp, session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
@@ -27,20 +27,13 @@ const Login = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: 'http://localhost:8080/auth/callback',
           scopes: 'read:user user:email'
         }
       });
-
-      if (error) {
-        console.error('GitHub OAuth error:', error);
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
       // The redirect will happen automatically
+      // But if we are returned to this page with a session, check for app install
+      // (This logic is also needed in a useEffect below)
     } catch (error) {
       console.error('Error during GitHub login:', error);
       toast({
@@ -114,6 +107,29 @@ const Login = () => {
     }
   };
 
+  // Add a useEffect to check for GitHub App installation after login
+  useEffect(() => {
+    const checkGitHubAppInstall = async () => {
+      if (session?.access_token) {
+        setLoading(true);
+        try {
+          const profile = await APIKeyService.getUserProfile(session.access_token);
+          if (profile && profile.github_app_installed === false) {
+            // Redirect to GitHub App install page
+            const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
+            const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
+            window.location.href = `https://github.com/apps/${appName}/installations/new?state=login&request_oauth_on_install=true&redirect_uri=${redirectUrl}`;
+          }
+        } catch (error) {
+          console.error('Error checking GitHub App install status:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    checkGitHubAppInstall();
+  }, [session]);
+
   return (
     <div className="min-h-screen bg-black">
       <PageHeader />
@@ -129,69 +145,24 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-800">
-                <TabsTrigger value="login" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
-                  <LogIn className="w-4 h-4 mr-1" />
-                  Login
-                </TabsTrigger>
-                <TabsTrigger value="signup" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
-                  <UserPlus className="w-4 h-4 mr-1" />
-                  Sign Up
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login" className="space-y-4">
-                <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-4">
-                    <LogIn className="w-4 h-4" />
-                    <span>Returning user login</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Sign in with your existing GitHub account. No need to reinstall the app.
-                  </p>
-                  <Button 
-                    onClick={handleGitHubLogin}
-                    disabled={loading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold"
-                    size="lg"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    ) : (
-                      <Github className="w-5 h-5 mr-2" />
-                    )}
-                    Sign In with GitHub
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="signup" className="space-y-4">
-                <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-4">
-                    <Shield className="w-4 h-4" />
-                    <span>First-time setup with repository access</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Create a new account and install the GitHub App to access your repositories for MCP server deployment.
-                  </p>
-                  <Button 
-                    onClick={handleGitHubAppSignup}
-                    disabled={signupLoading}
-                    className="w-full bg-white hover:bg-gray-100 text-black font-bold tracking-tight"
-                    size="lg"
-                  >
-                    {signupLoading ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    ) : (
-                      <Github className="w-5 h-5 mr-2" />
-                    )}
-                    Sign Up with GitHub App
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-
+            <div className="text-center space-y-4">
+              <p className="text-sm text-gray-400">
+                Sign in to access your MCP dashboard. You will be prompted to install the GitHub App if required.
+              </p>
+              <Button 
+                onClick={handleGitHubLogin}
+                disabled={loading}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+                size="lg"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <Github className="w-5 h-5 mr-2" />
+                )}
+                Sign In with GitHub
+              </Button>
+            </div>
             {/* Admin login section - hidden by default */}
             <details className="mt-8">
               <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">

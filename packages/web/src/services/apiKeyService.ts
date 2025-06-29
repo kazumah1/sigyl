@@ -38,17 +38,12 @@ export class APIKeyService {
   /**
    * Get authentication headers for API requests
    */
-  private static getAuthHeaders(): HeadersInit {
-    // For now, we'll use the GitHub App access token
-    // In the future, this could be a dedicated API key or JWT token
-    const githubToken = localStorage.getItem('github_app_access_token');
-    
-    if (!githubToken) {
+  private static getAuthHeaders(token: string): HeadersInit {
+    if (!token) {
       throw new Error('No authentication token available');
     }
-
     return {
-      'Authorization': `Bearer ${githubToken}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
   }
@@ -56,11 +51,11 @@ export class APIKeyService {
   /**
    * Create a new API key
    */
-  static async createAPIKey(request: CreateAPIKeyRequest): Promise<CreateAPIKeyResponse> {
+  static async createAPIKey(token: string, request: CreateAPIKeyRequest): Promise<CreateAPIKeyResponse> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
         body: JSON.stringify(request),
       });
 
@@ -80,10 +75,10 @@ export class APIKeyService {
   /**
    * Get all API keys for the current user
    */
-  static async getAPIKeys(): Promise<APIKey[]> {
+  static async getAPIKeys(token: string): Promise<APIKey[]> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -102,10 +97,10 @@ export class APIKeyService {
   /**
    * Get a specific API key by ID
    */
-  static async getAPIKey(id: string): Promise<APIKey> {
+  static async getAPIKey(token: string, id: string): Promise<APIKey> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys/${id}`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -124,10 +119,10 @@ export class APIKeyService {
   /**
    * Get API key usage statistics
    */
-  static async getAPIKeyStats(id: string, days: number = 30): Promise<APIKeyStats> {
+  static async getAPIKeyStats(token: string, id: string, days: number = 30): Promise<APIKeyStats> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys/${id}/stats?days=${days}`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -146,11 +141,11 @@ export class APIKeyService {
   /**
    * Deactivate an API key
    */
-  static async deactivateAPIKey(id: string): Promise<void> {
+  static async deactivateAPIKey(token: string, id: string): Promise<void> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys/${id}/deactivate`, {
         method: 'PATCH',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -166,11 +161,11 @@ export class APIKeyService {
   /**
    * Delete an API key
    */
-  static async deleteAPIKey(id: string): Promise<void> {
+  static async deleteAPIKey(token: string, id: string): Promise<void> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys/${id}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -186,10 +181,10 @@ export class APIKeyService {
   /**
    * Get current user profile
    */
-  static async getUserProfile(): Promise<any> {
+  static async getUserProfile(token: string): Promise<any> {
     try {
       const response = await fetch(`${REGISTRY_API_BASE}/keys/profile/me`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(token),
       });
 
       if (!response.ok) {

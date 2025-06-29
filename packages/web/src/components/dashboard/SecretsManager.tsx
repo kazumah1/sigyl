@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SecretsManagerProps {
   workspaceId: string;
@@ -46,6 +47,8 @@ interface SecretsManagerProps {
 
 const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerId }) => {
   const { toast } = useToast();
+  const { user, session } = useAuth();
+  const token = session?.access_token;
   
   // Secrets state
   const [secrets, setSecrets] = useState<Secret[]>([]);
@@ -78,15 +81,22 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchSecrets();
-    fetchAPIKeys();
-  }, [mcpServerId]);
+    if (token) {
+      fetchSecrets();
+      fetchAPIKeys();
+    }
+  }, [token, mcpServerId]);
 
   // Secrets functions
   const fetchSecrets = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to view secrets.', variant: 'destructive' });
+      setIsLoadingSecrets(false);
+      return;
+    }
     try {
       setIsLoadingSecrets(true);
-      const fetchedSecrets = await SecretsService.getSecrets(mcpServerId);
+      const fetchedSecrets = await SecretsService.getSecrets(token, mcpServerId);
       setSecrets(fetchedSecrets);
     } catch (error) {
       console.error('Failed to fetch secrets:', error);
@@ -101,6 +111,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleCreateSecret = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to create secrets.', variant: 'destructive' });
+      return;
+    }
     if (!formData.key.trim() || !formData.value.trim()) {
       toast({
         title: "Error",
@@ -129,7 +143,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         mcp_server_id: formData.mcp_server_id || undefined
       };
       
-      const newSecret = await SecretsService.createSecret(request);
+      const newSecret = await SecretsService.createSecret(token, request);
       setSecrets(prev => [newSecret, ...prev]);
       
       // Reset form
@@ -158,11 +172,15 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleUpdateSecret = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to update secrets.', variant: 'destructive' });
+      return;
+    }
     if (!editingSecret) return;
 
     try {
       setIsCreatingSecret(true);
-      const updatedSecret = await SecretsService.updateSecret(editingSecret.id, {
+      const updatedSecret = await SecretsService.updateSecret(token, editingSecret.id, {
         key: formData.key.toUpperCase(),
         value: formData.value,
         description: formData.description,
@@ -200,8 +218,12 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeleteSecret = async (id: string, key: string) => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to delete secrets.', variant: 'destructive' });
+      return;
+    }
     try {
-      await SecretsService.deleteSecret(id);
+      await SecretsService.deleteSecret(token, id);
       setSecrets(prev => prev.filter(secret => secret.id !== id));
       toast({
         title: "Secret Deleted",
@@ -253,9 +275,14 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
   // API Keys functions
   const fetchAPIKeys = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive' });
+      setIsLoadingApiKeys(false);
+      return;
+    }
     try {
       setIsLoadingApiKeys(true);
-      const keys = await APIKeyService.getAPIKeys();
+      const keys = await APIKeyService.getAPIKeys(token);
       setApiKeys(keys);
     } catch (error) {
       console.error('Failed to fetch API keys:', error);
@@ -270,6 +297,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleCreateApiKey = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive' });
+      return;
+    }
     if (!newKeyName.trim()) return;
     
     try {
@@ -279,7 +310,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         permissions: ['read', 'write'],
       };
       
-      const result = await APIKeyService.createAPIKey(request);
+      const result = await APIKeyService.createAPIKey(token, request);
       
       setNewlyCreatedKey(result.api_key);
       setShowKeyModal(true);
@@ -312,9 +343,13 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeleteApiKey = async (id: string) => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive' });
+      return;
+    }
     setDeleteConfirmId(null);
     try {
-      await APIKeyService.deleteAPIKey(id);
+      await APIKeyService.deleteAPIKey(token, id);
       setApiKeys(prev => prev.filter(key => key.id !== id));
       setFullApiKeys(prev => {
         const updated = { ...prev };
@@ -337,8 +372,12 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeactivateApiKey = async (id: string) => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive' });
+      return;
+    }
     try {
-      await APIKeyService.deactivateAPIKey(id);
+      await APIKeyService.deactivateAPIKey(token, id);
       setApiKeys(prev => prev.map(key => 
         key.id === id ? { ...key, is_active: false } : key
       ));

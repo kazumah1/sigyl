@@ -7,6 +7,7 @@ import { Key, Plus, Copy, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { APIKeyService, APIKey, CreateAPIKeyRequest } from '@/services/apiKeyService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface APIKeysManagerProps {
   workspaceId: string;
@@ -14,6 +15,8 @@ interface APIKeysManagerProps {
 
 const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const { toast } = useToast();
+  const { user, session } = useAuth();
+  const token = session?.access_token;
   const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});
@@ -25,13 +28,20 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
 
   // Fetch API keys on component mount
   useEffect(() => {
-    fetchAPIKeys();
-  }, []);
+    if (token) {
+      fetchAPIKeys();
+    }
+  }, [token]);
 
   const fetchAPIKeys = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive' });
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const keys = await APIKeyService.getAPIKeys();
+      const keys = await APIKeyService.getAPIKeys(token);
       setApiKeys(keys);
     } catch (error) {
       console.error('Failed to fetch API keys:', error);
@@ -46,6 +56,10 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleCreateKey = async () => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive' });
+      return;
+    }
     if (!newKeyName.trim()) return;
     
     try {
@@ -55,7 +69,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
         permissions: ['read', 'write'],
       };
       
-      const result = await APIKeyService.createAPIKey(request);
+      const result = await APIKeyService.createAPIKey(token, request);
       
       setNewlyCreatedKey(result.api_key);
       setShowKeyModal(true);
@@ -91,9 +105,13 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleDeleteKey = async (id: string) => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive' });
+      return;
+    }
     setDeleteConfirmId(null);
     try {
-      await APIKeyService.deleteAPIKey(id);
+      await APIKeyService.deleteAPIKey(token, id);
       setApiKeys(prev => prev.filter(key => key.id !== id));
       toast({
         title: "API Key Deleted",
@@ -110,8 +128,12 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleDeactivateKey = async (id: string) => {
+    if (!token) {
+      toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive' });
+      return;
+    }
     try {
-      await APIKeyService.deactivateAPIKey(id);
+      await APIKeyService.deactivateAPIKey(token, id);
       setApiKeys(prev => prev.map(key => 
         key.id === id ? { ...key, is_active: false } : key
       ));

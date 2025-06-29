@@ -13,6 +13,7 @@ import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 import MetricsOverview from '@/components/dashboard/MetricsOverview';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
+import { getGitHubAppInstallUrl } from '@/lib/githubApp';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const Dashboard = () => {
     const adminData = localStorage.getItem('admin_session');
     return adminData ? JSON.parse(adminData) : null;
   });
+  const [checkingInstall, setCheckingInstall] = useState(true);
 
   const { 
     workspace, 
@@ -46,6 +48,43 @@ const Dashboard = () => {
 
   const currentUser = adminSession || user;
   const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
+
+  // Post-login: Check for GitHub App installation
+  useEffect(() => {
+    async function checkInstallation() {
+      if (!user) return;
+      setCheckingInstall(true);
+      try {
+        // Use the user's GitHub username from user_metadata
+        const githubUsername = user.user_metadata?.github_username || user.user_metadata?.user_name;
+        if (!githubUsername) {
+          setCheckingInstall(false);
+          return;
+        }
+        const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/check-installation/${githubUsername}`);
+        const data = await res.json();
+        if (!data.hasInstallation) {
+          // Redirect to GitHub App install page
+          window.location.href = getGitHubAppInstallUrl();
+        } else {
+          setCheckingInstall(false);
+        }
+      } catch (err) {
+        setCheckingInstall(false);
+      }
+    }
+    checkInstallation();
+  }, [user]);
+
+  if (checkingInstall) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-blue-400 text-lg font-medium">Checking GitHub App installation...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Show error state if there's an error
   if (error) {

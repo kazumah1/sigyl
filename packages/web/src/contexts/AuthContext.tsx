@@ -58,213 +58,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [githubAccounts, setGitHubAccounts] = useState<GitHubAccount[]>([])
   const [activeGitHubAccount, setActiveGitHubAccount] = useState<GitHubAccount | null>(null)
 
-  // Global GitHub App callback handler
+  // Move GitHub App callback logic to a separate useEffect that runs on mount
   useEffect(() => {
     const processGitHubAppCallback = async () => {
-      const { installationId, code, user: urlUser, access_token: urlToken, state } = checkForGitHubAppCallback()
-      
-      console.log('Checking for GitHub App callback:', { 
-        hasInstallationId: !!installationId, 
-        hasCode: !!code, 
-        hasUser: !!urlUser, 
-        hasToken: !!urlToken, 
-        hasState: !!state 
-      })
-      
-      // Handle both installation flow (installationId + code) and OAuth flow (just code)
-      if (code) {
-        try {
-          console.log('Handling GitHub App callback...')
-          
-          // Verify OAuth state for security
-          const storedState = localStorage.getItem('github_oauth_state');
-          console.log('OAuth state verification:', { state, storedState, matches: state === storedState })
-          
-          if (state && storedState && state !== storedState) {
-            console.error('OAuth state mismatch - possible CSRF attack')
-            alert('Authentication failed: Invalid state parameter. Please try again.')
-            return
-          }
-          
-          let result;
-          let user;
-          let accessToken;
-          let finalInstallationId;
-          
-          // Check if we have user data from URL parameters (redirected callback)
-          if (urlUser && urlToken) {
-            console.log('Using user data from URL parameters')
-            finalInstallationId = installationId ? parseInt(installationId) : null;
-            result = {
-              installationId: finalInstallationId,
-              user: urlUser,
-              repos: [],
-              access_token: urlToken
-            };
-            user = urlUser;
-            accessToken = urlToken;
-          } else {
-            console.log('Making API call for user data')
-            
-            // For OAuth flow, we need to get the installation ID from stored state
-            if (!installationId) {
-              const storedInstallationId = localStorage.getItem('github_app_installation_id');
-              if (storedInstallationId) {
-                finalInstallationId = parseInt(storedInstallationId);
-                console.log('Using stored installation ID for OAuth flow:', finalInstallationId);
-              } else {
-                console.error('No installation ID found for OAuth flow');
-                alert('Authentication failed: No installation ID found. Please try installing the GitHub App again.');
-                return;
-              }
-            } else {
-              finalInstallationId = parseInt(installationId);
-            }
-            
-            // Fall back to API call for direct callback
-            result = await handleGitHubAppCallback(finalInstallationId.toString(), code);
-            if (!result || !result.user) {
-              console.error('GitHub App callback did not return user info:', result);
-              alert('Authentication failed: No user info returned from GitHub. Please try again.');
-              return;
-            }
-            user = result.user;
-            accessToken = result.access_token;
-          }
-          
-          if (!user || !accessToken) {
-            console.error('Missing user or access token from GitHub App callback:', result);
-            alert('Authentication failed: Missing user or access token. Please try again.');
-            return;
-          }
-          
-          console.log('Creating user session for:', user.login)
-          
-          // Set the installation ID in the auth context
-          setGitHubInstallationId(finalInstallationId)
-          
-          // Create GitHub account object
-          const newGitHubAccount: GitHubAccount = {
-            installationId: finalInstallationId,
-            username: user.login,
-            fullName: user.name,
-            avatarUrl: user.avatar_url,
-            email: user.email,
-            accessToken: accessToken,
-            isActive: true,
-            accountLogin: result?.account_login || user.login,
-            accountType: result?.account_type || 'User',
-          }
-          
-          // Store the GitHub user information in localStorage for session management
-          localStorage.setItem('github_app_user', JSON.stringify(user))
-          localStorage.setItem('github_app_access_token', accessToken)
-          localStorage.setItem('github_app_installation_id', finalInstallationId.toString())
-          
-          // Store multiple accounts
-          const existingAccounts = JSON.parse(localStorage.getItem('github_app_accounts') || '[]')
-          const updatedAccounts = [...existingAccounts.filter((acc: GitHubAccount) => acc.installationId !== finalInstallationId), newGitHubAccount]
-          localStorage.setItem('github_app_accounts', JSON.stringify(updatedAccounts))
-          
-          // Check if we're linking an additional account
-          const isLinking = localStorage.getItem('github_app_linking') === 'true'
-          
-          if (isLinking) {
-            // Just add the new account without replacing the current session
-            setGitHubAccounts(updatedAccounts)
-            console.log('Additional GitHub account linked:', user.login)
-            
-            // Clear linking state
-            localStorage.removeItem('github_app_linking')
-          } else {
-            // Update state for new installation
-            setGitHubAccounts(updatedAccounts)
-            setActiveGitHubAccount(newGitHubAccount)
-          }
-          
-          // Create a custom user session
-          const now = new Date().toISOString();
-          const customUser = {
-            id: `github_${user.id}`,
-            aud: 'authenticated',
-            role: 'authenticated',
-            email: user.email || `${user.login}@github.com`,
-            email_confirmed_at: now,
-            phone: '',
-            phone_confirmed_at: null,
-            confirmed_at: now,
-            last_sign_in_at: now,
-            app_metadata: {
-              provider: 'github',
-              providers: ['github']
+      const { installationId, code } = checkForGitHubAppCallback();
+      console.log('Checking for GitHub App callback:', {
+        hasInstallationId: !!installationId,
+        hasCode: !!code,
+      });
+      if (installationId && code) {
+        // Use the OAuth code to log in via Supabase
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('Error exchanging code for session:', error);
+        } else if (data?.session?.user) {
+          setUser(data.session.user);
+          setSession(data.session);
+          await upsertProfile(data.session.user);
+          // Call backend to associate installationId with user
+          await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/associate-installation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`
             },
-            user_metadata: {
-              user_name: user.login,
-              full_name: user.name,
-              avatar_url: user.avatar_url,
-              sub: user.id.toString(),
-              provider: 'github'
-            },
-            identities: [],
-            created_at: now,
-            updated_at: now,
-            is_anonymous: false
-          };
-          
-          console.log('Setting user state:', customUser.user_metadata.user_name)
-          
-          // Set the user in our state FIRST
-          setUser(customUser)
-          
-          // Create a session object
-          const session = {
-            access_token: accessToken,
-            refresh_token: null,
-            expires_in: 3600,
-            token_type: 'bearer',
-            user: customUser
-          }
-          setSession(session)
-          
-          // Clear URL parameters
-          const url = new URL(window.location.href)
-          url.searchParams.delete('installation_id')
-          url.searchParams.delete('code')
-          url.searchParams.delete('user')
-          url.searchParams.delete('access_token')
-          url.searchParams.delete('state')
-          window.history.replaceState({}, '', url.toString())
-          
-          // Clear installation state
-          localStorage.removeItem('github_app_installing')
-          localStorage.removeItem('github_app_install_time')
-          localStorage.removeItem('github_oauth_state')
-          
-          // Clear stored username since we're now signed in
-          localStorage.removeItem('github_username_for_login')
-          
-          console.log('GitHub App installation completed:', finalInstallationId)
-          
-          // Wait a moment for state to be set, then redirect
-          setTimeout(() => {
-            const intendedPage = localStorage.getItem('intended_page') || '/deploy'
-            localStorage.removeItem('intended_page')
-            console.log('Redirecting to:', intendedPage)
-            window.location.href = intendedPage
-          }, 100)
-          
-        } catch (error) {
-          console.error('Error handling GitHub App callback:', error)
-          alert('Authentication failed: ' + (error instanceof Error ? error.message : error));
+            body: JSON.stringify({ installationId })
+          });
         }
       } else {
-        console.log('No GitHub App callback parameters found')
+        console.log('No GitHub App callback parameters found');
       }
-    }
-
-    // Check for callback on mount
-    processGitHubAppCallback()
-  }, [])
+    };
+    processGitHubAppCallback();
+  }, []);
 
   useEffect(() => {
     // Get initial session
@@ -485,19 +311,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Check if user profile exists
       console.log('Checking for existing user profile for:', user.id)
-      const { data: existingUser } = await supabase
-        .from('users')
+      const { data: existingProfile } = await supabase
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
-      console.log('Existing user profile:', existingUser ? 'found' : 'not found')
+      console.log('Existing user profile:', existingProfile ? 'found' : 'not found')
 
-      if (!existingUser) {
+      if (!existingProfile) {
         console.log('Creating new user profile')
         // Create user profile
         const { error } = await supabase
-          .from('users')
+          .from('profiles')
           .insert({
             id: user.id,
             email: user.email!,
@@ -884,6 +710,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setActiveGitHubAccount(null)
     
     console.log('Invalid installations cleared - user will need to reinstall GitHub App')
+  }
+
+  const upsertProfile = async (user: User) => {
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        github_username: user.user_metadata?.user_name || null,
+        github_id: user.user_metadata?.sub || null,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        full_name: user.user_metadata?.full_name || null
+      });
+    } catch (error) {
+      console.error('Error upserting profile:', error);
+    }
   }
 
   const value = {

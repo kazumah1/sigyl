@@ -161,6 +161,8 @@ router.get('/callback', async (req, res) => {
           avatar_url: user.avatar_url,
           github_username: user.login,
           github_id: user.id,
+          github_installation_id: installationId,
+          github_app_installed: true,
         }, { onConflict: 'github_id' })
         .select()
         .single();
