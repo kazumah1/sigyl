@@ -73,7 +73,9 @@ export async function scanAndGenerate(
 		console.log(chalk.blue("\n🚀 Next steps:"))
 		console.log(chalk.gray(`  cd ${options.outDir}`))
 		console.log(chalk.gray("  npm install"))
-		console.log(chalk.gray("  mcp-scan dev"))
+		console.log(chalk.gray("  sigyl dev"))
+		console.log(chalk.yellow("\nℹ️  To change the Express API address/port, set the APP_BASE_URL environment variable when running the generated MCP server. Example:"))
+		console.log(chalk.cyan("  APP_BASE_URL=http://myhost:4000 node server.js"))
 		
 	} catch (error) {
 		spinner.fail("Scan failed")

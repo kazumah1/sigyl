@@ -29,8 +29,8 @@ const MetricsOverview: React.FC<MetricsOverviewProps> = ({ metrics }) => {
       title: 'Total Visits',
       value: formatNumber(metrics.totalVisits),
       icon: Users,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-400/20',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Total page visits this month'
     },
     {
@@ -62,18 +62,14 @@ const MetricsOverview: React.FC<MetricsOverviewProps> = ({ metrics }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {metricCards.map((metric, index) => {
-        const IconComponent = metric.icon;
         return (
-          <Card key={index} className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors">
+          <Card key={index} className="card-modern hover:border-gray-700 transition-colors relative">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-400 mb-1">{metric.title}</p>
-                  <p className="text-3xl font-bold text-white mb-1">{metric.value}</p>
+                  <p className="text-3xl font-bold text-white mb-1" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>{metric.value}</p>
                   <p className="text-xs text-gray-500">{metric.description}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${metric.bgColor}`}>
-                  <IconComponent className={`w-6 h-6 ${metric.color}`} />
                 </div>
               </div>
             </CardContent>

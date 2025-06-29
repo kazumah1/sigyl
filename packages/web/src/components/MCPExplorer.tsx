@@ -37,15 +37,15 @@ interface MCPExplorerProps {
 }
 
 const CATEGORY_ICONS = {
-  frameworks: <Code className="w-6 h-6 text-blue-400" />,
-  apis: <Zap className="w-6 h-6 text-blue-400" />,
-  agents: <Globe className="w-6 h-6 text-blue-400" />,
-  tools: <Database className="w-6 h-6 text-blue-400" />,
-  connectors: <MessageSquare className="w-6 h-6 text-blue-400" />,
-  templates: <ShoppingCart className="w-6 h-6 text-blue-400" />,
-  database: <Database className="w-6 h-6 text-blue-400" />,
-  ai: <Zap className="w-6 h-6 text-blue-400" />,
-  integration: <Mail className="w-6 h-6 text-blue-400" />
+  frameworks: <Code className="w-5 h-5 text-gray-400" />,
+  apis: <Zap className="w-5 h-5 text-gray-400" />,
+  agents: <Globe className="w-5 h-5 text-gray-400" />,
+  tools: <Database className="w-5 h-5 text-gray-400" />,
+  connectors: <MessageSquare className="w-5 h-5 text-gray-400" />,
+  templates: <ShoppingCart className="w-5 h-5 text-gray-400" />,
+  database: <Database className="w-5 h-5 text-gray-400" />,
+  ai: <Zap className="w-5 h-5 text-gray-400" />,
+  integration: <Mail className="w-5 h-5 text-gray-400" />
 }
 
 export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
@@ -192,7 +192,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         return CATEGORY_ICONS[tag as keyof typeof CATEGORY_ICONS]
       }
     }
-    return <Code className="w-6 h-6 text-blue-400" />
+    return <Code className="w-5 h-5 text-gray-400" />
   }
 
   const getStatusIcon = (deployments: any[] = []) => {
@@ -206,21 +206,22 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   const renderPackageCard = (pkg: MCPPackage, index: number) => (
     <Card
       key={pkg.id}
-      className="bg-gray-900/50 border-gray-800 hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 group relative overflow-hidden cursor-pointer"
+      className="bg-[#232329] border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
       style={{ animationDelay: `${index * 100}ms` }}
       onClick={() => navigate(`/mcp/${pkg.id}`)}
     >
-      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      <CardHeader className="relative z-10">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {getCategoryIcon(pkg.tags)}
             <div>
-              <CardTitle className="text-white text-lg group-hover:scale-105 transition-all duration-300">
+              <CardTitle 
+                className="text-white group-hover:text-gray-200 transition-colors"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+              >
                 {pkg.name}
               </CardTitle>
-              <CardDescription className="text-gray-400 text-sm">
+              <CardDescription className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {pkg.version && `v${pkg.version}`} • {pkg.downloads_count} downloads
               </CardDescription>
             </div>
@@ -229,30 +230,30 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         </div>
       </CardHeader>
       
-      <CardContent className="relative z-10">
-        <p className="text-gray-300 mb-4 line-clamp-2">
+      <CardContent className="pt-0">
+        <p className="text-gray-300 mb-4 line-clamp-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           {pkg.description || 'No description available'}
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {Array.isArray(pkg.tags) && pkg.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="secondary" className="bg-blue-900/50 text-blue-300 border-blue-800">
+            <Badge key={tag} variant="secondary" className="bg-white/10 text-gray-300 border-white/20">
               {tag}
             </Badge>
           ))}
           {Array.isArray(pkg.tags) && pkg.tags.length > 3 && (
-            <Badge variant="outline" className="text-gray-400">
+            <Badge variant="outline" className="text-gray-400 border-white/20">
               +{pkg.tags.length - 3}
             </Badge>
           )}
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
             {new Date(pkg.created_at).toLocaleDateString()}
           </div>
-          <div className="text-sm text-blue-400 group-hover:text-blue-300 transition-colors">
-            Click to view details →
+          <div className="text-sm text-gray-400 group-hover:text-white transition-colors" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            View details →
           </div>
         </div>
       </CardContent>
@@ -264,23 +265,25 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   ]
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      <div className="pt-28 transition-all duration-1000">
+    <div className="min-h-screen bg-[#0a0a0a] relative">
+      <div className="pt-16">
         {/* Hero Section */}
         <section className="py-20 px-6 text-center relative z-10">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 animate-fade-in tracking-tight">
-              MCP 
-              <span className="text-blue-600"> Explorer</span>
+            <h1 
+              className="text-5xl md:text-6xl font-bold text-white mb-6"
+              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+            >
+              MCP Marketplace
             </h1>
-            <p className="text-xl text-white opacity-70 mb-8 animate-fade-in delay-200">
-              Discover and install Model Context Protocol servers. Connect your AI to the world.
+            <p className="text-xl text-gray-400 mb-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+              Discover and deploy Model Context Protocol servers. Connect your AI to the world.
             </p>
             
             {/* Search and Filter */}
             <div 
               ref={searchBarRef}
-              className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto mb-8 animate-fade-in delay-400 relative z-20"
+              className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto mb-12"
             >
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -288,28 +291,33 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                   placeholder="Search MCP servers, tools, integrations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-3 text-lg border-2 bg-gray-900/80 backdrop-blur-sm border-gray-700 focus:border-blue-500 text-white"
+                  className="pl-10 py-3 text-lg border border-white/10 bg-[#232329] focus:border-white/30 text-white"
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 />
               </div>
-              <Button variant="outline" className="px-6 py-3 border-2 bg-gray-900/80 backdrop-blur-sm border-gray-700 text-white font-bold tracking-tight">
+              <Button 
+                variant="outline" 
+                className="px-6 py-3 border border-white/10 bg-[#232329] text-white hover:bg-white/5 hover:border-white/20"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+              >
                 <Filter className="w-5 h-5 mr-2" />
                 Filter
               </Button>
             </div>
 
             {/* Category Pills */}
-            <div className="flex flex-wrap justify-center gap-3 mb-12 animate-fade-in delay-600 relative z-20">
+            <div className="flex flex-wrap justify-center gap-3 mb-16">
               {categories.map((category, index) => (
                 <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
                   onClick={() => setSelectedCategory(category)}
-                  className={`capitalize px-4 py-2 transition-all duration-300 hover:scale-105 animate-fade-in font-bold tracking-tight bg-gray-900/80 backdrop-blur-sm ${
+                  className={`capitalize px-4 py-2 transition-all duration-300 ${
                     selectedCategory === category 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-800 hover:bg-gray-700 text-white border-gray-700'
+                      ? 'bg-white text-black hover:bg-gray-100'
+                      : 'bg-[#232329] border border-white/10 text-white hover:bg-white/5 hover:border-white/20'
                   }`}
-                  style={{ animationDelay: `${800 + index * 100}ms` }}
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   {category}
                 </Button>
@@ -319,19 +327,31 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         </section>
 
         {/* Main Content */}
-        <section className="px-6 pb-20 relative z-10">
+        <section className="px-6 pb-20">
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-gray-900/80 backdrop-blur-sm border-gray-700">
-                <TabsTrigger value="discover" className="text-white data-[state=active]:bg-blue-600">
+              <TabsList className="grid w-full grid-cols-3 bg-[#232329] border border-white/10">
+                <TabsTrigger 
+                  value="discover" 
+                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
                   <Globe className="w-4 h-4 mr-2" />
                   Discover
                 </TabsTrigger>
-                <TabsTrigger value="popular" className="text-white data-[state=active]:bg-blue-600">
+                <TabsTrigger 
+                  value="popular" 
+                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
                   <Heart className="w-4 h-4 mr-2" />
                   Popular
                 </TabsTrigger>
-                <TabsTrigger value="trending" className="text-white data-[state=active]:bg-blue-600">
+                <TabsTrigger 
+                  value="trending" 
+                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Trending
                 </TabsTrigger>
@@ -340,8 +360,10 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               <TabsContent value="discover" className="mt-8">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                    <span className="ml-2 text-white">Loading MCP packages...</span>
+                    <Loader2 className="w-8 h-8 animate-spin text-white" />
+                    <span className="ml-2 text-white" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      Loading MCP packages...
+                    </span>
                   </div>
                 ) : (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -351,10 +373,13 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
 
                 {!loading && packages.length === 0 && (
                   <div className="text-center py-20">
-                    <div className="text-2xl font-bold text-white mb-4">
+                    <div 
+                      className="text-2xl font-bold text-white mb-4"
+                      style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                    >
                       No MCP packages found
                     </div>
-                    <p className="text-white opacity-60">
+                    <p className="text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                       Try adjusting your search terms or category filters
                     </p>
                   </div>
@@ -380,7 +405,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
       {/* Package Details Modal */}
       {showDetails && selectedPackage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl p-8 relative border border-gray-700">
+          <div className="bg-[#232329] rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative border border-white/10">
             <button 
               onClick={() => setShowDetails(false)} 
               className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
@@ -391,30 +416,46 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
             <div className="flex gap-6 items-center mb-6">
               {getCategoryIcon(selectedPackage.tags)}
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">{selectedPackage.name}</h2>
+                <h2 
+                  className="text-2xl font-bold text-white mb-1"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
+                  {selectedPackage.name}
+                </h2>
                 <div className="flex gap-2 flex-wrap mb-1">
                   {Array.isArray(selectedPackage.tags) && selectedPackage.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="bg-blue-900/50 text-blue-300 border-blue-800">
+                    <Badge key={tag} variant="secondary" className="bg-white/10 text-gray-300 border-white/20">
                       {tag}
                     </Badge>
                   ))}
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm text-gray-400">4.5 avg</span>
-                  <span className="text-sm text-gray-400">• {selectedPackage.downloads_count} downloads</span>
+                  <span className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    4.5 avg
+                  </span>
+                  <span className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    • {selectedPackage.downloads_count} downloads
+                  </span>
                 </div>
               </div>
             </div>
             
-            <p className="text-white/80 mb-4">{selectedPackage.description}</p>
+            <p className="text-gray-300 mb-4" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+              {selectedPackage.description}
+            </p>
             
             {selectedPackage.tools && selectedPackage.tools.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-white font-semibold mb-2">Available Tools:</h3>
+                <h3 
+                  className="text-white font-semibold mb-2"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
+                  Available Tools:
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedPackage.tools.map(tool => (
-                    <Badge key={tool.id} variant="outline" className="bg-gray-800 text-white/60 border-gray-700">
+                    <Badge key={tool.id} variant="outline" className="bg-white/5 text-gray-300 border-white/20">
                       {tool.tool_name}
                     </Badge>
                   ))}
@@ -424,11 +465,18 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
 
             {selectedPackage.deployments && selectedPackage.deployments.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-white font-semibold mb-2">Deployments:</h3>
+                <h3 
+                  className="text-white font-semibold mb-2"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
+                  Deployments:
+                </h3>
                 <div className="space-y-2">
                   {selectedPackage.deployments.map(deployment => (
-                    <div key={deployment.id} className="flex items-center justify-between p-2 bg-gray-800 rounded">
-                      <span className="text-white/80 text-sm">{deployment.deployment_url}</span>
+                    <div key={deployment.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                      <span className="text-gray-300 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                        {deployment.deployment_url}
+                      </span>
                       <Badge 
                         variant={deployment.status === 'active' ? 'default' : 'destructive'}
                         className={deployment.status === 'active' ? 'bg-green-600' : 'bg-red-600'}
@@ -442,7 +490,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
             )}
 
             <div className="flex justify-between items-center mt-6">
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                 <div>Created: {new Date(selectedPackage.created_at).toLocaleDateString()}</div>
                 <div>Updated: {new Date(selectedPackage.updated_at).toLocaleDateString()}</div>
               </div>
@@ -457,7 +505,8 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                       tools: selectedPackage.tools
                     })
                   }}
-                  className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   <BookOpen className="w-4 h-4 mr-2" />
                   Installation Guide
@@ -465,7 +514,8 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 <Button
                   onClick={() => handleInstall(selectedPackage)}
                   disabled={installing === selectedPackage.id}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition"
+                  className="bg-white text-black hover:bg-gray-100"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   {installing === selectedPackage.id ? (
                     <>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Plus, TrendingUp, Activity, Server, Users, Globe, Zap, Lock, Github, AlertTriangle } from 'lucide-react';
+import { Settings, Plus, TrendingUp, Activity, Server, Users, Globe, Zap, Lock, Github, AlertTriangle, Phone, MessageSquare, Video, Plug, Wrench, Cloud, Bug, Lightbulb, Shield, Database, Network, Cpu, HardDrive, Monitor, BarChart3, GitBranch, Key, Eye, EyeOff, RefreshCw, Play, Pause, StopCircle, Settings2, Download, Upload, Code, Terminal, GitPullRequest, GitCommit, GitMerge, GitBranch as GitBranchIcon, GitPullRequest as GitPullRequestIcon, GitCommit as GitCommitIcon, GitMerge as GitMergeIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -49,13 +49,13 @@ const Dashboard = () => {
   // Show error state if there's an error
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-red-400 text-lg font-medium">Failed to load dashboard data</div>
           <p className="text-gray-400 max-w-md">{error}</p>
           <Button 
             onClick={refetch} 
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className="btn-modern"
           >
             Try Again
           </Button>
@@ -72,7 +72,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
+    <div className="min-h-screen bg-black flex">
       <DashboardSidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
@@ -86,7 +86,7 @@ const Dashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">
+                <h1 className="hero-heading text-3xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
                   Welcome back, {displayName.split(' ')[0]}!
                 </h1>
                 <p className="text-gray-400">
@@ -96,7 +96,7 @@ const Dashboard = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={() => navigate('/deploy')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white border-0 flex items-center gap-2"
+                  className="btn-modern flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Deploy New Server
@@ -112,7 +112,10 @@ const Dashboard = () => {
                 { id: 'overview', label: 'Overview', icon: TrendingUp },
                 { id: 'servers', label: 'Servers', icon: Server },
                 { id: 'secrets', label: 'Secrets', icon: Lock },
-                { id: 'settings', label: 'Settings', icon: Settings }
+                { id: 'settings', label: 'Settings', icon: Settings },
+                { id: 'analytics', label: 'Analytics', icon: Activity },
+                { id: 'private-mcps', label: 'Private MCPs', icon: Shield },
+                { id: 'enterprise-support', label: 'Enterprise Support', icon: Users },
               ].map((tab) => {
                 const IconComponent = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -122,7 +125,7 @@ const Dashboard = () => {
                     onClick={() => handleTabChange(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-lg'
+                        ? 'bg-white text-black shadow-lg'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
                     }`}
                   >
@@ -145,10 +148,10 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {[1, 2].map((i) => (
                   <div key={i} className="h-80 bg-gray-800/50 rounded-lg animate-pulse"></div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
+            ) : (
             <>
               {/* Overview Tab */}
               {activeTab === 'overview' && (
@@ -157,12 +160,12 @@ const Dashboard = () => {
                   <MetricsOverview metrics={metrics} />
                   
                   {/* Quick Actions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group" onClick={() => navigate('/deploy')}>
-                      <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="card-modern cursor-pointer group" onClick={() => navigate('/deploy')}>
+                      <CardContent className="p-4">
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                            <Plus className="w-6 h-6 text-blue-400" />
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Plus className="w-6 h-6 text-white" />
                           </div>
                           <div>
                             <h3 className="text-white font-semibold">Deploy New Server</h3>
@@ -172,8 +175,8 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group" onClick={() => handleTabChange('secrets')}>
-                      <CardContent className="p-6">
+                    <Card className="card-modern cursor-pointer group" onClick={() => handleTabChange('secrets')}>
+                      <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
                             <Lock className="w-6 h-6 text-green-400" />
@@ -188,10 +191,10 @@ const Dashboard = () => {
                   </div>
 
                   {/* Recent Activity */}
-                  <Card className="bg-gray-900/50 border-gray-800">
+                  <Card className="card-modern">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-blue-400" />
+                        <Activity className="w-5 h-5 text-white" />
                         Recent Activity
                       </CardTitle>
                       <CardDescription className="text-gray-400">
@@ -229,7 +232,7 @@ const Dashboard = () => {
                             <p>No servers deployed yet</p>
                             <Button 
                               onClick={() => navigate('/deploy')}
-                              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white border-0"
+                              className="mt-4 btn-modern"
                             >
                               Deploy Your First Server
                             </Button>
@@ -243,71 +246,527 @@ const Dashboard = () => {
 
               {/* Servers Tab */}
               {activeTab === 'servers' && (
-                <MCPServersList servers={mcpServers} detailed />
+                <MCPServersList servers={mcpServers} loading={loading} refetch={refetch} />
+              )}
+
+              {/* Secrets Tab */}
+          {activeTab === 'secrets' && (
+                <SecretsManager />
+          )}
+
+              {/* Settings Tab */}
+          {activeTab === 'settings' && (
+                <Card className="card-modern max-w-xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-gray-400" />
+                  Workspace Settings
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                      Manage your workspace settings and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                        <div className="text-gray-300 font-medium mb-1">Workspace Name</div>
+                        <div className="text-white bg-gray-800 rounded-md px-4 py-2">{workspace?.name || 'Workspace'}</div>
+                  </div>
+                  <div>
+                        <div className="text-gray-300 font-medium mb-1">Owner</div>
+                        <div className="text-white bg-gray-800 rounded-md px-4 py-2">{workspace?.owner || 'Owner'}</div>
+                      </div>
+                      <Button variant="destructive" onClick={handleDeleteAccount} className="mt-6">Delete Account</Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Analytics Tab */}
               {activeTab === 'analytics' && (
-                <AnalyticsCharts 
-                  visitData={analyticsData.visitData}
-                  toolUsageData={analyticsData.toolUsageData}
-                  serverStatusData={analyticsData.serverStatusData}
-                />
-              )}
-
-              {/* Secrets Tab */}
-              {activeTab === 'secrets' && (
-                <SecretsManager workspaceId={workspace?.id || ''} />
-              )}
-
-              {/* Settings Tab */}
-              {activeTab === 'settings' && (
-                <div className="flex justify-center items-center min-h-[60vh]">
-                  <div className="w-full max-w-lg bg-gray-900/80 rounded-xl shadow-lg p-8 border border-gray-800">
-                    <div className="mb-8">
-                      <CardTitle className="text-3xl font-bold flex items-center gap-2 mb-2 text-white">
-                        <Settings className="w-7 h-7 text-blue-400" />
-                        Account Settings
-                      </CardTitle>
-                      <CardDescription className="text-gray-400 text-lg">
-                        Manage your account settings and preferences
-                      </CardDescription>
+                <div className="space-y-8 relative">
+                  {/* Blurred Analytics Content */}
+                  <div className="blur-sm pointer-events-none opacity-50">
+                    <Card className="card-modern">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <Activity className="w-5 h-5 text-white" />
+                          Usage Analytics
+                        </CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Deep dive into your workspace's usage, performance, and trends
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <AnalyticsCharts 
+                          visitData={analyticsData?.visitData || []}
+                          toolUsageData={analyticsData?.toolUsageData || []}
+                          serverStatusData={analyticsData?.serverStatusData || []}
+                        />
+                      </CardContent>
+                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                      <Card className="card-modern">
+                        <CardHeader>
+                          <CardTitle className="text-white">API Usage</CardTitle>
+                          <CardDescription className="text-gray-400">Track API call volume and limits</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-white mb-2">{metrics?.totalToolCalls?.toLocaleString() || '0'}</div>
+                          <div className="text-gray-400">API calls this month</div>
+                        </CardContent>
+                      </Card>
+                      <Card className="card-modern">
+                        <CardHeader>
+                          <CardTitle className="text-white">Active Users</CardTitle>
+                          <CardDescription className="text-gray-400">Monitor user engagement</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-green-400 mb-2">{metrics?.activeUsers?.toLocaleString() || '0'}</div>
+                          <div className="text-gray-400">Active users this month</div>
+                        </CardContent>
+                      </Card>
                     </div>
+                  </div>
 
-                    {/* Username */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-300 mb-1">Username</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={user?.user_metadata?.user_name || ''}
-                        disabled
-                      />
-                    </div>
-
-                    {/* Provider Info */}
-                    <div className="mb-8">
-                      <div className="bg-gray-800/80 border border-gray-700 text-gray-200 rounded-lg px-4 py-3 flex items-center gap-2">
-                        <Github className="w-5 h-5 mr-1" />
-                        <span>You signed in with <span className="font-semibold flex items-center gap-1"><Github className="w-4 h-4 inline-block mr-1" />GitHub</span>. Your password is managed by your provider.</span>
+                  {/* Overlay with Unlock Button */}
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="text-center bg-black/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
+                      <div className="mb-6">
+                        <Activity className="w-16 h-16 text-white mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Advanced Analytics</h3>
+                        <p className="text-gray-400 text-lg max-w-md">
+                          Unlock detailed analytics, custom reports, and advanced insights with Enterprise
+                        </p>
                       </div>
-                    </div>
-
-                    <hr className="my-8 border-gray-700" />
-
-                    {/* Danger Zone */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 text-red-400 font-semibold">
-                        <AlertTriangle className="w-5 h-5" />
-                        Danger Zone
-                      </div>
-                      <button
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-                        onClick={handleDeleteAccount}
+                      <Button 
+                        className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
+                        onClick={() => navigate('/pricing')}
                       >
-                        Delete Account
-                      </button>
+                        Unlock With Enterprise
+                      </Button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Private MCPs Tab */}
+              {activeTab === 'private-mcps' && (
+                <div className="space-y-8 relative">
+                  {/* Blurred Private MCPs Content */}
+                  <div className="blur-sm pointer-events-none opacity-50">
+                    {/* Header Section */}
+                    <div className="text-center mb-8">
+                      <h2 className="hero-heading text-3xl font-bold text-white mb-4" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Private MCPs</h2>
+                      <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                        Deploy and manage private MCP servers within your organization's infrastructure
+                      </p>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-400 text-sm">Active Private MCPs</p>
+                              <p className="text-2xl font-bold text-white">12</p>
+                            </div>
+                            <div className="p-3 bg-green-600/20 rounded-lg">
+                              <Server className="w-6 h-6 text-green-400" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-400 text-sm">Total Deployments</p>
+                              <p className="text-2xl font-bold text-white">47</p>
+                            </div>
+                            <div className="p-3 bg-white/20 rounded-lg">
+                              <Cloud className="w-6 h-6 text-white" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-400 text-sm">API Calls Today</p>
+                              <p className="text-2xl font-bold text-white">2.4K</p>
+                            </div>
+                            <div className="p-3 bg-purple-600/20 rounded-lg">
+                              <BarChart3 className="w-6 h-6 text-purple-400" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-400 text-sm">Uptime</p>
+                              <p className="text-2xl font-bold text-white">99.9%</p>
+                            </div>
+                            <div className="p-3 bg-yellow-600/20 rounded-lg">
+                              <Monitor className="w-6 h-6 text-yellow-400" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Button className="btn-modern flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Deploy New Private MCP
+                      </Button>
+                      <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 flex items-center gap-2">
+                        <GitBranch className="w-4 h-4" />
+                        Import from Git
+                      </Button>
+                      <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Upload Package
+                      </Button>
+                      <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 flex items-center gap-2">
+                        <Settings2 className="w-4 h-4" />
+                        Configure Network
+                      </Button>
+                    </div>
+
+                    {/* Feature Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                              <Shield className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">Private Network Isolation</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Deploy MCPs in isolated private networks with custom security policies</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
+                              <Database className="w-6 h-6 text-green-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">Internal Data Sources</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Connect to internal databases, APIs, and enterprise systems</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-colors">
+                              <Network className="w-6 h-6 text-purple-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">VPC Integration</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Deploy within your existing VPC with custom routing and security groups</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-yellow-600/20 rounded-lg group-hover:bg-yellow-600/30 transition-colors">
+                              <Cpu className="w-6 h-6 text-yellow-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">Resource Management</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Monitor and optimize CPU, memory, and storage usage</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-red-600/20 rounded-lg group-hover:bg-red-600/30 transition-colors">
+                              <Key className="w-6 h-6 text-red-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">IAM Integration</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Role-based access control with your existing identity providers</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
+                              <HardDrive className="w-6 h-6 text-indigo-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg mb-2">Persistent Storage</h3>
+                              <p className="text-gray-400 text-sm leading-relaxed">Attach persistent volumes for data storage and caching</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Analytics Section */}
+                    <Card className="card-modern">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-white" />
+                          Private MCP Analytics
+                        </CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Performance metrics and usage analytics for your private MCPs
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-white mb-2">1.2ms</div>
+                            <div className="text-gray-400 text-sm">Avg Response Time</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-green-400 mb-2">99.9%</div>
+                            <div className="text-gray-400 text-sm">Success Rate</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-purple-400 mb-2">847</div>
+                            <div className="text-gray-400 text-sm">Requests/min</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-yellow-400 mb-2">2.1GB</div>
+                            <div className="text-gray-400 text-sm">Memory Usage</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Recent Deployments */}
+                    <Card className="card-modern">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <GitCommit className="w-5 h-5 text-green-400" />
+                          Recent Deployments
+                        </CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Latest private MCP deployments and their status
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {[
+                            { name: 'internal-database-mcp', status: 'active', time: '2 hours ago', commit: 'a1b2c3d' },
+                            { name: 'enterprise-api-mcp', status: 'deploying', time: '4 hours ago', commit: 'e4f5g6h' },
+                            { name: 'analytics-engine-mcp', status: 'active', time: '1 day ago', commit: 'i7j8k9l' },
+                          ].map((deployment, index) => (
+                            <div key={index} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  deployment.status === 'active' ? 'bg-green-400' : 'bg-yellow-400'
+                                }`} />
+                                <div>
+                                  <h4 className="text-white font-medium">{deployment.name}</h4>
+                                  <p className="text-gray-400 text-sm">Commit: {deployment.commit}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-gray-400 text-sm">{deployment.time}</p>
+                                <p className="text-xs text-gray-500 capitalize">{deployment.status}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Overlay with Unlock Button */}
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="text-center bg-black/90 backdrop-blur-sm rounded-2xl p-12 border border-gray-800 shadow-2xl">
+                      <div className="mb-6">
+                        <Shield className="w-16 h-16 text-white mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Private MCPs</h3>
+                        <p className="text-gray-400 text-lg max-w-md">
+                          Deploy and manage private MCP servers within your organization's infrastructure with Enterprise
+                        </p>
+                      </div>
+                      <Button 
+                        className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
+                        onClick={() => navigate('/pricing')}
+                      >
+                        Unlock With Enterprise
+                  </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Enterprise Support Tab */}
+              {activeTab === 'enterprise-support' && (
+                <div className="space-y-8">
+                  <div className="text-center mb-8">
+                    <h2 className="hero-heading text-3xl font-bold text-white mb-4" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Enterprise Support</h2>
+                    <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                      Unlock premium support and productivity features designed for enterprise teams
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Phone className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">24/7 Call Support</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Get help anytime, anywhere with our round-the-clock support team</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <MessageSquare className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Dedicated Slack Channel</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Instant access to our support engineers through your preferred platform</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <MessageSquare className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Dedicated Discord Channel</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Real-time chat with our team for quick questions and updates</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Video className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Zoom Meeting in 15 Minutes</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Book a call with an expert and get solutions fast</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Plug className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Easy Plug & Play Tools</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Integrate new features and tools in seconds, not hours</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Wrench className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Custom Tooling</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Request custom features and integrations tailored to your needs</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Cloud className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Cloud Support</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Managed deployments and scaling with expert oversight</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Bug className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Debug & Troubleshoot</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Rapid issue resolution with our debugging expertise</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Lightbulb className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-2">Suggest MCP Improvements</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">Influence our roadmap and shape the future of MCP</p>
+                          </div>
+                </div>
+              </CardContent>
+            </Card>
+                  </div>
+
+                  <div className="text-center mt-12">
+                    <Button 
+                      className="btn-modern font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
+                      onClick={() => navigate('/pricing')}
+                    >
+                      Contact Enterprise Support
+                    </Button>
                   </div>
                 </div>
               )}

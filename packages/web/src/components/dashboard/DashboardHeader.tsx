@@ -31,6 +31,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
             <img src="/test_6.png" alt="SIGYL Logo" className="w-8 h-8 rounded-full object-cover shadow-sm" style={{background:'#18181b'}} />
             <div 
               className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"
+              style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}
               onClick={() => navigate('/')}
             >
               SIGYL
@@ -54,6 +55,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
               Docs
             </button>
             <button 
+              onClick={() => navigate('/pricing')}
+              className="text-gray-300 hover:text-white font-medium transition-colors"
+            >
+              Pricing
+            </button>
+            <button 
               onClick={() => navigate('/blog')}
               className="text-gray-300 hover:text-white font-medium transition-colors"
             >
@@ -61,7 +68,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
             </button>
             <Button 
               size="sm" 
-              className="bg-white hover:bg-gray-100 text-black font-medium"
+              className="btn-modern"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Server

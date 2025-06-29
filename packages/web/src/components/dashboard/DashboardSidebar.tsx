@@ -10,7 +10,9 @@ import {
   ChevronRight,
   TrendingUp,
   Activity,
-  Home
+  Home,
+  LifeBuoy,
+  Shield
 } from 'lucide-react';
 
 interface DashboardSidebarProps {
@@ -26,6 +28,9 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
     { icon: Server, label: 'Servers', path: '/dashboard?tab=servers' },
     { icon: Lock, label: 'Secrets', path: '/dashboard?tab=secrets' },
     { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
+    { icon: Activity, label: 'Analytics', path: '/dashboard?tab=analytics' },
+    { icon: Shield, label: 'Private MCPs', path: '/dashboard?tab=private-mcps' },
+    { icon: LifeBuoy, label: 'Enterprise Support', path: '/dashboard?tab=enterprise-support' },
   ];
 
   const isActive = (path: string) => {
@@ -36,10 +41,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 transition-all duration-300 z-30 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`fixed left-0 top-0 h-full bg-black backdrop-blur-sm border-r border-gray-800 transition-all duration-300 z-30 ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         {!collapsed && (
-          <div className="text-xl font-bold text-white">SIGYL</div>
+          <div className="text-xl font-bold text-white" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>SIGYL</div>
         )}
         <Button 
           variant="ghost" 
@@ -54,7 +59,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
       <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
         <div>
           {!collapsed && (
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
               Dashboard
             </h3>
           )}
@@ -67,7 +72,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group ${
                     isActive(item.path)
-                      ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
+                      ? 'bg-white/20 text-white border border-white/30'
                       : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
                   }`}
                   title={collapsed ? item.label : undefined}

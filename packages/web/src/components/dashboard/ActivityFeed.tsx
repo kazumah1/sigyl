@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +53,7 @@ const ActivityFeed: React.FC = () => {
       case 'deployment':
         return <GitBranch className="w-4 h-4 text-green-400" />;
       case 'api_key':
-        return <Key className="w-4 h-4 text-blue-400" />;
+        return <Key className="w-4 h-4 text-white" />;
       case 'member':
         return <Users className="w-4 h-4 text-purple-400" />;
       case 'server':
@@ -69,7 +68,7 @@ const ActivityFeed: React.FC = () => {
   const getActivityBadge = (type: string) => {
     const colors = {
       deployment: 'bg-green-400/20 text-green-400',
-      api_key: 'bg-blue-400/20 text-blue-400',
+      api_key: 'bg-white/20 text-white',
       member: 'bg-purple-400/20 text-purple-400',
       server: 'bg-yellow-400/20 text-yellow-400',
       error: 'bg-red-400/20 text-red-400'
@@ -83,9 +82,9 @@ const ActivityFeed: React.FC = () => {
   };
 
   return (
-    <Card className="border-indigo-600/40">
+    <Card className="card-modern">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-white flex items-center gap-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>
           <Activity className="w-5 h-5" />
           Recent Activity
         </CardTitle>

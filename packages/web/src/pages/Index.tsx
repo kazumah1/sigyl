@@ -75,10 +75,10 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/docs')}
+              onClick={() => navigate('/marketplace')}
               className="w-full sm:w-auto btn-modern min-h-[48px] touch-manipulation text-lg font-semibold"
             >
-              View Documentation
+              Marketplace
             </Button>
           </div>
 
@@ -227,29 +227,29 @@ const Index = () => {
       {/* CTA Section - ENHANCED DASHBOARD PANEL */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl relative">
+          <div className="liquid-glass-dashboard enhanced-glass-panel rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative" style={{background:'rgba(30,32,40,0.72)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)'}}>
             {/* Header Bar */}
-            <div className="flex items-center space-x-2 p-4 bg-gray-800 relative">
+            <div className="flex items-center space-x-2 p-4 bg-gray-800/80 relative border-b border-white/10">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-gray-400 text-sm ml-4 font-semibold tracking-wide">Get Started</span>
+              <span className="text-gray-300 text-sm ml-4 font-semibold tracking-wide">Get Started</span>
               {/* Animated Accent Line */}
-              <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-500/30 via-white/10 to-pink-500/30 animate-accent-glow" />
+              <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-gradient-to-r from-white/10 via-white/5 to-white/10 animate-accent-glow" />
             </div>
             {/* CTA Content */}
             <div className="p-10 flex flex-col items-center text-center">
-              <span className="block w-full max-w-xl mx-auto mb-4 rounded-xl bg-white/5 backdrop-blur-sm py-2 px-4 animate-cta-highlight">
-                <h2 className="text-4xl font-bold text-white mb-2">Ready to deploy your MCP integration?</h2>
+              <span className="block w-full max-w-xl mx-auto mb-4 rounded-xl bg-white/5 backdrop-blur-md py-2 px-4">
+                <h2 className="text-4xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Ready to deploy your MCP integration?</h2>
               </span>
-              <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">Join thousands of developers who trust SIGYL for their Model Context Protocol deployment needs.</p>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8" style={{fontFamily:'Inter, system-ui, sans-serif'}}>Join thousands of developers who trust SIGYL for their Model Context Protocol deployment needs.</p>
               <Button 
                 onClick={() => navigate('/deploy')}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-lg px-8 py-4 rounded-xl font-semibold shadow-lg border-2 border-blue-400/20 hover:border-blue-500/40 transition-all duration-200 relative overflow-hidden"
+                className="btn-modern w-64 py-4 text-lg font-semibold rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white transition-all duration-200 shadow-lg backdrop-blur-md"
+                style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}
               >
                 <span className="relative z-10">Deploy Now</span>
                 <ArrowRight className="ml-2 w-5 h-5 relative z-10" />
-                <span className="absolute left-0 right-0 bottom-0 h-1 bg-gradient-to-r from-blue-400/30 via-white/10 to-pink-400/30 animate-cta-underline" />
               </Button>
             </div>
           </div>
