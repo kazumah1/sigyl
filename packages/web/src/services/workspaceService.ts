@@ -31,82 +31,23 @@ export const workspaceService = {
         
         // Ensure GitHub App user has a profile
         console.log('🔍 getUserWorkspaces: Ensuring GitHub user profile...');
-        await this.ensureGitHubUserProfile(userId);
+        const profileId = await this.ensureGitHubUserProfile(userId);
         
-        // Get the profile UUID for querying workspaces
-        console.log('🔍 getUserWorkspaces: Querying profile with auth_type=github_app and auth_user_id=', userId);
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('auth_type', 'github_app')
-          .eq('auth_user_id', userId)
-          .single();
+        // Query workspaces using the profile UUID
+        console.log('🔍 getUserWorkspaces: Querying workspaces for profile ID:', profileId);
+        const { data: workspaces, error } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('owner_id', profileId)
+          .order('created_at', { ascending: false });
 
-        console.log('🔍 getUserWorkspaces: Profile query result:', { profile, error: profileError });
-
-        if (profileError) {
-          console.error('❌ getUserWorkspaces: Profile query failed:', profileError);
-          // Try alternative query using github_id
-          console.log('🔍 getUserWorkspaces: Trying alternative query with github_id...');
-          const { data: altProfile, error: altError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('github_id', githubUser.id.toString())
-            .single();
-          
-          console.log('🔍 getUserWorkspaces: Alternative query result:', { altProfile, error: altError });
-          
-          if (altProfile) {
-            console.log('✅ getUserWorkspaces: Found profile via github_id, updating auth fields...');
-            // Update the profile to have correct auth_type and auth_user_id
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({
-                auth_type: 'github_app',
-                auth_user_id: userId
-              })
-              .eq('id', altProfile.id);
-            
-            if (updateError) {
-              console.error('❌ getUserWorkspaces: Failed to update profile auth fields:', updateError);
-            } else {
-              console.log('✅ getUserWorkspaces: Profile auth fields updated successfully');
-            }
-            
-            // Use the altProfile for workspace query
-            const { data: workspaces, error } = await supabase
-              .from('workspaces')
-              .select('*')
-              .eq('owner_id', altProfile.id)
-              .order('created_at', { ascending: false });
-
-            if (error) {
-              console.error('Error fetching workspaces:', error);
-              return [];
-            }
-
-            console.log('✅ getUserWorkspaces: Found workspaces:', workspaces?.length || 0);
-            return workspaces || [];
-          }
+        if (error) {
+          console.error('Error fetching workspaces:', error);
+          return [];
         }
 
-        if (profile) {
-          console.log('✅ getUserWorkspaces: Found profile, querying workspaces...');
-          // Query workspaces using the profile UUID
-          const { data: workspaces, error } = await supabase
-            .from('workspaces')
-            .select('*')
-            .eq('owner_id', profile.id)
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            console.error('Error fetching workspaces:', error);
-            return [];
-          }
-
-          console.log('✅ getUserWorkspaces: Found workspaces:', workspaces?.length || 0);
-          return workspaces || [];
-        }
+        console.log('✅ getUserWorkspaces: Found workspaces:', workspaces?.length || 0);
+        return workspaces || [];
       }
 
       console.log('🔍 getUserWorkspaces: Falling back to Supabase auth or no auth...');
@@ -201,11 +142,11 @@ export const workspaceService = {
         email: githubUser.email
       });
       
-      // Check if profile already exists using github_id (which should exist)
+      // Check if profile already exists using github_id
       console.log('🔍 ensureGitHubUserProfile: Checking for existing profile with github_id:', githubUser.id.toString());
       const { data: existingProfile, error: existingError } = await supabase
         .from('profiles')
-        .select('id, auth_type, auth_user_id')
+        .select('id')
         .eq('github_id', githubUser.id.toString())
         .single();
 
@@ -213,25 +154,6 @@ export const workspaceService = {
 
       if (existingProfile) {
         console.log('✅ ensureGitHubUserProfile: GitHub App user profile already exists:', githubUser.login);
-        
-        // Check if the profile has correct auth_type and auth_user_id
-        if (existingProfile.auth_type !== 'github_app' || existingProfile.auth_user_id !== userId) {
-          console.log('🔍 ensureGitHubUserProfile: Updating profile auth fields...');
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-              auth_type: 'github_app',
-              auth_user_id: userId
-            })
-            .eq('id', existingProfile.id);
-          
-          if (updateError) {
-            console.error('❌ ensureGitHubUserProfile: Failed to update profile auth fields:', updateError);
-          } else {
-            console.log('✅ ensureGitHubUserProfile: Profile auth fields updated successfully');
-          }
-        }
-        
         return existingProfile.id;
       }
 
@@ -243,9 +165,7 @@ export const workspaceService = {
         full_name: githubUser.name,
         github_username: githubUser.login,
         github_id: githubUser.id.toString(),
-        avatar_url: githubUser.avatar_url,
-        auth_type: 'github_app',
-        auth_user_id: userId
+        avatar_url: githubUser.avatar_url
       };
       
       console.log('🔍 ensureGitHubUserProfile: Profile data to insert:', profileData);
@@ -281,7 +201,7 @@ export const workspaceService = {
         // Ensure GitHub App user has a profile
         const profileId = await this.ensureGitHubUserProfile(userId);
         
-        // Check if demo workspace exists
+        // Check if demo workspace exists for this user
         const { data: existingWorkspace } = await supabase
           .from('workspaces')
           .select('*')
@@ -290,15 +210,31 @@ export const workspaceService = {
           .single();
 
         if (existingWorkspace) {
+          console.log('✅ getOrCreateDemoWorkspace: Found existing demo workspace for user');
           return existingWorkspace;
         }
 
-        // Create demo workspace
+        // Check if any demo workspace exists (in case of shared demo workspace)
+        const { data: anyDemoWorkspace } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('slug', 'demo-workspace')
+          .limit(1);
+
+        if (anyDemoWorkspace && anyDemoWorkspace.length > 0) {
+          console.log('✅ getOrCreateDemoWorkspace: Found existing demo workspace, returning it');
+          return anyDemoWorkspace[0];
+        }
+
+        // Create demo workspace with unique slug
+        const uniqueSlug = `demo-workspace-${Date.now()}`;
+        console.log('🔍 getOrCreateDemoWorkspace: Creating new demo workspace with slug:', uniqueSlug);
+        
         const { data: newWorkspace, error } = await supabase
           .from('workspaces')
           .insert({
             name: 'Demo Workspace',
-            slug: 'demo-workspace',
+            slug: uniqueSlug,
             description: 'Demo workspace for testing',
             owner_id: profileId
           })
@@ -310,6 +246,7 @@ export const workspaceService = {
           throw error;
         }
 
+        console.log('✅ getOrCreateDemoWorkspace: Created new demo workspace');
         return newWorkspace;
       }
 
@@ -321,16 +258,21 @@ export const workspaceService = {
         .limit(1);
 
       if (workspaces && workspaces.length > 0) {
+        console.log('✅ getOrCreateDemoWorkspace: Found existing demo workspace for Supabase user');
         return workspaces[0];
       }
 
-      // Create demo workspace for Supabase auth users
+      // Create demo workspace for Supabase auth users with unique slug
+      const uniqueSlug = `demo-workspace-${Date.now()}`;
+      console.log('🔍 getOrCreateDemoWorkspace: Creating new demo workspace for Supabase user with slug:', uniqueSlug);
+      
       const { data: newWorkspace, error } = await supabase
         .from('workspaces')
         .insert({
           name: 'Demo Workspace',
-          slug: 'demo-workspace',
-          description: 'Demo workspace for testing'
+          slug: uniqueSlug,
+          description: 'Demo workspace for testing',
+          owner_id: '00000000-0000-0000-0000-000000000000' // Default owner for demo workspaces
         })
         .select('*')
         .single();
@@ -340,6 +282,7 @@ export const workspaceService = {
         throw error;
       }
 
+      console.log('✅ getOrCreateDemoWorkspace: Created new demo workspace for Supabase user');
       return newWorkspace;
     } catch (error) {
       console.error('Error in getOrCreateDemoWorkspace:', error);

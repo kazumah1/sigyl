@@ -28,6 +28,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            <img src="/test_6.png" alt="SIGYL Logo" className="w-8 h-8 rounded-full object-cover shadow-sm" style={{background:'#18181b'}} />
             <div 
               className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"
               onClick={() => navigate('/')}

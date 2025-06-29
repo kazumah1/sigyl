@@ -28,6 +28,7 @@ export interface DeploymentResult {
   success: boolean;
   deploymentUrl?: string;
   serviceName?: string;
+  packageId?: string;
   error?: string;
   securityReport?: any;
 }
@@ -322,7 +323,8 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       success: true,
       ...(cloudRunResult.deploymentUrl && { deploymentUrl: cloudRunResult.deploymentUrl }),
       ...(cloudRunResult.serviceName && { serviceName: cloudRunResult.serviceName }),
-      ...(cloudRunResult.securityReport && { securityReport: cloudRunResult.securityReport })
+      ...(cloudRunResult.securityReport && { securityReport: cloudRunResult.securityReport }),
+      ...(packageId && { packageId })
     };
 
   } catch (error) {

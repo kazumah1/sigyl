@@ -2,7 +2,7 @@ import express from 'express';
 import { signGitHubAppJWT, getInstallationAccessToken, listRepos } from '../services/githubAppAuth';
 import { UserInstallationService } from '../services/userInstallationService';
 import { InstallationService } from '../services/installationService';
-import { fetchMCPYaml } from '../services/yaml';
+import { fetchMCPYaml, fetchSigylYaml } from '../services/yaml';
 import fetch from 'node-fetch';
 
 interface GitHubTokenResponse {
@@ -306,7 +306,31 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
       repos.map(async (repo: any) => {
         try {
           const [owner, repoName] = repo.full_name.split('/');
-          const mcpConfig = await fetchMCPYaml(owner, repoName, 'main', installToken);
+          
+          // Check for both MCP and Sigyl configurations
+          let mcpConfig = null;
+          let sigylConfig = null;
+          let hasMcp = false;
+          let hasSigyl = false;
+          let configFiles: string[] = [];
+          
+          // Try to fetch MCP config
+          try {
+            mcpConfig = await fetchMCPYaml(owner, repoName, 'main', installToken);
+            hasMcp = true;
+            configFiles.push('mcp.yaml');
+          } catch (error) {
+            // MCP config not found or invalid
+          }
+          
+          // Try to fetch Sigyl config
+          try {
+            sigylConfig = await fetchSigylYaml(owner, repoName, 'main', installToken);
+            hasSigyl = true;
+            configFiles.push('sigyl.yaml');
+          } catch (error) {
+            // Sigyl config not found or invalid
+          }
           
           return {
             id: repo.id,
@@ -315,8 +339,9 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
             private: repo.private,
             description: repo.description,
             html_url: repo.html_url,
-            has_mcp: !!mcpConfig,
-            mcp_files: mcpConfig ? ['mcp.yaml', 'mcp.yml'] : [],
+            has_mcp: hasMcp,
+            has_sigyl: hasSigyl,
+            mcp_files: configFiles,
             mcp_config: mcpConfig ? {
               name: mcpConfig.name,
               description: mcpConfig.description,
@@ -324,10 +349,16 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
               port: mcpConfig.port,
               tools_count: mcpConfig.tools?.length || 0,
               required_secrets: mcpConfig.secrets || []
+            } : null,
+            sigyl_config: sigylConfig ? {
+              runtime: sigylConfig.runtime,
+              language: sigylConfig.language,
+              entryPoint: sigylConfig.entryPoint,
+              hasStartCommand: !!sigylConfig.startCommand
             } : null
           };
         } catch (error) {
-          // If MCP config fetch fails, assume no MCP
+          // If config fetch fails, assume no configs
           return {
             id: repo.id,
             name: repo.name,
@@ -336,8 +367,10 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
             description: repo.description,
             html_url: repo.html_url,
             has_mcp: false,
+            has_sigyl: false,
             mcp_files: [],
-            mcp_config: null
+            mcp_config: null,
+            sigyl_config: null
           };
         }
       })
@@ -552,9 +585,10 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
 
     console.log('✅ Deployment successful:', deploymentResult.deploymentUrl);
 
-    // Return success response
+    // Return success response with package ID
     res.json({
       success: true,
+      packageId: deploymentResult.packageId,
       deploymentUrl: deploymentResult.deploymentUrl,
       serviceName: deploymentResult.serviceName,
       mcpEndpoint: `${deploymentResult.deploymentUrl}/mcp`,

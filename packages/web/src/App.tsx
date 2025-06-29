@@ -8,6 +8,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import Deploy from './pages/Deploy';
 import Marketplace from './pages/Marketplace';
 import PackageDetails from './pages/PackageDetails';
+import MCPPackagePage from './pages/MCPPackagePage';
 import Docs from './pages/Docs';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -41,6 +42,7 @@ function App() {
               } />
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/marketplace/package/:id" element={<PackageDetails />} />
+              <Route path="/mcp/:id" element={<MCPPackagePage />} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="*" element={<NotFound />} />

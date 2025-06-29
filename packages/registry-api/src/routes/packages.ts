@@ -151,6 +151,52 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/packages/id/:id - Get package by ID (optional auth for analytics)
+router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || id.trim().length === 0) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid package ID',
+        message: 'Package ID is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    const packageData = await packageService.getPackageById(id);
+    
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: `Package with ID '${id}' does not exist`
+      };
+      return res.status(404).json(response);
+    }
+
+    // Increment download count
+    await packageService.updatePackageDownloads(packageData.id);
+    
+    const response: APIResponse<typeof packageData> = {
+      success: true,
+      data: packageData,
+      message: 'Package retrieved successfully'
+    };
+    
+    return res.json(response);
+  } catch (error) {
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve package',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+    
+    return res.status(500).json(response);
+  }
+});
+
 // GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
 router.get('/', optionalAuth, async (_req: Request, res: Response) => {
   try {

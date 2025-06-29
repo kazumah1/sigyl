@@ -1,5 +1,5 @@
 // Marketplace service for MCP discovery and installation
-import { MCPPackage, PackageWithDetails, PackageSearchResult } from '@/marketplace'
+import { MCPPackage, PackageWithDetails, PackageSearchResult } from '@/types/marketplace'
 
 // Registry API configuration
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
@@ -72,6 +72,28 @@ export class MarketplaceService {
     } catch (error) {
       console.error('Failed to fetch all packages:', error)
       return []
+    }
+  }
+
+  /**
+   * Get package details by ID
+   */
+  static async getPackageById(packageId: string): Promise<PackageWithDetails | null> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/id/${encodeURIComponent(packageId)}`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null
+        }
+        throw new Error(`Failed to fetch package: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      return result.data
+    } catch (error) {
+      console.error('Failed to fetch package by ID:', error)
+      return null
     }
   }
 
