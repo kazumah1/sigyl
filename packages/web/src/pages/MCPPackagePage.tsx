@@ -37,7 +37,9 @@ import {
   Cpu,
   HardDrive,
   Rocket,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +47,9 @@ import { MarketplaceService } from '@/services/marketplaceService';
 import { PackageWithDetails } from '@/types/marketplace';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,6 +87,11 @@ const MCPPackagePage = () => {
     screenshots: '', // comma-separated URLs
   });
   const [saving, setSaving] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installStep, setInstallStep] = useState(1);
+  const [secretFields, setSecretFields] = useState({ WEATHER_API_KEY: '', DEBUG: '' });
+  const [secretErrors, setSecretErrors] = useState<{ [k: string]: string }>({});
+  const [showOptionalSecrets, setShowOptionalSecrets] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -339,6 +349,26 @@ const MCPPackagePage = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const validateSecrets = () => {
+    const errors: { [k: string]: string } = {};
+    if (!secretFields.WEATHER_API_KEY) errors.WEATHER_API_KEY = 'Required';
+    // DEBUG is optional
+    setSecretErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSecretChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSecretFields((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInstallClick = () => {
+    setShowInstallModal(true);
+    setInstallStep(1);
+    setSecretFields({ WEATHER_API_KEY: '', DEBUG: '' });
+    setSecretErrors({});
   };
 
   if (loading) {
@@ -622,7 +652,7 @@ const MCPPackagePage = () => {
               <>
                 <Button 
                   size="lg" 
-                  onClick={handleDownload}
+                  onClick={handleInstallClick}
                   disabled={isDownloading}
                   className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200 font-semibold px-8"
                 >
@@ -960,6 +990,94 @@ const MCPPackagePage = () => {
           </div>
         </div>
       </div>
+      {/* Install Modal */}
+      <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
+        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 380, maxHeight: 600, overflowY: 'auto' }}>
+          <DialogHeader>
+            <DialogTitle>
+              {installStep === 1 ? 'Configure Secrets' : 'Choose Installation Method'}
+            </DialogTitle>
+          </DialogHeader>
+          {installStep === 1 && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="WEATHER_API_KEY">WEATHER_API_KEY <span className="text-red-400">*</span></Label>
+                <Input
+                  id="WEATHER_API_KEY"
+                  name="WEATHER_API_KEY"
+                  value={secretFields.WEATHER_API_KEY}
+                  onChange={handleSecretChange}
+                  placeholder="Enter your weather API key"
+                  className="mt-1"
+                />
+                {secretErrors.WEATHER_API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.WEATHER_API_KEY}</div>}
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
+                  onClick={() => setShowOptionalSecrets((v) => !v)}
+                  aria-expanded={showOptionalSecrets}
+                >
+                  {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  {showOptionalSecrets ? 'Hide optional secrets' : 'Show optional secrets'}
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'max-h-40 mt-4' : 'max-h-0'}`}
+                >
+                  {showOptionalSecrets && (
+                    <div>
+                      <Label htmlFor="DEBUG">DEBUG (optional)</Label>
+                      <Input
+                        id="DEBUG"
+                        name="DEBUG"
+                        value={secretFields.DEBUG}
+                        onChange={handleSecretChange}
+                        placeholder="true or false"
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    if (validateSecrets()) setInstallStep(2);
+                  }}
+                  className="bg-blue-600 text-white"
+                >
+                  Next
+                </Button>
+                <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+          {installStep === 2 && (
+            <div className="space-y-6">
+              <div className="text-lg font-semibold mb-2">Select Installation Method</div>
+              <div className="grid grid-cols-2 gap-4">
+                <Button variant="outline" className="w-full">HTTP API</Button>
+                <Button variant="outline" className="w-full">SDK (TypeScript)</Button>
+                <Button variant="outline" className="w-full">VS Code Extension</Button>
+                <Button variant="outline" className="w-full">Cursor</Button>
+                <Button variant="outline" className="w-full">Claude Desktop</Button>
+                <Button variant="outline" className="w-full">JSON/Config</Button>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setInstallStep(1)}>
+                  Back
+                </Button>
+                <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
