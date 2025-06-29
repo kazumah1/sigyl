@@ -54,78 +54,32 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 }
 
 async function generateMCPConfig(options: InitOptions): Promise<void> {
-	// Use the MCP config schema and header as in the attached sigyl.yaml
+	// Generate proper NodeRuntimeConfig format for container-builder compatibility
 	const config = {
 		runtime: "node",
 		language: options.serverLanguage || "typescript",
-		startCommand: {
-			type: "http",
-			configSchema: {
-				type: "object",
-				required: ["apiKey", "environment"],
-				properties: {
-					apiKey: {
-						type: "string",
-						title: "MCP API Key",
-						description: "Your MCP API key (required)"
-					},
-					serviceName: {
-						type: "string",
-						title: "Service Name",
-						default: "my-mcp-service",
-						description: "Name of the MCP-compatible service"
-					},
-					logLevel: {
-						type: "string",
-						title: "Log Level",
-						default: "info",
-						enum: ["debug", "info", "warn", "error"],
-						description: "Logging verbosity level"
-					},
-					timeout: {
-						type: "number",
-						title: "Timeout",
-						description: "Request timeout in seconds",
-						default: 30,
-						minimum: 1,
-						maximum: 300
-					},
-					enableMetrics: {
-						type: "boolean",
-						title: "Enable Metrics",
-						description: "Enable metrics collection",
-						default: false
-					},
-					allowedClients: {
-						type: "array",
-						title: "Allowed Clients",
-						description: "List of client IDs allowed to access the server",
-						items: { type: "string" },
-						default: []
-					},
-					customSettings: {
-						type: "object",
-						title: "Custom Settings",
-						description: "Advanced custom settings for the server",
-						properties: {
-							maxConnections: { type: "number", default: 100 },
-							useCache: { type: "boolean", default: true }
-						},
-						default: {}
-					},
-					environment: {
-						type: "string",
-						title: "Environment",
-						description: "Deployment environment",
-						enum: ["development", "staging", "production"],
-						default: "development"
-					}
-				}
-			}
+		entryPoint: options.serverLanguage === "typescript" ? "server.ts" : "server.js",
+		build: {
+			command: options.serverLanguage === "typescript" ? "npm run build" : "npm install",
+			outputDir: options.serverLanguage === "typescript" ? "." : "."
+		},
+		env: {
+			NODE_ENV: "production",
+			PORT: "${PORT:-8080}"
 		}
 	};
 
-	const yamlHeader = `# MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n`;
+	const yamlHeader = `# Sigyl MCP Server Configuration
+# This configuration is compatible with the Sigyl platform deployment system.
+# 
+# Runtime: node - Deploys as a Node.js application
+# Language: ${options.serverLanguage || "typescript"} - Source code language
+# Entry Point: ${config.entryPoint} - Main server file
+# Build: Automated build configuration for deployment
+# Environment: Default environment variables for production
+#
+# For more information, see: https://docs.sigyl.com/configuration
+`;
 	const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
 	writeFileSync(join(options.outDir, "sigyl.yaml"), yamlContent);
 }

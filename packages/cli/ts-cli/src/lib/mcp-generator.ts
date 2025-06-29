@@ -46,78 +46,32 @@ export class MCPGenerator {
 		endpoints: ExpressEndpoint[],
 		options: MCPGenerationOptions
 	): Promise<void> {
-		// MCP config schema YAML
+		// Generate proper NodeRuntimeConfig format for container-builder compatibility
 		const config = {
 			runtime: "node",
 			language: this.language,
-			startCommand: {
-				type: "http",
-				configSchema: {
-					type: "object",
-					required: ["apiKey", "environment"],
-					properties: {
-						apiKey: {
-							type: "string",
-							title: "MCP API Key",
-							description: "Your MCP API key (required)"
-						},
-						serviceName: {
-							type: "string",
-							title: "Service Name",
-							default: "my-mcp-service",
-							description: "Name of the MCP-compatible service"
-						},
-						logLevel: {
-							type: "string",
-							title: "Log Level",
-							default: "info",
-							enum: ["debug", "info", "warn", "error"],
-							description: "Logging verbosity level"
-						},
-						timeout: {
-							type: "number",
-							title: "Timeout",
-							description: "Request timeout in seconds",
-							default: 30,
-							minimum: 1,
-							maximum: 300
-						},
-						enableMetrics: {
-							type: "boolean",
-							title: "Enable Metrics",
-							description: "Enable metrics collection",
-							default: false
-						},
-						allowedClients: {
-							type: "array",
-							title: "Allowed Clients",
-							description: "List of client IDs allowed to access the server",
-							items: { type: "string" },
-							default: []
-						},
-						customSettings: {
-							type: "object",
-							title: "Custom Settings",
-							description: "Advanced custom settings for the server",
-							properties: {
-								maxConnections: { type: "number", default: 100 },
-								useCache: { type: "boolean", default: true }
-							},
-							default: {}
-						},
-						environment: {
-							type: "string",
-							title: "Environment",
-							description: "Deployment environment",
-							enum: ["development", "staging", "production"],
-							default: "development"
-						}
-					}
-				}
+			entryPoint: this.language === "typescript" ? "server.ts" : "server.js",
+			build: {
+				command: this.language === "typescript" ? "npm run build" : "npm install",
+				outputDir: this.language === "typescript" ? "." : "."
+			},
+			env: {
+				NODE_ENV: "production",
+				PORT: "${PORT:-8080}"
 			}
 		};
 
-		const yamlHeader = `# MCP-compatible server configuration\n# This template demonstrates all major JSON Schema features for configSchema.\n# - apiKey: Secret string field\n# - serviceName: Arbitrary string field\n# - logLevel: Enum string field\n# - timeout: Number field with min/max\n# - enableMetrics: Boolean field\n# - allowedClients: Array of strings\n# - customSettings: Object field\n# - environment: Enum for environment\n# Add/remove fields as needed for your server.\n`;
+		const yamlHeader = `# Sigyl MCP Server Configuration
+# This configuration is compatible with the Sigyl platform deployment system.
+# 
+# Runtime: node - Deploys as a Node.js application
+# Language: ${this.language} - Source code language
+# Entry Point: ${config.entryPoint} - Main server file
+# Build: Automated build configuration for deployment
+# Environment: Default environment variables for production
+#
+# For more information, see: https://docs.sigyl.com/configuration
+`;
 		const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
 		writeFileSync(join(this.outDir, "sigyl.yaml"), yamlContent);
 		verboseLog("Generated sigyl.yaml configuration");
@@ -137,7 +91,9 @@ export class MCPGenerator {
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
+import express from "express"
 
 // ============================================================================
 // SERVER CONFIGURATION
@@ -244,8 +200,6 @@ ${this.generateParameterHandling(endpoint)}
 // ============================================================================
 // SERVER STARTUP
 // ============================================================================
-
-import express from "express"
 
 const app = express()
 app.use(express.json())
@@ -615,5 +569,176 @@ export async function ${toolName}(args: ${toolName}Args${defaultValue}): Promise
 `
 		} else if (this.language === "javascript") {
 			// Generate plain JS handler (no types)
-			const pathReplacements = endpoint.parameters?.filter(p => p.location === "path").map(param => 
-				`\t\turl = url.replace(":${param.name}", String(args.${param.name}) || "");`
+			return `// Tool handler for ${endpoint.method} ${endpoint.path}
+export async function ${toolName}(args = {}) {
+	try {
+		// Construct URL for the Express endpoint
+		const baseUrl = "http://localhost:${appPort}"
+		let url = "${endpoint.path}"
+		
+		// Replace path parameters
+		${endpoint.parameters?.filter(p => p.location === "path").map(param => 
+			`url = url.replace(":${param.name}", String(args.${param.name}) || "");`
+		).join('\n\t\t') || ''}
+		
+		// Add query parameters
+		const queryParams = new URLSearchParams()
+		${endpoint.parameters?.filter(p => p.location === "query").map(param => 
+			`if (args.${param.name} !== undefined) queryParams.append("${param.name}", String(args.${param.name}));`
+		).join('\n\t\t') || ''}
+		
+		if (queryParams.toString()) {
+			url += "?" + queryParams.toString()
+		}
+		
+		const fullUrl = baseUrl + url
+		
+		// Make HTTP request to Express app
+		const options = {
+			method: "${endpoint.method}",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}
+		
+		// Add body for POST/PUT/PATCH requests
+		${['POST', 'PUT', 'PATCH'].includes(endpoint.method) ? 
+			`if (args.body) {\n\t\t\toptions.body = JSON.stringify(args.body)\n\t\t}` : 
+			'// No body for GET requests'
+		}
+		
+		const response = await fetch(fullUrl, options)
+		const result = await response.text()
+		
+		return {
+			content: [
+				{
+					type: "text",
+					text: "Request: " + options.method + " " + fullUrl + "\\nResponse: " + result
+				}
+			]
+		}
+	} catch (error) {
+		return {
+			content: [
+				{
+					type: "text",
+					text: \`Error calling ${endpoint.method.toUpperCase()} ${endpoint.path}: \${error instanceof Error ? error.message : String(error)}\`
+				}
+			]
+		}
+	}
+}
+`
+		}
+		
+		return ""
+	}
+
+	private generateToolArgInterface(endpoint: ExpressEndpoint): string {
+		const toolName = this.generateToolName(endpoint)
+		const interfaceName = `${toolName}Args`
+		
+		let properties: string[] = []
+		
+		// Add path and query parameters
+		if (endpoint.parameters) {
+			for (const param of endpoint.parameters) {
+				const optional = param.required ? "" : "?"
+				properties.push(`\t${param.name}${optional}: ${this.mapTypeToTypeScript(param.type)}`)
+			}
+		}
+		
+		// Add body parameter for POST/PUT/PATCH requests
+		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+			properties.push(`\tbody?: any`)
+		}
+		
+		if (properties.length === 0) {
+			return `interface ${interfaceName} {}`
+		}
+		
+		return `interface ${interfaceName} {
+${properties.join('\n')}
+}`
+	}
+	
+	private mapTypeToTypeScript(type: string): string {
+		switch (type.toLowerCase()) {
+			case "string": return "string"
+			case "number": return "number"
+			case "boolean": return "boolean"
+			case "array": return "any[]"
+			case "object": return "any"
+			case "date": return "string"
+			default: return "any"
+		}
+	}
+
+	private generateZodShapeObject(endpoint: ExpressEndpoint): string {
+		const properties: string[] = []
+		
+		// Add path and query parameters
+		if (endpoint.parameters) {
+			for (const param of endpoint.parameters) {
+				const zodType = this.mapTypeToZod(param.type)
+				const description = param.description || `${param.location} parameter: ${param.name}`
+				const optional = param.required ? "" : ".optional()"
+				properties.push(`\t\t${param.name}: z.${zodType}()${optional}.describe("${description}")`)
+			}
+		}
+		
+		// Add body parameter for POST/PUT/PATCH requests
+		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+			properties.push(`\t\tbody: z.any().optional().describe("Request body data")`)
+		}
+		
+		if (properties.length === 0) {
+			return "{}"
+		}
+		
+		return `{
+${properties.join(',\n')}
+\t}`
+	}
+	
+	private mapTypeToZod(type: string): string {
+		switch (type.toLowerCase()) {
+			case "string": return "string"
+			case "number": return "number"
+			case "boolean": return "boolean"
+			case "array": return "array"
+			case "object": return "object"
+			default: return "any"
+		}
+	}
+
+	private generateParameterHandling(endpoint: ExpressEndpoint): string {
+		let code = ""
+		
+		if (endpoint.parameters) {
+			for (const param of endpoint.parameters) {
+				if (param.location === "path") {
+					code += `\t\t\trequestOptions.url = requestOptions.url.replace(":${param.name}", String(args.${param.name}) || "");\n`
+				} else if (param.location === "query") {
+					code += `\t\t\tif (args.${param.name} !== undefined) {\n`
+					code += `\t\t\t\tqueryParams.set("${param.name}", String(args.${param.name}));\n`
+					code += `\t\t\t}\n`
+				} else if (param.location === "body") {
+					code += `\t\t\tif (args.${param.name} !== undefined) {\n`
+					code += `\t\t\t\tbodyParams.${param.name} = args.${param.name};\n`
+					code += `\t\t\t}\n`
+				}
+			}
+		}
+		
+		// Handle body parameters for POST/PUT/PATCH
+		if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+			code += `\t\t\tif (args.body !== undefined) {\n`
+			code += `\t\t\t\tObject.assign(bodyParams, args.body);\n`
+			code += `\t\t\t}\n`
+		}
+		
+		return code
+	}
+}
