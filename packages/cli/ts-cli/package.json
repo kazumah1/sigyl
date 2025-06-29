@@ -33,9 +33,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && node build.mjs && chmod +x dist/index.js",
-    "start": "node dist/index.js",
     "prepare": "npm run build",
-    "check": "npx @biomejs/biome check --write --unsafe",
     "prepublishOnly": "npm run build"
   },
   "bin": {
@@ -43,9 +41,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
+    "@supabase/supabase-js": "^2.50.2",
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "inquirer": "^8.2.6",
     "ora": "^8.2.0",

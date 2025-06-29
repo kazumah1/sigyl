@@ -4,6 +4,7 @@ import { existsSync } from "node:fs"
 import chalk from "chalk"
 import inquirer from "inquirer"
 import { installMCPServer, listMCPServers, removeMCPServer } from "../lib/claude-config"
+import { createClient } from '@supabase/supabase-js';
 
 // Command for installing MCP server onto supported clients
 interface InstallOptions {
@@ -13,6 +14,34 @@ interface InstallOptions {
 	client?: string
 	env?: string[]
 	cwd?: string
+	profile?: string
+	key?: string
+}
+
+// Remove the mock resolveRemoteMCPServer and replace with real implementation
+async function resolveRemoteMCPServer(pkgName: string, apiKey?: string, profile?: string) {
+	const SUPABASE_URL = process.env.SUPABASE_URL;
+	const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+	if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+		console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables must be set.');
+		process.exit(1);
+	}
+	const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+	const { data, error } = await supabase
+		.from('mcp_packages')
+		.select('source_api_url')
+		.eq('slug', pkgName)
+		.single();
+	if (error || !data || !data.source_api_url) {
+		console.error(`❌ Could not find a valid source_api_url for package '${pkgName}'.`);
+		process.exit(1);
+	}
+	return {
+		url: data.source_api_url,
+		api_key: apiKey || 'demo-key',
+		profile: profile || 'default',
+		name: pkgName,
+	};
 }
 
 const SUPPORTED_CLIENTS = ["claude", "cursor", "vscode"] as const;
@@ -21,16 +50,18 @@ type SupportedClient = typeof SUPPORTED_CLIENTS[number];
 export function createInstallCommand(): Command {
 	return new Command("install")
 		.description(
-			"Install generated MCP servers in a desktop client (claude, cursor, vscode). Default: claude"
+			"Install a remote MCP server in a desktop client (claude, cursor, vscode). Default: claude. Accepts a package name or identifier."
 		)
-		.argument("[server-path]", "Path to the generated MCP server (default: template-mcp/server.js)")
+		.argument("<package>", "MCP server package name or identifier (e.g. kazumah1/mcp-test)")
 		.option("-n, --name <name>", "Custom name for the server in the client")
 		.option("-l, --list", "List currently installed MCP servers")
 		.option("-r, --remove <name>", "Remove an MCP server from the client")
 		.option("--client <client>", "Target client: claude, cursor, vscode (default: claude)")
 		.option("--env <key=value>", "Environment variables (can be used multiple times)", [])
 		.option("--cwd <path>", "Working directory for the server")
-		.action(async (serverPath: string | undefined, options: InstallOptions) => {
+		.option("--profile <profile>", "Profile name for the MCP config")
+		.option("--key <key>", "API key for the MCP server")
+		.action(async (pkgName: string, options: InstallOptions) => {
 			try {
 				const client = (options.client || "claude").toLowerCase() as SupportedClient;
 				if (!SUPPORTED_CLIENTS.includes(client)) {
@@ -63,7 +94,9 @@ export function createInstallCommand(): Command {
 					}
 				}
 
-				await installServer(serverPath, options, client)
+				// New: resolve remote MCP server details
+				const remote = await resolveRemoteMCPServer(pkgName, options.key, options.profile);
+				await installRemoteServer(remote, options, client);
 			} catch (error) {
 				console.error(chalk.red("❌ Install command failed:"), error)
 				process.exit(1)
@@ -71,147 +104,113 @@ export function createInstallCommand(): Command {
 		})
 }
 
-async function installServer(
-	serverPath: string | undefined,
+// New: install remote MCP server for client
+async function installRemoteServer(
+	remote: { url: string; api_key: string; profile: string; name: string },
 	options: InstallOptions,
 	client: SupportedClient
 ): Promise<void> {
+	const serverName = options.name || remote.name;
+	const fs = require("fs");
+	const os = require("os");
+	const path = require("path");
 	if (client === "claude") {
-		// Existing Claude logic
-		const defaultServerPath = ".mcp-generated/server.js"
-		const targetPath = serverPath || defaultServerPath
-
-		if (!existsSync(targetPath)) {
-			if (!serverPath) {
-				console.log(chalk.yellow("⚠️  No generated MCP server found"))
-				console.log(chalk.blue("💡 Generate a server first with:"))
-				console.log(chalk.gray("   sigyl demo --mode scan"))
-				console.log(chalk.gray("   # or"))
-				console.log(chalk.gray("   sigyl scan /path/to/express/app"))
-			} else {
-				console.error(chalk.red(`❌ Server file not found: ${targetPath}`))
-			}
-			process.exit(1)
+		// Write config file for Claude Desktop (mcpServers field) using 'command' and 'args' (smithery style)
+		const configPath = path.join(
+			os.homedir(),
+			"Library/Application Support/Claude/claude_desktop_config.json"
+		);
+		let config = { mcpServers: {} };
+		if (fs.existsSync(configPath)) {
+			try {
+				config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+			} catch {}
 		}
-
-		const isJavaScript = targetPath.endsWith(".js")
-		const isTypeScript = targetPath.endsWith(".ts")
-		let language: "typescript" | "javascript" = "javascript"
-
-		if (isTypeScript) {
-			language = "typescript"
-		} else if (isJavaScript) {
-			const tsPath = targetPath.replace(/\.js$/, ".ts")
-			if (existsSync(tsPath)) {
-				language = "typescript"
-			}
-		}
-
-		let serverName = options.name
-		if (!serverName) {
-			const serverDir = targetPath.includes("/") ? targetPath.split("/").slice(0, -1).join("/") : "."
-			const packageJsonPath = join(serverDir, "package.json")
-			if (existsSync(packageJsonPath)) {
-				try {
-					const packageJson = JSON.parse(require("fs").readFileSync(packageJsonPath, "utf8"))
-					serverName = packageJson.name || basename(serverDir)
-				} catch {
-					serverName = basename(serverDir)
-				}
-			} else {
-				serverName = basename(serverDir)
-			}
-			if (targetPath === defaultServerPath) {
-				serverName = "generated-mcp-server"
-			}
-			const { confirmedName } = await inquirer.prompt([
-				{
-					type: "input",
-					name: "confirmedName",
-					message: "Server name for Claude Desktop:",
-					default: serverName
-				}
-			])
-			serverName = confirmedName
-		}
-
-		const env: Record<string, string> = {}
-		if (options.env && options.env.length > 0) {
-			for (const envVar of options.env) {
-				const [key, ...valueParts] = envVar.split("=")
-				if (key && valueParts.length > 0) {
-					env[key] = valueParts.join("=")
-				} else {
-					console.log(chalk.yellow(`⚠️  Invalid environment variable format: ${envVar}`))
-					console.log(chalk.gray("Expected format: KEY=VALUE"))
-				}
-			}
-		}
-
-		console.log(chalk.blue("\n📦 Installing MCP server in Claude Desktop"))
-		console.log(chalk.gray(`   Server: ${targetPath}`))
-		console.log(chalk.gray(`   Name: ${serverName}`))
-		console.log(chalk.gray(`   Language: ${language}`))
-		if (Object.keys(env).length > 0) {
-			console.log(chalk.gray(`   Environment: ${Object.keys(env).join(", ")}`))
-		}
-		console.log()
-
-		const { proceed } = await inquirer.prompt([
-			{
-				type: "confirm",
-				name: "proceed",
-				message: "Install this server in Claude Desktop?",
-				default: true
-			}
-		])
-
-		if (!proceed) {
-			console.log(chalk.yellow("Installation cancelled"))
-			return
-		}
-
-		const success = installMCPServer(serverName!, targetPath, {
-			language,
-			env: Object.keys(env).length > 0 ? env : undefined
-		})
-
-		if (success) {
-			console.log(chalk.green("\n🎉 Installation completed!"))
-			console.log(chalk.blue("Next steps:"))
-			console.log(chalk.gray("1. Restart Claude Desktop completely"))
-			console.log(chalk.gray("2. Look for the hammer icon (🔨) in the chat input"))
-			console.log(chalk.gray("3. Your MCP tools should now be available in Claude"))
-			const mcpYamlPath = join(targetPath.includes("/") ? targetPath.split("/").slice(0, -1).join("/") : ".", "sigyl.yaml")
-			if (existsSync(mcpYamlPath)) {
-				try {
-					const yaml = require("yaml")
-					const mcpConfig = yaml.parse(require("fs").readFileSync(mcpYamlPath, "utf8"))
-					if (mcpConfig.tools && mcpConfig.tools.length > 0) {
-						console.log(chalk.blue("\n🔧 Available tools:"))
-						mcpConfig.tools.forEach((tool: any) => {
-							console.log(chalk.cyan(`   • ${tool.name} - ${tool.description || "No description"}`))
-						})
-					}
-				} catch {
-					// Ignore errors reading sigyl.yaml
-				}
-			}
-		} else {
-			process.exit(1)
-		}
-		return
+		let mcpServers: Record<string, any> = config.mcpServers || {};
+		mcpServers[remote.name] = {
+			command: "npx",
+			args: [
+				"-y",
+				"sigyl/cli@latest",
+				"run",
+				remote.name,
+				"--key",
+				remote.api_key,
+				"--profile",
+				remote.profile
+			]
+		};
+		config.mcpServers = mcpServers;
+		fs.mkdirSync(path.dirname(configPath), { recursive: true });
+		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Claude Desktop!`));
+		console.log(chalk.gray(`  Profile: ${remote.profile}`));
+		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.yellow("\n🔄 Please restart Claude Desktop to load the new server."));
+		return;
 	}
-
-	// TODO: Implement install logic for cursor
-	if (client === "cursor") {
-		console.log(chalk.yellow("Install for Cursor is not yet implemented. TODO."))
-		return
-	}
-
-	// TODO: Implement install logic for vscode
 	if (client === "vscode") {
-		console.log(chalk.yellow("Install for VS Code is not yet implemented. TODO."))
-		return
+		// Write config file for VS Code (mcpServers field) using 'command' and 'args' (smithery style)
+		const configPath = path.join(os.homedir(), ".vscode", "mcp_servers.json");
+		let config = { mcpServers: {} };
+		if (fs.existsSync(configPath)) {
+			try {
+				config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+			} catch {}
+		}
+		let mcpServers: Record<string, any> = config.mcpServers || {};
+		mcpServers[remote.name] = {
+			command: "npx",
+			args: [
+				"-y",
+				"sigyl/cli@latest",
+				"run",
+				remote.name,
+				"--key",
+				remote.api_key,
+				"--profile",
+				remote.profile
+			]
+		};
+		config.mcpServers = mcpServers;
+		fs.mkdirSync(path.dirname(configPath), { recursive: true });
+		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for VS Code!`));
+		console.log(chalk.gray(`  Profile: ${remote.profile}`));
+		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.yellow("\n🔄 Please restart VS Code to load the new server."));
+		return;
+	}
+	if (client === "cursor") {
+		// Write config file for Cursor (mcpServers field) using 'command' and 'args' (smithery style)
+		const configPath = path.join(os.homedir(), ".cursor", "mcp_servers.json");
+		let config = { mcpServers: {} };
+		if (fs.existsSync(configPath)) {
+			try {
+				config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+			} catch {}
+		}
+		let mcpServers: Record<string, any> = config.mcpServers || {};
+		mcpServers[remote.name] = {
+			command: "npx",
+			args: [
+				"-y",
+				"sigyl/cli@latest",
+				"run",
+				remote.name,
+				"--key",
+				remote.api_key,
+				"--profile",
+				remote.profile
+			]
+		};
+		config.mcpServers = mcpServers;
+		fs.mkdirSync(path.dirname(configPath), { recursive: true });
+		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Cursor!`));
+		console.log(chalk.gray(`  Profile: ${remote.profile}`));
+		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.yellow("\n🔄 Please restart Cursor to load the new server."));
+		return;
 	}
 } 

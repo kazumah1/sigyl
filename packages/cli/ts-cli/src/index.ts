@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 
 import { Command } from "commander"
 import chalk from "chalk"
@@ -14,8 +15,8 @@ import { join } from "node:path"
 const program = new Command()
 
 program
-	.name("sigyl")
-	.description("Sigyl CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.")
+	.name("sigyl/cli")
+	.description("Sigyl/CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.")
 	.version("1.0.0")
 
 // ============================================================================
