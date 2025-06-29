@@ -49,11 +49,50 @@ export class HttpTransport implements Transport {
       timeout: this.timeout,
       headers
     });
-    // Return the result field if present (JSON-RPC)
-    if (response.data && typeof response.data === 'object' && 'result' in response.data) {
-      return response.data.result;
+    let data = response.data;
+    if (typeof data === 'string' && data.startsWith('event: message')) {
+      // Extract the JSON from the data: ... line
+      const match = data.match(/data: (\{.*\})/);
+      if (match) {
+        data = JSON.parse(match[1]);
+      }
     }
-    return response.data;
+    if (data && typeof data === 'object' && 'result' in data) {
+      return data.result;
+    }
+    return data;
+  }
+
+  async invokeRaw(method: string, params: any): Promise<any> {
+    const url = `${this.baseUrl.replace(/\/$/, '')}/mcp`;
+    const payload = {
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method,
+      params
+    };
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream'
+    };
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+    const response = await axios.post(url, payload, {
+      timeout: this.timeout,
+      headers
+    });
+    let data = response.data;
+    if (typeof data === 'string' && data.startsWith('event: message')) {
+      const match = data.match(/data: (\{.*\})/);
+      if (match) {
+        data = JSON.parse(match[1]);
+      }
+    }
+    if (data && typeof data === 'object' && 'result' in data) {
+      return data.result;
+    }
+    return data;
   }
 
   async close(): Promise<void> {
@@ -72,11 +111,16 @@ export class Client {
     this.connected = true;
   }
 
-  async invoke(toolName: string, input: any): Promise<any> {
+  async invoke(method: string, input: any): Promise<any> {
     if (!this.transport || !this.connected) {
       throw new Error('Client is not connected to a transport');
     }
-    return this.transport.invokeTool(toolName, input);
+    // If method is tools/list or other management method, use invokeRaw
+    if (typeof (this.transport as any).invokeRaw === 'function' && (method === 'tools/list' || method.startsWith('tools/'))) {
+      return (this.transport as any).invokeRaw(method, input);
+    }
+    // Otherwise, treat as a tool call
+    return (this.transport as any).invokeTool(method, input);
   }
 
   async close(): Promise<void> {
