@@ -50,8 +50,18 @@ const Dashboard = () => {
   };
 
   const currentUser = adminSession || user;
-  const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
-  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
+  const displayName = adminSession?.display_name || 
+                     user?.user_metadata?.full_name || 
+                     user?.user_metadata?.user_name || 
+                     user?.user_metadata?.preferred_username ||
+                     user?.email?.split('@')[0] ||
+                     'User';
+  const currentUserName = adminSession?.display_name || 
+                          user?.user_metadata?.full_name || 
+                          user?.user_metadata?.user_name || 
+                          user?.user_metadata?.preferred_username ||
+                          user?.email?.split('@')[0] ||
+                          'User';
 
   // Update isOwner and workspaceNameInput when workspace changes
   useEffect(() => {

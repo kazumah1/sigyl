@@ -470,11 +470,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               
               console.log('Restoring GitHub App session state in localStorage')
               localStorage.setItem('github_app_user', JSON.stringify(githubUserData))
-              localStorage.setItem('github_app_access_token', activeAccount.accessToken || 'restored_token')
+              // Don't set invalid tokens - let the system use Supabase JWT
+              if (activeAccount.accessToken && activeAccount.accessToken !== 'restored_token' && activeAccount.accessToken !== 'db_restored_token') {
+                localStorage.setItem('github_app_access_token', activeAccount.accessToken)
+              } else {
+                localStorage.removeItem('github_app_access_token') // Remove any existing invalid token
+              }
               localStorage.setItem('github_app_installation_id', activeAccount.installationId.toString())
               localStorage.setItem('github_app_install_time', Date.now().toString())
               
-              console.log('Restored complete GitHub App session for:', activeAccount.username)
+              console.log('Restored GitHub App metadata for:', activeAccount.username, '(using valid token or Supabase JWT fallback)')
             }
             return
           }
@@ -504,7 +509,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               fullName: installation.account_login, // We don't have full name in the installations table
               avatarUrl: user.user_metadata?.avatar_url || '',
               email: user.email || '',
-              accessToken: 'db_restored_token', // This will need to be refreshed when needed
+              accessToken: '', // Don't set a placeholder token - let it use Supabase JWT instead
               isActive: false,
               accountLogin: installation.account_login,
               accountType: installation.account_type || 'User'
@@ -522,7 +527,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Store in localStorage for faster future access
             localStorage.setItem('github_app_accounts', JSON.stringify(githubAccounts))
             
-            // CRITICAL: Also restore the GitHub App session state in localStorage
+            // CRITICAL: Don't restore GitHub App session state with invalid tokens
+            // Instead, let the system use Supabase JWT authentication
             const githubUserData = {
               id: githubId || user.id,
               login: githubAccounts[0].username,
@@ -532,11 +538,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             localStorage.setItem('github_app_user', JSON.stringify(githubUserData))
-            localStorage.setItem('github_app_access_token', githubAccounts[0].accessToken)
+            // Don't set invalid tokens - let the system use Supabase JWT
+            localStorage.removeItem('github_app_access_token') // Remove any existing invalid token
             localStorage.setItem('github_app_installation_id', githubAccounts[0].installationId.toString())
             localStorage.setItem('github_app_install_time', Date.now().toString())
             
-            console.log('Restored GitHub App access from database for:', githubAccounts[0].username)
+            console.log('Restored GitHub App metadata from database for:', githubAccounts[0].username, '(will use Supabase JWT for auth)')
             return
           }
         } catch (error) {
