@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Index from './pages/Index';
@@ -24,7 +24,18 @@ import Privacy from './pages/Privacy';
 import Footer from './components/Footer';
 import './index.css';
 
+function trackPageView(url: string) {
+  if (window.gtag) {
+    window.gtag('event', 'page_view', { page_path: url });
+  }
+}
+
 function App() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location]);
+
   return (
     <ThemeProvider>
       <AuthProvider>
