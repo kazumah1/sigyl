@@ -4,6 +4,8 @@ import { UserInstallationService } from '../services/userInstallationService';
 import { InstallationService } from '../services/installationService';
 import { fetchMCPYaml, fetchSigylYaml } from '../services/yaml';
 import fetch from 'node-fetch';
+import { authenticate } from '../middleware/authMiddleware';
+import { db } from '../db';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -151,10 +153,21 @@ router.get('/callback', async (req, res) => {
 
     // Store user profile in profiles table
     let profileId = null;
+    let supabaseUserId = null;
     try {
+      // Try to find an existing profile by github_id or email to get the Supabase user ID
+      const { data: existingProfile } = await userInstallationService.supabase
+        .from('profiles')
+        .select('id')
+        .or(`github_id.eq.${user.id},email.eq.${user.email}`)
+        .single();
+      if (existingProfile && existingProfile.id) {
+        supabaseUserId = existingProfile.id;
+      }
       const { data: profile, error: profileError } = await userInstallationService.supabase
         .from('profiles')
         .upsert({
+          id: supabaseUserId || undefined,
           email: user.email || `${user.login}@users.noreply.github.com`,
           username: user.login,
           full_name: user.name,
@@ -163,6 +176,7 @@ router.get('/callback', async (req, res) => {
           github_id: user.id,
           github_installation_id: installationId,
           github_app_installed: true,
+          auth_user_id: supabaseUserId || undefined,
         }, { onConflict: 'github_id' })
         .select()
         .single();
@@ -603,6 +617,54 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown deployment error'
     });
+  }
+});
+
+// In the route that handles /github/associate-installation
+router.post('/github/associate-installation', authenticate, async (req, res) => {
+  try {
+    const { installationId } = req.body;
+    const userId = req.user?.id; // Supabase Auth UUID or github_12345
+    if (!userId || !installationId) {
+      console.error('[associate-installation] Missing userId or installationId', { userId, installationId });
+      return res.status(400).json({ error: 'Missing user ID or installationId' });
+    }
+    const githubId = /^github_/.test(userId) ? userId.replace('github_', '') : null;
+    const updateFields = {
+      github_app_installed: true,
+      github_installation_id: installationId,
+      auth_user_id: userId
+    };
+    let upsertResult;
+    if (githubId) {
+      // Upsert by github_id
+      console.log(`[associate-installation] Upserting by github_id: ${githubId}`, { updateFields });
+      upsertResult = await db('profiles')
+        .insert({
+          github_id: githubId,
+          ...updateFields
+        })
+        .onConflict('github_id')
+        .merge(updateFields)
+        .returning('*');
+      console.log('[associate-installation] Upsert result (github_id):', upsertResult);
+    } else {
+      // Upsert by id (UUID)
+      console.log(`[associate-installation] Upserting by id: ${userId}`, { updateFields });
+      upsertResult = await db('profiles')
+        .insert({
+          id: userId,
+          ...updateFields
+        })
+        .onConflict('id')
+        .merge(updateFields)
+        .returning('*');
+      console.log('[associate-installation] Upsert result (id):', upsertResult);
+    }
+    return res.json({ success: true, upsertResult });
+  } catch (err) {
+    console.error('Error associating GitHub App installation:', err);
+    return res.status(500).json({ error: 'Internal server error', details: err?.message });
   }
 });
 

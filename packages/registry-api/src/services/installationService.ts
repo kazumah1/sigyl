@@ -219,4 +219,22 @@ export class InstallationService {
       throw new Error(`Failed to delete installation: ${installError.message}`);
     }
   }
+}
+
+export async function upsertProfileWithInstallation({ userId, installationId }) {
+  if (!userId || !installationId) {
+    throw new Error('Missing userId or installationId');
+  }
+  await this.supabase
+    .from('profiles')
+    .insert({
+      id: userId,
+      github_app_installed: true,
+      github_installation_id: installationId
+    })
+    .onConflict('id')
+    .merge({
+      github_app_installed: true,
+      github_installation_id: installationId
+    });
 } 

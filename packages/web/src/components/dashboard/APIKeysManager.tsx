@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { APIKeyService, APIKey, CreateAPIKeyRequest } from '@/services/apiKeyService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface APIKeysManagerProps {
   workspaceId: string;
@@ -25,6 +26,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   // Fetch API keys on component mount
   useEffect(() => {
@@ -32,6 +34,29 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
       fetchAPIKeys();
     }
   }, [token]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      try {
+        let query = supabase.from('profiles').select('*');
+        if (/^github_/.test(user.id)) {
+          query = query.eq('github_id', user.id.replace('github_', ''));
+        } else {
+          query = query.eq('id', user.id);
+        }
+        const { data: profile, error } = await query.single();
+        if (error) {
+          console.error('Error loading profile:', error);
+        } else {
+          setProfile(profile);
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    };
+    loadProfile();
+  }, [user]);
 
   const fetchAPIKeys = async () => {
     if (!token) {

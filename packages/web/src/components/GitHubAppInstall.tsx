@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -9,9 +9,11 @@ import { useAuth } from "@/contexts/AuthContext"
 import { 
   fetchRepositoriesWithApp,
   GitHubAppRepository,
-  GitHubAppInstallation
+  GitHubAppInstallation,
+  checkForGitHubAppCallback
 } from "@/lib/githubApp"
 import { useNavigate } from 'react-router-dom'
+import { supabase } from "@/lib/supabase"
 
 interface GitHubAppInstallProps {
   onInstallationComplete?: (installationId: number) => void
@@ -22,13 +24,14 @@ const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({
   onInstallationComplete,
   onRepositoriesLoaded 
 }) => {
-  const { user, signInWithGitHubApp, setGitHubInstallationId, githubInstallationId } = useAuth()
+  const { user, signInWithGitHubApp, setGitHubInstallationId, githubInstallationId, session } = useAuth()
   const navigate = useNavigate()
   const [installationInfo, setInstallationInfo] = useState<GitHubAppInstallation | null>(null)
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [loading, setLoading] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const hasAssociated = useRef(false);
 
   // Load repositories when installation ID is available
   useEffect(() => {
@@ -37,6 +40,42 @@ const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({
       onInstallationComplete?.(githubInstallationId)
     }
   }, [githubInstallationId])
+
+  // In the effect that handles the callback after GitHub App install
+  useEffect(() => {
+    const handleCallback = async () => {
+      const { installationId, code } = checkForGitHubAppCallback();
+      if (!user) {
+        // Not authenticated, redirect to login
+        window.location.href = '/login';
+        return;
+      }
+      // Only call exchangeCodeForSession if code is a valid Supabase OAuth code
+      if (installationId && code && code.length > 20) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('Error exchanging code for session:', error);
+        } else if (data?.session?.user) {
+          // ... existing logic ...
+        }
+      } else if (installationId && !hasAssociated.current) {
+        hasAssociated.current = true; // Prevent duplicate POSTs
+        try {
+          await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/associate-installation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`
+            },
+            body: JSON.stringify({ installationId })
+          });
+        } catch (err) {
+          console.error('Error associating installation:', err);
+        }
+      }
+    };
+    handleCallback();
+  }, [user, session]);
 
   const loadRepositories = async (installId: number) => {
     setLoading(true)

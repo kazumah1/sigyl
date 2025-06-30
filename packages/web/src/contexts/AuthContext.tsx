@@ -57,40 +57,107 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [githubInstallationId, setGitHubInstallationId] = useState<number | null>(null)
   const [githubAccounts, setGitHubAccounts] = useState<GitHubAccount[]>([])
   const [activeGitHubAccount, setActiveGitHubAccount] = useState<GitHubAccount | null>(null)
+  const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null)
 
   // Move GitHub App callback logic to a separate useEffect that runs on mount
   useEffect(() => {
     const processGitHubAppCallback = async () => {
+      console.log('processGitHubAppCallback running');
       const { installationId, code } = checkForGitHubAppCallback();
-      console.log('Checking for GitHub App callback:', {
-        hasInstallationId: !!installationId,
-        hasCode: !!code,
-      });
-      if (installationId && code) {
-        // Use the OAuth code to log in via Supabase
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error('Error exchanging code for session:', error);
-        } else if (data?.session?.user) {
-          setUser(data.session.user);
-          setSession(data.session);
-          await upsertProfile(data.session.user);
-          // Call backend to associate installationId with user
-          await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/associate-installation`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${data.session.access_token}`
-            },
-            body: JSON.stringify({ installationId })
+      console.log('GitHub App callback values:', { installationId, code });
+      if (installationId) {
+        setPendingInstallationId(installationId);
+      }
+      // Only call exchangeCodeForSession if both installationId and code are present and code looks like a real OAuth code
+      if (installationId && code && code.length > 20) { // crude check: real OAuth codes are long
+        const exchange = async () => {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('Error exchanging code for session:', error);
+          } else if (data?.session?.user) {
+            setUser(data.session.user);
+            setSession(data.session);
+            await upsertProfile(data.session.user);
+            // Directly upsert the Supabase profiles table after GitHub App install
+            const githubId = data.session.user.user_metadata?.sub;
+            const githubUserId = `github_${githubId}`;
+            console.log('Attempting to upsert profile after GitHub App install (OAuth):', {
+              id: data.session.user.id,
+              github_app_installed: true,
+              github_installation_id: installationId,
+              auth_user_id: githubUserId
+            });
+            const { error: upsertError } = await supabase
+              .from('profiles')
+              .upsert({
+                id: data.session.user.id,
+                github_app_installed: true,
+                github_installation_id: installationId,
+                auth_user_id: githubUserId
+              });
+            if (upsertError) {
+              console.error('Failed to upsert profile after GitHub App install (OAuth):', upsertError);
+            } else {
+              console.log('Profile upserted after GitHub App install (OAuth)!');
+            }
+          }
+        };
+        exchange();
+      } else if (pendingInstallationId && user) {
+        // Always upsert if installationId and user are present, regardless of code
+        const githubId = user.user_metadata?.sub;
+        const githubUserId = `github_${githubId}`;
+        console.log('Attempting to upsert profile after GitHub App install (non-OAuth):', {
+          id: user.id,
+          github_app_installed: true,
+          github_installation_id: pendingInstallationId,
+          auth_user_id: githubUserId
+        });
+        supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            github_app_installed: true,
+            github_installation_id: pendingInstallationId,
+            auth_user_id: githubUserId
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error('Failed to upsert profile after GitHub App install (non-OAuth):', error);
+            } else {
+              console.log('Profile upserted after GitHub App install (non-OAuth)!');
+            }
           });
-        }
       } else {
-        console.log('No GitHub App callback parameters found');
+        console.log('No valid Supabase OAuth code for session exchange. Skipping exchangeCodeForSession.');
       }
     };
     processGitHubAppCallback();
   }, []);
+
+  useEffect(() => {
+    if (pendingInstallationId && user) {
+      console.log('--- Minimal upsert debug ---');
+      console.log('user:', user);
+      console.log('pendingInstallationId:', pendingInstallationId);
+      const upsertPayload = {
+        id: user.id,
+        github_app_installed: true
+      };
+      console.log('Upsert payload:', upsertPayload);
+      const result = await supabase
+        .from('profiles')
+        .upsert(upsertPayload)
+        .then((result) => {
+          console.log('Upsert result:', result);
+          if (result.error) {
+            console.error('Failed to minimally upsert profile (github_app_installed):', result.error);
+          } else {
+            console.log('Minimal upsert succeeded: github_app_installed set to true!');
+          }
+        });
+    }
+  }, [pendingInstallationId, user]);
 
   useEffect(() => {
     // Get initial session
@@ -726,6 +793,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error upserting profile:', error);
     }
   }
+
+  // Add a useEffect to check for GitHub App installation after login
+  useEffect(() => {
+    const checkGitHubAppInstall = async () => {
+      if (session?.access_token && user?.id) {
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('github_app_installed')
+            .eq('id', user.id) // always use UUID
+            .single();
+          if (!error && profile && profile.github_app_installed === false) {
+            // Redirect to GitHub App install page
+            const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
+            const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
+            window.location.href = `https://github.com/apps/${appName}/installations/new?state=login&request_oauth_on_install=true&redirect_uri=${redirectUrl}`;
+          }
+        } catch (error) {
+          console.error('Error checking GitHub App install status:', error);
+        }
+      }
+    };
+    checkGitHubAppInstall();
+  }, [session, user]);
 
   const value = {
     user,

@@ -1,13 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, User, Settings, Github } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const UserProfile: React.FC = () => {
   const { user, signOut } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [profile, setProfile] = useState(null)
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
@@ -19,6 +21,31 @@ const UserProfile: React.FC = () => {
       setIsSigningOut(false)
     }
   }
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      try {
+        let query = supabase.from('profiles').select('*');
+        if (/^github_/.test(user.id)) {
+          // Use github_id for GitHub App users
+          query = query.eq('github_id', user.id.replace('github_', ''));
+        } else {
+          // Use id (UUID) for Supabase OAuth users
+          query = query.eq('id', user.id);
+        }
+        const { data: profile, error } = await query.single();
+        if (error) {
+          console.error('Error loading profile:', error);
+        } else {
+          setProfile(profile);
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    };
+    loadProfile();
+  }, [user]);
 
   if (!user) {
     return null
