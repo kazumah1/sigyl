@@ -149,6 +149,42 @@ The main problem was **frontend token selection**:
   - ✅ **Zero Config**: Works immediately for public packages
   - ✅ **Simple Auth**: Single API key for private access
 
+#### **Issue 10: MCP Package Page UI Improvements** 🆕 ✅ **FIXED**
+- **Problem**: Multiple UI inconsistencies on MCP package detail pages
+- **Issues Identified**:
+  - "Back to Marketplace" button had different styling than "View on GitHub" button
+  - Connect dialog had white background instead of dark theme
+  - Installation options had poor layout and styling
+  - Commands generated used old CLI format instead of new API-based format
+- **Root Cause**: 
+  - Inconsistent button styling across the page
+  - Dialog components not configured for dark theme
+  - Command generation still using old `npx sigyl/cli@latest` format
+  - Installation options using default light theme styling
+- **Solution**: 
+  - **Button Consistency**: Updated "Back to Marketplace" button to match "View on GitHub" styling (white outline, hover invert)
+  - **Dark Theme Dialog**: Applied dark theme styling to Connect dialog and Delete confirmation modal
+  - **Improved Layout**: Enhanced installation options grid with better spacing and sizing
+  - **Command Format**: Updated all command generation to use new `sigyl install` format
+  - **Better UX**: Improved command display with better copy functionality and visual feedback
+- **Technical Changes**:
+  - Updated button classes to use `border-white text-white bg-transparent hover:bg-white hover:text-black`
+  - Applied `bg-gray-900 border-gray-700 text-white` to dialog containers
+  - Updated input styling with `bg-gray-800 border-gray-600 text-white placeholder-gray-400`
+  - Fixed JSON config generation to use `sigyl install` instead of `npx sigyl/cli@latest run`
+  - Enhanced installation option buttons with consistent dark theme styling
+- **User Experience**:
+  - ✅ **Consistent Styling**: All buttons now follow the same design pattern
+  - ✅ **Dark Theme**: All dialogs and modals match the overall dark theme
+  - ✅ **Better Commands**: All generated commands use the correct CLI format
+  - ✅ **Improved Layout**: Installation options are better organized and more readable
+  - ✅ **Copy Functionality**: Enhanced copy buttons with visual feedback
+- **Benefits**:
+  - ✅ **Visual Consistency**: Unified design language across the page
+  - ✅ **Better UX**: Dark theme reduces eye strain and matches overall design
+  - ✅ **Correct Commands**: Users get working commands that match the actual CLI
+  - ✅ **Professional Look**: More polished and cohesive user interface
+
 ---
 
 ## **Solutions Implemented** 🔧
@@ -231,6 +267,7 @@ The main problem was **frontend token selection**:
 - **NEW**: Zero-config CLI experience for public packages ✅
 - **NEW**: Secure API key authentication for private packages ✅
 - **NEW**: CLI version 1.0.2 published to npm with API-based architecture ✅
+- **NEW**: MCP package page UI consistency and dark theme improvements ✅
 
 ### 🎉 **AUTHENTICATION SYSTEM FULLY RESTORED**
 - **Secrets Tab**: Loading successfully (empty list, ready for secrets)
