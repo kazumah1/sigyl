@@ -50,7 +50,7 @@ import { MarketplaceService } from '@/services/marketplaceService';
 import { PackageWithDetails } from '@/types/marketplace';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +60,7 @@ const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, session, isGitHubAppSessionValid, activeGitHubAccount } = useAuth();
   
   const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -156,12 +156,104 @@ const MCPPackagePage = () => {
     }
   }, [pkg, isOwner]);
 
+  // Get the correct token for API authentication
+  // Priority: GitHub App token > Supabase JWT token
+  const getAuthToken = async () => {
+    console.log('🔍 getAuthToken: Starting authentication check...');
+    
+    try {
+      console.log('🔍 getAuthToken: isGitHubAppSessionValid:', isGitHubAppSessionValid ? isGitHubAppSessionValid() : 'function not available');
+      console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
+      console.log('🔍 getAuthToken: session exists:', !!session);
+      
+      // First check if we have a valid GitHub App session
+      if (isGitHubAppSessionValid && isGitHubAppSessionValid()) {
+        const githubAppToken = localStorage.getItem('github_app_access_token');
+        console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
+        
+        if (githubAppToken && 
+            githubAppToken !== 'restored_token' && 
+            githubAppToken !== 'db_restored_token' &&
+            githubAppToken.length > 20 && // Ensure it's a real token, not a placeholder
+            (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_'))) {
+          console.log('🔑 Using GitHub App token for authentication');
+          return githubAppToken;
+        } else {
+          console.log('❌ GitHub App token is invalid or placeholder:', {
+            isPlaceholder: githubAppToken === 'restored_token' || githubAppToken === 'db_restored_token',
+            length: githubAppToken ? githubAppToken.length : 'null',
+            hasValidPrefix: githubAppToken ? (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_')) : false
+          });
+        }
+      } else {
+        console.log('❌ GitHub App session is not valid');
+      }
+      
+      // Fall back to Supabase session token - try session first, then refresh if needed
+      let supabaseToken = session?.access_token;
+      console.log('🔍 getAuthToken: Supabase token from session:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+      
+      // If session token is invalid or expired, try to refresh the session
+      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
+        console.log('🔍 getAuthToken: Session token invalid, attempting to refresh session...');
+        try {
+          const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
+          if (refreshedSession && !error) {
+            supabaseToken = refreshedSession.access_token;
+            console.log('🔍 getAuthToken: Refreshed Supabase token:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+          } else {
+            console.log('❌ Failed to refresh session:', error?.message);
+          }
+        } catch (refreshError) {
+          console.log('❌ Session refresh exception:', refreshError);
+        }
+      }
+      
+      // If still no valid token, try localStorage as last resort
+      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
+        console.log('🔍 getAuthToken: Session refresh failed, checking localStorage...');
+        try {
+          const supabaseAuthData = localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token');
+          if (supabaseAuthData) {
+            const parsedAuth = JSON.parse(supabaseAuthData);
+            supabaseToken = parsedAuth.access_token;
+            console.log('🔍 getAuthToken: Supabase token from localStorage:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+          }
+        } catch (error) {
+          console.log('❌ Failed to parse Supabase auth from localStorage:', error);
+        }
+      }
+      
+      if (supabaseToken && supabaseToken.split('.').length === 3) {
+        console.log('🔑 Using Supabase JWT token for authentication');
+        return supabaseToken;
+      } else if (supabaseToken) {
+        console.log('❌ Supabase token is not a valid JWT (wrong number of parts):', supabaseToken.split('.').length);
+      }
+
+      console.error('❌ No valid authentication token found');
+      return null;
+    } catch (error) {
+      console.error('❌ Error in getAuthToken:', error);
+      return null;
+    }
+  };
+
   // Fetch API keys and set profile on install modal open
   useEffect(() => {
     if (showInstallModal && user) {
       setInstallProfile(user.id);
       setApiKeysLoading(true);
-      APIKeyService.getAPIKeys(user.id)
+      
+      // Use proper authentication token instead of user.id
+      getAuthToken()
+        .then(token => {
+          if (token) {
+            return APIKeyService.getAPIKeys(token);
+          } else {
+            throw new Error('No authentication token available');
+          }
+        })
         .then(keys => {
           setApiKeys(keys);
           setInstallApiKey('');
@@ -171,7 +263,10 @@ const MCPPackagePage = () => {
             setFullApiKeys(JSON.parse(stored));
           }
         })
-        .catch(() => setApiKeys([]))
+        .catch((error) => {
+          console.error('Failed to fetch API keys:', error);
+          setApiKeys([]);
+        })
         .finally(() => setApiKeysLoading(false));
     }
   }, [showInstallModal, user]);
@@ -767,11 +862,11 @@ const MCPPackagePage = () => {
               <>
                 <Button
                   onClick={handleInstallClick}
-                  className="bg-purple-600 text-white hover:bg-purple-700 transition-all duration-200 font-semibold px-8"
+                  className="bg-white text-black hover:bg-gray-200 transition-all duration-200 font-semibold px-8 border border-gray-300"
                   disabled={loading}
                   size="lg"
                 >
-                  Install & Deploy
+                  Connect
                 </Button>
                 {pkg.source_api_url && (
                   <Button
@@ -1112,6 +1207,9 @@ const MCPPackagePage = () => {
             <>
               <DialogHeader>
                 <DialogTitle>Configure Secrets</DialogTitle>
+                <DialogDescription>
+                  Configure the required secrets and environment variables for this MCP server to connect to external services.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Render required secrets */}
