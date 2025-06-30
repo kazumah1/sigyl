@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -22,6 +22,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   const dashboardItems = [
     { icon: Home, label: 'Overview', path: '/dashboard' },
@@ -42,7 +43,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ collapsed, onToggle
 
   return (
     <div className={`fixed left-0 top-0 h-full bg-black backdrop-blur-sm border-r border-gray-800 transition-all duration-300 z-30 ${collapsed ? 'w-16' : 'w-64'}`}>
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+      <div className="flex flex-col items-center p-4 border-b border-gray-800">
+        <div className="mb-2 cursor-pointer" onClick={() => navigate('/') }>
+          <img src="/favicon.png" alt="SIGYL Logo" className="w-10 h-10 rounded-xl shadow-lg" style={{background:'#18181b'}} />
+        </div>
         {!collapsed && (
           <div className="text-xl font-bold text-white" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>SIGYL</div>
         )}

@@ -1,7 +1,7 @@
-
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Link } from 'react-router-dom';
 
 const SigilGeometry = () => {
   const groupRef = useRef<THREE.Group>(null);
@@ -75,18 +75,16 @@ const SigilGeometry = () => {
   );
 };
 
-const ChromeSigil: React.FC = () => {
-  return (
-    <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[10, 10, 5]} intensity={0.8} />
-        <directionalLight position={[-10, -10, -5]} intensity={0.3} />
-        <pointLight position={[0, 0, 10]} intensity={0.5} />
-        <SigilGeometry />
-      </Canvas>
-    </div>
-  );
-};
+const ChromeSigil = () => (
+  <Link to="/" className="block focus:outline-none">
+    <img
+      src="/favicon.png"
+      alt="Sigyl Logo"
+      className="w-10 h-10 md:w-12 md:h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+      draggable={false}
+      style={{ background: 'rgba(0,0,0,0.7)', padding: 4 }}
+    />
+  </Link>
+);
 
 export default ChromeSigil;
