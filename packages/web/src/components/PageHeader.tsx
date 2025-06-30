@@ -26,7 +26,7 @@ const PageHeader = () => {
               className="cursor-pointer flex items-center" 
               onClick={() => navigate('/')}
             >
-              <img src="/test_6.png" alt="SIGYL Logo" className="w-8 h-8 rounded-full object-cover shadow-sm" style={{background:'#18181b'}} />
+              <img src="/favicon.png" alt="SIGYL Logo" className="w-10 h-10 rounded-full object-cover shadow-sm" style={{background:'#18181b'}} />
             </div>
             <div 
               className="text-2xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors"

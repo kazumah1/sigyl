@@ -70,7 +70,7 @@ export class MCPGenerator {
 # Build: Automated build configuration for deployment
 # Environment: Default environment variables for production
 #
-# For more information, see: https://docs.sigyl.com/configuration
+# For more information, see: https://sigyl.dev/docs
 `;
 		const yamlContent = yamlHeader + yaml.stringify(config, { indent: 2 });
 		writeFileSync(join(this.outDir, "sigyl.yaml"), yamlContent);

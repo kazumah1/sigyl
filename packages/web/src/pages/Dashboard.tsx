@@ -25,6 +25,11 @@ const Dashboard = () => {
     return adminData ? JSON.parse(adminData) : null;
   });
   const [checkingInstall, setCheckingInstall] = useState(true);
+  
+  // Move all useState hooks to the top to avoid hooks order violation
+  const [workspaceNameInput, setWorkspaceNameInput] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { 
     workspace, 
@@ -38,16 +43,9 @@ const Dashboard = () => {
 
   const activeTab = searchParams.get('tab') || 'overview';
 
-  const handleTabChange = (tab: string) => {
-    if (tab === 'overview') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ tab });
-    }
-  };
-
   const currentUser = adminSession || user;
   const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
+  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
 
   // Post-login: Check for GitHub App installation
   useEffect(() => {
@@ -61,7 +59,7 @@ const Dashboard = () => {
           setCheckingInstall(false);
           return;
         }
-        const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/check-installation/${githubUsername}`);
+        const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/github/check-installation/${githubUsername}`);
         const data = await res.json();
         if (!data.hasInstallation) {
           // Redirect to GitHub App install page
@@ -75,6 +73,29 @@ const Dashboard = () => {
     }
     checkInstallation();
   }, [user]);
+
+  // Update isOwner and workspaceNameInput when workspace changes
+  useEffect(() => {
+    if (workspace) {
+      setWorkspaceNameInput(workspace.name || '');
+      
+      // Check if current user is the owner
+      const currentUserId = adminSession?.id || user?.id;
+      const isCurrentUserOwner = workspace.owner_id === currentUserId || 
+                                (adminSession && workspace.owner_id === 'admin') ||
+                                (user?.user_metadata?.github_id && workspace.owner_id === `github_${user.user_metadata.github_id}`);
+      
+      console.log('Workspace owner check:', {
+        workspaceOwnerId: workspace.owner_id,
+        currentUserId,
+        adminSession: !!adminSession,
+        userGithubId: user?.user_metadata?.github_id,
+        isCurrentUserOwner
+      });
+      
+      setIsOwner(isCurrentUserOwner);
+    }
+  }, [workspace, adminSession, user]);
 
   if (checkingInstall) {
     return (
@@ -110,35 +131,6 @@ const Dashboard = () => {
       alert('Account deletion not implemented.');
     }
   };
-
-  const [workspaceNameInput, setWorkspaceNameInput] = useState(workspace?.name || '');
-  const [isOwner, setIsOwner] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
-
-  // Update isOwner and workspaceNameInput when workspace changes
-  useEffect(() => {
-    if (workspace) {
-      setWorkspaceNameInput(workspace.name || '');
-      
-      // Check if current user is the owner
-      const currentUserId = adminSession?.id || user?.id;
-      const isCurrentUserOwner = workspace.owner_id === currentUserId || 
-                                (adminSession && workspace.owner_id === 'admin') ||
-                                (user?.user_metadata?.github_id && workspace.owner_id === `github_${user.user_metadata.github_id}`);
-      
-      console.log('Workspace owner check:', {
-        workspaceOwnerId: workspace.owner_id,
-        currentUserId,
-        adminSession: !!adminSession,
-        userGithubId: user?.user_metadata?.github_id,
-        isCurrentUserOwner
-      });
-      
-      setIsOwner(isCurrentUserOwner);
-    }
-  }, [workspace, adminSession, user]);
 
   const handleSaveWorkspaceName = async () => {
     if (isSaving || workspaceNameInput.trim() === '' || workspaceNameInput === workspace?.name) return;
@@ -223,38 +215,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="w-full flex justify-center mt-8 mb-10">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-white/10 bg-black" style={{ minWidth: 700 }}>
-              {[
-                { id: 'overview', label: 'Overview', icon: TrendingUp },
-                { id: 'servers', label: 'Servers', icon: Server },
-                { id: 'secrets', label: 'Secrets', icon: Lock },
-                { id: 'settings', label: 'Settings', icon: Settings },
-                { id: 'analytics', label: 'Analytics', icon: Activity },
-                { id: 'private-mcps', label: 'Private MCPs', icon: Shield },
-                { id: 'enterprise-support', label: 'Enterprise Support', icon: Users },
-              ].map((tab) => {
-                const IconComponent = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-white text-black shadow-lg'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Main Dashboard Content */}
           {loading ? (
             <div className="space-y-6">
@@ -293,7 +253,7 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="card-modern cursor-pointer group" onClick={() => handleTabChange('secrets')}>
+                    <Card className="card-modern cursor-pointer group" onClick={() => navigate('/dashboard?tab=secrets')}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
@@ -364,29 +324,29 @@ const Dashboard = () => {
 
               {/* Servers Tab */}
               {activeTab === 'servers' && (
-                <MCPServersList servers={mcpServers} loading={loading} refetch={refetch} />
+                <MCPServersList servers={mcpServers} />
               )}
 
               {/* Secrets Tab */}
-          {activeTab === 'secrets' && (
-                <SecretsManager />
-          )}
+              {activeTab === 'secrets' && (
+                <SecretsManager workspaceId={workspace?.id || ''} />
+              )}
 
               {/* Settings Tab */}
-          {activeTab === 'settings' && (
+              {activeTab === 'settings' && (
                 <Card className="card-modern max-w-xl mx-auto bg-black/80 border border-white/10 shadow-xl backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                       <Settings className="w-5 h-5 text-white" />
-                  Workspace Settings
-                </CardTitle>
-                <CardDescription className="text-gray-300" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                      Workspace Settings
+                    </CardTitle>
+                    <CardDescription className="text-gray-300" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
                       Manage your workspace settings and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
                         <div className="text-white font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Workspace Name</div>
                         <div className="flex gap-3 items-center">
                           <input
@@ -408,23 +368,23 @@ const Dashboard = () => {
                             </button>
                           )}
                         </div>
-                  </div>
-                  <div>
-                    <div className="text-white font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Owner</div>
-                    <div className="flex flex-col gap-1">
-                      <input
-                        type="text"
-                        value={workspace?.owner_id || ''}
-                        disabled
-                        className="text-white bg-black/70 rounded-xl px-4 py-3 font-semibold text-lg shadow-inner border border-white/10 w-full opacity-60 cursor-not-allowed"
-                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}
-                      />
-                      <span className="text-gray-400 text-sm" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Signed in as <span className="text-white font-semibold">{currentUserName}</span></span>
+                      </div>
+                      <div>
+                        <div className="text-white font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Owner</div>
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="text"
+                            value={workspace?.owner_id || ''}
+                            disabled
+                            className="text-white bg-black/70 rounded-xl px-4 py-3 font-semibold text-lg shadow-inner border border-white/10 w-full opacity-60 cursor-not-allowed"
+                            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}
+                          />
+                          <span className="text-gray-400 text-sm" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Signed in as <span className="text-white font-semibold">{currentUserName}</span></span>
+                        </div>
+                      </div>
+                      <Button variant="destructive" onClick={handleDeleteAccount} className="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl px-6 py-3 shadow-lg transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Delete Account</Button>
                     </div>
-                  </div>
-                  <Button variant="destructive" onClick={handleDeleteAccount} className="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl px-6 py-3 shadow-lg transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Delete Account</Button>
-                </div>
-              </CardContent>
+                  </CardContent>
                 </Card>
               )}
 
@@ -464,12 +424,12 @@ const Dashboard = () => {
                       </Card>
                       <Card className="card-modern">
                         <CardHeader>
-                          <CardTitle className="text-white">Active Users</CardTitle>
-                          <CardDescription className="text-gray-400">Monitor user engagement</CardDescription>
+                          <CardTitle className="text-white">Active Servers</CardTitle>
+                          <CardDescription className="text-gray-400">Monitor server engagement</CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-3xl font-bold text-green-400 mb-2">{metrics?.activeUsers?.toLocaleString() || '0'}</div>
-                          <div className="text-gray-400">Active users this month</div>
+                          <div className="text-3xl font-bold text-green-400 mb-2">{metrics?.activeServers?.toLocaleString() || '0'}</div>
+                          <div className="text-gray-400">Active servers this month</div>
                         </CardContent>
                       </Card>
                     </div>
