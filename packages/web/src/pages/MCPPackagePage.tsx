@@ -1446,7 +1446,7 @@ const MCPPackagePage = () => {
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl/cli install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
+                        const command = `sigyl install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
                       }}
@@ -1500,7 +1500,7 @@ const MCPPackagePage = () => {
                         } else {
                           claudeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl/cli install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
+                        const command = `sigyl install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
                       }}
