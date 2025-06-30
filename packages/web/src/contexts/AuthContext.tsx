@@ -137,25 +137,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (pendingInstallationId && user) {
-      console.log('--- Minimal upsert debug ---');
-      console.log('user:', user);
-      console.log('pendingInstallationId:', pendingInstallationId);
-      const upsertPayload = {
-        id: user.id,
-        github_app_installed: true
+      const upsertProfile = async () => {
+        console.log('--- Minimal upsert debug ---');
+        console.log('user:', user);
+        console.log('pendingInstallationId:', pendingInstallationId);
+        const upsertPayload = {
+          id: user.id,
+          github_app_installed: true
+        };
+        console.log('Upsert payload:', upsertPayload);
+        const result = await supabase
+          .from('profiles')
+          .upsert(upsertPayload)
+          .then((result) => {
+            console.log('Upsert result:', result);
+            if (result.error) {
+              console.error('Failed to minimally upsert profile (github_app_installed):', result.error);
+            } else {
+              console.log('Minimal upsert succeeded: github_app_installed set to true!');
+            }
+          });
       };
-      console.log('Upsert payload:', upsertPayload);
-      const result = await supabase
-        .from('profiles')
-        .upsert(upsertPayload)
-        .then((result) => {
-          console.log('Upsert result:', result);
-          if (result.error) {
-            console.error('Failed to minimally upsert profile (github_app_installed):', result.error);
-          } else {
-            console.log('Minimal upsert succeeded: github_app_installed set to true!');
-          }
-        });
+      upsertProfile();
     }
   }, [pendingInstallationId, user]);
 

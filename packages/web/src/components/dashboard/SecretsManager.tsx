@@ -39,7 +39,6 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 
 interface SecretsManagerProps {
   workspaceId: string;
@@ -80,9 +79,6 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
     mcp_server_id: mcpServerId || ''
   });
 
-  // Profile state
-  const [profile, setProfile] = useState<any>(null);
-
   // Fetch data on component mount
   useEffect(() => {
     if (token) {
@@ -90,29 +86,6 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       fetchAPIKeys();
     }
   }, [token, mcpServerId]);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.id) return;
-      try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          query = query.eq('github_id', user.id.replace('github_', ''));
-        } else {
-          query = query.eq('id', user.id);
-        }
-        const { data: profile, error } = await query.single();
-        if (error) {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfile(profile);
-        }
-      } catch (err) {
-        console.error('Error loading profile:', err);
-      }
-    };
-    loadProfile();
-  }, [user]);
 
   // Secrets functions
   const fetchSecrets = async () => {

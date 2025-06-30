@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Activity, GitBranch, Key, Users, Server, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { useUser } from '@/contexts/UserContext';
 
 interface ActivityItem {
   id: string;
@@ -14,33 +12,41 @@ interface ActivityItem {
 }
 
 const ActivityFeed: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [profile, setProfile] = useState<any>(null);
-  const user = useUser();
-
-  const loadProfile = async () => {
-    if (!user?.id) return;
-    try {
-      let query = supabase.from('profiles').select('*');
-      if (/^github_/.test(user.id)) {
-        query = query.eq('github_id', user.id.replace('github_', ''));
-      } else {
-        query = query.eq('id', user.id);
-      }
-      const { data: profile, error } = await query.single();
-      if (error) {
-        console.error('Error loading profile:', error);
-      } else {
-        setProfile(profile);
-      }
-    } catch (err) {
-      console.error('Error loading profile:', err);
+  const activities: ActivityItem[] = [
+    {
+      id: '1',
+      type: 'deployment',
+      message: 'E-commerce API Server deployed successfully',
+      timestamp: '2024-01-20T15:30:00Z',
+      details: 'Version 1.2.3 deployed to production'
+    },
+    {
+      id: '2',
+      type: 'api_key',
+      message: 'New API key created',
+      timestamp: '2024-01-20T14:15:00Z',
+      details: 'Production API Key'
+    },
+    {
+      id: '3',
+      type: 'member',
+      message: 'Sarah Connor joined the workspace',
+      timestamp: '2024-01-20T10:00:00Z'
+    },
+    {
+      id: '4',
+      type: 'server',
+      message: 'Analytics Connector started deployment',
+      timestamp: '2024-01-20T09:15:00Z'
+    },
+    {
+      id: '5',
+      type: 'error',
+      message: 'CRM Integration Hub experienced an error',
+      timestamp: '2024-01-19T16:45:00Z',
+      details: 'Connection timeout - automatically retrying'
     }
-  };
-
-  useEffect(() => {
-    loadProfile();
-  }, [user]);
+  ];
 
   const getActivityIcon = (type: string) => {
     switch (type) {

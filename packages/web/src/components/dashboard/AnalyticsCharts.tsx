@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Activity, Server, Users } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface AnalyticsChartsProps {
   visitData: Array<{ date: string; visits: number; toolCalls: number }>;
@@ -17,9 +15,6 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
   toolUsageData,
   serverStatusData
 }) => {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
-
   const chartConfig = {
     visits: {
       label: "Visits",
@@ -30,29 +25,6 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
       color: "#ffffff",
     },
   };
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.id) return;
-      try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          query = query.eq('github_id', user.id.replace('github_', ''));
-        } else {
-          query = query.eq('id', user.id);
-        }
-        const { data: profile, error } = await query.single();
-        if (error) {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfile(profile);
-        }
-      } catch (err) {
-        console.error('Error loading profile:', err);
-      }
-    };
-    loadProfile();
-  }, [user]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -165,34 +137,6 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                 <ChartTooltip content={<ChartTooltipContent />} />
               </PieChart>
             </ResponsiveContainer>
-          </ChartContainer>
-          <div className="mt-4 space-y-2">
-            {serverStatusData.map((item) => (
-              <div key={item.status} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ 
-                      backgroundColor: item.status === 'active' ? '#22c55e' :
-                        item.status === 'inactive' ? '#6b7280' : '#ef4444'
-                    }}
-                  />
-                  <span className="text-gray-300 capitalize">{item.status}</span>
-                </div>
-                <span className="text-white font-medium">{item.count}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default AnalyticsCharts;
-
-export default AnalyticsCharts;
-
           </ChartContainer>
           <div className="mt-4 space-y-2">
             {serverStatusData.map((item) => (

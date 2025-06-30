@@ -125,28 +125,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                5. Data Security
-              </h2>
-              <div className="space-y-4">
-                <p className="text-gray-300 leading-relaxed">
-                  We implement appropriate technical and organizational security measures to protect your information against unauthorized access, alteration, disclosure, or destruction. These measures include:
-                </p>
-                <ul className="text-gray-300 leading-relaxed ml-6 space-y-2">
-                  <li>• Encryption of data in transit and at rest</li>
-                  <li>• Regular security assessments and vulnerability testing</li>
-                  <li>• Access controls and authentication mechanisms</li>
-                  <li>• Secure development practices and code reviews</li>
-                  <li>• Employee training on data protection and privacy</li>
-                </ul>
-                <p className="text-gray-300 leading-relaxed">
-                  However, no method of transmission over the internet or electronic storage is 100% secure. We cannot guarantee absolute security of your information.
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                6. Data Retention
+                5. Data Retention
               </h2>
               <p className="text-gray-300 leading-relaxed">
                 We retain your information for as long as necessary to provide our Services, comply with legal obligations, resolve disputes, and enforce our agreements. The retention period may vary depending on the type of information and the purpose for which it was collected. We will delete or anonymize your information when it is no longer needed for these purposes.
@@ -155,7 +134,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                7. Your Rights and Choices
+                6. Your Rights and Choices
               </h2>
               <div className="space-y-4">
                 <p className="text-gray-300 leading-relaxed">
@@ -170,14 +149,14 @@ const Privacy = () => {
                   <li>• <strong>Objection:</strong> Object to certain types of processing</li>
                 </ul>
                 <p className="text-gray-300 leading-relaxed">
-                  To exercise these rights, please contact us at privacy@sigyl.ai. We will respond to your request within a reasonable timeframe and may require verification of your identity.
+                  To exercise these rights, please contact us at info@sigyl.dev. We will respond to your request within a reasonable timeframe and may require verification of your identity.
                 </p>
               </div>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                8. Cookies and Tracking Technologies
+                7. Cookies and Tracking Technologies
               </h2>
               <div className="space-y-4">
                 <p className="text-gray-300 leading-relaxed">
@@ -197,7 +176,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                9. Third-Party Services
+                8. Third-Party Services
               </h2>
               <p className="text-gray-300 leading-relaxed">
                 Our Services may contain links to third-party websites or integrate with third-party services. We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies before providing any personal information.
@@ -206,7 +185,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                10. International Data Transfers
+                9. International Data Transfers
               </h2>
               <p className="text-gray-300 leading-relaxed">
                 Your information may be transferred to and processed in countries other than your own. We ensure that such transfers comply with applicable data protection laws and implement appropriate safeguards to protect your information.
@@ -215,7 +194,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                11. Children's Privacy
+                10. Children's Privacy
               </h2>
               <p className="text-gray-300 leading-relaxed">
                 Our Services are not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that we have collected such information, we will take steps to delete it promptly.
@@ -224,7 +203,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                12. Changes to This Privacy Policy
+                11. Changes to This Privacy Policy
               </h2>
               <p className="text-gray-300 leading-relaxed">
                 We may update this Privacy Policy from time to time to reflect changes in our practices or applicable laws. We will notify you of material changes by posting the updated policy on our website and updating the "Last updated" date. Your continued use of our Services after such changes constitutes acceptance of the updated policy.
@@ -233,7 +212,7 @@ const Privacy = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                13. Contact Us
+                12. Contact Us
               </h2>
               <div className="space-y-4">
                 <p className="text-gray-300 leading-relaxed">
@@ -241,7 +220,7 @@ const Privacy = () => {
                 </p>
                 <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                   <p className="text-gray-300 leading-relaxed">
-                    <strong>Contact Information:</strong> COMING SOON
+                    <strong>Contact Information:</strong> info@sigyl.dev
                   </p>
                 </div>
               </div>

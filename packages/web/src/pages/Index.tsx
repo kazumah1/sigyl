@@ -17,7 +17,7 @@ const Index = () => {
     {
       icon: Shield,
       title: "Enterprise Security",
-      description: "Bank-grade encryption and zero-trust architecture protecting your MCP integrations."
+      description: "Modern security best practices help protect your MCP integrations."
     },
     {
       icon: Zap,
@@ -194,31 +194,32 @@ const Index = () => {
         </div>
       </section>
 
-      {/* FAQ Section - Mobile Optimized */}
+      {/* FAQ Section - Modern Glassy Style */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Frequently asked questions</h2>
-            <p className="text-lg sm:text-xl text-gray-400">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Frequently asked questions</h2>
+            <p className="text-lg sm:text-xl text-gray-400" style={{fontFamily:'Inter, system-ui, sans-serif'}}>
               Everything you need to know about SIGYL's MCP platform.
             </p>
           </div>
-          
           <Accordion type="single" collapsible className="space-y-6">
             {faqs.map((faq, index) => (
-              <div key={index} className="liquid-glass-faq relative group" data-liquid-glass>
-                <div className="liquid-glass-highlight pointer-events-none absolute inset-0 z-0" />
-                <AccordionItem value={`item-${index}`} className="border-none bg-transparent relative z-10">
-                  <AccordionTrigger className="faq-trigger text-left text-white text-xl font-semibold flex items-center group justify-center min-h-[4.5rem] py-0">
-                    <span className="relative flex items-center justify-center w-full group-hover:after:w-full group-focus:after:w-full after:transition-all after:duration-300 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-white/30">
-                      {faq.question}
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-6 text-gray-400 leading-relaxed">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              </div>
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="border border-white/10 bg-black/90 rounded-2xl shadow-2xl overflow-hidden transition-shadow duration-300 hover:shadow-3xl"
+              >
+                <AccordionTrigger
+                  className="faq-trigger text-left text-white text-lg sm:text-xl font-semibold flex items-center justify-between min-h-[3.5rem] px-6 py-0 font-[Space Grotesk,Inter,sans-serif] rounded-2xl focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
+                  style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing:'-0.01em'}}
+                >
+                  <span className="w-full text-center flex-1">{faq.question}</span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-8 pt-2 px-6 text-gray-300 leading-relaxed text-base font-[Inter,sans-serif] bg-transparent animate-fadein" style={{fontFamily:'Inter, system-ui, sans-serif'}}>
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
             ))}
           </Accordion>
         </div>
@@ -242,7 +243,9 @@ const Index = () => {
               <span className="block w-full max-w-xl mx-auto mb-4 rounded-xl bg-white/5 backdrop-blur-md py-2 px-4">
                 <h2 className="text-4xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Ready to deploy your MCP integration?</h2>
               </span>
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8" style={{fontFamily:'Inter, system-ui, sans-serif'}}>Join thousands of developers who trust SIGYL for their Model Context Protocol deployment needs.</p>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8" style={{fontFamily:'Inter, system-ui, sans-serif'}}>
+                Get started with SIGYL for your Model Context Protocol deployment needs.
+              </p>
               <Button 
                 onClick={() => navigate('/deploy')}
                 className="btn-modern w-64 py-4 text-lg font-semibold rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white transition-all duration-200 shadow-lg backdrop-blur-md"
@@ -255,15 +258,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-white/10">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm text-gray-400">
-            © 2024 SIGYL. Enterprise-grade MCP deployment platform.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };

@@ -173,7 +173,7 @@ const Terms = () => {
                   <strong>Severability:</strong> If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force and effect.
                 </p>
                 <p className="text-gray-300 leading-relaxed">
-                  <strong>Contact:</strong> COMING SOON
+                  <strong>Contact:</strong> info@sigyl.dev
                 </p>
               </div>
             </section>

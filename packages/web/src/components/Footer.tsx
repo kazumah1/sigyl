@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaGithub, FaLinkedin, FaDiscord } from 'react-icons/fa';
+import { FaGithub, FaLinkedin, FaDiscord, FaEnvelope } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Footer = () => {
@@ -27,6 +27,9 @@ const Footer = () => {
           </a>
           <a href="https://discord.gg/sigyl" target="_blank" rel="noopener noreferrer" aria-label="Discord" className="text-gray-400 hover:text-white transition-colors text-2xl">
             <FaDiscord />
+          </a>
+          <a href="mailto:info@sigyl.dev" aria-label="Email" className="text-gray-400 hover:text-white transition-colors text-2xl">
+            <FaEnvelope />
           </a>
         </div>
         {/* Center: Copyright */}
