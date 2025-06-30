@@ -1,6 +1,6 @@
 {
   "name": "@sigyl-dev/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "commonjs",
   "private": false,
   "description": "Sigyl CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.",
@@ -54,9 +54,14 @@
     "typescript": "^5.0.0"
   },
   "files": [
-    "dist",
-    "README.md",
-    "package.json"
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/logger.js",
+    "dist/logger.d.ts",
+    "dist/commands",
+    "dist/lib",
+    "dist/types",
+    "README.md"
   ],
   "exports": {
     ".": {

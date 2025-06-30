@@ -1,19 +1,11 @@
 {
   "name": "@sigyl-dev/sdk",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "Developer SDK for Sigyl MCP Registry and Hosting Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "ts-node test-sdk.ts",
-    "test:realistic": "ts-node test-realistic.ts",
-    "test:auth": "ts-node test-authentication.ts",
-    "test:admin": "ts-node test-admin.ts",
-    "test:example": "ts-node examples/simple-usage.ts",
-    "clean": "rm -rf dist",
-    "prebuild": "npm run clean",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -34,16 +26,20 @@
   "license": "UNLICENSED",
   "type": "commonjs",
   "files": [
-    "dist/**/*",
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/connect.js",
+    "dist/connect.d.ts",
+    "dist/registry.js",
+    "dist/registry.d.ts",
+    "dist/sdk.js",
+    "dist/sdk.d.ts",
+    "dist/types.js",
+    "dist/types.d.ts",
     "README.md"
   ],
   "dependencies": {
     "axios": "^1.10.0"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
   },
   "homepage": "https://sigyl.dev",
   "engines": {
