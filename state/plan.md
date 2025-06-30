@@ -3,6 +3,28 @@
 ## Project Overview
 Migrating from Railway to Google Cloud Run for 60-75% cost savings while maintaining all functionality. The platform enables users to deploy MCP (Model Context Protocol) servers with a simplified configuration approach.
 
+## ✅ JUST COMPLETED - Dashboard Black Screen Fix (React Hooks Violation)
+
+**CRITICAL ISSUE RESOLVED - Dashboard React Hooks Violation**
+- **🚨 CRITICAL BUG**: Dashboard component was causing black screen due to React hooks order violation
+- **ISSUE**: `useState` hooks were being called after early return statements (`checkingInstall` and `error` conditions)
+- **IMPACT**: Dashboard page would crash with "Rendered more hooks than during the previous render" error
+- **ROOT CAUSE**: Hooks being called conditionally/after early returns violates React Rules of Hooks
+
+**✅ RESOLUTION APPLIED:**
+- **Fixed Hook Order**: Moved all `useState` hooks to top of component before any early returns
+- **Proper Structure**: All hooks now called unconditionally in same order on every render
+- **Preserved Logic**: Maintained all existing functionality while fixing hook order
+- **Updated API URL**: Fixed GitHub installation check endpoint to use correct `/api/v1/` prefix
+
+**Fixed Components:**
+- ✅ **Dashboard.tsx**: All hooks moved to top, proper React component structure
+- ✅ **API Endpoints**: Corrected GitHub App installation check URL
+- ✅ **Error Handling**: Early returns now come after all hooks are declared
+- ✅ **State Management**: Workspace settings and installation checking work properly
+
+**🚀 RESULT**: Dashboard now loads correctly, no more black screen, all functionality restored
+
 ## Deep Link & Install Command Status (MCPPackagePage, CLI, Web UI)
 
 ### ✅ Completed

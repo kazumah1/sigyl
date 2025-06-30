@@ -25,6 +25,11 @@ const Dashboard = () => {
     return adminData ? JSON.parse(adminData) : null;
   });
   const [checkingInstall, setCheckingInstall] = useState(true);
+  
+  // Move all useState hooks to the top to avoid hooks order violation
+  const [workspaceNameInput, setWorkspaceNameInput] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { 
     workspace, 
@@ -48,6 +53,7 @@ const Dashboard = () => {
 
   const currentUser = adminSession || user;
   const displayName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
+  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
 
   // Post-login: Check for GitHub App installation
   useEffect(() => {
@@ -61,7 +67,7 @@ const Dashboard = () => {
           setCheckingInstall(false);
           return;
         }
-        const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/github/check-installation/${githubUsername}`);
+        const res = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/github/check-installation/${githubUsername}`);
         const data = await res.json();
         if (!data.hasInstallation) {
           // Redirect to GitHub App install page
@@ -75,6 +81,29 @@ const Dashboard = () => {
     }
     checkInstallation();
   }, [user]);
+
+  // Update isOwner and workspaceNameInput when workspace changes
+  useEffect(() => {
+    if (workspace) {
+      setWorkspaceNameInput(workspace.name || '');
+      
+      // Check if current user is the owner
+      const currentUserId = adminSession?.id || user?.id;
+      const isCurrentUserOwner = workspace.owner_id === currentUserId || 
+                                (adminSession && workspace.owner_id === 'admin') ||
+                                (user?.user_metadata?.github_id && workspace.owner_id === `github_${user.user_metadata.github_id}`);
+      
+      console.log('Workspace owner check:', {
+        workspaceOwnerId: workspace.owner_id,
+        currentUserId,
+        adminSession: !!adminSession,
+        userGithubId: user?.user_metadata?.github_id,
+        isCurrentUserOwner
+      });
+      
+      setIsOwner(isCurrentUserOwner);
+    }
+  }, [workspace, adminSession, user]);
 
   if (checkingInstall) {
     return (
@@ -110,35 +139,6 @@ const Dashboard = () => {
       alert('Account deletion not implemented.');
     }
   };
-
-  const [workspaceNameInput, setWorkspaceNameInput] = useState(workspace?.name || '');
-  const [isOwner, setIsOwner] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const currentUserName = adminSession?.display_name || user?.user_metadata?.full_name || 'User';
-
-  // Update isOwner and workspaceNameInput when workspace changes
-  useEffect(() => {
-    if (workspace) {
-      setWorkspaceNameInput(workspace.name || '');
-      
-      // Check if current user is the owner
-      const currentUserId = adminSession?.id || user?.id;
-      const isCurrentUserOwner = workspace.owner_id === currentUserId || 
-                                (adminSession && workspace.owner_id === 'admin') ||
-                                (user?.user_metadata?.github_id && workspace.owner_id === `github_${user.user_metadata.github_id}`);
-      
-      console.log('Workspace owner check:', {
-        workspaceOwnerId: workspace.owner_id,
-        currentUserId,
-        adminSession: !!adminSession,
-        userGithubId: user?.user_metadata?.github_id,
-        isCurrentUserOwner
-      });
-      
-      setIsOwner(isCurrentUserOwner);
-    }
-  }, [workspace, adminSession, user]);
 
   const handleSaveWorkspaceName = async () => {
     if (isSaving || workspaceNameInput.trim() === '' || workspaceNameInput === workspace?.name) return;
