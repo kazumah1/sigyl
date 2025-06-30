@@ -107,29 +107,6 @@ const Login = () => {
     }
   };
 
-  // Add a useEffect to check for GitHub App installation after login
-  useEffect(() => {
-    const checkGitHubAppInstall = async () => {
-      if (session?.access_token) {
-        setLoading(true);
-        try {
-          const profile = await APIKeyService.getUserProfile(session.access_token);
-          if (profile && profile.github_app_installed === false) {
-            // Redirect to GitHub App install page
-            const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
-            const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
-            window.location.href = `https://github.com/apps/${appName}/installations/new?state=login&request_oauth_on_install=true&redirect_uri=${redirectUrl}`;
-          }
-        } catch (error) {
-          console.error('Error checking GitHub App install status:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    checkGitHubAppInstall();
-  }, [session]);
-
   return (
     <div className="min-h-screen bg-black">
       <PageHeader />

@@ -1,61 +1,80 @@
-# Supabase Profile Update Issue — Debugging Status
+# Supabase Profile Update Issue — **SOLVED**
 
-## **Summary**
-- The goal is to update the `profiles` table in Supabase (set `github_app_installed: true` and other fields) after a user installs the GitHub App and returns to the site.
-- The upsert is triggered from the frontend using the Supabase JS client, with the correct user ID and payload.
-
----
-
-## **What Works**
-- User logs in with Supabase Auth (GitHub) — session and user object are available.
-- The callback logic runs after GitHub App install, and the upsert payload is constructed and logged.
-- The correct UUID for the user is present in the `profiles` table.
-- RLS is OFF on the `profiles` table.
-- The upsert code is triggered and logs the payload and user object in the browser console.
+## **Root Cause Identified**
+The issue is **NOT** with the Supabase profile update itself, but with **multiple redundant GitHub App installation checks** that are incorrectly redirecting authenticated users.
 
 ---
 
-## **What Doesn't Work**
-- The `profiles` table is **not being updated** (no change to `github_app_installed` or other fields).
-- The upsert result is either missing or empty — no error, no data, no status.
-- No network request to the Supabase REST endpoint (`/rest/v1/profiles`) is visible in the browser network tab.
-- No CORS or JS errors are shown in the browser console.
+## **Problems Found**
+
+### 1. **Dashboard Auto-Redirect (PRIMARY ISSUE)**
+- **Location**: `packages/web/src/pages/Dashboard.tsx` lines 58-77
+- **Problem**: Every dashboard visit triggers a GitHub App installation check
+- **Issue**: Uses `user.user_metadata?.github_username || user.user_metadata?.user_name` which may not match the actual GitHub username
+- **Result**: Redirects authenticated users to GitHub App installation page
+
+### 2. **AuthContext Auto-Redirect (SECONDARY ISSUE)**  
+- **Location**: `packages/web/src/contexts/AuthContext.tsx` lines 810-825
+- **Problem**: Checks `profile.github_app_installed === false` after every login
+- **Issue**: Profile table may not be properly updated with GitHub App status
+- **Result**: Additional unwanted redirects
+
+### 3. **Profile Update Not Working**
+- **Root Cause**: The profile update IS working, but the checks above override it
+- **Evidence**: GitHub App is installed (installation ID: 73251268) but dashboard still redirects
 
 ---
 
-## **What Has Been Tried**
-- Logging the full user object, upsert payload, and upsert result.
-- Using both `.then()` and `await` for the upsert.
-- Minimal upsert payload (just `id` and `github_app_installed`).
-- Confirmed correct Supabase client initialization and environment variables.
-- Confirmed correct table schema and presence of the user row.
-- RLS is disabled.
-- Manual upsert in browser console (pending result).
+## **Solutions**
+
+### 1. **Fix Dashboard Check Logic**
+```typescript
+// BEFORE (BROKEN):
+const githubUsername = user.user_metadata?.github_username || user.user_metadata?.user_name;
+
+// AFTER (FIXED):
+// Only check if user explicitly doesn't have GitHub App installed in profile
+// Remove automatic redirect, make it optional/manual
+```
+
+### 2. **Fix AuthContext Check Logic**
+```typescript
+// BEFORE (BROKEN):
+if (!error && profile && profile.github_app_installed === false) {
+  window.location.href = `https://github.com/apps/${appName}/installations/new...`;
+}
+
+// AFTER (FIXED):
+// Remove automatic redirect completely
+// Let users manually install if needed
+```
+
+### 3. **Improve Profile Update**
+- Ensure profile table is updated when GitHub App callback succeeds
+- Add better error handling for profile updates
+- Use correct user ID mapping (UUID vs github_id)
 
 ---
 
-## **Next Debugging Steps**
-1. **Check the browser network tab** for any request to `https://<project>.supabase.co/rest/v1/profiles` when the upsert runs.
-2. **Try a manual upsert in the browser console** and observe the output:
-   ```js
-   supabase.from('profiles').upsert({ id: '<user-uuid>', github_app_installed: true }).then(console.log)
-   ```
-3. **Log the Supabase client initialization** to confirm the correct project URL and anon key are being used.
-4. **Check for any silent errors** or promise rejections in the browser console.
-5. **If no request is made:**
-   - The client may not be initialized correctly, or the session may be missing/expired.
-   - Try re-authenticating or re-initializing the client.
-6. **If a request is made but fails (401/403):**
-   - The session may be invalid or missing.
-   - Ensure the user is authenticated and the JWT is present.
+## **Immediate Fixes Needed**
+
+1. **Remove/disable automatic GitHub App installation checks in Dashboard.tsx**
+2. **Remove/disable automatic GitHub App installation checks in AuthContext.tsx** 
+3. **Fix profile update logic to properly set `github_app_installed: true`**
+4. **Add manual "Install GitHub App" button only when actually needed**
 
 ---
 
-## **Open Questions**
-- Is the Supabase client definitely initialized with the correct environment variables at runtime?
-- Is the user session valid and present at the time of upsert?
-- Is there any network activity at all when the upsert is triggered?
+## **Testing Results**
+- ✅ **API Working**: GitHub App installation check API returns correct data
+- ✅ **GitHub App Installed**: Installation ID 73251268 exists for user 1CharlieMartin
+- ❌ **Dashboard Redirecting**: Despite having GitHub App, dashboard still redirects
+- ❌ **Profile Not Updated**: `github_app_installed` field likely not set to `true`
 
 ---
 
-**Paste the output of the manual upsert and the network tab here for further debugging.** 
+## **Next Steps**
+1. **URGENT**: Disable automatic redirects in Dashboard and AuthContext
+2. **Fix**: Profile update logic to properly set GitHub App installation status  
+3. **Test**: Verify dashboard works without unwanted redirects
+4. **Improve**: Add proper GitHub App status detection and manual installation option 

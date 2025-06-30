@@ -797,30 +797,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Add a useEffect to check for GitHub App installation after login
-  useEffect(() => {
-    const checkGitHubAppInstall = async () => {
-      if (session?.access_token && user?.id) {
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('github_app_installed')
-            .eq('id', user.id) // always use UUID
-            .single();
-          if (!error && profile && profile.github_app_installed === false) {
-            // Redirect to GitHub App install page
-            const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
-            const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
-            window.location.href = `https://github.com/apps/${appName}/installations/new?state=login&request_oauth_on_install=true&redirect_uri=${redirectUrl}`;
-          }
-        } catch (error) {
-          console.error('Error checking GitHub App install status:', error);
-        }
-      }
-    };
-    checkGitHubAppInstall();
-  }, [session, user]);
-
   const value = {
     user,
     session,
