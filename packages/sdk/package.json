@@ -1,6 +1,6 @@
 {
-  "name": "@sigyl/sdk",
-  "version": "1.0.0",
+  "name": "@sigyl-dev/sdk",
+  "version": "1.0.2",
   "description": "Developer SDK for Sigyl MCP Registry and Hosting Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,17 +13,25 @@
     "test:admin": "ts-node test-admin.ts",
     "test:example": "ts-node examples/simple-usage.ts",
     "clean": "rm -rf dist",
-    "prebuild": "npm run clean"
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
     "registry",
     "sdk",
     "tools",
-    "connect"
+    "connect",
+    "sigyl",
+    "model-context-protocol",
+    "ai-tools",
+    "api"
   ],
-  "author": "Sigyl Team",
-  "license": "MIT",
+  "author": {
+    "name": "Sigyl Team",
+    "email": "support@sigyl.com"
+  },
+  "license": "UNLICENSED",
   "type": "commonjs",
   "files": [
     "dist/**/*",
@@ -37,12 +45,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sigyl/mcp-platform"
-  },
-  "bugs": {
-    "url": "https://github.com/sigyl/mcp-platform/issues"
-  },
-  "homepage": "https://github.com/sigyl/mcp-platform#readme"
+  "homepage": "https://sigyl.dev",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

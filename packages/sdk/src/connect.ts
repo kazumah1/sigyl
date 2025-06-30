@@ -132,9 +132,99 @@ export class Client {
 }
 
 /**
- * Smithery-style connect: returns a connected Client instance for a package
+ * Connect to a specific tool in a package from the registry
  */
 export async function connect(
+  packageName: string,
+  toolName: string,
+  options: ConnectOptions = {}
+): Promise<ToolFunction> {
+  const { registryUrl = 'http://localhost:3000/api/v1', timeout = 10000 } = options;
+  
+  // Get package details from registry
+  const packageData = await getPackage(packageName, { registryUrl, timeout });
+  console.log('[SDK] Loaded package data:', JSON.stringify(packageData, null, 2));
+
+  // Try to get deployment URL from deployments array (legacy)
+  let deploymentUrl: string | undefined = undefined;
+  if (Array.isArray(packageData.deployments) && packageData.deployments.length > 0) {
+    const activeDeployment = packageData.deployments.find(d => d.status === 'active');
+    if (activeDeployment) {
+      deploymentUrl = activeDeployment.deployment_url;
+      console.log('[SDK] Using deployment_url from deployments array:', deploymentUrl);
+    }
+  }
+  
+  // Fallback: use source_api_url or deployment_url directly from package
+  if (!deploymentUrl) {
+    deploymentUrl = packageData.source_api_url || (packageData as any).deployment_url;
+    console.log('[SDK] Using deployment_url from package record:', deploymentUrl);
+  }
+  
+  if (!deploymentUrl) {
+    console.error('[SDK] No deployment URL found for package:', packageName);
+    throw new Error(`No deployment URL found for package '${packageName}'`);
+  }
+
+  // Return a function that can be called with input to invoke the specific tool
+  return async (input: any): Promise<any> => {
+    const url = `${deploymentUrl.replace(/\/$/, '')}/mcp`;
+    const payload = {
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: {
+        name: toolName,
+        arguments: input
+      }
+    };
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream'
+    };
+    
+    if (options.apiKey) {
+      headers['Authorization'] = `Bearer ${options.apiKey}`;
+    }
+    
+    try {
+      const response = await axios.post(url, payload, {
+        timeout,
+        headers
+      });
+      
+      let data = response.data;
+      if (typeof data === 'string' && data.startsWith('event: message')) {
+        // Extract the JSON from the data: ... line
+        const match = data.match(/data: (\{.*\})/);
+        if (match) {
+          data = JSON.parse(match[1]);
+        }
+      }
+      
+      if (data && typeof data === 'object' && 'result' in data) {
+        return data.result;
+      }
+      
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Tool invocation failed: ${error.response.status} ${error.response.statusText}`);
+        } else if (error.request) {
+          throw new Error(`Tool invocation failed: No response received from ${url}`);
+        }
+      }
+      throw error;
+    }
+  };
+}
+
+/**
+ * Smithery-style connect: returns a connected Client instance for a package
+ */
+export async function connectClient(
   packageName: string,
   options: ConnectOptions = {}
 ): Promise<Client> {

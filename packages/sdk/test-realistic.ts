@@ -4,7 +4,8 @@ import {
   MCPConnectSDK, 
   searchPackages, 
   getPackage,
-  invoke
+  invoke,
+  connectClient
   // registerMCP // Removed, no longer exported
 } from './src/index';
 
@@ -181,32 +182,27 @@ async function testRealisticSDK() {
     const liveToolName = 'reverseString';
     const liveInput = { value: 'Hello, world!' };
 
-    // Connect to the live package using the new connect function
-    const client = await connect(livePackageName, { registryUrl });
-
-    // Invoke the 'reverseString' tool
-    const reverseResult = await client.invoke(liveToolName, liveInput);
-    console.log('✅ reverseString tool result:', reverseResult);
-
-    // Close the client (not strictly necessary for HTTP, but good practice)
+    console.log(`\n🔧 Testing direct tool connection to ${livePackageName}...`);
+    
+    // Connect to a specific tool
+    const reverseFunction = await connect(livePackageName, liveToolName, { registryUrl });
+    
+    // Test tool invocation
+    const reverseResult = await reverseFunction(liveInput);
+    console.log('✅ Tool result:', reverseResult);
+    
+    console.log('\n🔧 Testing client-style connection...');
+    
+    // Connect using client style for multiple operations
+    const client = await connectClient(livePackageName, { registryUrl });
+    
+    // List available tools
+    const toolsList = await client.invoke('tools/list', {});
+    console.log('✅ Available tools:', toolsList);
+    
     await client.close();
   } catch (error) {
     console.log('❌ Smithery-style connect test failed:', error instanceof Error ? error.message : 'Unknown error');
-  }
-
-  // Test 10: List available tools using JSON-RPC
-  console.log('\n🔟 Testing tools/list via Smithery-style Client/Transport connect...');
-  try {
-    const livePackageName = 'kazumah1/mcp-test';
-    const client = await connect(livePackageName, { registryUrl });
-
-    // List tools
-    const toolsList = await client.invoke('tools/list', {});
-    console.log('✅ tools/list result:', toolsList);
-
-    await client.close();
-  } catch (error) {
-    console.log('❌ tools/list test failed:', error instanceof Error ? error.message : 'Unknown error');
   }
 
   console.log('\n🎉 Realistic SDK testing completed!');

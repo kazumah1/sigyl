@@ -1,6 +1,6 @@
 // Main SDK entry point
-export { connect, connectDirect, Client, Transport, HttpTransport } from './connect';
-export { searchPackages, getPackage, invoke, getAllPackagesAdmin } from './registry';
+export { connect, connectDirect, connectClient, Client, Transport, HttpTransport } from './connect';
+export { searchPackages, getPackage, invoke, getAllPackagesAdmin, registerMCP } from './registry';
 export { MCPConnectSDK } from './sdk';
 
 // Types

@@ -71,6 +71,7 @@ export interface PackageWithDetails extends MCPPackage {
 export interface ConnectOptions {
   registryUrl?: string;
   timeout?: number;
+  apiKey?: string;
   headers?: Record<string, string>;
 }
 

@@ -1,58 +1,65 @@
 # Sigyl CLI
 
-Easily add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.
+Easily add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config MCP generation AI tool integration for REST APIs.
 
 ## 🚀 Quick Start
 
 ```bash
 # Install globally
-npm install -g @sigyl/cli
+npm install -g @sigyl-dev/cli
 
 # Or use with npx (no installation required)
-npx sigyl --help
+npx @sigyl-dev/cli --help
 ```
 
 ## 📖 Usage (Recommended Flow)
 
-### Integrate MCP into Your Express App
+### Scan Your Express App and Generate MCP Server
 
 ```bash
-# 1. Generate MCP integration code
-sigyl integrate --out .sigyl-mcp
+# 1. Scan your Express app and generate MCP server
+sigyl scan ./my-express-app --out ./mcp-server
 
-# 2. Add this line to your Express app:
-#    import { addMCPEndpoints } from './.sigyl-mcp/integration'
-#    addMCPEndpoints(app)
+# 2. Navigate to the generated MCP server
+cd ./mcp-server
 
-# 3. Start your app as usual
+# 3. Install dependencies
+npm install
+
+# 4. Start the MCP server
 npm start
 
-# 4. Test with the Inspector
-sigyl inspect http://localhost:3000/mcp
+# 5. Test with the Inspector (optional)
+sigyl inspect http://localhost:8080
 ```
 
-**Options:**
-- `--out <directory>` - Output directory for integration code (default: `.sigyl-mcp`)
-- `--endpoint <path>` - MCP endpoint path (default: `/mcp`)
-- `--auto-add` - (Coming soon) Automatically add integration to your app
+**Scan Command Options:**
+- `--out <directory>` - Output directory for generated MCP server (default: `./mcp-generated`)
+- `--port <port>` - Port for the MCP server (default: `8080`)
+- `--server-language <language>` - Language for server generation: `typescript` or `javascript` (default: `typescript`)
+- `--framework <framework>` - Framework to scan for: `express` (default: `express`)
 
-### For Existing Users (Legacy Two-Server Flow)
+### Alternative Commands
 
-You can still use the old scan/init/build commands if you need a separate MCP server:
-
+#### Initialize a New MCP Server from Scratch
 ```bash
-sigyl scan ./my-express-app
-cd .mcp-generated
-npm install
-sigyl build
+sigyl init ./my-mcp-server --server-language typescript --name "My MCP Server"
 ```
 
-But we recommend the new `integrate` flow for most users.
+#### Build an Existing MCP Project
+```bash
+sigyl build ./mcp-project --out ./dist
+```
+
+#### Development Mode with Hot Reload
+```bash
+sigyl dev ./mcp-project --port 8080
+```
 
 ## 🛠️ Requirements
 
 - Node.js 18 or higher
-- Express.js application
+- Express.js application (for scanning)
 - TypeScript (optional, for TypeScript projects)
 
 ## ⚙️ Changing the Express API Address/Port
@@ -69,9 +76,5 @@ APP_BASE_URL=http://myhost:4000 node server.js
 
 ## 🤝 Support
 
-- GitHub Issues: [Report bugs or request features](https://github.com/sigyl-platform/sigyl-cli/issues)
 - Email: support@sigyl.com
 
-## 📄 License
-
-MIT License - see LICENSE file for details. 

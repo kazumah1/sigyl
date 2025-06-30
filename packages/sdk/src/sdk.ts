@@ -3,10 +3,12 @@ import type {
   MCPPackage,
   PackageWithDetails,
   PackageSearchQuery,
-  PackageSearchResult
+  PackageSearchResult,
+  CreatePackageRequest,
+  ToolFunction
 } from './types';
-import { searchPackages, getPackage, invoke, getAllPackagesAdmin } from './registry';
-import { connect, connectDirect, Client } from './connect';
+import { searchPackages, getPackage, invoke, getAllPackagesAdmin, registerMCP } from './registry';
+import { connect, connectDirect, connectClient, Client } from './connect';
 
 /**
  * MCPConnectSDK - Advanced SDK class for working with MCP registry and tools
@@ -42,13 +44,41 @@ export class MCPConnectSDK {
   }
 
   /**
+   * Connect to a specific tool in a package
+   */
+  async connect(packageName: string, toolName: string): Promise<ToolFunction> {
+    return connect(packageName, toolName, {
+      registryUrl: this.config.registryUrl,
+      timeout: this.config.timeout,
+      apiKey: this.config.apiKey
+    });
+  }
+
+  /**
    * Smithery-style connect: returns a connected Client instance for a package
    */
-  async connect(packageName: string): Promise<Client> {
-    return connect(packageName, {
+  async connectClient(packageName: string): Promise<Client> {
+    return connectClient(packageName, {
       registryUrl: this.config.registryUrl,
-      timeout: this.config.timeout
+      timeout: this.config.timeout,
+      apiKey: this.config.apiKey
     });
+  }
+
+  /**
+   * Connect to all tools in a package and return an object with tool functions
+   */
+  async connectAll(packageName: string): Promise<Record<string, ToolFunction>> {
+    const packageData = await this.getPackage(packageName);
+    const tools: Record<string, ToolFunction> = {};
+    
+    for (const tool of packageData.tools) {
+      if (tool.tool_name) {
+        tools[tool.tool_name] = await this.connect(packageName, tool.tool_name);
+      }
+    }
+    
+    return tools;
   }
 
   /**
@@ -65,6 +95,16 @@ export class MCPConnectSDK {
    */
   async invoke(toolUrl: string, input: any): Promise<any> {
     return invoke(toolUrl, input, this.config);
+  }
+
+  /**
+   * Register a new MCP package in the registry
+   */
+  async registerMCP(packageData: CreatePackageRequest): Promise<MCPPackage> {
+    if (!this.config.apiKey) {
+      throw new Error('API key is required for registering MCP packages');
+    }
+    return registerMCP(packageData, this.config.apiKey, this.config);
   }
 
   /**

@@ -1,5 +1,5 @@
 {
-  "name": "@sigyl/cli",
+  "name": "@sigyl-dev/cli",
   "version": "1.0.0",
   "type": "commonjs",
   "private": false,
@@ -17,15 +17,8 @@
     "typescript",
     "javascript"
   ],
-  "homepage": "https://github.com/sigyl-platform/sigyl-cli#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sigyl-platform/sigyl-cli.git"
-  },
-  "bugs": {
-    "url": "https://github.com/sigyl-platform/sigyl-cli/issues"
-  },
-  "license": "MIT",
+  "homepage": "https://sigyl.dev",
+  "license": "UNLICENSED",
   "author": {
     "name": "Sigyl Team",
     "email": "support@sigyl.com"

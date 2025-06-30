@@ -1,15 +1,15 @@
-# @sigyl/sdk
+# @sigyl-dev/sdk
 
 Developer SDK for Sigyl MCP Registry and Hosting Platform. This SDK provides a clean, developer-friendly interface for discovering, connecting to, and using MCP (Model Context Protocol) tools.
 
 ## 🚀 Quick Start
 
 ```bash
-npm install @sigyl/sdk
+npm install @sigyl-dev/sdk
 ```
 
 ```typescript
-import { connect, searchPackages, getPackage } from '@sigyl/sdk';
+import { connect, searchPackages, getPackage } from '@sigyl-dev/sdk';
 
 // Connect to a tool from the registry
 const summarize = await connect('text-summarizer', 'summarize', {
@@ -36,7 +36,7 @@ The SDK supports API key authentication for secure operations. Some operations r
 ### Using Authentication
 
 ```typescript
-import { MCPConnectSDK } from '@sigyl/sdk';
+import { MCPConnectSDK } from '@sigyl-dev/sdk';
 
 // Initialize with API key
 const sdk = new MCPConnectSDK({
@@ -145,7 +145,7 @@ const newPackage = await registerMCP({
 For more advanced usage, use the `MCPConnectSDK` class:
 
 ```typescript
-import { MCPConnectSDK } from '@sigyl/sdk';
+import { MCPConnectSDK } from '@sigyl-dev/sdk';
 
 const sdk = new MCPConnectSDK({
   registryUrl: 'http://localhost:3000/api/v1',
@@ -198,7 +198,7 @@ import type {
   ToolFunction,
   SDKConfig,
   AuthConfig
-} from '@sigyl/sdk';
+} from '@sigyl-dev/sdk';
 ```
 
 ## 🛠️ Development
@@ -223,7 +223,7 @@ See the `examples/` directory for more detailed usage examples.
 
 ### Basic Usage (No Authentication)
 ```typescript
-import { connect, searchPackages } from '@sigyl/sdk';
+import { connect, searchPackages } from '@sigyl-dev/sdk';
 
 async function main() {
   // Search for text processing tools (public)
@@ -240,7 +240,7 @@ async function main() {
 
 ### Authenticated Usage
 ```typescript
-import { MCPConnectSDK } from '@sigyl/sdk';
+import { MCPConnectSDK } from '@sigyl-dev/sdk';
 
 async function main() {
   const sdk = new MCPConnectSDK({
@@ -266,7 +266,7 @@ async function main() {
 
 ### Advanced Usage
 ```typescript
-import { MCPConnectSDK } from '@sigyl/sdk';
+import { MCPConnectSDK } from '@sigyl-dev/sdk';
 
 async function main() {
   const sdk = new MCPConnectSDK({
