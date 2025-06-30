@@ -297,7 +297,7 @@ const Dashboard = () => {
 
               {/* Secrets Tab */}
           {activeTab === 'secrets' && (
-                <SecretsManager />
+                <SecretsManager workspaceId={workspace?.id || 'default'} />
           )}
 
               {/* Settings Tab */}

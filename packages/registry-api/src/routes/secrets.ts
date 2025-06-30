@@ -1,13 +1,13 @@
 import express from 'express';
 import { supabase } from '../config/database';
-import { requireGitHubAuth } from '../middleware/githubAuth';
+import { requireHybridAuth } from '../middleware/auth';
 import { encrypt, decrypt } from '../utils/encryption';
 import { APIResponse } from '../types';
 
 const router = express.Router();
 
 // Create secret
-router.post('/', requireGitHubAuth, async (req, res) => {
+router.post('/', requireHybridAuth, async (req, res) => {
   try {
     console.log('POST /api/v1/secrets called');
     console.log('req.user:', req.user);
@@ -90,7 +90,7 @@ router.post('/', requireGitHubAuth, async (req, res) => {
 });
 
 // List secrets
-router.get('/', requireGitHubAuth, async (req, res) => {
+router.get('/', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const { mcp_server_id } = req.query;
@@ -140,7 +140,7 @@ router.get('/', requireGitHubAuth, async (req, res) => {
 });
 
 // Get secret by ID
-router.get('/:id', requireGitHubAuth, async (req, res) => {
+router.get('/:id', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;
@@ -194,7 +194,7 @@ router.get('/:id', requireGitHubAuth, async (req, res) => {
 });
 
 // Update secret
-router.put('/:id', requireGitHubAuth, async (req, res) => {
+router.put('/:id', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;
@@ -284,7 +284,7 @@ router.put('/:id', requireGitHubAuth, async (req, res) => {
 });
 
 // Delete secret
-router.delete('/:id', requireGitHubAuth, async (req, res) => {
+router.delete('/:id', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
     const secretId = req.params.id;

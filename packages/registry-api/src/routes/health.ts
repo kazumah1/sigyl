@@ -1,46 +1,58 @@
 import express from 'express';
 import { supabase } from '../config/database';
+import { Router, Request, Response } from 'express';
+import { testConnection } from '../config/database';
 
 const router = express.Router();
 
-// Basic health check
-router.get('/', async (req, res) => {
+/**
+ * Health check endpoint
+ */
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const healthCheck = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.npm_package_version || '1.0.0',
-      dependencies: {
-        database: 'checking',
-        googleCloud: 'checking'
-      }
-    };
-
-    // Test database connection
-    try {
-      const { error } = await supabase.from('profiles').select('count').limit(1);
-      healthCheck.dependencies.database = error ? 'error' : 'ok';
-    } catch (error) {
-      healthCheck.dependencies.database = 'error';
-    }
-
-    // Test Google Cloud credentials
-    healthCheck.dependencies.googleCloud = process.env.GOOGLE_CLOUD_PROJECT_ID ? 'configured' : 'missing';
-
-    const allHealthy = Object.values(healthCheck.dependencies).every(status => 
-      status === 'ok' || status === 'configured'
-    );
-
-    res.status(allHealthy ? 200 : 503).json(healthCheck);
+    const dbConnected = await testConnection();
+    
+    res.json({
+      success: true,
+      data: {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database: dbConnected ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development'
+      },
+      message: 'MCP Registry API is running'
+    });
   } catch (error) {
-    res.status(503).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+    res.status(500).json({
+      success: false,
+      error: 'Health check failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+/**
+ * Debug auth endpoint - shows what token is being sent
+ */
+router.get('/debug-auth', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+  
+  res.json({
+    success: true,
+    data: {
+      hasAuthHeader: !!authHeader,
+      authHeader: authHeader ? `${authHeader.substring(0, 20)}...` : null,
+      tokenLength: token?.length || 0,
+      tokenPrefix: token ? token.substring(0, 20) + '...' : null,
+      tokenType: token ? (
+        token.startsWith('gho_') || token.startsWith('ghp_') || token.startsWith('github_pat_') ? 'github' :
+        token.split('.').length === 3 ? 'jwt' :
+        token.startsWith('sk_') ? 'api_key' :
+        'unknown'
+      ) : null
+    }
+  });
 });
 
 // Detailed health check for monitoring

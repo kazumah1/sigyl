@@ -122,6 +122,28 @@ app.get('/api', (_req, res) => {
   res.json(response);
 });
 
+// Debug endpoint for authentication testing
+app.get('/debug-auth', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+  
+  res.json({
+    success: true,
+    data: {
+      hasAuthHeader: !!authHeader,
+      authHeader: authHeader ? `${authHeader.substring(0, 20)}...` : null,
+      tokenLength: token?.length || 0,
+      tokenPrefix: token ? token.substring(0, 20) + '...' : null,
+      tokenType: token ? (
+        token.startsWith('gho_') || token.startsWith('ghp_') || token.startsWith('github_pat_') ? 'github' :
+        token.split('.').length === 3 ? 'jwt' :
+        token.startsWith('sk_') ? 'api_key' :
+        'unknown'
+      ) : null
+    }
+  });
+});
+
 // 404 handler with enhanced logging
 app.use('*', (req, res) => {
   console.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);

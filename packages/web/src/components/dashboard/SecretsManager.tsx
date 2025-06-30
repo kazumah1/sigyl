@@ -47,8 +47,70 @@ interface SecretsManagerProps {
 
 const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerId }) => {
   const { toast } = useToast();
-  const { user, session } = useAuth();
-  const token = session?.access_token;
+  const { user, session, activeGitHubAccount, isGitHubAppSessionValid } = useAuth();
+  
+  // Get the correct token for API authentication
+  // Priority: GitHub App token > Supabase JWT token
+  const getAuthToken = () => {
+    console.log('🔍 getAuthToken: Starting authentication check...');
+    console.log('🔍 getAuthToken: isGitHubAppSessionValid:', isGitHubAppSessionValid ? isGitHubAppSessionValid() : 'function not available');
+    console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
+    console.log('🔍 getAuthToken: session exists:', !!session);
+    
+    // First check if we have a valid GitHub App session
+    if (isGitHubAppSessionValid && isGitHubAppSessionValid()) {
+      const githubAppToken = localStorage.getItem('github_app_access_token');
+      console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
+      
+      if (githubAppToken && 
+          githubAppToken !== 'restored_token' && 
+          githubAppToken !== 'db_restored_token' &&
+          githubAppToken.length > 20 && // Ensure it's a real token, not a placeholder
+          (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_'))) {
+        console.log('🔑 Using GitHub App token for authentication');
+        return githubAppToken;
+      } else {
+        console.log('❌ GitHub App token is invalid or placeholder:', {
+          isPlaceholder: githubAppToken === 'restored_token' || githubAppToken === 'db_restored_token',
+          length: githubAppToken ? githubAppToken.length : 'null',
+          hasValidPrefix: githubAppToken ? (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_')) : false
+        });
+      }
+    } else {
+      console.log('❌ GitHub App session is not valid');
+    }
+    
+    // Fall back to Supabase session token - try both session object and localStorage
+    let supabaseToken = session?.access_token;
+    console.log('🔍 getAuthToken: Supabase token from session:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+    
+    // If session token is invalid, try to get it directly from localStorage
+    if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
+      console.log('🔍 getAuthToken: Session token invalid, checking localStorage...');
+      try {
+        const supabaseAuthData = localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token');
+        if (supabaseAuthData) {
+          const parsedAuth = JSON.parse(supabaseAuthData);
+          supabaseToken = parsedAuth.access_token;
+          console.log('🔍 getAuthToken: Supabase token from localStorage:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+        }
+      } catch (error) {
+        console.log('❌ Failed to parse Supabase auth from localStorage:', error);
+      }
+    }
+    
+    if (supabaseToken && supabaseToken.split('.').length === 3) {
+      console.log('🔑 Using Supabase JWT token for authentication');
+      return supabaseToken;
+    } else if (supabaseToken) {
+      console.log('❌ Supabase token is not a valid JWT (wrong number of parts):', supabaseToken.split('.').length);
+    }
+
+    console.error('❌ No valid authentication token found');
+    return null;
+  };
+  
+  const token = getAuthToken();
   
   // Secrets state
   const [secrets, setSecrets] = useState<Secret[]>([]);
@@ -81,11 +143,21 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
   // Fetch data on component mount
   useEffect(() => {
+    const token = getAuthToken();
     if (token) {
       fetchSecrets();
       fetchAPIKeys();
+    } else {
+      console.error('❌ No valid token available for API calls');
+      toast({ 
+        title: 'Authentication Error', 
+        description: 'Please sign in again to access secrets and API keys.', 
+        variant: 'destructive' 
+      });
+      setIsLoadingSecrets(false);
+      setIsLoadingApiKeys(false);
     }
-  }, [token, mcpServerId]);
+  }, [session, activeGitHubAccount, isGitHubAppSessionValid]);
 
   // Secrets functions
   const fetchSecrets = async () => {
