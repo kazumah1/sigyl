@@ -468,6 +468,47 @@ class DeploymentService {
       return { success: false };
     }
   }
+
+  /**
+   * Delete an MCP package completely (database + Cloud Run service)
+   */
+  async deletePackage(packageId: string, confirmName: string, apiKey?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add API key if provided
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/${packageId}`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ confirmName })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Failed to delete package:', result.error);
+        return { 
+          success: false, 
+          error: result.message || result.error || 'Failed to delete package' 
+        };
+      }
+
+      console.log('✅ Package deleted successfully:', result.message);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete package:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  }
 }
 
 export default new DeploymentService();

@@ -284,14 +284,130 @@ export class PackageService {
   ): Promise<void> {
     const { error } = await supabase
       .from('mcp_deployments')
-      .update({
-        status,
-        updated_at: new Date().toISOString()
-      })
+      .update({ status })
       .eq('id', id);
 
     if (error) {
       throw new Error(`Failed to update deployment status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete an MCP package and all its related data
+   */
+  async deletePackage(packageId: string, userId?: string): Promise<boolean> {
+    try {
+      console.log(`🗑️ Deleting package ${packageId} and all related data...`);
+
+      // First verify ownership if userId is provided
+      if (userId) {
+        const { data: packageData, error: packageError } = await supabase
+          .from('mcp_packages')
+          .select('author_id')
+          .eq('id', packageId)
+          .single();
+
+        if (packageError || !packageData) {
+          throw new Error('Package not found');
+        }
+
+        if (packageData.author_id !== userId) {
+          throw new Error('Unauthorized: You can only delete your own packages');
+        }
+      }
+
+      // Delete in order to respect foreign key constraints:
+      // 1. Delete tools first
+      const { error: toolsError } = await supabase
+        .from('mcp_tools')
+        .delete()
+        .eq('package_id', packageId);
+
+      if (toolsError) {
+        console.error('❌ Failed to delete tools:', toolsError);
+        throw new Error(`Failed to delete package tools: ${toolsError.message}`);
+      }
+
+      console.log('✅ Deleted package tools');
+
+      // 2. Delete deployments
+      const { error: deploymentsError } = await supabase
+        .from('mcp_deployments')
+        .delete()
+        .eq('package_id', packageId);
+
+      if (deploymentsError) {
+        console.error('❌ Failed to delete deployments:', deploymentsError);
+        throw new Error(`Failed to delete package deployments: ${deploymentsError.message}`);
+      }
+
+      console.log('✅ Deleted package deployments');
+
+      // 3. Delete secrets if they exist
+      try {
+        const { error: secretsError } = await supabase
+          .from('mcp_secrets')
+          .delete()
+          .eq('mcp_server_id', packageId);
+
+        if (secretsError) {
+          console.warn('⚠️ Failed to delete secrets (table may not exist):', secretsError);
+        } else {
+          console.log('✅ Deleted package secrets');
+        }
+      } catch (error) {
+        console.warn('⚠️ Secrets table may not exist, skipping...');
+      }
+
+      // 4. Delete package ratings if they exist
+      try {
+        const { error: ratingsError } = await supabase
+          .from('mcp_package_ratings')
+          .delete()
+          .eq('package_id', packageId);
+
+        if (ratingsError) {
+          console.warn('⚠️ Failed to delete ratings (table may not exist):', ratingsError);
+        } else {
+          console.log('✅ Deleted package ratings');
+        }
+      } catch (error) {
+        console.warn('⚠️ Ratings table may not exist, skipping...');
+      }
+
+      // 5. Delete download records if they exist
+      try {
+        const { error: downloadsError } = await supabase
+          .from('mcp_package_downloads')
+          .delete()
+          .eq('package_id', packageId);
+
+        if (downloadsError) {
+          console.warn('⚠️ Failed to delete download records (table may not exist):', downloadsError);
+        } else {
+          console.log('✅ Deleted package download records');
+        }
+      } catch (error) {
+        console.warn('⚠️ Download records table may not exist, skipping...');
+      }
+
+      // 6. Finally delete the package itself
+      const { error: packageError } = await supabase
+        .from('mcp_packages')
+        .delete()
+        .eq('id', packageId);
+
+      if (packageError) {
+        console.error('❌ Failed to delete package:', packageError);
+        throw new Error(`Failed to delete package: ${packageError.message}`);
+      }
+
+      console.log('✅ Successfully deleted package and all related data');
+      return true;
+
+    } catch (error) {
+      console.error('❌ Package deletion failed:', error);
+      throw error;
     }
   }
 } 

@@ -118,6 +118,11 @@ const MCPPackagePage = () => {
   const [showJsonConfig, setShowJsonConfig] = useState(false);
   const [jsonConfigCopied, setJsonConfigCopied] = useState(false);
   const [jsonConfig, setJsonConfig] = useState('');
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -156,7 +161,7 @@ const MCPPackagePage = () => {
     if (showInstallModal && user) {
       setInstallProfile(user.id);
       setApiKeysLoading(true);
-      APIKeyService.getAPIKeys()
+      APIKeyService.getAPIKeys(user.id)
         .then(keys => {
           setApiKeys(keys);
           setInstallApiKey('');
@@ -365,9 +370,44 @@ const MCPPackagePage = () => {
   };
 
   const handleDeleteService = () => {
-    if (confirm('Are you sure you want to delete this MCP server? This action cannot be undone.')) {
-      toast.info('Deleting service...');
-      // In real implementation, this would call your API
+    setShowDeleteModal(true);
+    setDeleteConfirmName('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pkg || deleteConfirmName !== pkg.name) {
+      toast.error('Please enter the exact package name to confirm deletion');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Import deployment service
+      const deploymentService = (await import('@/services/deploymentService')).default;
+      
+      // Get API key for authentication (try to get from stored keys)
+      let apiKey = '';
+      if (apiKeys.length > 0 && fullApiKeys[apiKeys[0].id]) {
+        apiKey = fullApiKeys[apiKeys[0].id];
+      } else if (apiKeys.length > 0) {
+        apiKey = apiKeys[0].key_prefix;
+      }
+
+      const result = await deploymentService.deletePackage(pkg.id, pkg.name, apiKey);
+      
+      if (result.success) {
+        toast.success(`Successfully deleted ${pkg.name} and all its data`);
+        setShowDeleteModal(false);
+        // Navigate back to dashboard after successful deletion
+        navigate('/dashboard');
+      } else {
+        toast.error(result.error || 'Failed to delete package');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete package: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1495,6 +1535,40 @@ const MCPPackagePage = () => {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Are you sure you want to delete this MCP server? This action cannot be undone.</p>
+            <div>
+              <Label htmlFor="deleteConfirmName">Enter the package name to confirm:</Label>
+              <Input
+                id="deleteConfirmName"
+                name="deleteConfirmName"
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                placeholder="Enter the package name"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleConfirmDelete}
+              className="bg-red-600 text-white"
+              disabled={!deleteConfirmName || isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

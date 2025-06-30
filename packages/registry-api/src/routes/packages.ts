@@ -241,4 +241,113 @@ router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, re
   }
 });
 
+// DELETE /api/v1/packages/:id - Delete package and Cloud Run service (requires authentication)
+router.delete('/:id', requirePermissions(['write']), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { confirmName } = req.body;
+    
+    if (!id || id.trim().length === 0) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid package ID',
+        message: 'Package ID is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Get package details first to verify ownership and get service name
+    const packageData = await packageService.getPackageById(id);
+    
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: `Package with ID '${id}' does not exist`
+      };
+      return res.status(404).json(response);
+    }
+
+    // Verify confirmation name matches package name
+    if (confirmName !== packageData.name) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Confirmation failed',
+        message: 'Package name confirmation does not match'
+      };
+      return res.status(400).json(response);
+    }
+
+    console.log(`🗑️ Starting deletion of package ${packageData.name} (${id})`);
+
+    // First delete from Google Cloud Run if there are active deployments
+    const activeDeployments = packageData.deployments?.filter(d => d.status === 'active') || [];
+    
+    if (activeDeployments.length > 0) {
+      try {
+        const { CloudRunService } = await import('@sigil/container-builder');
+        
+        const CLOUD_RUN_CONFIG = {
+          projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
+          region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
+          serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
+          keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
+        };
+
+        if (CLOUD_RUN_CONFIG.projectId) {
+          const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
+          
+          for (const deployment of activeDeployments) {
+            const serviceName = deployment.id; // Use deployment ID as service name
+            console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
+            
+            const deleted = await cloudRunService.deleteService(serviceName);
+            if (deleted) {
+              console.log(`✅ Deleted Cloud Run service: ${serviceName}`);
+            } else {
+              console.warn(`⚠️ Failed to delete Cloud Run service: ${serviceName}`);
+            }
+          }
+        } else {
+          console.warn('⚠️ Google Cloud Run not configured, skipping service deletion');
+        }
+      } catch (cloudError) {
+        console.error('❌ Error deleting Cloud Run services:', cloudError);
+        // Continue with database deletion even if Cloud Run deletion fails
+      }
+    }
+
+    // Delete from database (this will cascade delete deployments, tools, etc.)
+    const deleted = await packageService.deletePackage(id, req.user?.user_id);
+    
+    if (!deleted) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Failed to delete package',
+        message: 'Package deletion failed'
+      };
+      return res.status(500).json(response);
+    }
+
+    console.log(`✅ Successfully deleted package ${packageData.name} and all related data`);
+
+    const response: APIResponse<null> = {
+      success: true,
+      message: `Package '${packageData.name}' has been completely deleted`
+    };
+    
+    return res.json(response);
+  } catch (error) {
+    console.error('❌ Package deletion error:', error);
+    
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to delete package',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+    
+    return res.status(500).json(response);
+  }
+});
+
 export default router;

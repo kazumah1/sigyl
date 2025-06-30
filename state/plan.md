@@ -9,6 +9,61 @@
 - **GitHub Integration**: GitHub App with repository scanning and automated deployments
 - **Security System**: 22+ security patterns with mcp-scan integration and LLM analysis
 - **Documentation UI**: Restored Mintlify-style docs interface from commit 7dfcfaa9cbc1a5ae367d917916b10149c4ade4c9
+- **MCP Versioning & Updates**: Complete update/redeploy system with version tracking
+
+### ✅ COMPLETE - MCP Versioning & Update System
+
+**Current Implementation:**
+- **Version Tracking**: MCP packages store version info from `mcp.yaml` files
+- **Upsert Strategy**: New deployments use `onConflict: 'source_api_url'` to update existing packages
+- **Redeploy Functionality**: Complete redeploy system that rebuilds and updates existing Cloud Run services
+- **UI Integration**: Dashboard includes "Redeploy" button for each MCP server
+- **Complete Deletion System**: Full MCP package deletion with confirmation modal and Cloud Run cleanup
+
+**Update Process Flow:**
+1. User clicks "Redeploy" button in dashboard (`MCPServersList.tsx`)
+2. Frontend calls `deploymentService.redeployDeployment(id)` 
+3. API endpoint `POST /api/v1/deployments/:id/redeploy` handles request
+4. Backend calls `redeployRepo()` function with existing service name and package ID
+5. System fetches latest code from GitHub repository
+6. Rebuilds Docker image and updates existing Cloud Run service
+7. Updates `mcp_packages` table with new version/metadata
+8. Replaces all `mcp_tools` entries for the package
+9. Returns success with deployment logs
+
+**Deletion Process Flow:**
+1. User clicks "Delete Service" button on MCP package page (owner only)
+2. Confirmation modal requires typing exact package name for safety
+3. Frontend calls `deploymentService.deletePackage(packageId, confirmName, apiKey)`
+4. API endpoint `DELETE /api/v1/packages/:id` handles request with authentication
+5. Backend verifies ownership and confirmation name
+6. Deletes Google Cloud Run service for all active deployments
+7. Cascading database deletion: tools → deployments → secrets → ratings → downloads → package
+8. Returns success and redirects user to dashboard
+
+**Version Detection:**
+- Versions come from `mcp.yaml` files in repositories (`version: "1.2.3"`)
+- If no version specified, falls back to `null` (no automatic versioning)
+- Version updates are reflected in the `mcp_packages.version` field
+- Updated timestamp tracks when last redeploy occurred
+
+**Technical Details:**
+- **No New Service Creation**: Redeploys update existing Cloud Run services
+- **Database Updates**: Uses `UPDATE` instead of `INSERT` for `mcp_packages`
+- **Tool Replacement**: Completely replaces tool definitions (not merged)
+- **Environment Preservation**: Maintains existing environment variables
+- **Security Validation**: Full security scan runs on each redeploy
+- **Safe Deletion**: Requires exact name confirmation and handles Cloud Run cleanup
+- **Ownership Verification**: Only package owners can delete their own MCPs
+
+**UI Features:**
+- Dashboard shows all user's deployed MCP servers
+- "Redeploy" button with loading state and progress feedback
+- "Delete Service" button with confirmation modal (owner only)
+- Confirmation requires typing exact package name for safety
+- Success/error toasts with deployment logs
+- Edit functionality for package metadata (name, description, etc.)
+- Automatic redirect to dashboard after successful deletion
 
 ### ✅ COMPLETE - MCP-Scan Security Integration Analysis
 
@@ -48,6 +103,7 @@
   - Secrets management with encryption
   - API key management system
   - Enhanced security validation pipeline
+  - Complete redeploy system with version tracking
 
 - **Container Builder** (TypeScript + Google Cloud)
   - Docker image building and deployment
@@ -62,6 +118,7 @@
   - Deployment wizard with GitHub integration
   - Restored Mintlify-style documentation interface
   - User profile and workspace management
+  - Complete redeploy UI with progress tracking
 
 **Infrastructure:**
 - **Database**: Supabase (PostgreSQL) with real-time subscriptions
@@ -87,6 +144,7 @@
 - Secrets management with encrypted storage
 - API key management with usage tracking
 - Restored documentation UI with Mintlify-style navigation
+- Complete MCP update/redeploy system with version tracking
 
 **✅ Infrastructure & Security:**
 - Production-ready Google Cloud Run deployment
@@ -125,6 +183,7 @@
 - GitHub integration working
 - Google Cloud Run deployment tested
 - Database migrations completed
+- MCP versioning and update system operational
 
 **✅ Security Audit:**
 - Enhanced security patterns implemented (22+ total)
