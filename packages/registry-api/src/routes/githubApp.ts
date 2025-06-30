@@ -4,8 +4,7 @@ import { UserInstallationService } from '../services/userInstallationService';
 import { InstallationService } from '../services/installationService';
 import { fetchMCPYaml, fetchSigylYaml } from '../services/yaml';
 import fetch from 'node-fetch';
-import { authenticate } from '../middleware/authMiddleware';
-import { db } from '../db';
+import { authenticate } from '../middleware/auth';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -639,7 +638,8 @@ router.post('/github/associate-installation', authenticate, async (req, res) => 
     if (githubId) {
       // Upsert by github_id
       console.log(`[associate-installation] Upserting by github_id: ${githubId}`, { updateFields });
-      upsertResult = await db('profiles')
+      upsertResult = await userInstallationService.supabase
+        .from('profiles')
         .insert({
           github_id: githubId,
           ...updateFields
@@ -651,7 +651,7 @@ router.post('/github/associate-installation', authenticate, async (req, res) => 
     } else {
       // Upsert by id (UUID)
       console.log(`[associate-installation] Upserting by id: ${userId}`, { updateFields });
-      upsertResult = await db('profiles')
+      upsertResult = await userInstallationService.supabase
         .insert({
           id: userId,
           ...updateFields

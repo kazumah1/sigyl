@@ -11,6 +11,7 @@ import gatewayRouter from './routes/gateway';
 import healthRouter from './routes/health';
 import workspacesRouter from './routes/workspaces';
 import contactRouter from './routes/contact';
+import emailsRouter from './routes/emails';
 import { APIResponse } from './types';
 import {
   generalRateLimit,
@@ -90,6 +91,7 @@ app.use('/api/v1/secrets', secretsRouter);
 app.use('/api/v1/gateway', gatewayRouter);
 app.use('/api/v1/workspaces', workspacesRouter);
 app.use('/api/v1/contact', contactRouter);
+app.use('/api/v1/emails', emailsRouter);
 
 // API documentation endpoint
 app.get('/api', (_req, res) => {
