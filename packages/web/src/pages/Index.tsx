@@ -59,7 +59,7 @@ const Index = () => {
       <PageHeader />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 relative z-10">
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 relative z-10">
         <div className="container mx-auto text-center">
           <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl">MCP deployment<br />for scale.</h1>
           <p className="hero-subheading text-lg sm:text-xl">Deploy, manage, and scale your Model Context Protocol servers with enterprise-grade infrastructure. Built for developers who demand reliability and performance.</p>
@@ -85,7 +85,7 @@ const Index = () => {
           {/* Dashboard Preview - Enhanced Mobile Responsiveness */}
           <div className="max-w-6xl mx-auto px-2 sm:px-0">
             {/* Painterly wrapper with @Test_5.png background - now clearly visible */}
-            <div className="dashboard-painterly-wrapper relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10" style={{background: 'rgba(0,0,0,0.10)'}}>
+            <div className="dashboard-painterly-wrapper relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{background: 'rgba(0,0,0,0.10)'}}>
               <img src="/Test_5.png" alt="Painterly Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:1, filter:'blur(1px) brightness(0.85)'}} />
               {/* SIGYL Dashboard Panel - Mobile Optimized */}
               <div className="liquid-glass-dashboard enhanced-glass-panel rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative mx-auto my-8 sm:my-12" style={{maxWidth:'700px', boxShadow:'0 12px 48px 0 rgba(0,0,0,0.38)', border:'1.5px solid rgba(255,255,255,0.22)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)', background:'rgba(30,32,40,0.72)', padding:'0'}}>
@@ -143,7 +143,7 @@ const Index = () => {
       {/* Stats Section - Mobile Optimized */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{width:'100%', minHeight:'620px', padding:'3.5rem 0', background:'rgba(255,255,255,0.10)'}}>
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{width:'100%', minHeight:'480px', paddingTop:'3.5rem', paddingBottom:'2.5rem', background:'rgba(255,255,255,0.10)'}}>
             <img src="/Test_4.png" alt="Stats Tab Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:0.92}} />
             <div className="relative z-10 w-full flex flex-col items-center px-4">
               <div className="text-center mb-6 sm:mb-8 w-full">
@@ -228,9 +228,9 @@ const Index = () => {
       {/* CTA Section - ENHANCED DASHBOARD PANEL */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="liquid-glass-dashboard enhanced-glass-panel rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative" style={{background:'rgba(30,32,40,0.72)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)'}}>
+          <div className="liquid-glass-dashboard enhanced-glass-panel rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative" style={{background:'rgba(10,10,15,0.96)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)'}}>
             {/* Header Bar */}
-            <div className="flex items-center space-x-2 p-4 bg-gray-800/80 relative border-b border-white/10">
+            <div className="flex items-center space-x-2 p-4 bg-black/90 relative border-b border-white/10">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -240,7 +240,7 @@ const Index = () => {
             </div>
             {/* CTA Content */}
             <div className="p-10 flex flex-col items-center text-center">
-              <span className="block w-full max-w-xl mx-auto mb-4 rounded-xl bg-white/5 backdrop-blur-md py-2 px-4">
+              <span className="block w-full max-w-xl mx-auto mb-4 rounded-xl bg-black/60 backdrop-blur-md py-2 px-4">
                 <h2 className="text-4xl font-bold text-white mb-2" style={{fontFamily:'Space Grotesk, Inter, system-ui, sans-serif'}}>Ready to deploy your MCP integration?</h2>
               </span>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8" style={{fontFamily:'Inter, system-ui, sans-serif'}}>

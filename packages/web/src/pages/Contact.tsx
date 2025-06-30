@@ -13,6 +13,7 @@ const reasons = [
 const Contact = () => {
   const [form, setForm] = useState({ name: '', email: '', reason: '', message: '' });
   const [status, setStatus] = useState<'idle'|'success'|'error'>('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,8 +22,31 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('idle');
+    setIsSubmitting(true);
+
     try {
-      const { error } = await supabase.from('emails').insert([
+      // First, send to API for email notifications
+      const apiUrl = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/v1/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          reason: form.reason,
+          message: form.message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send email');
+      }
+
+      // Then, store in Supabase for record keeping
+      const { error: supabaseError } = await supabase.from('emails').insert([
         {
           name: form.name,
           email: form.email,
@@ -30,20 +54,30 @@ const Contact = () => {
           message: form.message,
         }
       ]);
-      if (error) setStatus('error');
-      else setStatus('success');
-    } catch {
+
+      if (supabaseError) {
+        console.warn('Failed to store in database:', supabaseError);
+        // Don't fail the whole submission if Supabase fails, since email was sent
+      }
+
+      setStatus('success');
+      // Reset form on success
+      setForm({ name: '', email: '', reason: '', message: '' });
+    } catch (error) {
+      console.error('Contact form submission error:', error);
       setStatus('error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <>
       <PageHeader />
-      <div className="min-h-screen bg-[#18181b] flex items-center justify-center px-4 pt-32 pb-20 font-sans">
+      <div className="min-h-screen bg-black flex items-center justify-center px-4 pt-32 pb-20 font-sans">
         <div className="w-full max-w-xl mx-auto">
           <form
-            className="backdrop-blur-lg bg-white/5 border border-white/10 shadow-xl rounded-2xl px-10 py-12 flex flex-col gap-7"
+            className="backdrop-blur-lg bg-[#101014] border border-white/10 shadow-2xl rounded-2xl px-10 py-12 flex flex-col gap-7"
             style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             onSubmit={handleSubmit}
           >
@@ -51,29 +85,85 @@ const Contact = () => {
               Contact Us
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-300" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Name</label>
-              <input name="name" value={form.name} onChange={handleChange} required className="rounded-lg bg-[#232329]/80 text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition" style={{ fontFamily: 'Inter, system-ui, sans-serif' }} />
+              <label className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Name</label>
+              <input 
+                name="name" 
+                value={form.name} 
+                onChange={handleChange} 
+                required 
+                disabled={isSubmitting}
+                className="rounded-lg bg-[#18181b] text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition disabled:opacity-50 placeholder-gray-500" 
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }} 
+                placeholder="Your name"
+              />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-300" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange} required className="rounded-lg bg-[#232329]/80 text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition" style={{ fontFamily: 'Inter, system-ui, sans-serif' }} />
+              <label className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Email</label>
+              <input 
+                name="email" 
+                type="email" 
+                value={form.email} 
+                onChange={handleChange} 
+                required 
+                disabled={isSubmitting}
+                className="rounded-lg bg-[#18181b] text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition disabled:opacity-50 placeholder-gray-500" 
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }} 
+                placeholder="you@email.com"
+              />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-300" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Purpose</label>
-              <select name="reason" value={form.reason} onChange={handleChange} required className="rounded-lg bg-[#232329]/80 text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <label className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Purpose</label>
+              <select 
+                name="reason" 
+                value={form.reason} 
+                onChange={handleChange} 
+                required 
+                disabled={isSubmitting}
+                className="rounded-lg bg-[#18181b] text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition disabled:opacity-50" 
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+              >
                 <option value="">Select a purpose</option>
                 {reasons.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-300" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Additional Comments</label>
-              <textarea name="message" value={form.message} onChange={handleChange} required rows={5} className="rounded-lg bg-[#232329]/80 text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition" style={{ fontFamily: 'Inter, system-ui, sans-serif' }} />
+              <label className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>Additional Comments</label>
+              <textarea 
+                name="message" 
+                value={form.message} 
+                onChange={handleChange} 
+                required 
+                rows={5} 
+                disabled={isSubmitting}
+                className="rounded-lg bg-[#18181b] text-white px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition disabled:opacity-50 placeholder-gray-500" 
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }} 
+                placeholder="Type your message here..."
+              />
             </div>
-            <button type="submit" className="w-full bg-white text-black font-semibold py-3 rounded-lg border border-white hover:bg-gray-100 hover:text-black transition-colors text-lg mt-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}>
-              Submit
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full bg-white text-black font-semibold py-3 rounded-lg border border-white hover:bg-gray-100 hover:text-black transition-colors text-lg mt-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
+            >
+              {isSubmitting ? 'Sending...' : 'Submit'}
             </button>
-            {status === 'success' && <div className="text-green-400 text-center">Your message has been sent!</div>}
-            {status === 'error' && <div className="text-red-400 text-center">There was an error. Please try again.</div>}
+            {status === 'success' && (
+              <div className="text-green-400 text-center p-4 bg-green-400/10 rounded-lg border border-green-400/20">
+                <div className="font-semibold mb-2">Message sent successfully!</div>
+                <div className="text-sm text-green-300">
+                  We've sent you a confirmation email and will get back to you within 24 hours.
+                </div>
+              </div>
+            )}
+            {status === 'error' && (
+              <div className="text-red-400 text-center p-4 bg-red-400/10 rounded-lg border border-red-400/20">
+                <div className="font-semibold mb-2">There was an error</div>
+                <div className="text-sm text-red-300">
+                  Please try again or contact us directly at info@sigyl.dev
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>

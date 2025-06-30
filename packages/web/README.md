@@ -39,7 +39,7 @@ GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAwyxzCp7Yy41
 GITHUB_CLIENT_SECRET=a20f634c1afc841b69bd68424032c3dc522024cc
 
 # Registry API (Shared across team)
-VITE_REGISTRY_API_URL=http://localhost:3000/api/v1
+VITE_REGISTRY_API_URL=http://localhost:3000
 ```
 
 **Note**: This configuration uses a shared Supabase project and GitHub App for the development team. All developers can use the same `.env` file.
@@ -140,7 +140,7 @@ This project uses a shared Supabase project and GitHub App for development. All 
 
 #### Registry API
 - **`VITE_REGISTRY_API_URL`**: Shared MCP registry API URL
-  - Value: `http://localhost:3000/api/v1`
+  - Value: `http://localhost:3000`
   - Must be running for MCP template loading and deployments
 
 ### Optional Variables
