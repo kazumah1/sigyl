@@ -196,7 +196,7 @@ const Dashboard = () => {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
       />
       
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className="flex-1 transition-all duration-300 ml-0 pl-16">
         <PageHeader />
         
         <div className="container mx-auto px-6 py-8 mt-16">
@@ -220,38 +220,6 @@ const Dashboard = () => {
                   Deploy New Server
                 </Button>
               </div>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="w-full flex justify-center mt-8 mb-10">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-white/10 bg-black" style={{ minWidth: 700 }}>
-              {[
-                { id: 'overview', label: 'Overview', icon: TrendingUp },
-                { id: 'servers', label: 'Servers', icon: Server },
-                { id: 'secrets', label: 'Secrets', icon: Lock },
-                { id: 'settings', label: 'Settings', icon: Settings },
-                { id: 'analytics', label: 'Analytics', icon: Activity },
-                { id: 'private-mcps', label: 'Private MCPs', icon: Shield },
-                { id: 'enterprise-support', label: 'Enterprise Support', icon: Users },
-              ].map((tab) => {
-                const IconComponent = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-white text-black shadow-lg'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
             </div>
           </div>
 
