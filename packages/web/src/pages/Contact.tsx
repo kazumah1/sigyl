@@ -26,8 +26,9 @@ const Contact = () => {
 
     try {
       // First, send to API for email notifications
-      const apiUrl = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${apiUrl}/api/v1/contact`, {
+      const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
+      const apiUrl = REGISTRY_API_BASE.endsWith('/api/v1') ? REGISTRY_API_BASE : `${REGISTRY_API_BASE}/api/v1`;
+      const response = await fetch(`${apiUrl}/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,19 +46,24 @@ const Contact = () => {
         throw new Error(errorData.message || 'Failed to send email');
       }
 
-      // Then, store in Supabase for record keeping
-      const { error: supabaseError } = await supabase.from('emails').insert([
-        {
-          name: form.name,
-          email: form.email,
-          purpose: form.reason,
-          message: form.message,
-        }
-      ]);
+      // Optional: Try to store in Supabase for record keeping (non-blocking)
+      try {
+        const { error: supabaseError } = await supabase.from('emails').insert([
+          {
+            name: form.name,
+            email: form.email,
+            purpose: form.reason,
+            message: form.message,
+          }
+        ]);
 
-      if (supabaseError) {
-        console.warn('Failed to store in database:', supabaseError);
-        // Don't fail the whole submission if Supabase fails, since email was sent
+        if (supabaseError) {
+          console.debug('Supabase storage skipped (table may not exist):', supabaseError);
+          // This is fine - email was sent successfully via API
+        }
+      } catch (supabaseErr) {
+        console.debug('Supabase storage skipped:', supabaseErr);
+        // This is fine - email was sent successfully via API
       }
 
       setStatus('success');

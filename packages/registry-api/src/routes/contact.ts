@@ -1,8 +1,7 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer'; // Email service for contact form
 import { z } from 'zod';
 import { APIResponse } from '../types';
-import { generalRateLimit } from '../middleware/security';
 
 const router = express.Router();
 
@@ -148,7 +147,7 @@ const generateNotificationEmail = (name: string, email: string, reason: string, 
 };
 
 // POST /api/v1/contact - Submit contact form
-router.post('/', generalRateLimit, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     // Validate request body
     const validationResult = contactFormSchema.safeParse(req.body);
