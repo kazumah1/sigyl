@@ -181,7 +181,7 @@ export class MarketplaceService {
     
     // Generate a mock deployment URL
     const sanitizedName = packageDetails.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-    const deploymentUrl = `https://${sanitizedName}-${Date.now()}.railway.app`
+    const deploymentUrl = `https://${sanitizedName}-${Date.now()}-service-run.app`
     
     console.log('Deployed to:', deploymentUrl)
     return deploymentUrl

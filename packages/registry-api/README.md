@@ -153,11 +153,14 @@ CMD ["npm", "start"]
 
 ## 🚀 Deployment
 
-### Railway
+### Google Cloud Run
 ```bash
-railway login
-railway init
-railway up
+# Set up Google Cloud authentication
+gcloud auth login
+gcloud config set project your-project-id
+
+# Deploy the container
+gcloud run deploy mcp-registry-api --source . --region us-central1
 ```
 
 ### Environment Variables for Deployment

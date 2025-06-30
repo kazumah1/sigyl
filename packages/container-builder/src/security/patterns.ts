@@ -2,13 +2,82 @@ import { SecurityPattern, SecurityVulnerabilityType, SecuritySeverity } from '..
 
 /**
  * Security patterns based on MCP Security Best Practices
- * These patterns detect the three critical vulnerabilities:
+ * Enhanced with discoveries from mcp-scan project by Invariant Labs
+ * These patterns detect the critical vulnerabilities:
  * 1. Confused Deputy Problem
  * 2. Token Passthrough Anti-Pattern  
  * 3. Session Hijacking
+ * 4. Prompt Injection & Tool Poisoning (NEW - from mcp-scan)
  */
 
 export const SECURITY_PATTERNS: SecurityPattern[] = [
+  // ========================================
+  // PROMPT INJECTION & TOOL POISONING (NEW - from mcp-scan)
+  // ========================================
+  {
+    name: 'Tool Poisoning - IMPORTANT Pseudo-Tag',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH, // Using existing enum
+    severity: SecuritySeverity.BLOCK,
+    regex: /<IMPORTANT>[\s\S]*?<\/IMPORTANT>|<important>[\s\S]*?<\/important>/gi,
+    description: 'Tool description contains IMPORTANT pseudo-tags that attempt to override instructions. This is a known tool poisoning attack vector.',
+    fix: 'Remove all IMPORTANT tags from tool descriptions. Tool descriptions should only describe functionality, not give instructions to the AI.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Prompt Injection - Ignore Instructions',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.BLOCK,
+    regex: /(?:ignore|disregard|forget)[\s\S]*?(?:previous|prior|earlier|above)[\s\S]*?(?:instructions?|prompts?|commands?|rules?)/gi,
+    description: 'Tool description contains prompt injection attempting to override previous instructions.',
+    fix: 'Remove instruction override attempts from tool descriptions. Descriptions should only explain tool functionality.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Prompt Injection - Role Hijacking',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.ERROR,
+    regex: /(?:you are now|act as|pretend to be|role[\s\S]*?(?:system|admin|developer|assistant))/gi,
+    description: 'Tool description attempts to hijack the AI assistant role or change system behavior.',
+    fix: 'Remove role manipulation attempts. Tool descriptions should not try to change the AI\'s role or behavior.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Tool Poisoning - Hidden Instructions',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.ERROR,
+    regex: /(?:additionally|also|furthermore|moreover|note that|please|make sure to)[\s\S]*?(?:always|never|must|should)[\s\S]*?(?:do|execute|run|call|invoke)/gi,
+    description: 'Tool description contains hidden instructions that could manipulate AI behavior.',
+    fix: 'Remove instructional language from tool descriptions. Use objective, descriptive language only.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Prompt Injection - Base64 Encoding',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.WARNING,
+    regex: /(?:base64|b64)[\s\S]*?[A-Za-z0-9+\/]{20,}={0,2}/gi,
+    description: 'Tool description contains base64 encoded content that could hide malicious instructions.',
+    fix: 'Remove base64 encoded content from tool descriptions. All instructions should be in plain text and visible.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Tool Poisoning - System Prompt Override',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.BLOCK,
+    regex: /(?:system prompt|system message|initial prompt)[\s\S]*?(?:override|replace|change|modify|update)/gi,
+    description: 'Tool description attempts to override or modify the system prompt.',
+    fix: 'Remove system prompt manipulation attempts. Tool descriptions cannot and should not modify system behavior.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+  {
+    name: 'Prompt Injection - Multi-Language Attack',
+    type: SecurityVulnerabilityType.TOKEN_PASSTHROUGH,
+    severity: SecuritySeverity.WARNING,
+    regex: /(?:中文|日本語|한국어|русский|العربية)[\s\S]*?(?:ignore|override|system|admin)/gi,
+    description: 'Tool description contains non-English text that could hide prompt injection attempts.',
+    fix: 'Ensure all tool descriptions use clear, English language. Multi-language content should be clearly labeled and reviewed.',
+    fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']
+  },
+
   // ========================================
   // TOKEN PASSTHROUGH ANTI-PATTERN (CRITICAL)
   // ========================================

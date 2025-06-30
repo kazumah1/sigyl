@@ -394,9 +394,9 @@ export async function seedDatabase() {
         .insert({
           id: uuidv4(),
           package_id: packageId,
-          deployment_url: `https://${pkg.name.replace('-', '-')}-demo.railway.app`,
-          status: 'active',
-          health_check_url: `https://${pkg.name.replace('-', '-')}-demo.railway.app/health`
+          deployment_url: `https://${pkg.name.replace('-', '-')}-demo-service-run.app`,
+          status: 'active' as const,
+          health_check_url: `https://${pkg.name.replace('-', '-')}-demo-service-run.app/health`
         });
 
       if (deploymentError) {
