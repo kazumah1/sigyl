@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import { APIKeyService } from '@/services/apiKeyService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -116,7 +115,7 @@ const Login = () => {
       <PageHeader />
       
       <div className="flex items-center justify-center min-h-screen px-4 pt-20">
-        <Card className="w-full max-w-md bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+        <Card className="w-full max-w-md bg-white/10 border-white/10 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-white">
               {afterInstall ? 'One More Step!' : 'Welcome to SIGYL'}
@@ -135,11 +134,11 @@ const Login = () => {
               <Button 
                 onClick={handleGitHubLogin}
                 disabled={loading}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
                 size="lg"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 text-white animate-spin" />
                 ) : (
                   <Github className="w-5 h-5 mr-2" />
                 )}
@@ -147,7 +146,7 @@ const Login = () => {
               </Button>
             </div>
             {/* Admin login section - hidden by default */}
-            <details className="mt-8">
+            {/* <details className="mt-8">
               <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">
                 Admin Access
               </summary>
@@ -193,7 +192,7 @@ const Login = () => {
                   Demo access only. Use credentials: admin / DanielHasABigPP
                 </p>
               </form>
-            </details>
+            </details> */}
           </CardContent>
         </Card>
       </div>

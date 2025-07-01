@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Github, GitBranch, Star, Eye, EyeOff, CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Rocket, Shield, Lock, FileText, Settings, Code } from "lucide-react"
+import { Loader2, Github, GitBranch, Star, Eye, EyeOff, CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Rocket, Shield, Lock, FileText, Settings, Code, RefreshCw } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   fetchRepositoriesWithApp, 
@@ -33,7 +33,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
-  const [showPrivate, setShowPrivate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
@@ -147,15 +146,13 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
     setDeployError(null)
   }
 
-  // Filter repositories based on search and visibility preferences
+  // Filter repositories based on search only (always show private repos)
   const filteredRepos = repositories.filter(repo => {
-    const matchesSearch = repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         repo.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         repo.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesVisibility = showPrivate || !repo.private
-    
-    return matchesSearch && matchesVisibility
+    return (
+      repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      repo.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      repo.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   })
 
   // Separate repos by configuration type
@@ -166,7 +163,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
         <span className="ml-3 text-gray-300">Loading repositories...</span>
       </div>
     )
@@ -219,7 +216,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
           ? 'max-h-0 opacity-0' 
           : 'max-h-[5000px] opacity-100'
       }`}>
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <Card className="bg-[#18181b] border border-[#23232a] rounded-2xl p-6">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-white">
               <Shield className="w-5 h-5 text-white" />
@@ -231,47 +228,36 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
           </CardHeader>
           <CardContent className="space-y-6 pb-8">
             {/* Search and Filter Controls */}
-            <div className="flex flex-col gap-4">
-              <div className="w-full">
-                <Label htmlFor="search" className="text-white">Search repositories</Label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4 w-full">
+              <div className="flex-1 flex flex-col">
+                <Label htmlFor="search" className="text-white mb-2">Search repositories</Label>
                 <Input
                   id="search"
                   placeholder="Filter by name or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="min-h-[44px] touch-manipulation bg-black border-white/10 text-white placeholder-gray-400"
+                  className="min-h-[44px] bg-black border-white/10 border-2text-white placeholder-gray-400 rounded-lg w-full"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPrivate(!showPrivate)}
-                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:text-white hover:border-white/30"
-                >
-                  {showPrivate ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  {showPrivate ? 'Hide Private' : 'Show Private'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadRepositories(installationId)}
-                  disabled={loading}
-                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <Settings className="w-5 h-5 text-white" />
-                      Refresh
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadRepositories(installationId)}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 min-h-[44px] sm:min-w-[140px] mt-2 sm:mt-0 touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:text-white hover:border-white/30 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5 text-white" />
+                    Refresh
+                  </>
+                )}
+              </Button>
             </div>
 
             {/* Installation Error Message */}
@@ -304,7 +290,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
             {loading && (
               <div className="flex items-center justify-center py-12">
                 <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
                   <p className="text-sm text-gray-400 text-center">Loading repositories...</p>
                 </div>
               </div>
@@ -319,7 +305,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                     <div className="flex items-center gap-2 mb-4">
                       <Settings className="w-5 h-5 text-white" />
                       <h3 className="text-lg font-semibold text-white">Sigyl-Ready Repositories</h3>
-                      <Badge variant="default" className="ml-auto bg-white/10 text-white">{sigylRepos.length}</Badge>
+                      <Badge variant="default" className="ml-auto bg-white/10 text-white hover:bg-white/10">{sigylRepos.length}</Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                       {sigylRepos.map((repo) => (
@@ -434,13 +420,13 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 variant="outline"
                 size="sm"
                 onClick={handleBackToRepos}
-                className="flex items-center gap-2 border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white"
+                className="flex items-center gap-2 border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white rounded-lg"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Repositories
               </Button>
             </div>
-            <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <Card className="bg-[#18181b] border border-[#23232a] rounded-2xl p-6">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-white">
                   <Rocket className="w-5 h-5 text-white" />
@@ -452,7 +438,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
               </CardHeader>
               <CardContent className="space-y-8">
                 {/* Repository Info */}
-                <div className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-lg">
+                <div className="flex items-center gap-4 p-4 bg-black/60 border border-white/10 rounded-lg">
                   <Github className="w-8 h-8 text-gray-300" />
                   <div className="flex-1">
                     <h4 className="font-semibold text-white">{selectedRepo.full_name}</h4>
@@ -461,25 +447,25 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                     </p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {selectedRepo.private && (
-                        <Badge variant="outline" className="text-xs border-white/20 text-white">
+                        <Badge variant="outline" className="text-xs border-white/20 text-white rounded-md">
                           <Lock className="w-3 h-3 mr-1" />
                           Private
                         </Badge>
                       )}
                       {selectedRepo.has_sigyl && (
-                        <Badge className="text-xs bg-white/10 text-white">
+                        <Badge className="text-xs bg-white/10 text-white rounded-md">
                           <Settings className="w-3 h-3 mr-1" />
                           Sigyl Ready
                         </Badge>
                       )}
                       {selectedRepo.has_mcp && !selectedRepo.has_sigyl && (
-                        <Badge className="text-xs bg-white/10 text-white">
+                        <Badge className="text-xs bg-white/10 text-white rounded-md">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           MCP Ready
                         </Badge>
                       )}
                       {selectedRepo.sigyl_config && (
-                        <Badge variant="outline" className="text-xs border-white/20 text-white">
+                        <Badge variant="outline" className="text-xs border-white/20 text-white rounded-md">
                           <Code className="w-3 h-3 mr-1" />
                           {selectedRepo.sigyl_config.runtime}
                         </Badge>
@@ -593,44 +579,44 @@ interface RepoCardProps {
 const RepoCard: React.FC<RepoCardProps> = ({ repo, isSelected, onSelect, configType }) => {
   return (
     <div
-      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-lg hover:shadow-black/20 touch-manipulation ${
+      className={`p-5 border rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-lg hover:shadow-black/20 touch-manipulation ${
         isSelected 
-          ? 'border-white/30 bg-white/10 shadow-lg shadow-white/10' 
-          : 'border-white/10 bg-black hover:border-white/20 hover:bg-white/5'
+          ? 'border-white/20 bg-[#23232a] shadow-lg shadow-white/10' 
+          : 'border-white/10 bg-[#18181b] hover:border-white/20 hover:bg-white/10'
       }`}
       onClick={() => onSelect(repo)}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <Github className="w-4 h-4 text-gray-300" />
-            <h4 className="font-medium text-white">{repo.name}</h4>
-            {repo.private && <Lock className="w-3 h-3 text-gray-400" />}
+            <Github className="w-4 h-4 text-gray-400" />
+            <h4 className="font-bold text-white text-lg">{repo.name}</h4>
+            {repo.private && <Lock className="w-3 h-3 text-gray-500" />}
           </div>
           <p className="text-sm text-gray-400 mb-3 leading-relaxed">
             {repo.description || 'No description available'}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             {configType === 'sigyl' && (
-              <Badge variant="outline" className="text-xs border-white/20 text-white">
+              <Badge variant="outline" className="text-xs border-white/20 text-white bg-white/10 rounded-md">
                 <Settings className="w-3 h-3 mr-1" />
                 sigyl.yaml
               </Badge>
             )}
             {configType === 'mcp' && (
-              <Badge className="text-xs bg-white/10 text-white font-medium">
+              <Badge className="text-xs bg-white/10 text-white font-medium rounded-md">
                 <CheckCircle className="w-3 h-3 mr-1" />
                 mcp.yaml
               </Badge>
             )}
             {repo.has_sigyl && repo.has_mcp && (
-              <Badge variant="outline" className="text-xs border-white/20 text-white font-medium">
+              <Badge variant="outline" className="text-xs border-white/20 text-white font-medium bg-white/10 rounded-md">
                 <FileText className="w-3 h-3 mr-1" />
                 Both configs
               </Badge>
             )}
             {repo.sigyl_config && (
-              <Badge variant="outline" className="text-xs border-white/20 text-white">
+              <Badge variant="outline" className="text-xs border-white/20 text-white bg-white/10 rounded-md">
                 <Code className="w-3 h-3 mr-1" />
                 {repo.sigyl_config.runtime}
                 {repo.sigyl_config.language && ` (${repo.sigyl_config.language})`}
@@ -638,9 +624,6 @@ const RepoCard: React.FC<RepoCardProps> = ({ repo, isSelected, onSelect, configT
             )}
             <span className="text-xs text-gray-500 ml-auto">{repo.full_name}</span>
           </div>
-        </div>
-        <div className="flex items-center gap-2 ml-4">
-          <Star className="w-4 h-4 text-gray-500" />
         </div>
       </div>
     </div>

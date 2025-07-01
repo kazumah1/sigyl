@@ -689,79 +689,74 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
         {/* Secret Creation/Edit Dialog */}
         <Dialog open={isSecretDialogOpen} onOpenChange={setIsSecretDialogOpen}>
-          <DialogContent className="bg-[#18181b] border border-[#23232a] rounded-2xl">
+          <DialogContent className="bg-[#18181b] border-[#23232a] rounded-2xl p-8">
             <DialogHeader>
-              <DialogTitle className="text-white">
+              <DialogTitle className="text-white text-2xl font-bold mb-1">
                 {editingSecret ? 'Edit Environment Variable' : 'Add Environment Variable'}
               </DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogDescription className="text-gray-400 mb-6">
                 {editingSecret ? 'Update the environment variable configuration.' : 'Add a new environment variable for your MCP server.'}
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Quick Templates */}
               <div>
-                <Label className="text-sm font-medium text-gray-300 mb-2 block">Quick Templates</Label>
-                <div className="flex flex-wrap gap-2">
+                <Label className="text-sm font-semibold text-gray-300 mb-2 block">Quick Templates</Label>
+                <div className="flex flex-wrap gap-3">
                   {secretTemplates.map((template) => (
                     <Button
                       key={template.key}
                       size="sm"
                       onClick={() => handleTemplateSelect(template)}
-                      className="text-xs bg-[#23232a] border-white/20 text-gray-200 hover:bg-[#23232a] hover:text-white"
+                      className="text-xs bg-[#23232a] border-white/20 text-white/80 hover:bg-[#23232a] hover:text-white rounded-lg font-semibold px-4 py-2"
                     >
                       {template.key}
                     </Button>
                   ))}
                 </div>
               </div>
-
               <div>
-                <Label htmlFor="key" className="text-sm font-medium text-gray-300">Key</Label>
+                <Label htmlFor="key" className="text-sm font-semibold text-gray-300 mb-1">Key</Label>
                 <Input
                   id="key"
                   placeholder="e.g., OPENAI_API_KEY"
                   value={formData.key}
                   onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white"
+                  className="bg-[#23232a] border-white/10 text-white rounded-lg h-11"
                 />
               </div>
-
               <div>
-                <Label htmlFor="value" className="text-sm font-medium text-gray-300">Value</Label>
+                <Label htmlFor="value" className="text-sm font-semibold text-gray-300 mb-1">Value</Label>
                 <Textarea
                   id="value"
                   placeholder="Enter the secret value"
                   value={formData.value}
                   onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white min-h-[80px]"
+                  className="bg-[#23232a] border-white/10 text-white rounded-lg min-h-[80px]"
                 />
               </div>
-
               <div>
-                <Label htmlFor="description" className="text-sm font-medium text-gray-300">Description (Optional)</Label>
+                <Label htmlFor="description" className="text-sm font-semibold text-gray-300 mb-1">Description (Optional)</Label>
                 <Input
                   id="description"
                   placeholder="Brief description of this secret"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white"
+                  className="bg-[#23232a] border-white/10 text-white rounded-lg h-11"
                 />
               </div>
             </div>
-
-            <DialogFooter>
+            <DialogFooter className="mt-8 flex gap-3">
               <Button
                 onClick={() => setIsSecretDialogOpen(false)}
-                className="bg-transparent border border-white/20 text-gray-400 hover:bg-[#23232a] hover:text-white"
+                className="bg-transparent border border-white/20 text-gray-400 hover:bg-[#23232a] hover:text-white rounded-lg h-10 px-6 font-semibold"
               >
                 Cancel
               </Button>
               <Button
                 onClick={editingSecret ? handleUpdateSecret : handleCreateSecret}
                 disabled={isCreatingSecret || !formData.key.trim() || !formData.value.trim()}
-                className="btn-modern"
+                className="btn-modern hover:bg-neutral-900 hover:text-white"
               >
                 {isCreatingSecret ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -779,9 +774,9 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
             setNewlyCreatedKey(null);
           }
         }}>
-          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8 bg-[#18181b] border border-[#23232a] rounded-2xl">
+          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8 bg-[#18181b] border-[#23232a] rounded-2xl p-8">
             <DialogHeader className="w-full text-center">
-              <DialogTitle className="text-2xl font-bold mb-2">Your new API key</DialogTitle>
+              <DialogTitle className="text-white text-2xl font-bold mb-2">Your new API key</DialogTitle>
             </DialogHeader>
             <div className="w-full flex flex-col items-center gap-4">
               <code
@@ -790,24 +785,24 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               >
                 {newlyCreatedKey}
               </code>
-              <span className="text-base text-yellow-400 text-center font-medium px-2">
+              <span className="text-base text-white text-center font-medium px-2">
                 Copy this key now. <span className="font-bold">You will not be able to see it again!</span>
               </span>
             </div>
-            <div className="w-full flex flex-row items-center justify-center gap-4 mt-2">
+            <div className="w-full flex flex-row items-center justify-center gap-4">
               <Button
                 onClick={() => {
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
                   toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
                 }}
-                className="btn-modern px-6 py-2"
+                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
               >
                 Copy
               </Button>
               <Button
                 variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="border-white/20 text-white hover:bg-white/10 px-6 py-2"
+                className="btn-modern hover:bg-neutral-900 hover:text-white"
               >
                 Close
               </Button>
@@ -829,8 +824,8 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 <p className="text-base text-gray-400 text-center mb-2">This action cannot be undone.</p>
               </div>
               <div className="w-full flex flex-row items-center justify-center gap-6 mt-2">
-                <Button variant="destructive" onClick={() => handleDeleteApiKey(deleteConfirmId)} className="btn-modern px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
-                <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="border-white/20 text-white hover:bg-white/10 px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
+                <Button variant="destructive" onClick={() => handleDeleteApiKey(deleteConfirmId)} className="btn-modern-inverted hover:bg-transparent hover:text-white">Delete</Button>
+                <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="btn-modern-inverted hover:bg-transparent hover:text-white">Cancel</Button>
               </div>
             </DialogContent>
           </Dialog>

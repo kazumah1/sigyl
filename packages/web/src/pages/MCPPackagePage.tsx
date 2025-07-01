@@ -722,7 +722,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4 gap-2">
             <Button
               onClick={handleApplyEdit}
-              className="btn-modern hover:bg-neutral-900 hover:text-white"
+              className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
               disabled={saving}
             >
               {saving ? 'Saving...' : 'Apply'}
@@ -993,21 +993,21 @@ const MCPPackagePage = () => {
           <div className="lg:col-span-2">
             <Tabs defaultValue={isOwner ? "overview" : "overview"} className="w-full">
               <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
-                <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <BookOpen className="w-5 h-5 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="tools" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                <TabsTrigger value="tools" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <Code2 className="w-5 h-5 mr-2" />
                   Tools
                 </TabsTrigger>
                 {isOwner ? (
-                  <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Terminal className="w-5 h-5 mr-2" />
                     Logs
                   </TabsTrigger>
                 ) : (
-                  <TabsTrigger value="deployment" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <TabsTrigger value="deployment" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Settings className="w-5 h-5 mr-2" />
                     Deployment
                   </TabsTrigger>
@@ -1055,7 +1055,7 @@ const MCPPackagePage = () => {
                             : (tool as any)?.description || 'Tool functionality and usage details would be displayed here.';
 
                           return (
-                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-gray-700">
+                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-white/20">
                               <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
                                 <Code className="w-4 h-4" />
                                 {toolName}
@@ -1096,7 +1096,7 @@ const MCPPackagePage = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="bg-black rounded-lg p-4 border border-gray-700 max-h-96 overflow-y-auto">
+                      <div className="bg-black rounded-lg p-4 border border-white/20 max-h-96 overflow-y-auto">
                         {deploymentLogs.map((log, index) => (
                           <div key={index} className="text-sm font-mono text-gray-300 mb-1">
                             {log}
