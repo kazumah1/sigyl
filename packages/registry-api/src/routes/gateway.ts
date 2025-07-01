@@ -64,7 +64,7 @@ router.post('/connect', async (req, res) => {
 router.all('/:sessionId/*', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const path = req.params[0] || ''; // The rest of the path
+    const path = (req.params as any)[0] || ''; // The rest of the path
 
     // Get gateway session
     const session = await GatewayService.getGatewaySession(sessionId);

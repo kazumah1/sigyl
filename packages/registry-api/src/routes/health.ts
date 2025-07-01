@@ -1,32 +1,29 @@
 import express from 'express';
 import { supabase } from '../config/database';
-import { Router, Request, Response } from 'express';
-import { testConnection } from '../config/database';
+import { Request, Response } from 'express';
 
 const router = express.Router();
 
 /**
  * Health check endpoint
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const dbConnected = await testConnection();
-    
-    res.json({
-      success: true,
-      data: {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        database: dbConnected ? 'connected' : 'disconnected',
-        environment: process.env.NODE_ENV || 'development'
-      },
-      message: 'MCP Registry API is running'
-    });
+    // Basic application health
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.env.npm_package_version || '1.0.0'
+    };
+
+    res.json(health);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Health check failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
@@ -56,7 +53,7 @@ router.get('/debug-auth', (req: Request, res: Response) => {
 });
 
 // Detailed health check for monitoring
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', async (_req, res) => {
   try {
     const detailed = {
       status: 'ok',
@@ -89,13 +86,13 @@ router.get('/detailed', async (req, res) => {
       detailed.services.database = {
         status: error ? 'error' : 'ok',
         latency: Date.now() - dbStart
-      };
+      } as any;
     } catch (error) {
       detailed.services.database = {
         status: 'error',
         latency: Date.now() - dbStart,
         error: error instanceof Error ? error.message : 'Unknown error'
-      };
+      } as any;
     }
 
     // Test Google Cloud config
@@ -103,13 +100,13 @@ router.get('/detailed', async (req, res) => {
       status: process.env.GOOGLE_CLOUD_PROJECT_ID ? 'configured' : 'missing',
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'not set',
       region: process.env.GOOGLE_CLOUD_REGION || 'not set'
-    };
+    } as any;
 
     // Test GitHub config
     detailed.services.github = {
       status: process.env.GITHUB_APP_ID ? 'configured' : 'missing',
       appId: process.env.GITHUB_APP_ID ? 'set' : 'not set'
-    };
+    } as any;
 
     res.json(detailed);
   } catch (error) {

@@ -1,8 +1,6 @@
 import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '@sigil/container-builder';
 import { supabase } from '../config/database';
-import { decrypt } from '../utils/encryption';
-import { fetchSigylYaml, SigylConfig } from './yaml';
-import { PackageService } from '../services/packageService';
+import { fetchSigylYaml } from './yaml';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -308,7 +306,8 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     }
     // Fetch latest sigyl.yaml and mcp.yaml
     const [owner, repo] = repoName.split('/');
-    let sigylConfig, mcpYaml;
+    let sigylConfig;
+    let mcpYaml: any = null; // Properly declare mcpYaml
     try {
       logs.push('📋 Fetching sigyl.yaml configuration...');
       sigylConfig = await fetchSigylYaml(owner, repo, branch, undefined);

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { profilesService, Profile } from '@/services/profilesService';
 import { useTheme } from '@/contexts/ThemeContext';
 import PageHeader from '@/components/PageHeader';
 
@@ -19,8 +19,8 @@ const SettingsPage: React.FC = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const { user, refreshUser, signOut } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,18 +50,12 @@ const SettingsPage: React.FC = () => {
         return;
       }
       try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          query = query.eq('github_id', user.id.replace('github_', ''));
+        const profileData = await profilesService.getCurrentProfile();
+        if (profileData) {
+          setProfile(profileData);
+          setDisplayName(profileData.full_name || '');
         } else {
-          query = query.eq('id', user.id);
-        }
-        const { data, error } = await query.single();
-        if (error) {
           setError('Failed to load profile.');
-        } else {
-          setProfile(data);
-          setDisplayName(data.full_name || '');
         }
       } catch (err) {
         setError('Failed to load profile.');
@@ -79,16 +73,15 @@ const SettingsPage: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: displayName })
-        .eq('id', profile.id);
-      if (error) {
-        setError('Failed to update profile.');
-      } else {
+      const updatedProfile = await profilesService.updateCurrentProfile({ 
+        full_name: displayName 
+      });
+      if (updatedProfile) {
         setSuccess('Profile updated!');
-        setProfile({ ...profile, full_name: displayName });
+        setProfile(updatedProfile);
         refreshUser && refreshUser();
+      } else {
+        setError('Failed to update profile.');
       }
     } catch (err) {
       setError('Failed to update profile.');
@@ -107,17 +100,13 @@ const SettingsPage: React.FC = () => {
     setDeleting(true);
     setDeleteError(null);
     try {
-      // 1. Delete from profiles (should cascade to related tables)
-      if (profile?.id) {
-        const { error: profileError } = await supabase.from('profiles').delete().eq('id', profile.id);
-        if (profileError) throw new Error('Failed to delete profile: ' + profileError.message);
-      }
-      // 2. Delete from Supabase Auth
-      // This requires the user's access token and the admin API, which is not available from the client.
-      // So, we use the user's session to call the /auth/v1/user endpoint (if available)
-      const { error: authError } = await supabase.auth.signOut();
-      // Optionally, you can call a backend function to delete the user from auth.users if needed.
-      // 3. Redirect to login
+      // Delete profile through API
+      await profilesService.deleteCurrentProfile();
+      
+      // Sign out user
+      await signOut();
+      
+      // Redirect to login
       window.location.href = '/login';
     } catch (err: any) {
       setDeleteError(err.message || 'Failed to delete account.');

@@ -364,7 +364,6 @@ router.get('/installations/:installationId/repositories', async (req: Request, r
             sigyl_config: sigylConfig ? {
               runtime: sigylConfig.runtime,
               language: sigylConfig.language,
-              entryPoint: sigylConfig.entryPoint,
               hasStartCommand: !!sigylConfig.startCommand
             } : null
           };
@@ -634,25 +633,22 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
       console.log(`[associate-installation] Upserting by github_id: ${githubId}`, { updateFields });
       upsertResult = await userInstallationService.supabase
         .from('profiles')
-        .insert({
+        .upsert({
           github_id: githubId,
           ...updateFields
         })
-        .onConflict('github_id')
-        .merge(updateFields)
-        .returning('*');
+        .select();
       console.log('[associate-installation] Upsert result (github_id):', upsertResult);
     } else {
       // Upsert by id (UUID)
       console.log(`[associate-installation] Upserting by id: ${userId}`, { updateFields });
       upsertResult = await userInstallationService.supabase
-        .insert({
+        .from('profiles')
+        .upsert({
           id: userId,
           ...updateFields
         })
-        .onConflict('id')
-        .merge(updateFields)
-        .returning('*');
+        .select();
       console.log('[associate-installation] Upsert result (id):', upsertResult);
     }
     return res.json({ success: true, upsertResult });

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
-import { supabase } from '@/lib/supabase';
 
 const reasons = [
   { value: 'demo', label: 'Demo' },
@@ -25,10 +24,12 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // First, send to API for email notifications
+      // Send to API for both email notifications and storage
       const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
       const apiUrl = REGISTRY_API_BASE.endsWith('/api/v1') ? REGISTRY_API_BASE : `${REGISTRY_API_BASE}/api/v1`;
-      const response = await fetch(`${apiUrl}/contact`, {
+      
+      // Use the emails/subscribe endpoint which handles both email sending and storage
+      const response = await fetch(`${apiUrl}/emails/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,34 +37,15 @@ const Contact = () => {
         body: JSON.stringify({
           name: form.name,
           email: form.email,
-          reason: form.reason,
+          purpose: form.reason,
           message: form.message,
+          source: 'contact_form'
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send email');
-      }
-
-      // Optional: Try to store in Supabase for record keeping (non-blocking)
-      try {
-        const { error: supabaseError } = await supabase.from('emails').insert([
-          {
-            name: form.name,
-            email: form.email,
-            purpose: form.reason,
-            message: form.message,
-          }
-        ]);
-
-        if (supabaseError) {
-          console.debug('Supabase storage skipped (table may not exist):', supabaseError);
-          // This is fine - email was sent successfully via API
-        }
-      } catch (supabaseErr) {
-        console.debug('Supabase storage skipped:', supabaseErr);
-        // This is fine - email was sent successfully via API
+        throw new Error(errorData.message || 'Failed to send message');
       }
 
       setStatus('success');
@@ -158,7 +140,7 @@ const Contact = () => {
               <div className="text-green-400 text-center p-4 bg-green-400/10 rounded-lg border border-green-400/20">
                 <div className="font-semibold mb-2">Message sent successfully!</div>
                 <div className="text-sm text-green-300">
-                  We've sent you a confirmation email and will get back to you within 24 hours.
+                  We've received your message and will get back to you within 24 hours.
                 </div>
               </div>
             )}

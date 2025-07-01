@@ -21,6 +21,10 @@ export interface MCPDeployment {
   status: 'active' | 'inactive' | 'failed';
   health_check_url?: string;
   last_health_check?: string;
+  repo_url?: string;
+  repo_name?: string;
+  branch?: string;
+  env?: Record<string, string>;
   created_at: string;
 }
 

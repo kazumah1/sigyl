@@ -58,18 +58,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [installationId, setInstallationId] = useState<number | null>(null)
   const [hasInstallation, setHasInstallation] = useState<boolean>(false)
   const [installationCheckError, setInstallationCheckError] = useState<string | null>(null)
+  const [forceInstallationCheck, setForceInstallationCheck] = useState<number>(0)
 
   // Handle GitHub App callback (just refresh session, let backend handle DB)
   useEffect(() => {
     const processGitHubAppCallback = async () => {
       const { installationId, code } = checkForGitHubAppCallback();
       if (installationId || code) {
-        // After callback, just refresh session
+        // Clear installation cache since we just completed a GitHub App flow
+        const githubUsername = user?.user_metadata?.user_name;
+        if (githubUsername) {
+          const cacheKey = `sigyl_installation_${githubUsername}`;
+          sessionStorage.removeItem(cacheKey);
+        }
+        
+        // After callback, refresh session and force installation check
         await refreshUser();
+        
+        // Force a fresh installation check by clearing all related cache
+        setInstallationId(null);
+        setHasInstallation(false);
+        setInstallationCheckError(null);
+        
+        // Trigger a forced installation check
+        setForceInstallationCheck(prev => prev + 1);
       }
     }
     processGitHubAppCallback();
-  }, [])
+  }, [user])
 
   // Session initialization
   useEffect(() => {
@@ -96,39 +112,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const cacheKey = `sigyl_installation_${githubUsername}`
       const cacheRaw = sessionStorage.getItem(cacheKey)
       const now = Date.now()
-      if (cacheRaw) {
+      
+      // Skip cache if this is a forced check
+      if (cacheRaw && forceInstallationCheck === 0) {
         try {
           const cache = JSON.parse(cacheRaw)
           if (now - cache.timestamp < 60000) { // 60 seconds
+            console.log('🔍 Using cached installation data:', cache)
             setInstallationId(cache.installationId)
             setHasInstallation(!!cache.installationId)
             return
           }
         } catch {}
       }
+      
+      console.log('🔍 Making fresh installation check for:', githubUsername)
+      
       try {
         const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`)
         if (!res.ok) {
           throw new Error(`Failed to check installation: ${res.status} ${res.statusText}`)
         }
         const data = await res.json()
+        console.log('🔍 Installation check response:', data)
+        
         if (data.hasInstallation && data.installationId) {
+          console.log('✅ Setting installation ID:', data.installationId)
           setInstallationId(data.installationId)
           setHasInstallation(true)
           sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: data.installationId, timestamp: now }))
         } else {
+          console.log('❌ No installation found, setting to null')
           setInstallationId(null)
           setHasInstallation(false)
           sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: null, timestamp: now }))
         }
       } catch (err) {
+        console.log('❌ Installation check error:', err)
         setInstallationId(null)
         setHasInstallation(false)
         setInstallationCheckError(err instanceof Error ? err.message : 'Failed to check installation')
       }
     }
     checkInstallation()
-  }, [user])
+  }, [user, forceInstallationCheck])
 
   const signInWithGitHubApp = async () => {
     // Build the GitHub App install URL with backend callback as redirect_uri

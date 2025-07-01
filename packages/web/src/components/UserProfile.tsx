@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, User, Settings, Github } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { profilesService, Profile } from '@/services/profilesService'
 import { useNavigate } from 'react-router-dom'
 
 const UserProfile: React.FC = () => {
   const { user, signOut } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -28,19 +28,9 @@ const UserProfile: React.FC = () => {
     const loadProfile = async () => {
       if (!user?.id) return;
       try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          // Use github_id for GitHub App users
-          query = query.eq('github_id', user.id.replace('github_', ''));
-        } else {
-          // Use id (UUID) for Supabase OAuth users
-          query = query.eq('id', user.id);
-        }
-        const { data: profile, error } = await query.single();
-        if (error) {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfile(profile);
+        const profileData = await profilesService.getCurrentProfile();
+        if (profileData) {
+          setProfile(profileData);
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -53,9 +43,9 @@ const UserProfile: React.FC = () => {
     return null
   }
 
-  const githubUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username
-  const avatarUrl = user.user_metadata?.avatar_url
-  const email = user.email
+  const githubUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username || profile?.github_username
+  const avatarUrl = user.user_metadata?.avatar_url || profile?.avatar_url
+  const email = user.email || profile?.email
 
   return (
     <DropdownMenu>
@@ -73,7 +63,7 @@ const UserProfile: React.FC = () => {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none text-white">
-              {githubUsername || 'User'}
+              {profile?.full_name || githubUsername || 'User'}
             </p>
             <p className="text-xs leading-none text-gray-400">
               {email}

@@ -28,7 +28,7 @@ async function createEmailsTable() {
           console.error('Error executing statement:', error);
           // Try direct execution for DDL statements
           try {
-            const { error: directError } = await supabase.from('_').select('*').limit(0);
+            const { error: _directError } = await supabase.from('_').select('*').limit(0);
             // This is just to test connection, the actual SQL execution needs to be done differently
             console.log('Supabase connection works, but we need to run the migration manually');
           } catch (e) {

@@ -5,15 +5,7 @@ import { APIResponse } from '../types';
 
 const router = express.Router();
 
-// Interface for MCP package with deployment URL
-interface MCPPackageWithDeployment {
-  id: string;
-  name: string;
-  deployment_url: string;
-  status: string;
-}
-
-// Cache for package URLs (optional optimization)
+// Cache for package info with 5-minute TTL
 const urlCache = new Map<string, string>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -132,7 +124,7 @@ const createDynamicProxy = () => {
 /**
  * List available MCP packages for discovery
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const { data: packages, error } = await supabase
       .from('mcp_packages')

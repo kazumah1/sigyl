@@ -275,7 +275,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); handleEditClick(server); }}
-                    className="text-gray-400 hover:text-purple-400 hover:bg-purple-400/10"
+                    className="text-gray-400 hover:text-white hover:bg-white/10"
                     title="Edit server"
                   >
                     Edit

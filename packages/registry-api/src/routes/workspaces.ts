@@ -46,7 +46,8 @@ const authenticateWorkspace = async (req: Request, res: Response, next: NextFunc
         req.user = {
           user_id: `github_${githubUser.id}`,
           key_id: `github_${githubUser.id}`,
-          permissions: ['workspace:write']
+          permissions: ['workspace:write'],
+          is_active: true
         };
         return next();
       }

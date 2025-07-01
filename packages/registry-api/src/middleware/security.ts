@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import cors from 'cors';
 
 // Rate limiting configurations
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Much higher limit for development
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -16,7 +15,7 @@ export const generalRateLimit = rateLimit({
 
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Allow 100 requests per 15 minutes per IP
+  max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for development
   message: {
     error: 'Too many authentication attempts, please try again later.',
     retryAfter: '15 minutes'
@@ -27,7 +26,7 @@ export const authRateLimit = rateLimit({
 
 export const deploymentRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Limit deployments per hour
+  max: process.env.NODE_ENV === 'development' ? 100 : 20, // Higher limit for development
   message: {
     error: 'Deployment rate limit exceeded. Please wait before starting another deployment.',
     retryAfter: '1 hour'
@@ -137,7 +136,7 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
 };
 
 // Error handling middleware
-export const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('API Error:', {
     error: error.message,
     stack: error.stack,

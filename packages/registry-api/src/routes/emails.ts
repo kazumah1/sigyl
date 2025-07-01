@@ -16,7 +16,7 @@ const emailSubscriptionSchema = z.object({
 });
 
 // GET /api/v1/emails/stats - Get email statistics (admin only)
-router.get('/stats', requirePermissions(['admin']), async (req, res) => {
+router.get('/stats', requirePermissions(['admin']), async (_req, res) => {
   try {
     const { data, error } = await supabase.rpc('get_email_stats');
     

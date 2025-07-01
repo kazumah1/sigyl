@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PackageService } from '../services/packageService';
 import { requirePermissions, optionalAuth } from '../middleware/auth';
 import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
+import { supabase } from '../config/database';
 
 const router = Router();
 const packageService = new PackageService();
@@ -355,6 +356,225 @@ router.post('/:id/increment-downloads', async (req: Request, res: Response) => {
     return res.json({ success: true, message: 'Download count incremented' });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to increment download count', message: error instanceof Error ? error.message : 'Unknown error occurred' });
+  }
+});
+
+// POST /api/v1/packages/:id/rate - Rate a package
+router.post('/:id/rate', requirePermissions(['write']), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid rating',
+        message: 'Rating must be between 1 and 5'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Check if package exists
+    const packageData = await packageService.getPackageById(id);
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: 'The specified package does not exist'
+      };
+      return res.status(404).json(response);
+    }
+
+    // Upsert rating
+    const { error } = await supabase
+      .from('mcp_package_ratings')
+      .upsert({
+        package_id: id,
+        user_id: req.user!.user_id,
+        rating
+      });
+
+    if (error) {
+      console.error('Error rating package:', error);
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Failed to rate package',
+        message: error.message
+      };
+      return res.status(500).json(response);
+    }
+
+    const response: APIResponse<null> = {
+      success: true,
+      data: null,
+      message: 'Package rated successfully'
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error rating package:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to rate package'
+    };
+    return res.status(500).json(response);
+  }
+});
+
+// GET /api/v1/packages/:id/rating - Get user's rating for a package
+router.get('/:id/rating', requirePermissions(['read']), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('mcp_package_ratings')
+      .select('rating')
+      .eq('package_id', id)
+      .eq('user_id', req.user!.user_id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user rating:', error);
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Failed to fetch rating',
+        message: error.message
+      };
+      return res.status(500).json(response);
+    }
+
+    const response: APIResponse<{ rating: number | null }> = {
+      success: true,
+      data: { rating: data?.rating || null },
+      message: 'Rating retrieved successfully'
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error fetching user rating:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch rating'
+    };
+    return res.status(500).json(response);
+  }
+});
+
+// POST /api/v1/packages/:id/download - Log a package download
+router.post('/:id/download', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if package exists
+    const packageData = await packageService.getPackageById(id);
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: 'The specified package does not exist'
+      };
+      return res.status(404).json(response);
+    }
+
+    // Log the download
+    const { error } = await supabase
+      .from('mcp_package_downloads')
+      .insert({
+        package_id: id,
+        user_id: req.user?.user_id || null,
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent') || null
+      });
+
+    if (error) {
+      console.error('Error logging download:', error);
+    }
+
+    // Increment downloads count
+    await supabase.rpc('increment_downloads', { package_uuid: id });
+
+    const response: APIResponse<null> = {
+      success: true,
+      data: null,
+      message: 'Download logged successfully'
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error logging download:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to log download'
+    };
+    return res.status(500).json(response);
+  }
+});
+
+// GET /api/v1/packages/marketplace/all - Get all packages with author info for marketplace
+router.get('/marketplace/all', async (_req: Request, res: Response) => {
+  try {
+    // First fetch packages
+    const { data: packagesData, error: packagesError } = await supabase
+      .from('mcp_packages')
+      .select('*')
+      .order('downloads_count', { ascending: false });
+
+    if (packagesError) {
+      console.error('Error fetching packages:', packagesError);
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Failed to fetch packages',
+        message: packagesError.message
+      };
+      return res.status(500).json(response);
+    }
+
+    // Then fetch author profiles separately
+    const authorIds = [...new Set((packagesData || []).map((pkg: any) => pkg.author_id).filter(Boolean))];
+    
+    let profilesData: any[] = [];
+    if (authorIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', authorIds);
+      
+      if (!profilesError) {
+        profilesData = profiles || [];
+      }
+    }
+
+    // Transform the data to include author info
+    const transformedPackages = (packagesData || []).map((pkg: any) => {
+      const authorProfile = profilesData.find(profile => profile.id === pkg.author_id);
+      
+      return {
+        ...pkg,
+        author: authorProfile ? {
+          username: authorProfile.username || 'Unknown',
+          full_name: authorProfile.full_name || 'Unknown'
+        } : undefined
+      };
+    });
+
+    const response: APIResponse<typeof transformedPackages> = {
+      success: true,
+      data: transformedPackages,
+      message: 'Marketplace packages retrieved successfully'
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error fetching marketplace packages:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch marketplace packages'
+    };
+    return res.status(500).json(response);
   }
 });
 

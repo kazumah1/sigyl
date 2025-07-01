@@ -221,11 +221,10 @@ export class InstallationService {
   }
 }
 
-export async function upsertProfileWithInstallation({ userId, installationId }) {
-  if (!userId || !installationId) {
-    throw new Error('Missing userId or installationId');
-  }
-  await this.supabase
+export async function upsertProfileWithInstallation({ userId, installationId }: { userId: string; installationId: string }) {
+  const supabase = require('../config/database').supabase;
+  
+  await supabase
     .from('profiles')
     .insert({
       id: userId,

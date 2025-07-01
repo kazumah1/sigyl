@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Key, Plus, Copy, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Key, Plus, Copy, Trash2, Eye, EyeOff, Loader2, AlertTriangle, Shield, ShieldOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { APIKeyService, APIKey, CreateAPIKeyRequest } from '@/services/apiKeyService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { profilesService, Profile } from '@/services/profilesService';
 
 interface APIKeysManagerProps {
   workspaceId: string;
@@ -25,11 +25,22 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const getFreshToken = async () => {
-    const { data: { session: freshSession } } = await supabase.auth.getSession();
-    return freshSession?.access_token || null;
+    // Try to get Supabase session token first
+    const supabaseSession = JSON.parse(localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token') || '{}');
+    if (supabaseSession?.access_token) {
+      return supabaseSession.access_token;
+    }
+
+    // Fallback to GitHub token
+    const githubToken = localStorage.getItem('github_app_token');
+    if (githubToken && githubToken !== 'db_restored_token') {
+      return githubToken;
+    }
+
+    return null;
   };
 
   // Fetch API keys on component mount
@@ -60,17 +71,9 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
     const loadProfile = async () => {
       if (!user?.id) return;
       try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          query = query.eq('github_id', user.id.replace('github_', ''));
-        } else {
-          query = query.eq('id', user.id);
-        }
-        const { data: profile, error } = await query.single();
-        if (error) {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfile(profile);
+        const profileData = await profilesService.getCurrentProfile();
+        if (profileData) {
+          setProfile(profileData);
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -272,14 +275,14 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
                   toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
                 }}
-                className="btn-modern px-6 py-2"
+                className="bg-black border border-white text-white hover:bg-white hover:text-black px-6 py-2"
               >
                 Copy
               </Button>
               <Button
                 variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="border-white/20 text-white hover:bg-white/10 px-6 py-2"
+                className="border-white/20 text-black bg-white hover:bg-gray-100 px-6 py-2"
               >
                 Close
               </Button>

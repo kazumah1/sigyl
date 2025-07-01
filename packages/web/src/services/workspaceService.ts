@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+// Remove direct supabase import and replace with API calls where possible
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface Workspace {
   id: string;
@@ -9,6 +10,43 @@ export interface Workspace {
   created_at: string;
   updated_at: string;
 }
+
+// Helper function to get auth token
+const getAuthToken = (): string | null => {
+  // Try to get Supabase session token first
+  const supabaseSession = JSON.parse(localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token') || '{}');
+  if (supabaseSession?.access_token) {
+    return supabaseSession.access_token;
+  }
+
+  // Fallback to GitHub token
+  const githubToken = localStorage.getItem('github_app_token');
+  if (githubToken && githubToken !== 'db_restored_token') {
+    return githubToken;
+  }
+
+  return null;
+};
+
+// Helper function to make API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API call failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 export const workspaceService = {
   async getUserWorkspaces(): Promise<Workspace[]> {
@@ -29,7 +67,10 @@ export const workspaceService = {
       }
 
       console.log('🔍 getUserWorkspaces: Using Supabase auth user...');
-      // For Supabase auth users, use direct queries
+      
+      // For Supabase auth users, we could use the API here but keeping the direct approach for now
+      // since the API doesn't have a getUserWorkspaces endpoint yet
+      const { supabase } = await import('@/lib/supabase');
       const { data: workspaces, error } = await supabase
         .from('workspaces')
         .select('*')
@@ -56,6 +97,7 @@ export const workspaceService = {
         console.log('🔍 getWorkspaceById: GitHub App user detected, using service role approach');
         
         // Try to get workspace without RLS restrictions
+        const { supabase } = await import('@/lib/supabase');
         const { data, error } = await supabase
           .from('workspaces')
           .select('*')
@@ -71,6 +113,7 @@ export const workspaceService = {
       }
 
       // For Supabase auth users
+      const { supabase } = await import('@/lib/supabase');
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
@@ -91,6 +134,7 @@ export const workspaceService = {
 
   async createWorkspace(workspaceData: Omit<Workspace, 'id' | 'created_at' | 'updated_at'>): Promise<Workspace | null> {
     try {
+      const { supabase } = await import('@/lib/supabase');
       const { data, error } = await supabase
         .from('workspaces')
         .insert(workspaceData)
@@ -107,15 +151,12 @@ export const workspaceService = {
 
   async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | null> {
     try {
-      const { data, error } = await supabase
-        .from('workspaces')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // Use the API for workspace updates
+      const result = await apiCall(`/workspaces/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      return result.data || null;
     } catch (error) {
       console.error('Error updating workspace:', error);
       return null;
@@ -147,6 +188,7 @@ export const workspaceService = {
         console.log('🔍 getOrCreateDemoWorkspace: GitHub App user detected, using simplified approach');
         
         // Check if any demo workspace exists (without owner filtering to avoid RLS)
+        const { supabase } = await import('@/lib/supabase');
         const { data: existingWorkspaces, error: searchError } = await supabase
           .from('workspaces')
           .select('*')
@@ -199,10 +241,11 @@ export const workspaceService = {
       // For Supabase auth users
       console.log('🔍 getOrCreateDemoWorkspace: Supabase auth user, using standard approach');
       
+      const { supabase } = await import('@/lib/supabase');
       const { data: workspaces } = await supabase
         .from('workspaces')
         .select('*')
-        .eq('slug', 'demo-workspace')
+        .ilike('slug', 'demo-workspace%')
         .limit(1);
 
       if (workspaces && workspaces.length > 0) {
@@ -220,20 +263,20 @@ export const workspaceService = {
           name: 'Demo Workspace',
           slug: uniqueSlug,
           description: 'Demo workspace for testing',
-          owner_id: '00000000-0000-0000-0000-000000000000' // Default owner for demo workspaces
+          owner_id: 'demo-user-id' // This should be replaced with actual user ID
         })
         .select('*')
         .single();
 
       if (error) {
-        console.error('Error creating demo workspace:', error);
+        console.error('Error creating demo workspace for Supabase user:', error);
         throw error;
       }
 
       console.log('✅ getOrCreateDemoWorkspace: Created new demo workspace for Supabase user');
       return newWorkspace;
     } catch (error) {
-      console.error('Error in getOrCreateDemoWorkspace:', error);
+      console.error('❌ getOrCreateDemoWorkspace: Unexpected error:', error);
       throw error;
     }
   }

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Remove direct supabase import and replace with API calls
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface MCPPackage {
   id: string;
@@ -33,6 +35,43 @@ export interface PackageRating {
   rating: number;
 }
 
+// Helper function to get auth token
+const getAuthToken = (): string | null => {
+  // Try to get Supabase session token first
+  const supabaseSession = JSON.parse(localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token') || '{}');
+  if (supabaseSession?.access_token) {
+    return supabaseSession.access_token;
+  }
+
+  // Fallback to GitHub token
+  const githubToken = localStorage.getItem('github_app_token');
+  if (githubToken && githubToken !== 'db_restored_token') {
+    return githubToken;
+  }
+
+  return null;
+};
+
+// Helper function to make API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API call failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const useMarketplace = () => {
   const [packages, setPackages] = useState<MCPPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,55 +82,29 @@ export const useMarketplace = () => {
     try {
       setLoading(true);
       
-      // First fetch packages
-      const { data: packagesData, error: packagesError } = await supabase
-        .from('mcp_packages')
-        .select('*')
-        .order('downloads_count', { ascending: false });
-
-      if (packagesError) throw packagesError;
-
-      // Then fetch author profiles separately
-      const authorIds = [...new Set((packagesData || []).map(pkg => pkg.author_id).filter(Boolean))];
+      const result = await apiCall('/packages/marketplace/all');
       
-      let profilesData: any[] = [];
-      if (authorIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name')
-          .in('id', authorIds);
-        
-        if (!profilesError) {
-          profilesData = profiles || [];
-        }
-      }
-
       // Transform the data to match our interface
-      const transformedPackages: MCPPackage[] = (packagesData || []).map(pkg => {
-        const authorProfile = profilesData.find(profile => profile.id === pkg.author_id);
-        
-        return {
-          id: pkg.id,
-          name: pkg.name,
-          description: pkg.description || '',
-          version: pkg.version || '1.0.0',
-          author_id: pkg.author_id || '',
-          tags: pkg.tags || [],
-          downloads_count: pkg.downloads_count || 0,
-          rating: Number(pkg.rating) || 0,
-          category: pkg.category || 'general',
-          verified: pkg.verified || false,
-          logo_url: pkg.logo_url || '/placeholder.svg',
-          screenshots: Array.isArray(pkg.screenshots) ? pkg.screenshots as string[] : [],
-          tools: Array.isArray(pkg.tools) ? pkg.tools as string[] : [],
-          last_updated: pkg.last_updated || pkg.created_at || new Date().toISOString(),
-          created_at: pkg.created_at || new Date().toISOString(),
-          author: authorProfile ? {
-            username: authorProfile.username || 'Unknown',
-            full_name: authorProfile.full_name || 'Unknown'
-          } : undefined
-        };
-      });
+      const transformedPackages: MCPPackage[] = (result.data || []).map((pkg: any) => ({
+        id: pkg.id,
+        name: pkg.name,
+        slug: pkg.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'unknown',
+        description: pkg.description || '',
+        version: pkg.version || '1.0.0',
+        author_id: pkg.author_id || '',
+        tags: pkg.tags || [],
+        downloads_count: pkg.downloads_count || 0,
+        rating: Number(pkg.rating) || 0,
+        category: pkg.category || 'general',
+        verified: pkg.verified || false,
+        logo_url: pkg.logo_url || '/placeholder.svg',
+        screenshots: Array.isArray(pkg.screenshots) ? pkg.screenshots as string[] : [],
+        tools: Array.isArray(pkg.tools) ? pkg.tools as string[] : [],
+        last_updated: pkg.last_updated || pkg.created_at || new Date().toISOString(),
+        created_at: pkg.created_at || new Date().toISOString(),
+        source_api_url: pkg.source_api_url,
+        author: pkg.author
+      }));
 
       setPackages(transformedPackages);
     } catch (err) {
@@ -106,15 +119,10 @@ export const useMarketplace = () => {
     if (!user) throw new Error('Must be logged in to rate packages');
 
     try {
-      const { error } = await supabase
-        .from('mcp_package_ratings')
-        .upsert({
-          package_id: packageId,
-          user_id: user.id,
-          rating
-        });
-
-      if (error) throw error;
+      await apiCall(`/packages/${packageId}/rate`, {
+        method: 'POST',
+        body: JSON.stringify({ rating }),
+      });
       
       // Refresh packages to get updated rating
       await fetchPackages();
@@ -126,20 +134,9 @@ export const useMarketplace = () => {
 
   const downloadPackage = async (packageId: string) => {
     try {
-      // Log the download
-      const { error } = await supabase
-        .from('mcp_package_downloads')
-        .insert({
-          package_id: packageId,
-          user_id: user?.id || null,
-          ip_address: null, // Could be populated by edge function
-          user_agent: navigator.userAgent
-        });
-
-      if (error) throw error;
-
-      // Update downloads count
-      await supabase.rpc('increment_downloads', { package_uuid: packageId });
+      await apiCall(`/packages/${packageId}/download`, {
+        method: 'POST',
+      });
       
       // Refresh packages to get updated count
       await fetchPackages();
@@ -153,15 +150,8 @@ export const useMarketplace = () => {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('mcp_package_ratings')
-        .select('rating')
-        .eq('package_id', packageId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      return data?.rating || null;
+      const result = await apiCall(`/packages/${packageId}/rating`);
+      return result.data?.rating || null;
     } catch (err) {
       console.error('Error fetching user rating:', err);
       return null;

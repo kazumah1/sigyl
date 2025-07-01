@@ -453,8 +453,8 @@ const Dashboard = () => {
                       <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
                         <CardContent className="p-4">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
-                              <Database className="w-6 h-6 text-green-400" />
+                            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                              <Database className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-white font-semibold text-lg mb-2">Internal Data Sources</h3>
@@ -467,8 +467,8 @@ const Dashboard = () => {
                       <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
                         <CardContent className="p-4">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-colors">
-                              <Network className="w-6 h-6 text-purple-400" />
+                            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                              <Network className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-white font-semibold text-lg mb-2">VPC Integration</h3>
@@ -509,8 +509,8 @@ const Dashboard = () => {
                       <Card className="card-modern hover:border-white/30 transition-all duration-300 hover:shadow-lg hover:shadow-white/10 group">
                         <CardContent className="p-4">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
-                              <HardDrive className="w-6 h-6 text-indigo-400" />
+                            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                              <HardDrive className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-white font-semibold text-lg mb-2">Persistent Storage</h3>
@@ -543,7 +543,7 @@ const Dashboard = () => {
                             <div className="text-gray-400 text-sm">Success Rate</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-3xl font-bold text-purple-400 mb-2">847</div>
+                            <div className="text-3xl font-bold text-white mb-2">847</div>
                             <div className="text-gray-400 text-sm">Requests/min</div>
                           </div>
                           <div className="text-center">

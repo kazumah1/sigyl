@@ -1,25 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { profilesService, Profile } from '@/services/profilesService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DeployWizard: React.FC = () => {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
       if (!user?.id) return;
       try {
-        let query = supabase.from('profiles').select('*');
-        if (/^github_/.test(user.id)) {
-          query = query.eq('github_id', user.id.replace('github_', ''));
-        } else {
-          query = query.eq('id', user.id);
-        }
-        const { data: profile, error } = await query.single();
-        if (error) {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfile(profile);
+        const profileData = await profilesService.getCurrentProfile();
+        if (profileData) {
+          setProfile(profileData);
         }
       } catch (err) {
         console.error('Error loading profile:', err);

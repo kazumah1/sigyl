@@ -99,7 +99,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
 
       tags: ['github', 'deployed', 'cloud-run'],
       required_secrets: metadata.secrets || [],
-      tools: metadata.tools?.map(tool => ({
+      tools: metadata.tools?.map((tool: any) => ({
         tool_name: tool.name,
         description: tool.description,
         input_schema: tool.inputSchema,

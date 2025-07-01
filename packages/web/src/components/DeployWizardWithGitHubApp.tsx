@@ -44,10 +44,20 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [installationError, setInstallationError] = useState<boolean>(false)
   const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
 
+  console.log('🔍 DeployWizardWithGitHubApp state:', {
+    hasUser: !!user,
+    installationId,
+    hasInstallation,
+    installationCheckError
+  })
+
   // Load repositories when active account is available
   useEffect(() => {
     if (user && typeof installationId === 'number' && !isNaN(installationId)) {
       loadRepositories(installationId)
+    } else if (user && installationId === null) {
+      // No installation found, stop loading
+      setLoading(false)
     }
   }, [user, installationId])
 

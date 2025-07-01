@@ -761,7 +761,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               <Button
                 onClick={editingSecret ? handleUpdateSecret : handleCreateSecret}
                 disabled={isCreatingSecret || !formData.key.trim() || !formData.value.trim()}
-                className="btn-modern"
+                className="bg-black border border-white text-white hover:bg-white hover:text-black"
               >
                 {isCreatingSecret ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -800,14 +800,14 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
                   toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
                 }}
-                className="btn-modern px-6 py-2"
+                className="bg-black border border-white text-white hover:bg-white hover:text-black px-6 py-2"
               >
                 Copy
               </Button>
               <Button
                 variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="border-white/20 text-white hover:bg-white/10 px-6 py-2"
+                className="border-white/20 text-black bg-white hover:bg-gray-100 px-6 py-2"
               >
                 Close
               </Button>

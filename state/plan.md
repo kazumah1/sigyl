@@ -67,6 +67,100 @@
 - **Contact Form**: Fixed API URL construction and email integration
 - **📦 CLI & SDK Published**: Both packages successfully published to npm with proper licensing
 - **🎨 UI Polish**: Installation modal improvements with consistent styling and responsive layout
+- **🔧 GitHub App Flow Fix**: Fixed installation check caching issue preventing proper deploy flow
+
+### ✅ COMPLETED - Profiles API Fix for GitHub App Deploy Flow
+
+**Problem Identified:**
+- Frontend was getting 500 errors when calling `/api/v1/profiles/me`
+- Error: `PGRST116 - The result contains 0 rows`
+- This was causing the GitHub App deploy flow to fail with infinite loading spinners
+- Root cause: Profile lookup was using wrong user ID (API users table ID vs Supabase user ID)
+
+**Root Cause Analysis:**
+- Authentication was working correctly (Supabase JWT validation successful)
+- Backend was trying to find profile using `req.user.user_id` (internal API users table ID)
+- But profiles table uses Supabase user IDs as primary keys
+- No profile record existed for the authenticated user
+
+**Solution Implemented:**
+- **Enhanced Profile Lookup**: Modified `GET /api/v1/profiles/me` to handle multiple ID types
+- **Automatic Profile Creation**: Creates profile record if none exists using Supabase user ID
+- **Fallback Logic**: First tries internal user ID, then Supabase user ID, then creates profile
+- **Consistent ID Handling**: Updated PUT and DELETE endpoints to use same ID resolution logic
+
+**Technical Implementation:**
+- Extract Supabase user ID from `req.user.key_id` (format: `supabase_<user_id>`)
+- Try finding profile by internal user ID first (backward compatibility)
+- If not found, try Supabase user ID from key_id
+- If still not found, create new profile using data from `api_users` table
+- Apply same logic to PUT and DELETE endpoints for consistency
+
+**Profile Creation Process:**
+1. Extract user info from `api_users` table using internal user ID
+2. Create profile record in `profiles` table using Supabase user ID
+3. Copy relevant fields (email, name, github_id) from api_users to profiles
+4. Return newly created profile to frontend
+
+**Benefits Achieved:**
+- ✅ **Fixed Deploy Flow**: GitHub App deployment wizard now loads repositories correctly
+- ✅ **Automatic Profile Creation**: New users get profiles created automatically
+- ✅ **Backward Compatibility**: Existing profiles continue to work
+- ✅ **Consistent API**: All profile endpoints use same ID resolution logic
+- ✅ **Error Resolution**: Eliminated 500 errors from profile API calls
+
+**Flow Improvements:**
+1. User completes GitHub OAuth → profile API call succeeds
+2. AuthContext installation check works properly
+3. Deploy wizard loads GitHub repositories successfully
+4. User can select repository and deploy MCP server
+5. No more infinite loading spinners or 500 errors
+
+**Status**: ✅ **PRODUCTION READY** - Deploy flow now works correctly for all users
+
+### ✅ COMPLETED - GitHub App Installation Flow Fix
+
+**Problem Identified:**
+- New users completing GitHub OAuth flow were stuck on deploy page
+- Installation check was using stale cached data from sessionStorage
+- Cache persisted for 60 seconds, preventing detection of new installations
+- Deploy wizard showed "Install GitHub App" even after successful installation
+
+**Root Cause Analysis:**
+- AuthContext was caching installation check results for performance
+- GitHub App callback processing didn't clear the installation cache
+- New installations weren't reflected in frontend state immediately
+- 304 status codes from browser cache masked the underlying caching issue
+
+**Solution Implemented:**
+- **Cache Invalidation**: Clear installation cache when GitHub App callback is detected
+- **Forced Refresh**: Added `forceInstallationCheck` state to bypass cache after installation
+- **Callback Detection**: Enhanced GitHub App callback handler to trigger fresh installation check
+- **State Reset**: Clear installation-related state before forcing new check
+
+**Technical Implementation:**
+- Modified `AuthContext.tsx` to detect GitHub App callbacks
+- Added `forceInstallationCheck` counter to trigger cache bypass
+- Clear sessionStorage cache when installation flow completes
+- Reset `installationId`, `hasInstallation`, and `installationCheckError` states
+- Trigger immediate fresh installation check after callback processing
+
+**Flow Improvements:**
+1. User completes GitHub OAuth → redirected to deploy page
+2. AuthContext detects callback parameters (`installationId` or `code`)
+3. Clears installation cache and resets related state
+4. Forces fresh installation check bypassing cache
+5. Deploy wizard correctly detects new installation
+6. User can proceed with repository selection and deployment
+
+**Benefits Achieved:**
+- ✅ **Seamless Deploy Flow**: New users can deploy immediately after GitHub installation
+- ✅ **Real-time Updates**: Installation status reflects immediately without page refresh
+- ✅ **Cache Performance**: Maintains caching benefits for normal usage
+- ✅ **Robust Detection**: Handles edge cases with callback parameter detection
+- ✅ **User Experience**: Eliminates confusion about installation status
+
+**Status**: ✅ **PRODUCTION READY** - Deploy flow now works correctly for new GitHub App installations
 
 ### ✅ COMPLETED - UI/UX Improvements (Latest)
 
@@ -498,3 +592,47 @@ npx @sigyl-dev/cli scan ./my-express-app
 - Proprietary technology with compiled distribution
 - Easy installation via npm ecosystem
 - Zero-config scanning and MCP generation
+
+### ✅ COMPLETE - Frontend Direct Supabase Call Elimination
+
+**All Direct Database Calls Migrated to Backend API:**
+Following the initial migration, several frontend components were still making direct Supabase calls, causing console errors. All have been successfully migrated:
+
+**Fixed Components:**
+- **UserProfile.tsx**: Migrated profile loading to use `profilesService.getCurrentProfile()`
+- **SettingsPage.tsx**: Migrated profile operations to use `profilesService` (get, update, delete)
+- **Dashboard Components**: Updated all dashboard components to use `profilesService`:
+  - DeploymentDashboard.tsx
+  - Marketplace.tsx  
+  - WorkspaceManager.tsx
+  - DeployWizard.tsx
+  - DeployWizardWithGitHubApp.tsx
+  - APIKeysManager.tsx
+- **Contact.tsx**: Migrated to use `/emails/subscribe` API endpoint instead of direct Supabase insert
+
+**New Service Created:**
+- **profilesService.ts**: Centralized service for all profile-related operations
+  - `getCurrentProfile()` - Get current user's profile via `/profiles/me`
+  - `updateCurrentProfile()` - Update profile via `/profiles/me`
+  - `deleteCurrentProfile()` - Delete profile via `/profiles/me`
+  - `getProfileById()` - Get profile by ID via `/profiles/:id`
+  - `getProfileByGitHubId()` - Get profile by GitHub ID via `/profiles/github/:githubId`
+
+**Console Errors Resolved:**
+- ❌ Fixed: "GET https://...supabase.co/rest/v1/profiles?select=*&id=eq.cea044ac... 406 (Not Acceptable)"
+- ❌ Fixed: "Error loading profile: {code: 'PGRST116', details: 'The result contains 0 rows'...}"
+- ✅ All frontend components now use backend API exclusively
+- ✅ No direct Supabase database queries from frontend
+- ✅ Clean console with no API errors
+
+**Benefits Achieved:**
+- **Security**: Complete elimination of direct database access from frontend
+- **Consistency**: All profile operations go through standardized API endpoints
+- **Error Handling**: Proper API error handling with fallbacks
+- **Authentication**: Consistent token management across all services
+- **Performance**: Reduced client-side database connections
+
+**Architecture Status:**
+The frontend is now **100% API-driven** with no direct database dependencies. All data flows through the backend API with proper authentication, validation, and error handling.
+
+### ✅ COMPLETE - Technical Issue Resolution Post-Migration

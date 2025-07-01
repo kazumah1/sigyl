@@ -13,6 +13,9 @@ import workspacesRouter from './routes/workspaces';
 import contactRouter from './routes/contact';
 import emailsRouter from './routes/emails';
 import mcpProxyRouter from './routes/mcpProxy';
+import analyticsRouter from './routes/analytics';
+import mcpServersRouter from './routes/mcpServers';
+import profilesRouter from './routes/profiles';
 import { APIResponse } from './types';
 import {
   generalRateLimit,
@@ -55,7 +58,7 @@ app.use(helmet({
 app.use(cors(corsOptions));
 
 // Rate limiting - apply general rate limit to all routes
-app.use(generalRateLimit);
+app.use(generalRateLimit as any);
 
 // Request validation middleware
 app.use(validateRequestSize);
@@ -84,9 +87,9 @@ app.get('/', (_req, res) => {
 
 // API routes with specific rate limiting
 app.use('/api/v1/packages', packagesRouter);
-app.use('/api/v1/github', authRateLimit, githubAppRouter); // Auth endpoints have stricter limits
+app.use('/api/v1/github', authRateLimit as any, githubAppRouter); // Auth endpoints have stricter limits
 app.use('/api/v1/keys', apiKeysRouter);
-app.use('/api/v1', deploymentRateLimit, deployRouter); // Deployment endpoints have strict limits
+app.use('/api/v1', deploymentRateLimit as any, deployRouter); // Deployment endpoints have strict limits
 app.use('/api/v1/deployments', deploymentsRouter);
 app.use('/api/v1/secrets', secretsRouter);
 app.use('/api/v1/gateway', gatewayRouter);
@@ -94,6 +97,9 @@ app.use('/api/v1/workspaces', workspacesRouter);
 app.use('/api/v1/contact', contactRouter);
 app.use('/api/v1/emails', emailsRouter);
 app.use('/api/v1/mcp', mcpProxyRouter);
+app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/mcp-servers', mcpServersRouter);
+app.use('/api/v1/profiles', profilesRouter);
 
 // API documentation endpoint
 app.get('/api', (_req, res) => {

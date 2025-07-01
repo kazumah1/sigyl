@@ -1,17 +1,15 @@
-// Remove direct supabase import and replace with API calls
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-export interface MCPServer {
+export interface Profile {
   id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'error';
-  deployment_status: 'deployed' | 'deploying' | 'failed';
-  endpoint_url: string;
-  github_repo: string;
+  email: string;
+  full_name?: string;
+  username?: string;
+  avatar_url?: string;
+  github_id?: string;
+  github_username?: string;
   created_at: string;
   updated_at: string;
-  workspace_id: string;
 }
 
 // Helper function to get auth token
@@ -51,50 +49,59 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
-export const mcpServerService = {
-  async getMCPServers(workspaceId: string): Promise<MCPServer[]> {
+export const profilesService = {
+  async getCurrentProfile(): Promise<Profile | null> {
     try {
-      const result = await apiCall(`/mcp-servers/${workspaceId}`);
-      return result.data || [];
-    } catch (error) {
-      console.error('Error fetching MCP servers:', error);
-      return [];
-    }
-  },
-
-  async createMCPServer(serverData: Omit<MCPServer, 'id' | 'created_at' | 'updated_at'>): Promise<MCPServer | null> {
-    try {
-      const result = await apiCall('/mcp-servers', {
-        method: 'POST',
-        body: JSON.stringify(serverData),
-      });
+      const result = await apiCall('/profiles/me');
       return result.data || null;
     } catch (error) {
-      console.error('Error creating MCP server:', error);
+      console.error('Error fetching current profile:', error);
       return null;
     }
   },
 
-  async updateMCPServer(id: string, updates: Partial<MCPServer>): Promise<MCPServer | null> {
+  async updateCurrentProfile(updates: Partial<Profile>): Promise<Profile | null> {
     try {
-      const result = await apiCall(`/mcp-servers/${id}`, {
+      const result = await apiCall('/profiles/me', {
         method: 'PUT',
         body: JSON.stringify(updates),
       });
       return result.data || null;
     } catch (error) {
-      console.error('Error updating MCP server:', error);
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  },
+
+  async deleteCurrentProfile(): Promise<boolean> {
+    try {
+      await apiCall('/profiles/me', {
+        method: 'DELETE',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      throw error;
+    }
+  },
+
+  async getProfileById(id: string): Promise<Partial<Profile> | null> {
+    try {
+      const result = await apiCall(`/profiles/${id}`);
+      return result.data || null;
+    } catch (error) {
+      console.error('Error fetching profile by ID:', error);
       return null;
     }
   },
 
-  async getUserMCPServers(githubId: string): Promise<MCPServer[]> {
+  async getProfileByGitHubId(githubId: string): Promise<Profile | null> {
     try {
-      const result = await apiCall(`/mcp-servers/user/${githubId}`);
-      return result.data || [];
+      const result = await apiCall(`/profiles/github/${githubId}`);
+      return result.data || null;
     } catch (error) {
-      console.error('Error fetching user MCP servers:', error);
-      return [];
+      console.error('Error fetching profile by GitHub ID:', error);
+      return null;
     }
   }
-};
+}; 

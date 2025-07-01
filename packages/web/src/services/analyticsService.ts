@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+// Remove direct supabase import and replace with API calls
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface MetricData {
   date: string;
@@ -39,80 +40,58 @@ export interface ServerStatusData {
   count: number;
 }
 
+// Helper function to get auth token
+const getAuthToken = (): string | null => {
+  // Try to get Supabase session token first
+  const supabaseSession = JSON.parse(localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token') || '{}');
+  if (supabaseSession?.access_token) {
+    return supabaseSession.access_token;
+  }
+
+  // Fallback to GitHub token
+  const githubToken = localStorage.getItem('github_app_token');
+  if (githubToken && githubToken !== 'db_restored_token') {
+    return githubToken;
+  }
+
+  return null;
+};
+
+// Helper function to make API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API call failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const analyticsService = {
   async getMetricsOverTime(workspaceId: string, days: number = 30): Promise<MetricData[]> {
     try {
-      const { data, error } = await supabase
-        .from('metrics')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching metrics:', error);
-        return this.generateDemoMetrics(days);
-      }
-
-      const groupedData: { [key: string]: MetricData } = {};
-      
-      (data || []).forEach(metric => {
-        const date = new Date(metric.created_at).toISOString().split('T')[0];
-        if (!groupedData[date]) {
-          groupedData[date] = { date, visits: 0, tool_calls: 0, integration_calls: 0 };
-        }
-        
-        if (metric.type === 'visit') groupedData[date].visits++;
-        if (metric.type === 'tool_call') groupedData[date].tool_calls++;
-        if (metric.type === 'integration_call') groupedData[date].integration_calls++;
-      });
-
-      return Object.values(groupedData);
+      const result = await apiCall(`/analytics/metrics/${workspaceId}?days=${days}`);
+      return result.data || this.generateDemoMetrics(days);
     } catch (error) {
-      console.error('Error fetching metrics over time:', error);
+      console.error('Error fetching metrics:', error);
       return this.generateDemoMetrics(days);
     }
   },
 
   async getServerMetrics(workspaceId: string): Promise<ServerMetrics[]> {
     try {
-      const { data: servers, error: serversError } = await supabase
-        .from('mcp_servers')
-        .select('id, name, status')
-        .eq('workspace_id', workspaceId);
-
-      if (serversError) {
-        console.error('Error fetching servers:', serversError);
-        return this.generateDemoServerMetrics();
-      }
-
-      const serverMetrics: ServerMetrics[] = [];
-
-      for (const server of servers || []) {
-        const { data: metrics, error: metricsError } = await supabase
-          .from('metrics')
-          .select('type')
-          .eq('server_id', server.id)
-          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-        if (metricsError) {
-          console.error(`Error fetching metrics for server ${server.id}:`, metricsError);
-          continue;
-        }
-
-        const visits = (metrics || []).filter(m => m.type === 'visit').length;
-        const toolCalls = (metrics || []).filter(m => m.type === 'tool_call').length;
-
-        serverMetrics.push({
-          server_id: server.id,
-          server_name: server.name,
-          visits,
-          tool_calls: toolCalls,
-          status: server.status as 'active' | 'inactive' | 'error'
-        });
-      }
-
-      return serverMetrics;
+      const result = await apiCall(`/analytics/servers/${workspaceId}`);
+      return result.data || this.generateDemoServerMetrics();
     } catch (error) {
       console.error('Error fetching server metrics:', error);
       return this.generateDemoServerMetrics();
@@ -120,19 +99,31 @@ export const analyticsService = {
   },
 
   async getMetrics(workspaceId: string): Promise<AnalyticsMetrics> {
-    const metricsData = await this.getMetricsOverTime(workspaceId, 30);
-    const serverMetrics = await this.getServerMetrics(workspaceId);
-    
-    const totalVisits = metricsData.reduce((sum, day) => sum + day.visits, 0);
-    const totalToolCalls = metricsData.reduce((sum, day) => sum + day.tool_calls, 0);
-    const activeServers = serverMetrics.filter(s => s.status === 'active').length;
-    
-    return {
-      totalVisits,
-      totalToolCalls,
-      activeServers,
-      totalIntegrations: serverMetrics.length
-    };
+    try {
+      const result = await apiCall(`/analytics/overview/${workspaceId}`);
+      return result.data || {
+        totalVisits: 0,
+        totalToolCalls: 0,
+        activeServers: 0,
+        totalIntegrations: 0
+      };
+    } catch (error) {
+      console.error('Error fetching analytics overview:', error);
+      // Fallback to calculating from other endpoints
+      const metricsData = await this.getMetricsOverTime(workspaceId, 30);
+      const serverMetrics = await this.getServerMetrics(workspaceId);
+      
+      const totalVisits = metricsData.reduce((sum, day) => sum + day.visits, 0);
+      const totalToolCalls = metricsData.reduce((sum, day) => sum + day.tool_calls, 0);
+      const activeServers = serverMetrics.filter(s => s.status === 'active').length;
+      
+      return {
+        totalVisits,
+        totalToolCalls,
+        activeServers,
+        totalIntegrations: serverMetrics.length
+      };
+    }
   },
 
   async getVisitData(workspaceId: string): Promise<VisitData[]> {
@@ -145,6 +136,7 @@ export const analyticsService = {
   },
 
   async getToolUsageData(workspaceId: string): Promise<ToolUsageData[]> {
+    // This could be enhanced to call a real API endpoint in the future
     return [
       { name: 'Database Query', calls: 1247, color: '#3b82f6' },
       { name: 'API Call', calls: 892, color: '#10b981' },
@@ -203,16 +195,16 @@ export const analyticsService = {
       },
       {
         server_id: 'demo-server-2',
-        server_name: 'Shopify Integration',
-        visits: 645,
-        tool_calls: 423,
+        server_name: 'Slack Integration',
+        visits: 834,
+        tool_calls: 645,
         status: 'active'
       },
       {
         server_id: 'demo-server-3',
         server_name: 'Email Service',
-        visits: 234,
-        tool_calls: 156,
+        visits: 423,
+        tool_calls: 234,
         status: 'inactive'
       }
     ];
