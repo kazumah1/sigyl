@@ -50,7 +50,7 @@ import { MarketplaceService } from '@/services/marketplaceService';
 import { PackageWithDetails } from '@/types/marketplace';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +60,7 @@ const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, session, isGitHubAppSessionValid, activeGitHubAccount } = useAuth();
   
   const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -156,12 +156,104 @@ const MCPPackagePage = () => {
     }
   }, [pkg, isOwner]);
 
+  // Get the correct token for API authentication
+  // Priority: GitHub App token > Supabase JWT token
+  const getAuthToken = async () => {
+    console.log('🔍 getAuthToken: Starting authentication check...');
+    
+    try {
+      console.log('🔍 getAuthToken: isGitHubAppSessionValid:', isGitHubAppSessionValid ? isGitHubAppSessionValid() : 'function not available');
+      console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
+      console.log('🔍 getAuthToken: session exists:', !!session);
+      
+      // First check if we have a valid GitHub App session
+      if (isGitHubAppSessionValid && isGitHubAppSessionValid()) {
+        const githubAppToken = localStorage.getItem('github_app_access_token');
+        console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
+        
+        if (githubAppToken && 
+            githubAppToken !== 'restored_token' && 
+            githubAppToken !== 'db_restored_token' &&
+            githubAppToken.length > 20 && // Ensure it's a real token, not a placeholder
+            (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_'))) {
+          console.log('🔑 Using GitHub App token for authentication');
+          return githubAppToken;
+        } else {
+          console.log('❌ GitHub App token is invalid or placeholder:', {
+            isPlaceholder: githubAppToken === 'restored_token' || githubAppToken === 'db_restored_token',
+            length: githubAppToken ? githubAppToken.length : 'null',
+            hasValidPrefix: githubAppToken ? (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_')) : false
+          });
+        }
+      } else {
+        console.log('❌ GitHub App session is not valid');
+      }
+      
+      // Fall back to Supabase session token - try session first, then refresh if needed
+      let supabaseToken = session?.access_token;
+      console.log('🔍 getAuthToken: Supabase token from session:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+      
+      // If session token is invalid or expired, try to refresh the session
+      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
+        console.log('🔍 getAuthToken: Session token invalid, attempting to refresh session...');
+        try {
+          const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
+          if (refreshedSession && !error) {
+            supabaseToken = refreshedSession.access_token;
+            console.log('🔍 getAuthToken: Refreshed Supabase token:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+          } else {
+            console.log('❌ Failed to refresh session:', error?.message);
+          }
+        } catch (refreshError) {
+          console.log('❌ Session refresh exception:', refreshError);
+        }
+      }
+      
+      // If still no valid token, try localStorage as last resort
+      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
+        console.log('🔍 getAuthToken: Session refresh failed, checking localStorage...');
+        try {
+          const supabaseAuthData = localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token');
+          if (supabaseAuthData) {
+            const parsedAuth = JSON.parse(supabaseAuthData);
+            supabaseToken = parsedAuth.access_token;
+            console.log('🔍 getAuthToken: Supabase token from localStorage:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
+          }
+        } catch (error) {
+          console.log('❌ Failed to parse Supabase auth from localStorage:', error);
+        }
+      }
+      
+      if (supabaseToken && supabaseToken.split('.').length === 3) {
+        console.log('🔑 Using Supabase JWT token for authentication');
+        return supabaseToken;
+      } else if (supabaseToken) {
+        console.log('❌ Supabase token is not a valid JWT (wrong number of parts):', supabaseToken.split('.').length);
+      }
+
+      console.error('❌ No valid authentication token found');
+      return null;
+    } catch (error) {
+      console.error('❌ Error in getAuthToken:', error);
+      return null;
+    }
+  };
+
   // Fetch API keys and set profile on install modal open
   useEffect(() => {
     if (showInstallModal && user) {
       setInstallProfile(user.id);
       setApiKeysLoading(true);
-      APIKeyService.getAPIKeys(user.id)
+      
+      // Use proper authentication token instead of user.id
+      getAuthToken()
+        .then(token => {
+          if (token) {
+            return APIKeyService.getAPIKeys(token);
+          } else {
+            throw new Error('No authentication token available');
+          }
+        })
         .then(keys => {
           setApiKeys(keys);
           setInstallApiKey('');
@@ -171,7 +263,10 @@ const MCPPackagePage = () => {
             setFullApiKeys(JSON.parse(stored));
           }
         })
-        .catch(() => setApiKeys([]))
+        .catch((error) => {
+          console.error('Failed to fetch API keys:', error);
+          setApiKeys([]);
+        })
         .finally(() => setApiKeysLoading(false));
     }
   }, [showInstallModal, user]);
@@ -484,7 +579,7 @@ const MCPPackagePage = () => {
     setSecretErrors({});
   };
 
-  const cellStyle = { minWidth: 220, maxWidth: 220, width: 220, minHeight: 44, maxHeight: 44, height: 44, boxSizing: 'border-box' as const };
+  const cellStyle = { minHeight: 50, height: 50, width: '100%', boxSizing: 'border-box' as const };
 
   if (loading) {
     return (
@@ -546,7 +641,7 @@ const MCPPackagePage = () => {
         <Button
           variant="outline"
           onClick={() => navigate(isOwner ? '/dashboard' : '/marketplace')}
-          className="mb-6 border-gray-600 text-gray-300 hover:bg-gray-800"
+          className="mb-6 border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to {isOwner ? 'Dashboard' : 'Marketplace'}
@@ -767,11 +862,11 @@ const MCPPackagePage = () => {
               <>
                 <Button
                   onClick={handleInstallClick}
-                  className="bg-purple-600 text-white hover:bg-purple-700 transition-all duration-200 font-semibold px-8"
+                  className="bg-white text-black hover:bg-gray-200 transition-all duration-200 font-semibold px-8 border border-gray-300"
                   disabled={loading}
                   size="lg"
                 >
-                  Install & Deploy
+                  Connect
                 </Button>
                 {pkg.source_api_url && (
                   <Button
@@ -1107,11 +1202,14 @@ const MCPPackagePage = () => {
       </div>
       {/* Install Modal */}
       <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
-        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
+        <DialogContent className="max-w-4xl transition-all duration-300 bg-gray-900 border-gray-700 text-white" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
           {installStep === 1 && (
             <>
               <DialogHeader>
-                <DialogTitle>Configure Secrets</DialogTitle>
+                <DialogTitle className="text-white">Configure Secrets</DialogTitle>
+                <DialogDescription className="text-gray-400">
+                  Configure the required secrets and environment variables for this MCP server to connect to external services.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Render required secrets */}
@@ -1129,7 +1227,7 @@ const MCPPackagePage = () => {
                           value={secretFields[secret.name] || ''}
                           onChange={handleSecretChange}
                           placeholder={secret.description || secret.name}
-                          className="mt-1"
+                          className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                           type={secret.type === 'number' ? 'number' : 'text'}
                         />
                         {secretErrors[secret.name] && <div className="text-red-400 text-xs mt-1">{secretErrors[secret.name]}</div>}
@@ -1165,7 +1263,7 @@ const MCPPackagePage = () => {
                                     value={secretFields[secret.name] || ''}
                                     onChange={handleSecretChange}
                                     placeholder={secret.description || secret.name}
-                                    className="mt-1"
+                                    className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                                     type={secret.type === 'number' ? 'number' : 'text'}
                                   />
                                 </div>
@@ -1187,7 +1285,7 @@ const MCPPackagePage = () => {
                         value={secretFields.WEATHER_API_KEY || ''}
                         onChange={handleSecretChange}
                         placeholder="Enter your weather API key"
-                        className="mt-1"
+                        className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                       />
                       {secretErrors.WEATHER_API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.WEATHER_API_KEY}</div>}
                     </div>
@@ -1214,7 +1312,7 @@ const MCPPackagePage = () => {
                               value={secretFields.DEBUG || ''}
                               onChange={handleSecretChange}
                               placeholder="true or false"
-                              className="mt-1"
+                              className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                             />
                           </div>
                         )}
@@ -1227,7 +1325,7 @@ const MCPPackagePage = () => {
                     onClick={() => {
                       if (validateSecrets()) setInstallStep(2);
                     }}
-                    className="bg-blue-600 text-white"
+                    className="bg-white text-black hover:bg-gray-200 transition-all duration-200"
                   >
                     Next
                   </Button>
@@ -1239,13 +1337,13 @@ const MCPPackagePage = () => {
             </>
           )}
           {installStep === 2 && (
-            <div className="flex flex-col h-full min-h-[380px]" style={{height: '100%'}}>
-              <div className="text-xl font-semibold mb-4 text-center">Choose Installation Method</div>
-              <div className="text-gray-400 text-sm mb-4 text-center">
-                Click on a method and run the revealed command in your terminal.
+            <div className="flex flex-col h-full min-h-[380px] px-2" style={{height: '100%'}}>
+              <div className="text-xl font-semibold mb-4 text-center text-white">Choose Installation Method</div>
+              <div className="text-gray-400 text-sm mb-6 text-center">
+                Click on a method to reveal the installation command, then copy and run it in your terminal.
               </div>
               <div className="flex-1 flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-4" style={{ gridTemplateColumns: 'repeat(2, 220px)' }}>
+                <div className="grid grid-cols-2 gap-6 w-full max-w-2xl" style={{ gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))' }}>
                   {/* HTTP API Button/Command logic */}
                   {showHttpApiInline ? (
                     <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
@@ -1279,7 +1377,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4"
+                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         // Build the HTTP API URL
@@ -1337,7 +1435,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4"
+                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1348,7 +1446,7 @@ const MCPPackagePage = () => {
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl/cli install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
+                        const command = `sigyl install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
                       }}
@@ -1391,7 +1489,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4"
+                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1402,7 +1500,7 @@ const MCPPackagePage = () => {
                         } else {
                           claudeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl/cli install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
+                        const command = `sigyl install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
                       }}
@@ -1442,7 +1540,7 @@ const MCPPackagePage = () => {
                       >
                         <Button
                           variant="outline"
-                          className="flex items-center gap-2 justify-start pl-4"
+                          className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
                           style={cellStyle}
                           type="button"
                         >
@@ -1455,7 +1553,7 @@ const MCPPackagePage = () => {
                   <>
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4"
+                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1463,11 +1561,9 @@ const MCPPackagePage = () => {
                         const profileId = user?.id || '';
                         const configObj = {
                           [pkgName]: {
-                            command: "npx",
+                            command: "sigyl",
                             args: [
-                              "-y",
-                              "sigyl/cli@latest",
-                              "run",
+                              "install",
                               pkgName,
                               "--key",
                               apiKey,
@@ -1505,7 +1601,7 @@ const MCPPackagePage = () => {
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="flex items-center gap-2"
+                              className="flex items-center gap-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                               onClick={() => {
                                 navigator.clipboard.writeText(jsonConfig);
                                 setJsonConfigCopied(true);
@@ -1515,7 +1611,11 @@ const MCPPackagePage = () => {
                               <CopyIcon className="w-4 h-4" />
                               {jsonConfigCopied ? 'Copied!' : 'Copy JSON'}
                             </Button>
-                            <Button variant="ghost" onClick={() => setShowJsonConfig(false)}>
+                            <Button 
+                              variant="ghost" 
+                              onClick={() => setShowJsonConfig(false)}
+                              className="text-gray-400 hover:text-white hover:bg-gray-800"
+                            >
                               Close
                             </Button>
                           </div>
@@ -1539,21 +1639,21 @@ const MCPPackagePage = () => {
       </Dialog>
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-lg transition-all duration-300" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
+        <DialogContent className="max-w-lg transition-all duration-300 bg-gray-900 border-gray-700 text-white" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle className="text-white">Confirm Deletion</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Are you sure you want to delete this MCP server? This action cannot be undone.</p>
+            <p className="text-gray-300">Are you sure you want to delete this MCP server? This action cannot be undone.</p>
             <div>
-              <Label htmlFor="deleteConfirmName">Enter the package name to confirm:</Label>
+              <Label htmlFor="deleteConfirmName" className="text-gray-300">Enter the package name to confirm:</Label>
               <Input
                 id="deleteConfirmName"
                 name="deleteConfirmName"
                 value={deleteConfirmName}
                 onChange={(e) => setDeleteConfirmName(e.target.value)}
                 placeholder="Enter the package name"
-                className="mt-1"
+                className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
               />
             </div>
           </div>

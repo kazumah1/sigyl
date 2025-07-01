@@ -9,16 +9,25 @@ import { dev } from "./commands/dev"
 import { createInstallCommand } from "./commands/install"
 import inspectCommand from "./commands/inspect"
 import { integrateWithExpress } from "./commands/integrate"
+import { configCommand } from "./commands/config"
 import { existsSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import inquirer from "inquirer"
+
+// Read version from package.json
+const packageJson = require('../package.json');
 
 const program = new Command()
 
 program
 	.name("sigyl/cli")
 	.description("Sigyl/CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.")
-	.version("1.0.0")
+	.version(packageJson.version)
+
+// ============================================================================
+// CONFIG Command - Configure CLI settings
+// ============================================================================
+program.addCommand(configCommand)
 
 // ============================================================================
 // INTEGRATE Command - Recommended developer flow

@@ -4,7 +4,7 @@ import { existsSync } from "node:fs"
 import chalk from "chalk"
 import inquirer from "inquirer"
 import { installMCPServer, listMCPServers, removeMCPServer } from "../lib/claude-config"
-import { createClient } from '@supabase/supabase-js';
+import { getRegistryConfig } from "../lib/config";
 
 // Command for installing MCP server onto supported clients
 interface InstallOptions {
@@ -18,30 +18,75 @@ interface InstallOptions {
 	key?: string
 }
 
-// Remove the mock resolveRemoteMCPServer and replace with real implementation
+// Fetch package information from the registry API
 async function resolveRemoteMCPServer(pkgName: string, apiKey?: string, profile?: string) {
-	const SUPABASE_URL = process.env.SUPABASE_URL;
-	const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-	if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-		console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables must be set.');
+	const config = getRegistryConfig();
+	
+	try {
+		console.log(chalk.gray(`🔍 Looking up package: ${pkgName}`));
+		
+		// Construct the API URL
+		const apiUrl = `${config.registryUrl}/api/v1/packages/${pkgName}`;
+		
+		// Prepare headers
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json'
+		};
+		
+		// Add API key if available
+		if (config.apiKey) {
+			headers['Authorization'] = `Bearer ${config.apiKey}`;
+		}
+		
+		// Make the API request
+		const response = await fetch(apiUrl, { headers });
+		
+		if (!response.ok) {
+			if (response.status === 404) {
+				console.error(chalk.red(`❌ Package '${pkgName}' not found in the registry.`));
+				console.log(chalk.yellow(`💡 Check available packages at https://sigyl.dev/marketplace`));
+			} else if (response.status === 401) {
+				console.error(chalk.red(`❌ Authentication failed. Invalid API key.`));
+				console.log(chalk.yellow(`💡 Get your API key from https://sigyl.dev/dashboard`));
+				console.log(chalk.yellow(`💡 Or run 'sigyl config' to set it up`));
+			} else {
+				console.error(chalk.red(`❌ Failed to fetch package information (${response.status})`));
+			}
+			process.exit(1);
+		}
+		
+		const data = await response.json() as { success: boolean; data?: any; error?: string };
+		
+		if (!data.success || !data.data) {
+			console.error(chalk.red(`❌ Invalid response from registry API`));
+			process.exit(1);
+		}
+		
+		const packageInfo = data.data;
+		
+		if (!packageInfo.source_api_url) {
+			console.error(chalk.red(`❌ Package '${pkgName}' does not have a valid source API URL`));
+			process.exit(1);
+		}
+		
+		console.log(chalk.green(`✅ Found package: ${packageInfo.name}`));
+		if (packageInfo.description) {
+			console.log(chalk.gray(`   ${packageInfo.description}`));
+		}
+		
+		return {
+			url: packageInfo.source_api_url,
+			api_key: apiKey || 'demo-key',
+			profile: profile || 'default',
+			name: pkgName,
+			packageInfo
+		};
+	} catch (error) {
+		console.error(chalk.red(`❌ Failed to connect to registry API:`), error instanceof Error ? error.message : String(error));
+		console.log(chalk.yellow(`💡 Check your internet connection and try again`));
+		console.log(chalk.yellow(`💡 Registry URL: ${config.registryUrl}`));
 		process.exit(1);
 	}
-	const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-	const { data, error } = await supabase
-		.from('mcp_packages')
-		.select('source_api_url')
-		.eq('slug', pkgName)
-		.single();
-	if (error || !data || !data.source_api_url) {
-		console.error(`❌ Could not find a valid source_api_url for package '${pkgName}'.`);
-		process.exit(1);
-	}
-	return {
-		url: data.source_api_url,
-		api_key: apiKey || 'demo-key',
-		profile: profile || 'default',
-		name: pkgName,
-	};
 }
 
 const SUPPORTED_CLIENTS = ["claude", "cursor", "vscode"] as const;
@@ -94,7 +139,7 @@ export function createInstallCommand(): Command {
 					}
 				}
 
-				// New: resolve remote MCP server details
+				// Resolve remote MCP server details from the registry API
 				const remote = await resolveRemoteMCPServer(pkgName, options.key, options.profile);
 				await installRemoteServer(remote, options, client);
 			} catch (error) {
@@ -104,9 +149,9 @@ export function createInstallCommand(): Command {
 		})
 }
 
-// New: install remote MCP server for client
+// Install remote MCP server for client
 async function installRemoteServer(
-	remote: { url: string; api_key: string; profile: string; name: string },
+	remote: { url: string; api_key: string; profile: string; name: string; packageInfo: any },
 	options: InstallOptions,
 	client: SupportedClient
 ): Promise<void> {
@@ -114,6 +159,9 @@ async function installRemoteServer(
 	const fs = require("fs");
 	const os = require("os");
 	const path = require("path");
+	
+	console.log(chalk.blue(`📦 Installing ${remote.name} for ${client}...`));
+	
 	if (client === "claude") {
 		// Write config file for Claude Desktop (mcpServers field) using 'command' and 'args' (smithery style)
 		const configPath = path.join(

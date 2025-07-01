@@ -1,21 +1,21 @@
 {
   "name": "@sigyl-dev/cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "commonjs",
   "private": false,
-  "description": "Sigyl CLI: Add Model Context Protocol (MCP) endpoints to your Express/Node.js applications. Zero-config AI tool integration for REST APIs.",
+  "description": "Official Sigyl CLI for installing and managing MCP (Model Context Protocol) packages. Zero-config installation for public packages, secure API-based authentication.",
   "keywords": [
     "sigyl",
     "mcp",
     "model-context-protocol",
-    "express",
-    "nodejs",
-    "api-scanning",
+    "cli",
+    "package-manager",
     "ai-tools",
-    "rest-api",
-    "code-generation",
-    "typescript",
-    "javascript"
+    "claude",
+    "vscode",
+    "cursor",
+    "registry",
+    "api-client"
   ],
   "homepage": "https://sigyl.dev",
   "license": "UNLICENSED",
@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
-    "@supabase/supabase-js": "^2.50.2",
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
     "cors": "^2.8.5",
