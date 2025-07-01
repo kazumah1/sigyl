@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,16 @@ import { APIKeyService } from '@/services/apiKeyService';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signInWithGitHubApp, session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
+
+  // Check for afterInstall param
+  const afterInstall = new URLSearchParams(location.search).get('afterInstall') === '1';
 
   // Regular GitHub OAuth login for returning users
   const handleGitHubLogin = async () => {
@@ -115,10 +119,12 @@ const Login = () => {
         <Card className="w-full max-w-md bg-gray-900/50 border-gray-800 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-white">
-              Welcome to SIGYL
+              {afterInstall ? 'One More Step!' : 'Welcome to SIGYL'}
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Sign in to access your MCP enterprise dashboard
+              {afterInstall
+                ? 'Please sign in with GitHub again to complete your account setup after installing the GitHub App.'
+                : 'Sign in to access your MCP enterprise dashboard'}
             </CardDescription>
           </CardHeader>
           <CardContent>

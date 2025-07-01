@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { signGitHubAppJWT, getInstallationAccessToken, listRepos } from '../services/githubAppAuth';
 import { UserInstallationService } from '../services/userInstallationService';
 import { InstallationService } from '../services/installationService';
@@ -31,7 +31,7 @@ const userInstallationService = new UserInstallationService();
 const installationService = new InstallationService();
 
 // Check if user has existing installation
-router.get('/check-installation/:githubUsername', async (req, res) => {
+router.get('/check-installation/:githubUsername', async (req: Request, res: Response) => {
   try {
     const { githubUsername } = req.params;
     
@@ -59,7 +59,7 @@ router.get('/check-installation/:githubUsername', async (req, res) => {
 });
 
 // Get OAuth URL for existing installation
-router.get('/oauth-url/:installationId', async (req, res) => {
+router.get('/oauth-url/:installationId', async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     const redirect_uri = req.query.redirect_uri as string;
@@ -85,7 +85,7 @@ router.get('/oauth-url/:installationId', async (req, res) => {
   }
 });
 
-router.get('/callback', async (req, res) => {
+router.get('/callback', async (req: Request, res: Response) => {
   try {
     const installationId = Number(req.query.installation_id);
     const code = req.query.code as string;
@@ -173,9 +173,7 @@ router.get('/callback', async (req, res) => {
           avatar_url: user.avatar_url,
           github_username: user.login,
           github_id: user.id,
-          github_installation_id: installationId,
-          github_app_installed: true,
-          auth_user_id: supabaseUserId || undefined,
+          auth_user_id: `github_${user.id}`,
         }, { onConflict: 'github_id' })
         .select()
         .single();
@@ -259,15 +257,7 @@ router.get('/callback', async (req, res) => {
     // If we have a state parameter (redirect URL), redirect to frontend
     if (state) {
       const redirectUrl = decodeURIComponent(state);
-      const params = new URLSearchParams({
-        installation_id: installationId.toString(),
-        code: code,
-        user: JSON.stringify(user),
-        access_token: tokenData.access_token
-      });
-      
-      const finalUrl = `${redirectUrl}?${params.toString()}`;
-      return res.redirect(finalUrl);
+      return res.redirect(redirectUrl);
     }
 
     // Fallback: return JSON if no redirect URL
@@ -279,7 +269,7 @@ router.get('/callback', async (req, res) => {
 });
 
 // Get repositories for an installation
-router.get('/installations/:installationId/repositories', async (req, res) => {
+router.get('/installations/:installationId/repositories', async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     
@@ -429,7 +419,7 @@ router.get('/installations/:installationId/repositories', async (req, res) => {
 });
 
 // Get MCP configuration for a specific repository
-router.get('/installations/:installationId/repositories/:owner/:repo/mcp', async (req, res) => {
+router.get('/installations/:installationId/repositories/:owner/:repo/mcp', async (req: Request, res: Response) => {
   try {
     const { installationId, owner, repo } = req.params;
     const { branch = 'main' } = req.query;
@@ -471,7 +461,7 @@ router.get('/installations/:installationId/repositories/:owner/:repo/mcp', async
 });
 
 // Get installation information
-router.get('/installations/:installationId', async (req, res) => {
+router.get('/installations/:installationId', async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     
@@ -528,7 +518,7 @@ router.get('/installations/:installationId', async (req, res) => {
 });
 
 // Deploy MCP from GitHub repository
-router.post('/installations/:installationId/deploy', async (req, res) => {
+router.post('/installations/:installationId/deploy', async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
@@ -620,18 +610,16 @@ router.post('/installations/:installationId/deploy', async (req, res) => {
 });
 
 // In the route that handles /github/associate-installation
-router.post('/github/associate-installation', authenticate, async (req, res) => {
+router.post('/github/associate-installation', authenticate, async (req: Request, res: Response) => {
   try {
     const { installationId } = req.body;
-    const userId = req.user?.id; // Supabase Auth UUID or github_12345
+    const userId = (req.user as any)?.id; // Supabase Auth UUID or github_12345
     if (!userId || !installationId) {
       console.error('[associate-installation] Missing userId or installationId', { userId, installationId });
       return res.status(400).json({ error: 'Missing user ID or installationId' });
     }
     const githubId = /^github_/.test(userId) ? userId.replace('github_', '') : null;
     const updateFields = {
-      github_app_installed: true,
-      github_installation_id: installationId,
       auth_user_id: userId
     };
     let upsertResult;
@@ -664,7 +652,7 @@ router.post('/github/associate-installation', authenticate, async (req, res) => 
     return res.json({ success: true, upsertResult });
   } catch (err) {
     console.error('Error associating GitHub App installation:', err);
-    return res.status(500).json({ error: 'Internal server error', details: err?.message });
+    return res.status(500).json({ error: 'Internal server error', details: (err as any)?.message });
   }
 });
 

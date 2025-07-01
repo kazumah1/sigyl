@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,6 +19,10 @@ import {
 } from "@/lib/githubApp"
 import GitHubAppInstall from "./GitHubAppInstall"
 
+const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
+const GITHUB_APP_NAME = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev'
+const BACKEND_CALLBACK_URL = `${REGISTRY_API_BASE}/github/callback`
+
 interface DeployWizardWithGitHubAppProps {
   onDeploy?: (deployment: any) => void
 }
@@ -31,13 +35,51 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [selectedBranch, setSelectedBranch] = useState('main')
   const [showPrivate, setShowPrivate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deployError, setDeployError] = useState<string | null>(null)
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   const [installationError, setInstallationError] = useState<boolean>(false)
+  const [installationId, setInstallationId] = useState<number | null>(null)
+  const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
+
+  useEffect(() => {
+    const checkInstallation = async () => {
+      if (!user) return
+      const githubUsername = user.user_metadata?.user_name
+      if (!githubUsername) {
+        setInstallationId(null)
+        setLoading(false)
+        return
+      }
+      // Debounce: only check if username changed or 5s passed
+      const now = Date.now()
+      if (
+        lastCheckRef.current.username === githubUsername &&
+        now - lastCheckRef.current.timestamp < 5000
+      ) {
+        return
+      }
+      lastCheckRef.current = { username: githubUsername, timestamp: now }
+      setLoading(true)
+      try {
+        const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`)
+        const data = await res.json()
+        if (data.hasInstallation && data.installationId) {
+          setInstallationId(data.installationId)
+        } else {
+          setInstallationId(null)
+        }
+      } catch (err) {
+        setInstallationId(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkInstallation()
+  }, [user])
 
   // Load repositories when active account is available
   useEffect(() => {
@@ -160,13 +202,36 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const mcpRepos = filteredRepos.filter(repo => repo.has_mcp && !repo.has_sigyl) // MCP-only repos
   const regularRepos = filteredRepos.filter(repo => !repo.has_mcp && !repo.has_sigyl)
 
-  // Show GitHub App installation if no installation ID
-  if (!activeGitHubAccount) {
+  if (loading) {
     return (
-      <GitHubAppInstall 
-        onInstallationComplete={handleInstallationComplete}
-        onRepositoriesLoaded={setRepositories}
-      />
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-300">Loading installation status...</span>
+      </div>
+    )
+  }
+
+  if (!installationId) {
+    // Build the GitHub App install URL with backend callback as redirect_uri
+    const state = encodeURIComponent(window.location.origin + '/login?afterInstall=1')
+    const installUrl = `https://github.com/apps/${GITHUB_APP_NAME}/installations/new?state=${state}&request_oauth_on_install=true&redirect_uri=${encodeURIComponent(BACKEND_CALLBACK_URL)}`
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Github className="w-12 h-12 text-gray-400 mb-4" />
+        <h2 className="text-2xl font-bold text-white mb-2">Install the GitHub App</h2>
+        <p className="text-gray-300 mb-6 text-center max-w-md">
+          To deploy your MCP server, you need to install the SIGYL GitHub App and grant it access to your repositories.
+        </p>
+        <Button
+          asChild
+          className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-3 rounded-lg font-semibold"
+        >
+          <a href={installUrl} target="_blank" rel="noopener noreferrer">
+            <Github className="w-5 h-5 mr-2 inline" />
+            Install GitHub App
+          </a>
+        </Button>
+      </div>
     )
   }
 

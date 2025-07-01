@@ -53,15 +53,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user && !adminSession) {
-    console.log('ProtectedRoute: No user or admin session, showing redirect state')
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto" />
-          <p className="text-gray-400">Redirecting to login...</p>
-        </div>
-      </div>
-    )
+    // Don't show a spinner or fallback, just return null after navigate
+    return null
   }
 
   console.log('ProtectedRoute: User or admin authenticated, rendering children')
