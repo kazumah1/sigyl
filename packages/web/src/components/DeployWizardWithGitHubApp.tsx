@@ -54,11 +54,24 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
         setLoading(false)
         return
       }
-      // Debounce: only check if username changed or 5s passed
+      // sessionStorage cache key
+      const cacheKey = `sigyl_installation_${githubUsername}`
+      const cacheRaw = sessionStorage.getItem(cacheKey)
       const now = Date.now()
+      if (cacheRaw) {
+        try {
+          const cache = JSON.parse(cacheRaw)
+          if (now - cache.timestamp < 60000) { // 60 seconds
+            setInstallationId(cache.installationId)
+            setLoading(false)
+            return
+          }
+        } catch {}
+      }
+      // Debounce: only check if username changed or 60s passed
       if (
         lastCheckRef.current.username === githubUsername &&
-        now - lastCheckRef.current.timestamp < 5000
+        now - lastCheckRef.current.timestamp < 60000 // 60 seconds
       ) {
         return
       }
@@ -69,8 +82,11 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
         const data = await res.json()
         if (data.hasInstallation && data.installationId) {
           setInstallationId(data.installationId)
+          // Update sessionStorage cache
+          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: data.installationId, timestamp: now }))
         } else {
           setInstallationId(null)
+          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: null, timestamp: now }))
         }
       } catch (err) {
         setInstallationId(null)

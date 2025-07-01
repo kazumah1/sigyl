@@ -195,6 +195,12 @@ router.get('/callback', async (req: Request, res: Response) => {
           console.error('Could not find profile after upsert:', fetchError);
         }
       }
+
+      // Ensure auth_user_id is set (handles cases where upsert does not update the field)
+      await userInstallationService.supabase
+        .from('profiles')
+        .update({ auth_user_id: `github_${user.id}` })
+        .eq('github_id', user.id);
     } catch (error) {
       console.error('Error storing user profile:', error);
     }
