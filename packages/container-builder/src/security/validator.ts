@@ -18,6 +18,8 @@ import {
 import { SECURITY_PATTERNS, getBlockingPatterns } from './patterns';
 import { PatternMatcher } from './patternMatcher';
 import { RepositoryAnalyzer } from './repositoryAnalyzer';
+import { SigylConfig } from '../types/config';
+import { ConfigSchema as SigylConfigSchema } from '../types/config';
 
 /**
  * Tool description analysis result
@@ -362,7 +364,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     const patterns = [
       '**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx',
       '**/*.json', '**/*.yaml', '**/*.yml', 
-      '**/package.json', '**/Dockerfile', '**/mcp.yaml', '**/smithery.yaml'
+      '**/package.json', '**/Dockerfile', '**/sigyl.yaml'
     ];
 
     for (const pattern of patterns) {
@@ -440,7 +442,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
         severity: SecuritySeverity.BLOCK,
         title: 'Token Passthrough Enabled in Configuration',
         description: 'Configuration explicitly allows token passthrough, which violates MCP security best practices.',
-        file: 'mcp.yaml/smithery.yaml',
+        file: 'sigyl.yaml',
         evidence: 'allowTokenPassthrough: true',
         fix: 'Set allowTokenPassthrough: false or remove this setting entirely.',
         documentation: this.getDocumentationUrl('token_passthrough' as any)
@@ -457,7 +459,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
           severity: SecuritySeverity.ERROR,
           title: 'Insecure Session Configuration',
           description: 'Session cookies are configured as insecure (secure: false).',
-          file: 'mcp.yaml/smithery.yaml',
+          file: 'sigyl.yaml',
           evidence: 'security.sessionConfig.secure: false',
           fix: 'Set security.sessionConfig.secure: true',
           documentation: this.getDocumentationUrl('session_hijacking' as any)
@@ -470,7 +472,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
           severity: SecuritySeverity.WARNING,
           title: 'Permissive SameSite Cookie Policy',
           description: 'Session cookies allow cross-site requests (sameSite: none).',
-          file: 'mcp.yaml/smithery.yaml',
+          file: 'sigyl.yaml',
           evidence: 'security.sessionConfig.sameSite: none',
           fix: 'Set security.sessionConfig.sameSite: "strict" for better security',
           documentation: this.getDocumentationUrl('session_hijacking' as any)
@@ -485,7 +487,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
         severity: SecuritySeverity.WARNING,
         title: 'Static Client ID with Multiple Redirect URIs',
         description: 'Using static client ID with multiple redirect URIs may create confused deputy vulnerability.',
-        file: 'mcp.yaml/smithery.yaml',
+        file: 'sigyl.yaml',
         evidence: `clientIdType: static, redirectUris: [${config.oauth.redirectUris.join(', ')}]`,  
         fix: 'Implement proper user consent validation for each redirect URI.',
         documentation: this.getDocumentationUrl('confused_deputy' as any)
@@ -563,8 +565,8 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     }
 
     // Configuration recommendations
-    if (!repoAnalysis.hasMcpYaml && !repoAnalysis.hasSmitheryYaml) {
-      recommendations.push('📋 Add mcp.yaml or smithery.yaml configuration file with security settings.');
+    if (!repoAnalysis.hasSigylYaml) {
+      recommendations.push('📋 Add sigyl.yaml configuration file with security settings.');
     }
 
     // HTTPS recommendations
@@ -587,8 +589,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
   private buildRepositoryAnalysis(files: FileAnalysis[]): RepositoryAnalysis {
     const hasPackageJson = files.some(f => f.path.endsWith('package.json'));
     const hasDockerfile = files.some(f => f.path.toLowerCase().includes('dockerfile'));
-    const hasMcpYaml = files.some(f => f.path.endsWith('mcp.yaml'));
-    const hasSmitheryYaml = files.some(f => f.path.endsWith('smithery.yaml'));
+    const hasSigylYaml = files.some(f => f.path.endsWith('sigyl.yaml'));
 
     // Parse dependencies from package.json
     let dependencies: string[] = [];
@@ -605,12 +606,12 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     }
 
     // Parse MCP configuration
-    let mcpConfig: MCPConfig | undefined;
-    const mcpConfigFile = files.find(f => f.path.endsWith('mcp.yaml') || f.path.endsWith('smithery.yaml'));
-    if (mcpConfigFile) {
+    let sigylConfig: SigylConfig | undefined;
+    const sigylConfigFile = files.find(f => f.path.endsWith('sigyl.yaml'));
+    if (sigylConfigFile) {
       try {
-        const configData = yaml.load(mcpConfigFile.content);
-        mcpConfig = MCPConfigSchema.parse(configData);
+        const configData = yaml.load(sigylConfigFile.content);
+        sigylConfig = SigylConfigSchema.parse(configData);
       } catch (error) {
         console.warn('Could not parse MCP configuration:', error);
       }
@@ -619,12 +620,11 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     return {
       hasPackageJson,
       hasDockerfile,
-      hasMcpYaml,
-      hasSmitheryYaml,
+      hasSigylYaml,
       files,
       dependencies,
       devDependencies,
-      mcpConfig
+      sigylConfig
     };
   }
 

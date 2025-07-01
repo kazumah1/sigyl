@@ -248,4 +248,21 @@ export class MarketplaceService {
       return []
     }
   }
+
+  /**
+   * Increment the download count for a package
+   */
+  static async incrementDownloadCount(packageId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/${encodeURIComponent(packageId)}/increment-downloads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to increment download count');
+      return true;
+    } catch (error) {
+      console.error('Failed to increment download count:', error);
+      return false;
+    }
+  }
 } 

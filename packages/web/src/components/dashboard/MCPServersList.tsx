@@ -189,13 +189,6 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               Manage your Model Context Protocol server deployments
             </CardDescription>
           </div>
-          <Button 
-            onClick={() => navigate('/deploy')}
-            className="btn-modern bg-black text-white border-white/20 hover:bg-neutral-900 hover:text-white shadow-lg font-semibold rounded-xl"
-            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
-          >
-            Deploy New Server
-          </Button>
         </div>
       </CardHeader>
       <CardContent>

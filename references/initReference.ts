@@ -45,7 +45,7 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 		console.log(chalk.gray(`  cd ${options.outDir}`))
 		console.log(chalk.gray("  npm install"))
 		console.log(chalk.gray("  npm run build"))
-		console.log(chalk.gray("  sigyl inspect"))
+		console.log(chalk.gray("  mcp-scan inspect"))
 		
 	} catch (error) {
 		spinner.fail("Template creation failed")
@@ -54,7 +54,7 @@ export async function initTemplate(options: InitOptions): Promise<void> {
 }
 
 async function generateMCPConfig(options: InitOptions): Promise<void> {
-	// Use the MCP config schema and header as in the old working sigyl.yaml
+	// Use the MCP config schema and header as in the attached sigyl.yaml
 	const config = {
 		runtime: "node",
 		language: options.serverLanguage || "typescript",

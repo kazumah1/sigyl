@@ -576,21 +576,70 @@ const MCPPackagePage = () => {
 
   const handleInstallClick = () => {
     setShowInstallModal(true);
-    setInstallStep(1);
-    // Initialize secret fields for all secrets
-    if (pkg && pkg.secrets && Array.isArray(pkg.secrets)) {
+    // Check if there are any secrets to configure
+    const hasSecrets = pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0;
+    if (hasSecrets) {
+      setInstallStep(1);
+      // Initialize secret fields for all secrets
       const initialFields: { [key: string]: string } = {};
       for (const secret of pkg.secrets) {
         initialFields[secret.name] = '';
       }
       setSecretFields(initialFields);
     } else {
-      setSecretFields({ WEATHER_API_KEY: '', DEBUG: '' });
+      setInstallStep(2);
+      setSecretFields({});
     }
     setSecretErrors({});
   };
 
   const cellStyle = { minHeight: 50, height: 50, width: '100%', boxSizing: 'border-box' as const };
+
+  // Increment download count for this package
+  const incrementDownloadCount = async () => {
+    if (!pkg) return;
+    const success = await MarketplaceService.incrementDownloadCount(pkg.id);
+    if (success) {
+      setPackage(prev => prev ? { ...prev, downloads_count: prev.downloads_count + 1 } : prev);
+    }
+  };
+
+  // Before the return statement, define the cursorButton variable
+  const cursorButton = (() => {
+    const name = pkg?.name;
+    const sourceApiUrl = pkg?.source_api_url;
+    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
+    let configBase64 = '';
+    try {
+      configBase64 = btoa(JSON.stringify(config));
+    } catch {}
+    const deepLink = name && sourceApiUrl && configBase64
+      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
+      : '';
+    return (
+      <a
+        href={deepLink || '#'}
+        style={{ display: 'inline-block', width: '100%' }}
+        onClick={e => {
+          if (!name || !sourceApiUrl) {
+            e.preventDefault();
+            toast.error('No MCP package name or deployed server URL found for this server.');
+          } else {
+            incrementDownloadCount();
+          }
+        }}
+      >
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+          style={cellStyle}
+          type="button"
+        >
+          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+        </Button>
+      </a>
+    );
+  })();
 
   if (loading) {
     return (
@@ -663,7 +712,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4">
             <Button
               onClick={() => setEditMode(true)}
-              className="btn-modern"
+              className="btn-modern hover:bg-neutral-900 hover:text-white"
             >
               Edit
             </Button>
@@ -673,7 +722,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4 gap-2">
             <Button
               onClick={handleApplyEdit}
-              className="btn-modern"
+              className="btn-modern hover:bg-neutral-900 hover:text-white"
               disabled={saving}
             >
               {saving ? 'Saving...' : 'Apply'}
@@ -739,7 +788,7 @@ const MCPPackagePage = () => {
                         </div>
                         <div className="flex-1">
                           <div className={`font-medium transition-colors ${
-                            isActive ? 'text-white' : isComplete ? 'text-green-400' : 'text-gray-400'
+                            isActive ? 'text-white' : isComplete ? 'text-white' : 'text-gray-400'
                           }`}>
                             {step.name}
                           </div>
@@ -807,13 +856,13 @@ const MCPPackagePage = () => {
                   <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
                 )}
                 {isOwner && (
-                  <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1">
+                  <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1 hover:bg-neutral-900 hover:text-white">
                     <User className="w-3 h-3" />
                     Owner
                   </Badge>
                 )}
                 {pkg.deployments && pkg.deployments.length > 0 && (
-                  <Badge className="flex items-center gap-1 bg-white/10 text-white border-white/20">
+                  <Badge className="flex items-center gap-1 bg-white/10 text-white border-white/20 hover:bg-white/10 hover:text-white">
                     {pkg.deployments.some(d => d.status === 'active') ? <CheckCircle className="w-3 h-3" /> :
                      pkg.deployments.some(d => d.status === 'failed') ? <AlertCircle className="w-3 h-3" /> :
                      <Pause className="w-3 h-3" />}
@@ -859,7 +908,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleDeleteService}
                   variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                  className="btn-modern hover:bg-neutral-900 hover:text-white"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Service
@@ -899,12 +948,10 @@ const MCPPackagePage = () => {
               <Package className="w-4 h-4" />
               v{editMode ? editFields.version || '1.0.0' : pkg.version || '1.0.0'}
             </span>
-            {!isOwner && (
               <span className="flex items-center gap-1">
                 <Download className="w-4 h-4" />
                 {pkg.downloads_count.toLocaleString()} downloads
               </span>
-            )}
             <span className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
               Updated {new Date(pkg.updated_at).toLocaleDateString()}
@@ -1210,12 +1257,15 @@ const MCPPackagePage = () => {
             <div className="bg-black/60 rounded-lg p-6 border border-white/10">
               <h3 className="text-lg font-semibold mb-4 text-white">MCP Server URL</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between bg-gray-900 rounded-lg p-3">
+                <div className="flex items-center justify-between bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200 rounded-lg p-3">
                   <code className="text-white font-mono text-sm break-all">
                     {pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`, 'URL copied!')}
+                    onClick={() => {
+                      copyToClipboard(pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`, 'URL copied!');
+                      incrementDownloadCount();
+                    }}
                     className="ml-3 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 flex-shrink-0"
                     title="Copy URL"
                   >
@@ -1376,13 +1426,13 @@ const MCPPackagePage = () => {
                 <div className="grid grid-cols-2 gap-6 w-full max-w-2xl" style={{ gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))' }}>
                   {/* HTTP API Button/Command logic */}
                   {showHttpApiInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
                       <Globe className="w-5 h-5" />
                       {httpApiCopied ? (
-                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                        <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
                       ) : (
                         <code
-                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          className="text-white select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
                           style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
                           title={httpApiUrl}
                         >
@@ -1392,12 +1442,8 @@ const MCPPackagePage = () => {
                       <button
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
-                          navigator.clipboard.writeText(httpApiUrl);
-                          setHttpApiCopied(true);
-                          setTimeout(() => {
-                            setHttpApiCopied(false);
-                            setShowHttpApiInline(false);
-                          }, 1000);
+                          copyToClipboard(httpApiUrl, 'URL copied!');
+                          incrementDownloadCount();
                         }}
                         aria-label="Copy HTTP API URL"
                       >
@@ -1407,7 +1453,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         // Build the HTTP API URL
@@ -1425,6 +1471,7 @@ const MCPPackagePage = () => {
                         }
                         setHttpApiUrl(url);
                         setShowHttpApiInline(true);
+                        incrementDownloadCount();
                       }}
                       disabled={!pkg?.source_api_url || !user?.id || apiKeys.length === 0}
                     >
@@ -1434,13 +1481,13 @@ const MCPPackagePage = () => {
                   {/* End HTTP API logic */}
                   {/* VS Code Button/Command logic */}
                   {showVSCodeInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
                       <img src="/vscode.png" alt="VS Code" className="w-5 h-5" />
                       {vsCodeCopied ? (
-                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                        <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
                       ) : (
                         <code
-                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          className="text-white select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
                           style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
                           title={vsCodeCommand}
                         >
@@ -1450,12 +1497,8 @@ const MCPPackagePage = () => {
                       <button
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
-                          navigator.clipboard.writeText(vsCodeCommand);
-                          setVSCodeCopied(true);
-                          setTimeout(() => {
-                            setVSCodeCopied(false);
-                            setShowVSCodeInline(false);
-                          }, 1000);
+                          copyToClipboard(vsCodeCommand, 'Command copied!');
+                          incrementDownloadCount();
                         }}
                         aria-label="Copy command"
                       >
@@ -1465,7 +1508,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1479,6 +1522,7 @@ const MCPPackagePage = () => {
                         const command = `sigyl install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
+                        incrementDownloadCount();
                       }}
                       disabled={!user?.id || apiKeys.length === 0}
                     >
@@ -1488,13 +1532,13 @@ const MCPPackagePage = () => {
                   {/* End VS Code logic */}
                   {/* Claude Desktop button/field logic */}
                   {showClaudeInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border border-gray-700 rounded-lg" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
                       <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" />
                       {claudeCopied ? (
-                        <span className="text-green-400 text-sm flex-1 truncate text-center">Copied!</span>
+                        <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
                       ) : (
                         <code
-                          className="text-green-400 select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+                          className="text-white select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
                           style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
                           title={claudeCommand}
                         >
@@ -1504,12 +1548,8 @@ const MCPPackagePage = () => {
                       <button
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
-                          navigator.clipboard.writeText(claudeCommand);
-                          setClaudeCopied(true);
-                          setTimeout(() => {
-                            setClaudeCopied(false);
-                            setShowClaudeInline(false);
-                          }, 1000);
+                          copyToClipboard(claudeCommand, 'Command copied!');
+                          incrementDownloadCount();
                         }}
                         aria-label="Copy command"
                       >
@@ -1519,7 +1559,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1533,6 +1573,7 @@ const MCPPackagePage = () => {
                         const command = `sigyl install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
+                        incrementDownloadCount();
                       }}
                       disabled={!user?.id || apiKeys.length === 0}
                     >
@@ -1545,45 +1586,12 @@ const MCPPackagePage = () => {
                       No API key found. Please create an API key in your dashboard to use the install command.
                     </div>
                   )}
-                  {(() => {
-                    // Cursor button (deep link logic)
-                    const name = pkg?.name;
-                    const sourceApiUrl = pkg?.source_api_url;
-                    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
-                    let configBase64 = '';
-                    try {
-                      configBase64 = btoa(JSON.stringify(config));
-                    } catch {}
-                    const deepLink = name && sourceApiUrl && configBase64
-                      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
-                      : '';
-                    return (
-                      <a
-                        href={deepLink || '#'}
-                        style={{ display: 'inline-block', width: '100%' }}
-                        onClick={e => {
-                          if (!name || !sourceApiUrl) {
-                            e.preventDefault();
-                            toast.error('No MCP package name or deployed server URL found for this server.');
-                          }
-                        }}
-                      >
-                        <Button
-                          variant="outline"
-                          className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
-                          style={cellStyle}
-                          type="button"
-                        >
-                          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
-                        </Button>
-                      </a>
-                    );
-                  })()}
+                  {cursorButton}
                   {/* JSON/Config Button/Field logic */}
                   <>
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1604,6 +1612,7 @@ const MCPPackagePage = () => {
                         };
                         setJsonConfig(JSON.stringify(configObj, null, 2));
                         setShowJsonConfig(true);
+                        incrementDownloadCount();
                       }}
                       disabled={!user?.id || apiKeys.length === 0}
                     >
@@ -1625,17 +1634,16 @@ const MCPPackagePage = () => {
                               ×
                             </button>
                           </div>
-                          <pre className="bg-gray-800 text-green-400 rounded p-4 text-sm overflow-x-auto max-h-80 mb-4 select-all">
+                          <pre className="bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200 rounded p-4 text-sm overflow-x-auto max-h-80 mb-4 select-all">
                             {jsonConfig}
                           </pre>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="flex items-center gap-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                              className="btn-modern hover:bg-neutral-900 hover:text-white"
                               onClick={() => {
-                                navigator.clipboard.writeText(jsonConfig);
-                                setJsonConfigCopied(true);
-                                setTimeout(() => setJsonConfigCopied(false), 1200);
+                                copyToClipboard(jsonConfig, 'JSON copied!');
+                                incrementDownloadCount();
                               }}
                             >
                               <CopyIcon className="w-4 h-4" />
@@ -1656,9 +1664,11 @@ const MCPPackagePage = () => {
                 </div>
               </div>
               <DialogFooter className="mt-8">
-                <Button variant="ghost" onClick={() => setInstallStep(1)}>
-                  Back
-                </Button>
+                {pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0 && (
+                  <Button variant="ghost" onClick={() => setInstallStep(1)}>
+                    Back
+                  </Button>
+                )}
                 <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
                   Close
                 </Button>

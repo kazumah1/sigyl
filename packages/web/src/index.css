@@ -674,9 +674,9 @@ button, a, input, select, textarea {
   transition: background 0.18s, color 0.18s, border 0.18s;
 }
 .btn-modern:hover, .btn-modern:focus {
-  background: #23232a;
+  background: #111;
   color: #fff;
-  border: 1.5px solid #23232a;
+  border: 1.5px solid #111;
 }
 .navbar-modern {
   font-family: 'Space Grotesk', Inter, system-ui, sans-serif;

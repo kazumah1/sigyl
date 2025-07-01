@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SigylConfig } from './config';
 
 /**
  * Security Vulnerability Types based on MCP Security Best Practices
@@ -97,12 +98,11 @@ export interface FileAnalysis {
 export interface RepositoryAnalysis {
   hasPackageJson: boolean;
   hasDockerfile: boolean;
-  hasMcpYaml: boolean;
-  hasSmitheryYaml: boolean;
+  hasSigylYaml: boolean;
   files: FileAnalysis[];
   dependencies: string[];
   devDependencies: string[];
-  mcpConfig?: MCPConfig;
+  sigylConfig?: SigylConfig;
 }
 
 /**

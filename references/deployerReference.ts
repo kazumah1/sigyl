@@ -1,8 +1,8 @@
 import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '@sigil/container-builder';
 import { supabase } from '../config/database';
 import { decrypt } from '../utils/encryption';
-import { fetchSigylYaml, SigylConfig } from './yaml';
-import { PackageService } from '../services/packageService';
+import { fetchSigylYaml, SigylConfig } from './yamlreference';
+import { fetchMCPYaml } from './yamlreference';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -28,10 +28,54 @@ export interface DeploymentResult {
   success: boolean;
   deploymentUrl?: string;
   serviceName?: string;
-  packageId?: string;
   error?: string;
   securityReport?: any;
-  proxyUrl?: string;
+}
+
+/**
+ * Fetch user secrets for deployment
+ */
+async function fetchUserSecrets(userId: string, selectedSecrets?: string[]): Promise<Record<string, string>> {
+  try {
+    let query = supabase
+      .from('mcp_secrets')
+      .select('key, value')
+      .eq('user_id', userId);
+
+    // Filter by selected secrets if provided
+    if (selectedSecrets && selectedSecrets.length > 0) {
+      query = query.in('key', selectedSecrets);
+    }
+
+    const { data: secrets, error } = await query;
+
+    if (error) {
+      console.error('❌ Failed to fetch user secrets:', error);
+      return {};
+    }
+
+    if (!secrets || secrets.length === 0) {
+      console.log('ℹ️ No secrets found for user');
+      return {};
+    }
+
+    // Decrypt secrets
+    const decryptedSecrets: Record<string, string> = {};
+    for (const secret of secrets) {
+      try {
+        decryptedSecrets[secret.key] = decrypt(secret.value);
+      } catch (decryptError) {
+        console.error(`❌ Failed to decrypt secret ${secret.key}:`, decryptError);
+        // Skip this secret rather than failing the entire deployment
+      }
+    }
+
+    return decryptedSecrets;
+
+  } catch (error) {
+    console.error('❌ Error fetching user secrets:', error);
+    return {};
+  }
 }
 
 /**
@@ -41,30 +85,46 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
   try {
     console.log('🚀 Starting Google Cloud Run deployment for:', request.repoName);
 
+    // Check if Google Cloud credentials are configured
     if (!CLOUD_RUN_CONFIG.projectId) {
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
     }
 
+    // Extract repo details
     const [owner, repo] = request.repoName.split('/');
 
     // Try to fetch sigyl.yaml configuration
     let sigylConfig;
+    let mcpYaml = null;
     try {
       console.log('📋 Fetching sigyl.yaml configuration...');
       sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
       console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+      console.log('✅ Found sigyl.yaml configuration:', sigylConfig);
     } catch (error) {
       console.error('⚠️ Could not fetch sigyl.yaml,', error);
-      throw new Error('sigyl.yaml could not be fetched or parsed. Deployment cannot continue.');
     }
+    // Try to fetch mcp.yaml configuration for metadata fields
+    // try {
+    //   console.log('📋 Fetching mcp.yaml configuration...');
+    //   mcpYaml = await fetchMCPYaml(owner, repo, (request.branch ?? 'main'), request.githubToken || '');
+    //   console.log('✅ Found mcp.yaml configuration:', mcpYaml.name);
+    // } catch (error) {
+    //   console.warn('⚠️ Could not fetch mcp.yaml:', error);
+    // }
 
-    // Only set minimal required environment variables for Cloud Run
-    const deploymentEnv = {
-      NODE_ENV: 'production',
-      MCP_TRANSPORT: 'http',
-      MCP_ENDPOINT: '/mcp',
-      PORT: '8080'
-    };
+    // Fetch user secrets if userId is provided
+    let deploymentEnv = { ...request.env };
+    
+    if (request.userId) {
+      console.log('🔐 Fetching user secrets...');
+      const userSecrets = await fetchUserSecrets(request.userId, request.selectedSecrets);
+      deploymentEnv = {
+        ...deploymentEnv,
+        ...userSecrets
+      };
+      console.log(`✅ Added ${Object.keys(userSecrets).length} secrets to deployment environment`);
+    }
 
     // Initialize Cloud Run service
     console.log("cloud run config", CLOUD_RUN_CONFIG);
@@ -75,8 +135,19 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       repoUrl: request.repoUrl,
       repoName: request.repoName,
       branch: request.branch || 'main',
-      environmentVariables: deploymentEnv,
+      environmentVariables: {
+        ...deploymentEnv,
+        // Add sigyl.yaml environment variables
+        ...((sigylConfig && sigylConfig.env) ? sigylConfig.env : {}),
+        // Ensure required MCP variables are set
+        NODE_ENV: 'production',
+        MCP_TRANSPORT: 'http',
+        MCP_ENDPOINT: '/mcp',
+        PORT: '8080'
+      },
+      // Pass the sigyl configuration with proper casting
       sigylConfig: sigylConfig as SigylConfigUnion,
+      // Pass the GitHub token for security validation
       githubToken: request.githubToken
     };
 
@@ -130,9 +201,16 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     }
     console.log('[DEPLOY] Using author_id:', authorIdToUse);
     console.log('[DEPLOY] Incoming request.userId:', request.userId);
-
-    // Use configSchema from sigylConfig
-    if (sigylConfig && typeof sigylConfig === 'object') {
+    if (mcpYaml && typeof mcpYaml === 'object') {
+      if ('startCommand' in mcpYaml && mcpYaml.startCommand && typeof mcpYaml.startCommand === 'object' && 'configSchema' in mcpYaml.startCommand) {
+        configSchema = mcpYaml.startCommand.configSchema;
+        console.log('[DEPLOY] Using configSchema from mcpYaml.startCommand.configSchema');
+      } else if ('configSchema' in mcpYaml) {
+        configSchema = mcpYaml.configSchema;
+        console.log('[DEPLOY] Using configSchema from mcpYaml.configSchema');
+      }
+    }
+    if (!configSchema && sigylConfig && typeof sigylConfig === 'object') {
       if ('startCommand' in sigylConfig && sigylConfig.startCommand && typeof sigylConfig.startCommand === 'object' && 'configSchema' in sigylConfig.startCommand) {
         configSchema = sigylConfig.startCommand.configSchema;
         console.log('[DEPLOY] Using configSchema from sigylConfig.startCommand.configSchema');
@@ -187,17 +265,16 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
-        name: request.repoName,
-        slug: request.repoName,
-        version: null,
-        description: `MCP server for ${request.repoName}`,
+        name: mcpYaml?.name || request.repoName,
+        version: mcpYaml?.version || null,
+        description: mcpYaml?.description || null,
         author_id: authorIdToUse,
         source_api_url: cloudRunResult.deploymentUrl || null,
-        tags: null,
-        logo_url: null,
-        screenshots: null,
+        tags: (mcpYaml && 'tags' in mcpYaml) ? (mcpYaml as any).tags : null,
+        logo_url: (mcpYaml && 'logo_url' in mcpYaml) ? (mcpYaml as any).logo_url : null,
+        screenshots: (mcpYaml && 'screenshots' in mcpYaml) ? (mcpYaml as any).screenshots : null,
         tools: tools as any[],
-        category: 'general',
+        category: (mcpYaml && 'category' in mcpYaml) ? (mcpYaml as any).category : 'general',
         verified: false,
         required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
         // TODO: Add 'optional_secrets' column to mcp_packages table if not present
@@ -284,155 +361,4 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
       id: result.serviceName
     }
   };
-}
-
-/**
- * Redeploy an existing MCP server (rebuild and update existing Cloud Run service)
- * - Does NOT create a new Cloud Run service or new mcp_packages/mcp_tools rows
- * - Only updates the existing service and DB rows
- */
-export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName, packageId }: {
-  repoUrl: string;
-  repoName: string;
-  branch: string;
-  env: Record<string, string>;
-  serviceName: string;
-  packageId: string;
-}): Promise<{ success: boolean; deploymentUrl?: string; logs?: string[]; error?: string }> {
-  const logs: string[] = [];
-  try {
-    logs.push(`🔄 Starting redeploy for service: ${serviceName}`);
-    // Check Cloud Run config
-    if (!CLOUD_RUN_CONFIG.projectId) {
-      throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
-    }
-    // Fetch latest sigyl.yaml and mcp.yaml
-    const [owner, repo] = repoName.split('/');
-    let sigylConfig, mcpYaml;
-    try {
-      logs.push('📋 Fetching sigyl.yaml configuration...');
-      sigylConfig = await fetchSigylYaml(owner, repo, branch, undefined);
-      logs.push('✅ Found sigyl.yaml configuration');
-      logs.push('✅ Found sigyl.yaml configuration:', JSON.stringify(sigylConfig));
-    } catch (error) {
-      logs.push('⚠️ Could not fetch sigyl.yaml');
-    }
-    // try {
-    //   logs.push('📋 Fetching mcp.yaml configuration...');
-    //   mcpYaml = await fetchMCPYaml(owner, repo, branch, '');
-    //   logs.push('✅ Found mcp.yaml configuration');
-    // } catch (error) {
-    //   logs.push('⚠️ Could not fetch mcp.yaml');
-    // }
-    // Prepare env
-    let deploymentEnv = { ...env };
-    // Initialize Cloud Run service
-    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
-    // Prepare Cloud Run deployment request
-    const cloudRunRequest: CloudRunDeploymentRequest = {
-      repoUrl,
-      repoName,
-      branch,
-      environmentVariables: {
-        ...deploymentEnv,
-        NODE_ENV: 'production',
-        MCP_TRANSPORT: 'http',
-        MCP_ENDPOINT: '/mcp',
-        PORT: '8080'
-      },
-      sigylConfig: sigylConfig as SigylConfigUnion,
-      serviceName // Use the existing service name
-    };
-    logs.push('🔒 Redeploying with security validation...');
-    // Redeploy to Cloud Run (rebuild and update existing service)
-    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
-    if (!cloudRunResult.success) {
-      logs.push('❌ Google Cloud Run redeploy failed');
-      return { success: false, error: cloudRunResult.error, logs };
-    }
-    logs.push('✅ Successfully redeployed to Google Cloud Run');
-    // Update mcp_packages and mcp_tools (not insert)
-    // Fetch tools from the deployed server
-    let tools: any[] = [];
-    try {
-      const toolsResp = await fetch(`${cloudRunResult.deploymentUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream'
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list',
-          params: {}
-        })
-      });
-      const text = await toolsResp.text();
-      const match = text.match(/data: (\{.*\})/);
-      let toolsData: any = {};
-      if (match) {
-        toolsData = JSON.parse(match[1]);
-      } else {
-        try { toolsData = JSON.parse(text); } catch {}
-      }
-      if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools)) {
-        tools = toolsData.result.tools;
-      }
-      logs.push('✅ Tools fetched from MCP server');
-    } catch (err) {
-      logs.push('❌ Error fetching tools from MCP server');
-    }
-    // Update mcp_packages
-    const mcpPackagesPayload = {
-      name: mcpYaml?.name,
-      slug: repoName,
-      version: mcpYaml?.version || null,
-      description: mcpYaml?.description || null,
-      source_api_url: cloudRunResult.deploymentUrl || null,
-      tags: (mcpYaml && 'tags' in mcpYaml) ? (mcpYaml as any).tags : null,
-      logo_url: (mcpYaml && 'logo_url' in mcpYaml) ? (mcpYaml as any).logo_url : null,
-      screenshots: (mcpYaml && 'screenshots' in mcpYaml) ? (mcpYaml as any).screenshots : null,
-      tools: tools as any[],
-      category: (mcpYaml && 'category' in mcpYaml) ? (mcpYaml as any).category : 'general',
-      verified: false,
-      updated_at: new Date().toISOString()
-    };
-    const { error: pkgError } = await supabase
-      .from('mcp_packages')
-      .update(mcpPackagesPayload)
-      .eq('id', packageId);
-    if (pkgError) {
-      logs.push('❌ Failed to update mcp_packages');
-    } else {
-      logs.push('✅ Updated mcp_packages');
-    }
-    // Update mcp_tools
-    if (packageId && tools.length > 0) {
-      // Remove old tools for this package
-      await supabase.from('mcp_tools').delete().eq('package_id', packageId);
-      for (const tool of tools) {
-        await supabase.from('mcp_tools').upsert({
-          package_id: packageId,
-          tool_name: tool.name,
-          description: tool.description || null,
-          input_schema: tool.inputSchema || null,
-          output_schema: tool.outputSchema || null
-        });
-      }
-      logs.push('✅ Updated mcp_tools');
-    }
-    return {
-      success: true,
-      deploymentUrl: cloudRunResult.deploymentUrl,
-      logs
-    };
-  } catch (error) {
-    logs.push('❌ Redeploy failed');
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-      logs
-    };
-  }
 }

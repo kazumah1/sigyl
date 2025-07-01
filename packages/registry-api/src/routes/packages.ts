@@ -130,9 +130,6 @@ router.get('/:name', optionalAuth, async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    // Increment download count
-    await packageService.updatePackageDownloads(packageData.id);
-    
     const response: APIResponse<typeof packageData> = {
       success: true,
       data: packageData,
@@ -176,9 +173,6 @@ router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    // Increment download count
-    await packageService.updatePackageDownloads(packageData.id);
-    
     const response: APIResponse<typeof packageData> = {
       success: true,
       data: packageData,
@@ -347,6 +341,20 @@ router.delete('/:id', requirePermissions(['write']), async (req: Request, res: R
     };
     
     return res.status(500).json(response);
+  }
+});
+
+// POST /api/v1/packages/:id/increment-downloads - Increment downloads count for a package
+router.post('/:id/increment-downloads', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
+    }
+    await packageService.updatePackageDownloads(id);
+    return res.json({ success: true, message: 'Download count incremented' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to increment download count', message: error instanceof Error ? error.message : 'Unknown error occurred' });
   }
 });
 
