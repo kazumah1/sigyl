@@ -185,6 +185,42 @@ The main problem was **frontend token selection**:
   - ✅ **Correct Commands**: Users get working commands that match the actual CLI
   - ✅ **Professional Look**: More polished and cohesive user interface
 
+#### **Issue 11: MCP Proxy System Implementation** 🆕 ✅ **IMPLEMENTED**
+- **Problem**: Raw Cloud Run URLs exposed competitive intelligence and infrastructure details
+- **Symptoms**: 
+  - URLs like `https://sigyl-mcp-weather-api-lrzo3avokq-uc.a.run.app/mcp` revealed:
+    - Google Cloud Run usage
+    - Naming conventions and patterns
+    - Easy catalog scraping opportunities
+    - Unprofessional appearance for enterprise customers
+- **Root Cause**: Direct exposure of hosting infrastructure URLs to end users
+- **Solution**: 
+  - **MCP Proxy Router**: Implemented `packages/registry-api/src/routes/mcpProxy.ts`
+    - Dynamic URL resolution from database with caching
+    - Professional branded URLs: `api.sigyl.dev/mcp/{package-name}`
+    - Proper error handling, CORS, and request logging
+  - **Deployment Service Updates**: Modified `packages/registry-api/src/services/deployer.ts`
+    - Stores both Cloud Run URL (internal) and proxy URL (public)
+    - Returns clean proxy URLs to users
+    - Database updated to store proxy URLs as `source_api_url`
+  - **Frontend Integration**: Updated `packages/web/src/pages/MCPPackagePage.tsx`
+    - Displays clean proxy URLs instead of raw Cloud Run URLs
+    - Copy functionality for easy sharing
+    - Professional appearance for package pages
+  - **CLI Compatibility**: No changes needed - already uses `source_api_url`
+- **Benefits Achieved**:
+  - 🔒 **Infrastructure Hidden**: Competitors can't see hosting details
+  - 🎯 **Professional Branding**: Clean `api.sigyl.dev/mcp/*` URLs
+  - 🛡️ **Catalog Protection**: Can't guess or scrape URL patterns
+  - 💰 **Zero Cost**: No load balancer required
+  - ⚡ **High Performance**: Direct proxy with minimal overhead
+- **Technical Details**:
+  - Caching system with 5-minute TTL for performance
+  - Integrated with existing API authentication and rate limiting
+  - Proper error handling without information leakage
+  - Request logging for monitoring and debugging
+- **Status**: ✅ **PRODUCTION READY** - Deployed and working
+
 ---
 
 ## **Solutions Implemented** 🔧
