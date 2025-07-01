@@ -159,6 +159,8 @@ This project uses a shared Supabase project and GitHub App for development. All 
 ### Frontend (React + TypeScript + Vite)
 - **Framework**: React 18 with TypeScript
 - **Styling**: Tailwind CSS with custom dark theme
+    * className=“btn-modern hover:bg-neutral-900 hover:text-white”: default outlined button style
+    * className=“btn-modern-inverted hover:bg-neutral-900 hover:text-white”: filled white button style
 - **Routing**: React Router v6
 - **UI Components**: Custom components + shadcn/ui
 - **State Management**: React Context (AuthContext)
