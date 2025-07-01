@@ -206,11 +206,11 @@ const Secrets = () => {
   }
 
   return (
-    <div className={`min-h-screen ${themes.dark.bg} ${themes.dark.text}`}>
+    <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className={`text-4xl font-bold ${themes.dark.accent} mb-2`}>
+          <h1 className="text-4xl font-bold text-white mb-2">
             Secrets Manager
           </h1>
           <p className="text-gray-400 text-lg">
@@ -223,7 +223,7 @@ const Secrets = () => {
           <div className="mb-6">
             <Button 
               onClick={() => setShowForm(true)}
-              className={`${themes.dark.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
+              className="btn-modern font-bold tracking-tight"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add New Secret
@@ -233,9 +233,9 @@ const Secrets = () => {
 
         {/* Add/Edit Secret Form */}
         {showForm && (
-          <Card className={`${themes.dark.card} mb-6`}>
+          <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
             <CardHeader>
-              <CardTitle className={themes.dark.text}>
+              <CardTitle className="text-white">
                 {editingId ? 'Edit Secret' : 'Add New Secret'}
               </CardTitle>
               <CardDescription className="text-gray-400">
@@ -248,7 +248,7 @@ const Secrets = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="key" className={`${themes.dark.text} font-bold tracking-tight`}>
+                  <Label htmlFor="key" className="text-white font-bold tracking-tight">
                     Environment Variable Name
                   </Label>
                   <Input
@@ -257,7 +257,7 @@ const Secrets = () => {
                     placeholder="OPENAI_API_KEY"
                     value={formData.key}
                     onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value.toUpperCase() }))}
-                    className={`${themes.dark.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
+                    className="bg-black border-white/10 text-white border-2 focus:border-white mt-1"
                     pattern="^[A-Z_][A-Z0-9_]*$"
                     title="Must be uppercase letters, numbers, and underscores only, starting with a letter or underscore"
                   />
@@ -267,7 +267,7 @@ const Secrets = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="value" className={`${themes.dark.text} font-bold tracking-tight`}>
+                  <Label htmlFor="value" className="text-white font-bold tracking-tight">
                     Secret Value
                   </Label>
                   <Input
@@ -276,7 +276,7 @@ const Secrets = () => {
                     placeholder="sk-..."
                     value={formData.value}
                     onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                    className={`${themes.dark.buttonSecondary} border-2 focus:border-indigo-500 mt-1`}
+                    className="bg-black border-white/10 text-white border-2 focus:border-white mt-1"
                     required
                   />
                   <p className="text-sm text-gray-500 mt-1">
@@ -287,7 +287,7 @@ const Secrets = () => {
                 <div className="flex space-x-3">
                   <Button 
                     type="submit"
-                    className={`${themes.dark.button} font-bold tracking-tight transition-all duration-300 hover:scale-105`}
+                    className="btn-modern font-bold tracking-tight"
                   >
                     {editingId ? (
                       <>
@@ -305,7 +305,7 @@ const Secrets = () => {
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    className={`${themes.dark.buttonSecondary} font-bold tracking-tight`}
+                    className="border-white/20 text-white hover:bg-white/10 font-bold tracking-tight"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -319,7 +319,7 @@ const Secrets = () => {
         {/* Secrets List */}
         <div className="space-y-4">
           {secrets.length === 0 ? (
-            <Card className={`${themes.dark.card}`}>
+            <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <div className="text-gray-500 mb-4">
@@ -333,7 +333,7 @@ const Secrets = () => {
                   </p>
                   <Button 
                     onClick={() => setShowForm(true)}
-                    className={`${themes.dark.button} font-bold tracking-tight`}
+                    className="btn-modern font-bold tracking-tight"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Your First Secret
@@ -343,12 +343,12 @@ const Secrets = () => {
             </Card>
           ) : (
             secrets.map((secret) => (
-              <Card key={secret.id} className={`${themes.dark.card}`}>
+              <Card key={secret.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <Badge variant="secondary" className="bg-indigo-900/50 text-indigo-300 border-indigo-700">
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
                           {secret.key}
                         </Badge>
                         <span className="text-sm text-gray-500">
@@ -398,7 +398,7 @@ const Secrets = () => {
         </div>
 
         {/* Security Notice */}
-        <Card className={`${themes.dark.card} mt-8`}>
+        <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-8">
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
               <div className="text-yellow-400 mt-0.5">

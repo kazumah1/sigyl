@@ -62,12 +62,12 @@ const PageHeader = () => {
             >
               Pricing
             </button>
-            <button 
+            {/* <button 
               onClick={() => navigate('/blog')}
               className="text-gray-300 hover:text-white font-medium transition-colors"
             >
               Blog
-            </button>
+            </button> */}
             <Button 
               onClick={() => navigate('/deploy')}
               className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-gray-100 hover:text-black transition-colors"

@@ -181,6 +181,10 @@
   transform: translateY(-6px) scale(1.025);
 }
 
+.card-modern.no-zoom:hover, .card-modern.no-zoom:focus-within {
+  transform: none;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   line-height: 1.2;
@@ -670,9 +674,9 @@ button, a, input, select, textarea {
   transition: background 0.18s, color 0.18s, border 0.18s;
 }
 .btn-modern:hover, .btn-modern:focus {
-  background: #fff;
-  color: #111;
-  border: 1.5px solid #111;
+  background: #23232a;
+  color: #fff;
+  border: 1.5px solid #23232a;
 }
 .navbar-modern {
   font-family: 'Space Grotesk', Inter, system-ui, sans-serif;

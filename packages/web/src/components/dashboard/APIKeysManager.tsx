@@ -192,7 +192,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
 
   if (isLoading) {
     return (
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Key className="w-5 h-5" />
@@ -210,7 +210,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   }
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Key className="w-5 h-5" />
@@ -227,13 +227,13 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
             placeholder="Enter API key name"
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
+            className="bg-black border-white/10 text-white"
             disabled={isCreating}
           />
           <Button 
             onClick={handleCreateKey}
             disabled={isCreating || !newKeyName.trim()}
-            className="bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white"
+            className="btn-modern"
           >
             {isCreating ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -251,13 +251,13 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
             setNewlyCreatedKey(null);
           }
         }}>
-          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8">
+          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8 bg-gray-900 border border-gray-800 rounded-2xl">
             <DialogHeader className="w-full text-center">
               <DialogTitle className="text-2xl font-bold mb-2">Your new API key</DialogTitle>
             </DialogHeader>
             <div className="w-full flex flex-col items-center gap-4">
               <code
-                className="text-lg font-mono bg-gray-900 px-6 py-4 rounded-lg text-green-400 border border-green-700 break-all select-all shadow-md w-full text-center"
+                className="text-lg font-mono bg-black px-6 py-4 rounded-lg text-white border border-white/10 break-all select-all shadow-md w-full text-center"
                 style={{ wordBreak: 'break-all' }}
               >
                 {newlyCreatedKey}
@@ -272,14 +272,14 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
                   toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
                 }}
-                className="bg-gradient-to-r from-green-500 to-yellow-500 text-white px-6 py-2 font-semibold rounded shadow hover:from-green-600 hover:to-yellow-600"
+                className="btn-modern px-6 py-2"
               >
                 Copy
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="px-6 py-2 font-semibold rounded shadow"
+                className="border-white/20 text-white hover:bg-white/10 px-6 py-2"
               >
                 Close
               </Button>
@@ -297,65 +297,59 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
             </div>
           ) : (
             apiKeys.map((apiKey) => (
-              <div key={apiKey.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+              <div key={apiKey.id} className="p-4 bg-gray-900 border border-gray-800 rounded-2xl">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <h3 className="text-white font-medium">{apiKey.name}</h3>
                     <Badge 
                       variant={apiKey.is_active ? "secondary" : "outline"} 
-                      className="text-xs"
+                      className="text-xs bg-white/10 text-white border-white/20"
                     >
                       {apiKey.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
                     {apiKey.last_used ? (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-white/10 text-white border-white/20">
                         Last used {new Date(apiKey.last_used).toLocaleDateString()}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-white/20 text-white">
                         Never used
                       </Badge>
                     )}
                   </div>
                 </div>
-                
                 <div className="flex items-center justify-between mb-2">
-                  <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded">
+                  <code className="text-sm font-mono text-gray-300 bg-black px-3 py-1 rounded">
                     {`${apiKey.key_prefix}...`}
                   </code>
                   <div className="flex items-center gap-2">
                     {apiKey.is_active ? (
                       <Button
-                        variant="default"
                         size="sm"
                         onClick={() => handleDeactivateKey(apiKey.id)}
-                        className="px-4 py-2 font-semibold rounded bg-yellow-600 text-white hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 border border-yellow-700 shadow"
+                        className="btn-modern text-red-500"
                       >
                         Deactivate
                       </Button>
                     ) : (
                       <Button
-                        variant="default"
-                        size="sm"
                         disabled
-                        className="px-4 py-2 font-semibold rounded bg-gray-700 text-gray-300 border border-gray-600 shadow cursor-not-allowed"
+                        className="btn-modern"
                       >
                         Deactivated
                       </Button>
                     )}
                     <Button
-                      variant="default"
                       size="sm"
                       onClick={() => setDeleteConfirmId(apiKey.id)}
-                      className="px-4 py-2 font-semibold rounded bg-red-600 text-white hover:bg-red-500 focus:ring-2 focus:ring-red-400 border border-red-700 shadow"
+                      className="btn-modern"
                     >
                       <Trash2 className="w-4 h-4 mr-1" /> Delete
                     </Button>
                   </div>
                 </div>
-                
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>Permissions: {formatPermissions(apiKey.permissions)}</span>
                   <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
@@ -363,7 +357,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                 {/* Delete confirmation dialog */}
                 {deleteConfirmId === apiKey.id && (
                   <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
-                    <DialogContent className="max-w-md mx-auto bg-gray-900 border border-gray-700 shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
+                    <DialogContent className="max-w-md mx-auto bg-gray-900 border border-gray-800 shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
                       <DialogHeader className="w-full text-center mb-2">
                         <DialogTitle className="text-2xl font-bold text-white mb-2">Delete API Key</DialogTitle>
                       </DialogHeader>
@@ -374,8 +368,8 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
                         <p className="text-base text-gray-400 text-center mb-2">This action cannot be undone.</p>
                       </div>
                       <div className="w-full flex flex-row items-center justify-center gap-6 mt-2">
-                        <Button variant="destructive" onClick={() => handleDeleteKey(apiKey.id)} className="px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
-                        <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
+                        <Button variant="destructive" onClick={() => handleDeleteKey(apiKey.id)} className="btn-modern px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
+                        <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="border-white/20 text-white hover:bg-white/10 px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
                       </div>
                     </DialogContent>
                   </Dialog>

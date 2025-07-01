@@ -101,3 +101,23 @@ With authentication fully restored, the next priorities are:
 4. **Documentation**: Update API documentation with hybrid authentication details
 
 The authentication system is now **robust, flexible, and fully functional** for both GitHub App and Supabase OAuth users! 🚀 
+
+# Plan Update: Settings/Profile Page Implementation
+
+## Summary
+- Implemented a new settings page at `/settings` with a sidebar navigation for 'Profile' and 'Settings'.
+- Sidebar allows switching between profile and settings views in a single page layout.
+- Added a `/profile` route that deep-links to the profile tab of the settings page.
+- Updated the user dropdown menu (top right) to navigate to `/profile` and `/settings` for the respective buttons.
+- Removed the non-functional GitHub button from the dropdown for now.
+
+## Details
+- Created `SettingsPage.tsx` with sidebar and main content area, using state to switch between tabs.
+- Created `ProfilePage.tsx` which redirects to `/settings` with the profile tab active (deep-link).
+- Updated `App.tsx` to add protected routes for `/settings` and `/profile`.
+- Updated `UserProfile.tsx` dropdown to use `useNavigate` for navigation.
+- Sidebar and layout are inspired by the dashboard but simplified for user settings.
+
+## Next Steps
+- Implement actual profile editing and settings functionality.
+- Optionally, re-add GitHub integration button with working logic. 

@@ -453,7 +453,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   return (
-    <Card className="card-modern w-full max-w-5xl mx-auto p-0">
+    <Card className="bg-[#18181b] border border-[#23232a] rounded-2xl p-6 w-full max-w-5xl mx-auto">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
           <Lock className="w-5 h-5 text-white" />
@@ -465,12 +465,12 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="secrets" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-white/10 rounded-xl mb-6">
-            <TabsTrigger value="secrets" className="data-[state=active]:bg-white/10 text-white font-semibold rounded-xl transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+          <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
+            <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
               <Lock className="w-4 h-4 mr-2" />
               Environment Variables
             </TabsTrigger>
-            <TabsTrigger value="api-keys" className="data-[state=active]:bg-white/10 text-white font-semibold rounded-xl transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+            <TabsTrigger value="api-keys" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
               <Key className="w-4 h-4 mr-2" />
               API Keys
             </TabsTrigger>
@@ -478,10 +478,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
           {/* Secrets Tab */}
           <TabsContent value="secrets" className="space-y-6 mt-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">Environment Variables</h3>
-              <Button onClick={openCreateDialog} className="bg-black text-white font-semibold px-5 py-2 rounded-xl shadow-sm border border-white/20 hover:bg-neutral-900 transition-all" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
-                <Plus className="w-4 h-4 mr-2" />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white text-left">Environment Variables</h3>
+              <Button onClick={openCreateDialog} className="btn-modern hover:bg-neutral-900 hover:text-white h-10 px-5 text-base font-semibold"> 
+                <Plus className="w-5 h-5 mr-2" />
                 Add Secret
               </Button>
             </div>
@@ -497,24 +497,22 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 <p className="text-sm">Add your first secret to get started</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {secrets.map((secret) => (
-                  <div key={secret.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={secret.id} className="p-5 bg-[#18181b] border border-[#23232a] rounded-2xl flex flex-col gap-2">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-white font-medium">{secret.key}</h3>
+                        <h3 className="text-white font-medium text-left">{secret.key}</h3>
                         {secret.mcp_server_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            Server-specific
-                          </Badge>
+                          <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-white border-white/20">Server-specific</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => toggleValueVisibility(secret.id)}
-                          className="text-gray-400 hover:text-white"
+                          className="text-gray-400 hover:text-white h-8 w-8"
                         >
                           {showValues[secret.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </Button>
@@ -522,7 +520,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditDialog(secret)}
-                          className="text-gray-400 hover:text-white"
+                          className="text-gray-400 hover:text-white h-8 w-8"
                         >
                           <Settings className="w-4 h-4" />
                         </Button>
@@ -530,35 +528,33 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteSecret(secret.id, secret.key)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 h-8 w-8"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(secret.value || '');
+                            toast({
+                              title: "Copied to clipboard",
+                              description: "Secret value has been copied to your clipboard.",
+                            });
+                          }}
+                          className="text-gray-400 hover:text-white h-8 w-8"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    
                     {secret.description && (
-                      <p className="text-gray-400 text-sm mb-2">{secret.description}</p>
+                      <p className="text-gray-400 text-sm mb-2 text-left">{secret.description}</p>
                     )}
-                    
                     <div className="flex items-center gap-2">
-                      <code className="text-sm font-mono text-gray-300 bg-gray-800 px-3 py-1 rounded flex-1">
+                      <code className="text-sm font-mono text-gray-300 bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
                         {showValues[secret.id] ? secret.value : '••••••••••••••••'}
                       </code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(secret.value || '');
-                          toast({
-                            title: "Copied to clipboard",
-                            description: "Secret value has been copied to your clipboard.",
-                          });
-                        }}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}
@@ -568,100 +564,94 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
           {/* API Keys Tab */}
           <TabsContent value="api-keys" className="space-y-6 mt-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">API Keys</h3>
-            </div>
-
-            {/* Create New API Key */}
-            <div className="flex gap-4">
+            <h3 className="text-lg font-semibold text-white text-left mb-4">API Keys</h3>
+            <div className="flex gap-3 items-center mb-4">
               <Input
                 placeholder="Enter API key name"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="bg-black border border-white text-white rounded-xl font-semibold focus:border-white focus:ring-0 transition-all shadow-md force-white-input"
-                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', color: 'white', WebkitTextFillColor: 'white' }}
+                className="bg-[#23232a] border-[#2d2d36] text-white h-10 text-base font-semibold"
                 disabled={isCreatingApiKey}
               />
               <Button 
                 onClick={handleCreateApiKey}
                 disabled={isCreatingApiKey || !newKeyName.trim()}
-                className={`bg-black text-white border border-white rounded-xl font-semibold transition-all px-5 py-2 flex items-center justify-center force-white-btn hover:bg-black hover:text-white focus:bg-black focus:text-white active:bg-black active:text-white ${isCreatingApiKey || !newKeyName.trim() ? 'opacity-60 cursor-not-allowed' : ''}`}
-                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', color: 'white', WebkitTextFillColor: 'white' }}
+                className="btn-modern hover:bg-neutral-900 hover:text-white h-10 px-5 text-base font-semibold"
               >
                 {isCreatingApiKey ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin text-white" style={{ color: 'white' }} />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin text-white" />
                 ) : (
-                  <Plus className="w-4 h-4 mr-2 text-white" style={{ color: 'white' }} />
+                  <Plus className="w-4 h-4 mr-2 text-white" />
                 )}
                 Create Key
               </Button>
             </div>
-
             {isLoadingApiKeys ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : apiKeys.length === 0 ? (
-              <div className="text-center py-8 text-gray-400" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+              <div className="text-center py-8 text-gray-400">
                 <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p className="text-white text-lg font-semibold mb-1">No API keys found</p>
                 <p className="text-gray-400 text-sm">Create your first API key to get started</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {apiKeys.map((apiKey) => {
                   const fullKey = getFullKeyForDisplay(apiKey);
                   return (
-                    <div key={apiKey.id} className="card-modern rounded-xl p-4 border border-white/10 flex flex-col gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
+                    <div key={apiKey.id} className="bg-[#18181b] border border-[#23232a] rounded-2xl p-5 flex flex-col gap-2">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <h3 className="text-white font-medium">{apiKey.name}</h3>
-                          <Badge variant={apiKey.is_active ? "secondary" : "outline"} className="text-xs">
+                          <h3 className="text-white font-medium text-left">{apiKey.name}</h3>
+                          <Badge variant={apiKey.is_active ? "secondary" : "outline"} className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-white border-white/20">
                             {apiKey.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           {apiKey.last_used ? (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-white border-white/20">
                               Last used {new Date(apiKey.last_used).toLocaleDateString()}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="rounded-full px-3 py-1 text-xs font-semibold border-white/20 text-white">
                               Never used
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-2">
                         {fullKey ? (
                           <>
-                            <code className="text-sm font-mono text-white bg-black px-3 py-1 rounded select-all border border-white/10">
+                            <code className="text-sm font-mono text-white bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
                               {fullKey}
                             </code>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(fullKey);
-                                toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
-                              }}
-                              className="border border-white text-white bg-black hover:bg-white hover:text-black rounded-xl font-semibold px-3 py-1 transition-all"
-                            >
-                              Copy
-                            </Button>
+                            <div className="flex items-center gap-1 ml-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(fullKey);
+                                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
+                                }}
+                                className="bg-transparent text-gray-400 hover:text-white hover:bg-[#23232a] h-8 w-8"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </>
                         ) : (
-                          <code className="text-sm font-mono text-gray-300 bg-black px-3 py-1 rounded border border-white/10">
+                          <code className="text-sm font-mono text-gray-300 bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
                             {`${apiKey.key_prefix}...`}
                           </code>
                         )}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 ml-2">
                           {apiKey.is_active ? (
                             <Button
-                              variant="outline"
                               size="sm"
                               onClick={() => handleDeactivateApiKey(apiKey.id)}
-                              className="border border-white text-white bg-black hover:bg-white hover:text-black rounded-xl font-semibold px-4 py-2 transition-all"
+                              className="bg-transparent border border-white/20 text-gray-400 hover:bg-[#23232a] hover:text-white font-semibold h-8 px-4"
                             >
                               Deactivate
                             </Button>
@@ -670,18 +660,18 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                               variant="outline"
                               size="sm"
                               disabled
-                              className="border border-white text-gray-400 bg-black rounded-xl font-semibold px-4 py-2 cursor-not-allowed"
+                              className="border-white/20 text-gray-400 bg-black h-8 px-4 font-semibold cursor-not-allowed"
                             >
                               Deactivated
                             </Button>
                           )}
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => setDeleteConfirmId(apiKey.id)}
-                            className="border border-white text-white bg-black hover:bg-white hover:text-black rounded-xl font-semibold px-4 py-2 transition-all flex items-center"
+                            className="bg-transparent text-red-400 hover:text-red-300 hover:bg-[#23232a] h-8 w-8 flex items-center"
                           >
-                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -699,7 +689,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
         {/* Secret Creation/Edit Dialog */}
         <Dialog open={isSecretDialogOpen} onOpenChange={setIsSecretDialogOpen}>
-          <DialogContent className="bg-gray-900 border-gray-700">
+          <DialogContent className="bg-[#18181b] border border-[#23232a] rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-white">
                 {editingSecret ? 'Edit Environment Variable' : 'Add Environment Variable'}
@@ -717,10 +707,9 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   {secretTemplates.map((template) => (
                     <Button
                       key={template.key}
-                      variant="outline"
                       size="sm"
                       onClick={() => handleTemplateSelect(template)}
-                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="text-xs bg-[#23232a] border-white/20 text-gray-200 hover:bg-[#23232a] hover:text-white"
                     >
                       {template.key}
                     </Button>
@@ -735,7 +724,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   placeholder="e.g., OPENAI_API_KEY"
                   value={formData.key}
                   onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value }))}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-[#23232a] border-white/10 text-white"
                 />
               </div>
 
@@ -746,7 +735,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   placeholder="Enter the secret value"
                   value={formData.value}
                   onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                  className="bg-gray-800 border-gray-700 text-white min-h-[80px]"
+                  className="bg-[#23232a] border-white/10 text-white min-h-[80px]"
                 />
               </div>
 
@@ -757,23 +746,22 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   placeholder="Brief description of this secret"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-[#23232a] border-white/10 text-white"
                 />
               </div>
             </div>
 
             <DialogFooter>
               <Button
-                variant="outline"
                 onClick={() => setIsSecretDialogOpen(false)}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="bg-transparent border border-white/20 text-gray-400 hover:bg-[#23232a] hover:text-white"
               >
                 Cancel
               </Button>
               <Button
                 onClick={editingSecret ? handleUpdateSecret : handleCreateSecret}
                 disabled={isCreatingSecret || !formData.key.trim() || !formData.value.trim()}
-                className="bg-green-600 hover:bg-green-700"
+                className="btn-modern"
               >
                 {isCreatingSecret ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -791,13 +779,13 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
             setNewlyCreatedKey(null);
           }
         }}>
-          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8">
+          <DialogContent className="flex flex-col items-center justify-center gap-6 max-w-lg mx-auto py-8 bg-[#18181b] border border-[#23232a] rounded-2xl">
             <DialogHeader className="w-full text-center">
               <DialogTitle className="text-2xl font-bold mb-2">Your new API key</DialogTitle>
             </DialogHeader>
             <div className="w-full flex flex-col items-center gap-4">
               <code
-                className="text-lg font-mono bg-gray-900 px-6 py-4 rounded-lg text-green-400 border border-green-700 break-all select-all shadow-md w-full text-center"
+                className="text-lg font-mono bg-[#23232a] px-6 py-4 rounded-lg text-white border border-white/10 break-all select-all shadow-md w-full text-center"
                 style={{ wordBreak: 'break-all' }}
               >
                 {newlyCreatedKey}
@@ -812,14 +800,14 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
                   toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
                 }}
-                className="bg-gradient-to-r from-green-500 to-yellow-500 text-white px-6 py-2 font-semibold rounded shadow hover:from-green-600 hover:to-yellow-600"
+                className="btn-modern px-6 py-2"
               >
                 Copy
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="px-6 py-2 font-semibold rounded shadow"
+                className="border-white/20 text-white hover:bg-white/10 px-6 py-2"
               >
                 Close
               </Button>
@@ -830,7 +818,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         {/* Delete confirmation dialog */}
         {deleteConfirmId && (
           <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
-            <DialogContent className="max-w-md mx-auto bg-gray-900 border border-gray-700 shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
+            <DialogContent className="max-w-md mx-auto bg-[#18181b] border border-[#23232a] shadow-2xl rounded-xl p-8 flex flex-col items-center gap-6">
               <DialogHeader className="w-full text-center mb-2">
                 <DialogTitle className="text-2xl font-bold text-white mb-2">Delete API Key</DialogTitle>
               </DialogHeader>
@@ -841,8 +829,8 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 <p className="text-base text-gray-400 text-center mb-2">This action cannot be undone.</p>
               </div>
               <div className="w-full flex flex-row items-center justify-center gap-6 mt-2">
-                <Button variant="destructive" onClick={() => handleDeleteApiKey(deleteConfirmId)} className="px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
-                <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
+                <Button variant="destructive" onClick={() => handleDeleteApiKey(deleteConfirmId)} className="btn-modern px-8 py-2 text-base font-semibold rounded shadow">Delete</Button>
+                <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="border-white/20 text-white hover:bg-white/10 px-8 py-2 text-base font-semibold rounded shadow">Cancel</Button>
               </div>
             </DialogContent>
           </Dialog>

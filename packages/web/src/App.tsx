@@ -23,6 +23,8 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Footer from './components/Footer';
 import PostInstallLogin from './pages/PostInstallLogin';
+import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import './index.css';
 
 // Extend window interface for gtag
@@ -51,8 +53,8 @@ function AppRoutes() {
       <div className="flex-1">
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          {/* <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} /> */}
           <Route path="/login" element={<Login />} />
           <Route path="/post-install-login" element={<PostInstallLogin />} />
           <Route path="/dashboard" element={
@@ -74,6 +76,16 @@ function AppRoutes() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

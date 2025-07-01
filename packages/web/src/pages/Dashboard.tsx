@@ -184,7 +184,7 @@ const Dashboard = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={() => navigate('/deploy')}
-                  className="btn-modern flex items-center gap-2"
+                  className="btn-modern hover:bg-neutral-900 hover:text-white flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Deploy New Server

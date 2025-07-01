@@ -24,7 +24,7 @@ const DashboardSidebar: React.FC = () => {
     { icon: Home, label: 'Overview', path: '/dashboard' },
     { icon: Server, label: 'Servers', path: '/dashboard?tab=servers' },
     { icon: Lock, label: 'Secrets', path: '/dashboard?tab=secrets' },
-    { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
+    // { icon: Settings, label: 'Settings', path: '/dashboard?tab=settings' },
     { icon: Activity, label: 'Analytics', path: '/dashboard?tab=analytics' },
     { icon: Shield, label: 'Private MCPs', path: '/dashboard?tab=private-mcps' },
     { icon: LifeBuoy, label: 'Enterprise Support', path: '/dashboard?tab=enterprise-support' },
