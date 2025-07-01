@@ -70,7 +70,7 @@ const PageHeader = () => {
             </button> */}
             <Button 
               onClick={() => navigate('/deploy')}
-              className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-gray-100 hover:text-black transition-colors"
+              className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-neutral-900 hover:text-white transition-colors"
             >
               Deploy
             </Button>
