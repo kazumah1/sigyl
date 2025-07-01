@@ -234,17 +234,25 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
           const supabaseUser = await validateSupabaseJWT(token);
           if (supabaseUser) {
             console.log('✅ Supabase JWT valid:', { id: supabaseUser.id, email: supabaseUser.email });
-            // Create or get the user in our database using Supabase user data
-            const user = await APIKeyService.createOrGetUser(
-              supabaseUser.email || `${supabaseUser.user_metadata?.user_name}@users.noreply.github.com`,
-              supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.user_name || 'User',
-              supabaseUser.user_metadata?.sub || supabaseUser.id
-            );
-
+            // If user has a GitHub provider_id or sub, use createOrGetGitHubUser
+            const githubId = supabaseUser.user_metadata?.provider_id || supabaseUser.user_metadata?.sub;
+            let user;
+            if (githubId) {
+              user = await APIKeyService.createOrGetGitHubUser(
+                githubId,
+                supabaseUser.email,
+                supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.user_name || 'User'
+              );
+            } else {
+              user = await APIKeyService.createOrGetUser(
+                supabaseUser.email,
+                supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.user_name || 'User'
+              );
+            }
             authenticatedUser = {
               key_id: `supabase_${supabaseUser.id}`,
               user_id: user.id,
-              permissions: ['read', 'write'], // Supabase users get read/write permissions
+              permissions: ['read', 'write'],
               is_active: true
             };
           } else {
@@ -260,8 +268,8 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
         if (options.required) {
           return res.status(401).json({
             success: false,
-            error: 'Invalid token',
-            message: 'The provided token is invalid or has expired'
+            error: 'Invalid authentication token',
+            message: 'The provided authentication token is invalid or has expired'
           });
         }
         return next();
@@ -348,32 +356,26 @@ async function validateGitHubToken(token: string): Promise<any> {
 async function validateSupabaseJWT(token: string): Promise<any> {
   try {
     console.log('🔍 Validating Supabase JWT token...');
-    
-    // Check if token looks like a JWT (has 3 parts separated by dots)
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
       console.log('❌ Token does not look like a JWT (wrong number of parts)');
       return null;
     }
-
+    console.log('🔍 Calling supabase.auth.getUser with token:', token.substring(0, 20) + '...');
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    
     if (error) {
       console.log('❌ Supabase auth error:', error.message);
       return null;
     }
-    
     if (!user) {
       console.log('❌ No user returned from Supabase');
       return null;
     }
-
     console.log('✅ Supabase JWT validation successful:', {
       userId: user.id,
       email: user.email,
       metadata: user.user_metadata
     });
-    
     return user;
   } catch (error) {
     console.log('❌ Supabase JWT validation exception:', error instanceof Error ? error.message : String(error));

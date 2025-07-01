@@ -29,7 +29,7 @@ interface DeployWizardWithGitHubAppProps {
 
 const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
   const navigate = useNavigate()
-  const { user, activeGitHubAccount } = useAuth()
+  const { user, installationId, hasInstallation, installationCheckError } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -42,84 +42,31 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   const [installationError, setInstallationError] = useState<boolean>(false)
-  const [installationId, setInstallationId] = useState<number | null>(null)
   const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
-
-  useEffect(() => {
-    const checkInstallation = async () => {
-      if (!user) return
-      const githubUsername = user.user_metadata?.user_name
-      if (!githubUsername) {
-        setInstallationId(null)
-        setLoading(false)
-        return
-      }
-      // sessionStorage cache key
-      const cacheKey = `sigyl_installation_${githubUsername}`
-      const cacheRaw = sessionStorage.getItem(cacheKey)
-      const now = Date.now()
-      if (cacheRaw) {
-        try {
-          const cache = JSON.parse(cacheRaw)
-          if (now - cache.timestamp < 60000) { // 60 seconds
-            setInstallationId(cache.installationId)
-            setLoading(false)
-            return
-          }
-        } catch {}
-      }
-      // Debounce: only check if username changed or 60s passed
-      if (
-        lastCheckRef.current.username === githubUsername &&
-        now - lastCheckRef.current.timestamp < 60000 // 60 seconds
-      ) {
-        return
-      }
-      lastCheckRef.current = { username: githubUsername, timestamp: now }
-      setLoading(true)
-      try {
-        const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`)
-        const data = await res.json()
-        if (data.hasInstallation && data.installationId) {
-          setInstallationId(data.installationId)
-          // Update sessionStorage cache
-          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: data.installationId, timestamp: now }))
-        } else {
-          setInstallationId(null)
-          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: null, timestamp: now }))
-        }
-      } catch (err) {
-        setInstallationId(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    checkInstallation()
-  }, [user])
 
   // Load repositories when active account is available
   useEffect(() => {
-    if (activeGitHubAccount) {
-      loadRepositories(activeGitHubAccount.installationId)
+    if (user && typeof installationId === 'number' && !isNaN(installationId)) {
+      loadRepositories(installationId)
     }
-  }, [activeGitHubAccount])
+  }, [user, installationId])
 
   // Load MCP metadata when repo is selected
   useEffect(() => {
-    if (selectedRepo && selectedRepo.has_mcp && activeGitHubAccount) {
+    if (selectedRepo && selectedRepo.has_mcp && user) {
       loadMCPMetadata()
     } else {
       setMcpMetadata(null)
     }
-  }, [selectedRepo, activeGitHubAccount])
+  }, [selectedRepo, user])
 
   const loadMCPMetadata = async () => {
-    if (!selectedRepo || !activeGitHubAccount) return
+    if (!selectedRepo || !user) return
 
     setLoadingMetadata(true)
     try {
       const [owner, repo] = selectedRepo.full_name.split('/')
-      const metadata = await getMCPConfigWithApp(activeGitHubAccount.installationId, owner, repo)
+      const metadata = await getMCPConfigWithApp(installationId, owner, repo)
       setMcpMetadata(metadata)
     } catch (err) {
       console.error('Failed to load MCP metadata:', err)
@@ -133,6 +80,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   }
 
   const loadRepositories = async (installId: number) => {
+    if (typeof installId !== 'number' || isNaN(installId)) return;
     setLoading(true)
     setError(null)
     setInstallationError(false)
@@ -161,7 +109,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   }
 
   const handleDeploy = async () => {
-    if (!selectedRepo || !activeGitHubAccount) return
+    if (!selectedRepo || !user) return
 
     setDeploying(true)
     setDeployError(null)
@@ -170,7 +118,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       const [owner, repo] = selectedRepo.full_name.split('/')
       
       // Start deployment and immediately redirect to package page
-      const result = await deployMCPWithApp(activeGitHubAccount.installationId, owner, repo, selectedBranch, user?.id)
+      const result = await deployMCPWithApp(installationId, owner, repo, selectedBranch, user.id)
       
       // Call the onDeploy callback
       onDeploy?.(result)
@@ -220,6 +168,22 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         <span className="ml-3 text-gray-300">Loading installation status...</span>
+      </div>
+    )
+  }
+
+  if (installationCheckError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Alert className="border-red-500 bg-red-500/10 max-w-lg">
+          <AlertCircle className="h-6 w-6 text-red-500 mb-2" />
+          <AlertDescription className="text-gray-300">
+            Error checking GitHub App installation:<br />
+            <span className="font-mono text-red-400">{installationCheckError}</span>
+            <br />
+            Please try again later or contact support if this persists.
+          </AlertDescription>
+        </Alert>
       </div>
     )
   }
@@ -291,7 +255,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => loadRepositories(activeGitHubAccount.installationId)}
+                  onClick={() => loadRepositories(installationId)}
                   disabled={loading}
                   className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >

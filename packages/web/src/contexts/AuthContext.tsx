@@ -29,6 +29,9 @@ type AuthContextType = {
   githubAccounts: GitHubAccount[]
   activeGitHubAccount: GitHubAccount | null
   setActiveGitHubAccount: (account: GitHubAccount | null) => void
+  installationId: number | null
+  hasInstallation: boolean
+  installationCheckError: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -52,6 +55,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [githubInstallationId, setGitHubInstallationId] = useState<number | null>(null)
   const [githubAccounts, setGitHubAccounts] = useState<GitHubAccount[]>([])
   const [activeGitHubAccount, setActiveGitHubAccount] = useState<GitHubAccount | null>(null)
+  const [installationId, setInstallationId] = useState<number | null>(null)
+  const [hasInstallation, setHasInstallation] = useState<boolean>(false)
+  const [installationCheckError, setInstallationCheckError] = useState<string | null>(null)
 
   // Handle GitHub App callback (just refresh session, let backend handle DB)
   useEffect(() => {
@@ -76,31 +82,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getInitialSession()
   }, [])
 
-  // Fetch GitHub App installation status and accounts from backend
+  // Centralized GitHub App installation check with sessionStorage caching
   useEffect(() => {
-    const fetchInstallations = async () => {
+    const checkInstallation = async () => {
       if (!user) return
+      setInstallationCheckError(null)
       const githubUsername = user.user_metadata?.user_name
-      if (!githubUsername) return
+      if (!githubUsername) {
+        setInstallationId(null)
+        setHasInstallation(false)
+        return
+      }
+      const cacheKey = `sigyl_installation_${githubUsername}`
+      const cacheRaw = sessionStorage.getItem(cacheKey)
+      const now = Date.now()
+      if (cacheRaw) {
+        try {
+          const cache = JSON.parse(cacheRaw)
+          if (now - cache.timestamp < 60000) { // 60 seconds
+            setInstallationId(cache.installationId)
+            setHasInstallation(!!cache.installationId)
+            return
+          }
+        } catch {}
+      }
       try {
         const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`)
+        if (!res.ok) {
+          throw new Error(`Failed to check installation: ${res.status} ${res.statusText}`)
+        }
         const data = await res.json()
         if (data.hasInstallation && data.installationId) {
-          setGitHubInstallationId(data.installationId)
-          setGitHubAccounts([{ installationId: data.installationId, username: githubUsername, isActive: true, accountLogin: githubUsername, accountType: 'User' }])
-          setActiveGitHubAccount({ installationId: data.installationId, username: githubUsername, isActive: true, accountLogin: githubUsername, accountType: 'User' })
+          setInstallationId(data.installationId)
+          setHasInstallation(true)
+          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: data.installationId, timestamp: now }))
         } else {
-          setGitHubInstallationId(null)
-          setGitHubAccounts([])
-          setActiveGitHubAccount(null)
+          setInstallationId(null)
+          setHasInstallation(false)
+          sessionStorage.setItem(cacheKey, JSON.stringify({ installationId: null, timestamp: now }))
         }
-      } catch {
-        setGitHubInstallationId(null)
-        setGitHubAccounts([])
-        setActiveGitHubAccount(null)
+      } catch (err) {
+        setInstallationId(null)
+        setHasInstallation(false)
+        setInstallationCheckError(err instanceof Error ? err.message : 'Failed to check installation')
       }
     }
-    fetchInstallations()
+    checkInstallation()
   }, [user])
 
   const signInWithGitHubApp = async () => {
@@ -140,6 +167,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     githubAccounts,
     activeGitHubAccount,
     setActiveGitHubAccount,
+    installationId,
+    hasInstallation,
+    installationCheckError,
   }
 
   return (

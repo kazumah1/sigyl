@@ -6,62 +6,26 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Github, CheckCircle, AlertCircle, ExternalLink, Shield, Lock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { 
-  fetchRepositoriesWithApp,
-  GitHubAppRepository,
-  GitHubAppInstallation
-} from "@/lib/githubApp"
 import { useNavigate } from 'react-router-dom'
 
-interface GitHubAppInstallProps {
-  onInstallationComplete?: (installationId: number) => void
-  onRepositoriesLoaded?: (repositories: GitHubAppRepository[]) => void
-}
-
-const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({ 
-  onInstallationComplete,
-  onRepositoriesLoaded 
-}) => {
-  const { user, signInWithGitHubApp, setGitHubInstallationId, githubInstallationId } = useAuth()
+const GitHubAppInstall = () => {
+  const { user, hasInstallation, installationCheckError, signInWithGitHubApp } = useAuth()
   const navigate = useNavigate()
-  const [installationInfo, setInstallationInfo] = useState<GitHubAppInstallation | null>(null)
-  const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [loading, setLoading] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Load repositories when installation ID is available
-  useEffect(() => {
-    if (githubInstallationId) {
-      loadRepositories(githubInstallationId)
-      onInstallationComplete?.(githubInstallationId)
-    }
-  }, [githubInstallationId])
-
-  const loadRepositories = async (installId: number) => {
-    setLoading(true)
-    try {
-      const repos = await fetchRepositoriesWithApp(installId)
-      setRepositories(repos)
-      onRepositoriesLoaded?.(repos)
-    } catch (err) {
-      console.error('Error loading repositories:', err)
-      setError('Failed to load repositories')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleInstallApp = async () => {
     setInstalling(true)
     setError(null)
 
     try {
-      // Use the signInWithGitHubApp method from AuthContext
-      await signInWithGitHubApp()
+      const url = await signInWithGitHubApp()
+      window.location.assign(url)
     } catch (err) {
       console.error('Error starting installation:', err)
       setError('Failed to start GitHub App installation')
+    } finally {
       setInstalling(false)
     }
   }
@@ -79,7 +43,7 @@ const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({
     )
   }
 
-  if (githubInstallationId && repositories.length > 0) {
+  if (hasInstallation) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
@@ -88,44 +52,10 @@ const GitHubAppInstall: React.FC<GitHubAppInstallProps> = ({
             GitHub App Installed
           </CardTitle>
           <CardDescription>
-            You have access to {repositories.length} repositories
+            You have access to repositories
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3">
-            {repositories.slice(0, 5).map((repo) => (
-              <div key={repo.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Github className="w-5 h-5" />
-                <div className="flex-1">
-                  <h4 className="font-medium">{repo.full_name}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {repo.description || 'No description'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {repo.private && (
-                    <Badge variant="outline" className="text-xs">
-                      <Lock className="w-3 h-3 mr-1" />
-                      Private
-                    </Badge>
-                  )}
-                  {repo.has_mcp && (
-                    <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      MCP Ready
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {repositories.length > 5 && (
-            <div className="text-center text-sm text-gray-500">
-              And {repositories.length - 5} more repositories...
-            </div>
-          )}
-          
           <div className="flex gap-3">
             <Button 
               onClick={() => window.location.reload()}

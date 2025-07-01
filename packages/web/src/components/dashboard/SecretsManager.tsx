@@ -48,7 +48,7 @@ interface SecretsManagerProps {
 
 const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerId }) => {
   const { toast } = useToast();
-  const { user, session, activeGitHubAccount, isGitHubAppSessionValid } = useAuth();
+  const { user, session } = useAuth();
   
   // Token caching to prevent multiple simultaneous calls
   const [cachedToken, setCachedToken] = useState<string | null>(null);
@@ -87,7 +87,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   // Fetch data on component mount
   useEffect(() => {
     const loadData = async () => {
-      const token = await getAuthToken();
+      const token = await getFreshToken();
       if (token) {
         // Prevent multiple simultaneous calls by running them sequentially with a small delay
         await fetchSecrets();
@@ -107,119 +107,18 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       }
     };
     loadData();
-  }, [session, activeGitHubAccount, isGitHubAppSessionValid]);
+  }, [session]);
 
   // Get the correct token for API authentication
   // Priority: GitHub App token > Supabase JWT token
-  const getAuthToken = async () => {
-    console.log('🔍 getAuthToken: Starting authentication check...');
-    
-    // Check cache first (cache for 30 seconds to prevent rapid calls)
-    const now = Date.now();
-    if (cachedToken && (now - tokenCacheTime < 30000)) {
-      console.log('🔑 Using cached token');
-      return cachedToken;
-    }
-    
-    // Prevent multiple simultaneous token requests
-    if (isGettingToken) {
-      console.log('🔍 Token request already in progress, waiting...');
-      // Wait for existing request to complete
-      while (isGettingToken) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      // Return cached token if available
-      if (cachedToken && (Date.now() - tokenCacheTime < 30000)) {
-        return cachedToken;
-      }
-    }
-    
-    setIsGettingToken(true);
-    
-    try {
-      console.log('🔍 getAuthToken: isGitHubAppSessionValid:', isGitHubAppSessionValid ? isGitHubAppSessionValid() : 'function not available');
-      console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
-      console.log('🔍 getAuthToken: session exists:', !!session);
-      
-      // First check if we have a valid GitHub App session
-      if (isGitHubAppSessionValid && isGitHubAppSessionValid()) {
-        const githubAppToken = localStorage.getItem('github_app_access_token');
-        console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
-        
-        if (githubAppToken && 
-            githubAppToken !== 'restored_token' && 
-            githubAppToken !== 'db_restored_token' &&
-            githubAppToken.length > 20 && // Ensure it's a real token, not a placeholder
-            (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_'))) {
-          console.log('🔑 Using GitHub App token for authentication');
-          setCachedToken(githubAppToken);
-          setTokenCacheTime(now);
-          return githubAppToken;
-        } else {
-          console.log('❌ GitHub App token is invalid or placeholder:', {
-            isPlaceholder: githubAppToken === 'restored_token' || githubAppToken === 'db_restored_token',
-            length: githubAppToken ? githubAppToken.length : 'null',
-            hasValidPrefix: githubAppToken ? (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_')) : false
-          });
-        }
-      } else {
-        console.log('❌ GitHub App session is not valid');
-      }
-      
-      // Fall back to Supabase session token - try session first, then refresh if needed
-      let supabaseToken = session?.access_token;
-      console.log('🔍 getAuthToken: Supabase token from session:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
-      
-      // If session token is invalid or expired, try to refresh the session
-      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
-        console.log('🔍 getAuthToken: Session token invalid, attempting to refresh session...');
-        try {
-          const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
-          if (refreshedSession && !error) {
-            supabaseToken = refreshedSession.access_token;
-            console.log('🔍 getAuthToken: Refreshed Supabase token:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
-          } else {
-            console.log('❌ Failed to refresh session:', error?.message);
-          }
-        } catch (refreshError) {
-          console.log('❌ Session refresh exception:', refreshError);
-        }
-      }
-      
-      // If still no valid token, try localStorage as last resort
-      if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
-        console.log('🔍 getAuthToken: Session refresh failed, checking localStorage...');
-        try {
-          const supabaseAuthData = localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token');
-          if (supabaseAuthData) {
-            const parsedAuth = JSON.parse(supabaseAuthData);
-            supabaseToken = parsedAuth.access_token;
-            console.log('🔍 getAuthToken: Supabase token from localStorage:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
-          }
-        } catch (error) {
-          console.log('❌ Failed to parse Supabase auth from localStorage:', error);
-        }
-      }
-      
-      if (supabaseToken && supabaseToken.split('.').length === 3) {
-        console.log('🔑 Using Supabase JWT token for authentication');
-        setCachedToken(supabaseToken);
-        setTokenCacheTime(now);
-        return supabaseToken;
-      } else if (supabaseToken) {
-        console.log('❌ Supabase token is not a valid JWT (wrong number of parts):', supabaseToken.split('.').length);
-      }
-
-      console.error('❌ No valid authentication token found');
-      return null;
-    } finally {
-      setIsGettingToken(false);
-    }
+  const getFreshToken = async () => {
+    const { data: { session: freshSession } } = await supabase.auth.getSession();
+    return freshSession?.access_token || null;
   };
   
   // Secrets functions
   const fetchSecrets = async () => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to view secrets.', variant: 'destructive' });
       setIsLoadingSecrets(false);
@@ -242,7 +141,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleCreateSecret = async () => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to create secrets.', variant: 'destructive' });
       return;
@@ -304,7 +203,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleUpdateSecret = async () => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to update secrets.', variant: 'destructive' });
       return;
@@ -351,7 +250,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeleteSecret = async (id: string, key: string) => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to delete secrets.', variant: 'destructive' });
       return;
@@ -409,7 +308,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
   // API Keys functions
   const fetchAPIKeys = async () => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive' });
       setIsLoadingApiKeys(false);
@@ -432,7 +331,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleCreateApiKey = async () => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive' });
       return;
@@ -479,7 +378,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeleteApiKey = async (id: string) => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive' });
       return;
@@ -509,7 +408,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   const handleDeactivateApiKey = async (id: string) => {
-    const token = await getAuthToken();
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive' });
       return;

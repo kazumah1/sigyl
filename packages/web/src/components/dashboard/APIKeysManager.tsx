@@ -17,7 +17,6 @@ interface APIKeysManagerProps {
 const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const { toast } = useToast();
   const { user, session } = useAuth();
-  const token = session?.access_token;
   const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});
@@ -28,12 +27,34 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
 
+  const getFreshToken = async () => {
+    const { data: { session: freshSession } } = await supabase.auth.getSession();
+    return freshSession?.access_token || null;
+  };
+
   // Fetch API keys on component mount
   useEffect(() => {
-    if (token) {
-      fetchAPIKeys();
-    }
-  }, [token]);
+    const fetchAPIKeys = async () => {
+      const token = await getFreshToken();
+      if (token) {
+        try {
+          setIsLoading(true);
+          const keys = await APIKeyService.getAPIKeys(token);
+          setApiKeys(keys);
+        } catch (error) {
+          console.error('Failed to fetch API keys:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch API keys. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchAPIKeys();
+  }, [toast]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -58,29 +79,8 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
     loadProfile();
   }, [user]);
 
-  const fetchAPIKeys = async () => {
-    if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive' });
-      setIsLoading(false);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const keys = await APIKeyService.getAPIKeys(token);
-      setApiKeys(keys);
-    } catch (error) {
-      console.error('Failed to fetch API keys:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch API keys. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleCreateKey = async () => {
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive' });
       return;
@@ -130,6 +130,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleDeleteKey = async (id: string) => {
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive' });
       return;
@@ -153,6 +154,7 @@ const APIKeysManager: React.FC<APIKeysManagerProps> = ({ workspaceId }) => {
   };
 
   const handleDeactivateKey = async (id: string) => {
+    const token = await getFreshToken();
     if (!token) {
       toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive' });
       return;
