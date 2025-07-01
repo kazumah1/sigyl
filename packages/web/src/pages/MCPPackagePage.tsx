@@ -840,22 +840,22 @@ const MCPPackagePage = () => {
                     Copy Service URL
                   </Button>
                 )}
-                <Button
+                {/* <Button
                   onClick={handleRestartService}
                   variant="outline"
                   className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Restart Service
-                </Button>
-                <Button
+                </Button> */}
+                {/* <Button
                   onClick={handleStopService}
                   variant="outline"
                   className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                 >
                   <Pause className="w-4 h-4 mr-2" />
                   Stop Service
-                </Button>
+                </Button> */}
                 <Button
                   onClick={handleDeleteService}
                   variant="outline"
@@ -1032,7 +1032,7 @@ const MCPPackagePage = () => {
 
               {isOwner ? (
                 <TabsContent value="logs" className="mt-6">
-                  <Card className="bg-gray-900/50 border-gray-800">
+                  <Card className="bg-black/60 border border-white/10">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-white">Deployment Logs</CardTitle>
@@ -1207,11 +1207,11 @@ const MCPPackagePage = () => {
             </Card>
 
             {/* MCP Server URL Display */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="bg-black/60 rounded-lg p-6 border border-white/10">
               <h3 className="text-lg font-semibold mb-4 text-white">MCP Server URL</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between bg-gray-900 rounded-lg p-3">
-                  <code className="text-green-400 font-mono text-sm break-all">
+                  <code className="text-white font-mono text-sm break-all">
                     {pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`}
                   </code>
                   <button

@@ -131,7 +131,7 @@ const SettingsPage: React.FC = () => {
       <PageHeader />
       <div className="flex pt-20">
         {/* Sidebar */}
-        <aside className="w-56 bg-gray-950 border-r border-gray-800 flex flex-col py-8 px-2">
+        <aside className="w-56 bg-black/60 border-r border-white/10 flex flex-col py-8 px-2">
           <div className="mb-8 px-4">
             <span className="text-xl font-bold text-white cursor-pointer" onClick={() => navigate('/')}>SIGYL</span>
           </div>

@@ -309,7 +309,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     }
     // Update mcp_packages
     const mcpPackagesPayload = {
-      name: mcpYaml?.name || repoName,
+      name: mcpYaml?.name,
       slug: repoName,
       version: mcpYaml?.version || null,
       description: mcpYaml?.description || null,

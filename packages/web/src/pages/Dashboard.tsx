@@ -97,7 +97,7 @@ const Dashboard = () => {
                   Welcome back, {displayName.split(' ')[0]}!
                 </h1>
                 <p className="text-gray-400">
-                  {'Default Workspace'} • {activeTab === 'overview' ? 'Dashboard Overview' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                  {activeTab === 'overview' ? 'Dashboard Overview' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -179,7 +179,7 @@ const Dashboard = () => {
                     <CardContent>
                       <div className="space-y-4">
                         {mcpServers.slice(0, 3).map((server) => (
-                          <div key={server.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                          <div key={server.id} className="flex items-center justify-between gap-5 p-4 bg-white/10 rounded-lg">
                             <div className="flex items-center gap-4">
                               <div className={`w-3 h-3 rounded-full ${
                                 server.status === 'active' ? 'bg-green-400' : 
