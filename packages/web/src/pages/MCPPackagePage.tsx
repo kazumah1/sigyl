@@ -631,7 +631,7 @@ const MCPPackagePage = () => {
       >
         <Button
           variant="outline"
-          className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+          className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
           style={cellStyle}
           type="button"
         >
@@ -722,7 +722,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4 gap-2">
             <Button
               onClick={handleApplyEdit}
-              className="btn-modern hover:bg-neutral-900 hover:text-white"
+              className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
               disabled={saving}
             >
               {saving ? 'Saving...' : 'Apply'}
@@ -918,7 +918,7 @@ const MCPPackagePage = () => {
               <>
                 <Button
                   onClick={handleInstallClick}
-                  className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-gray-100 hover:text-black transition-colors"
+                  className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-neutral-900 hover:text-white transition-colors"
                   disabled={loading}
                   variant="secondary"
                   size="lg"
@@ -993,21 +993,21 @@ const MCPPackagePage = () => {
           <div className="lg:col-span-2">
             <Tabs defaultValue={isOwner ? "overview" : "overview"} className="w-full">
               <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
-                <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <BookOpen className="w-5 h-5 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="tools" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                <TabsTrigger value="tools" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <Code2 className="w-5 h-5 mr-2" />
                   Tools
                 </TabsTrigger>
                 {isOwner ? (
-                  <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Terminal className="w-5 h-5 mr-2" />
                     Logs
                   </TabsTrigger>
                 ) : (
-                  <TabsTrigger value="deployment" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <TabsTrigger value="deployment" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Settings className="w-5 h-5 mr-2" />
                     Deployment
                   </TabsTrigger>
@@ -1055,7 +1055,7 @@ const MCPPackagePage = () => {
                             : (tool as any)?.description || 'Tool functionality and usage details would be displayed here.';
 
                           return (
-                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-gray-700">
+                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-white/20">
                               <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
                                 <Code className="w-4 h-4" />
                                 {toolName}
@@ -1096,7 +1096,7 @@ const MCPPackagePage = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="bg-black rounded-lg p-4 border border-gray-700 max-h-96 overflow-y-auto">
+                      <div className="bg-black rounded-lg p-4 border border-white/20 max-h-96 overflow-y-auto">
                         {deploymentLogs.map((log, index) => (
                           <div key={index} className="text-sm font-mono text-gray-300 mb-1">
                             {log}
@@ -1264,12 +1264,17 @@ const MCPPackagePage = () => {
                   <button
                     onClick={() => {
                       copyToClipboard(pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`, 'URL copied!');
+                      setHttpApiCopied(true);
+                      setTimeout(() => {
+                        setHttpApiCopied(false);
+                        setShowHttpApiInline(false);
+                      }, 1000);
                       incrementDownloadCount();
                     }}
-                    className="ml-3 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 flex-shrink-0"
+                    className="ml-3 p-2 bg-white/10 border border-white/20 text-white hover:bg-white/10 hover:text-white rounded-lg transition-all duration-200 flex-shrink-0"
                     title="Copy URL"
                   >
-                    <Copy className="w-4 h-4 text-gray-300" />
+                    <CopyIcon className="w-4 h-4" />
                   </button>
                 </div>
                 <p className="text-gray-400 text-sm">
@@ -1426,7 +1431,7 @@ const MCPPackagePage = () => {
                 <div className="grid grid-cols-2 gap-6 w-full max-w-2xl" style={{ gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))' }}>
                   {/* HTTP API Button/Command logic */}
                   {showHttpApiInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg" style={cellStyle}>
                       <Globe className="w-5 h-5" />
                       {httpApiCopied ? (
                         <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
@@ -1443,9 +1448,15 @@ const MCPPackagePage = () => {
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
                           copyToClipboard(httpApiUrl, 'URL copied!');
+                          setHttpApiCopied(true);
+                          setTimeout(() => {
+                            setHttpApiCopied(false);
+                            setShowHttpApiInline(false);
+                          }, 1000);
                           incrementDownloadCount();
                         }}
                         aria-label="Copy HTTP API URL"
+                        disabled={httpApiCopied}
                       >
                         <CopyIcon className="w-5 h-5" />
                       </button>
@@ -1453,7 +1464,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         // Build the HTTP API URL
@@ -1481,7 +1492,7 @@ const MCPPackagePage = () => {
                   {/* End HTTP API logic */}
                   {/* VS Code Button/Command logic */}
                   {showVSCodeInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg" style={cellStyle}>
                       <img src="/vscode.png" alt="VS Code" className="w-5 h-5" />
                       {vsCodeCopied ? (
                         <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
@@ -1498,9 +1509,15 @@ const MCPPackagePage = () => {
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
                           copyToClipboard(vsCodeCommand, 'Command copied!');
+                          setVSCodeCopied(true);
+                          setTimeout(() => {
+                            setVSCodeCopied(false);
+                            setShowVSCodeInline(false);
+                          }, 1000);
                           incrementDownloadCount();
                         }}
                         aria-label="Copy command"
+                        disabled={vsCodeCopied}
                       >
                         <CopyIcon className="w-5 h-5" />
                       </button>
@@ -1508,7 +1525,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1532,7 +1549,7 @@ const MCPPackagePage = () => {
                   {/* End VS Code logic */}
                   {/* Claude Desktop button/field logic */}
                   {showClaudeInline ? (
-                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200" style={cellStyle}>
+                    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg" style={cellStyle}>
                       <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" />
                       {claudeCopied ? (
                         <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
@@ -1549,9 +1566,15 @@ const MCPPackagePage = () => {
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
                           copyToClipboard(claudeCommand, 'Command copied!');
+                          setClaudeCopied(true);
+                          setTimeout(() => {
+                            setClaudeCopied(false);
+                            setShowClaudeInline(false);
+                          }, 1000);
                           incrementDownloadCount();
                         }}
                         aria-label="Copy command"
+                        disabled={claudeCopied}
                       >
                         <CopyIcon className="w-5 h-5" />
                       </button>
@@ -1559,7 +1582,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
@@ -1591,7 +1614,7 @@ const MCPPackagePage = () => {
                   <>
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';

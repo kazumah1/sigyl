@@ -71,12 +71,6 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   const navigate = useNavigate()
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load packages on component mount
-  useEffect(() => {
-    loadPackages();
-    // eslint-disable-next-line
-  }, []);
-
   // Load packages based on search and filters
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -226,56 +220,58 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   const renderPackageCard = (pkg: MCPPackage, index: number) => (
     <Card
       key={pkg.id}
-      className="bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
+      className="bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group flex flex-col justify-between h-full"
       style={{ animationDelay: `${index * 100}ms` }}
       onClick={() => navigate(`/mcp/${pkg.id}`)}
     >
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {getCategoryIcon(pkg.tags)}
-            <div>
-              <CardTitle 
-                className="text-white group-hover:text-gray-200 transition-colors"
-                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
-              >
-                {pkg.name}
-              </CardTitle>
-              <CardDescription className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {pkg.version && `v${pkg.version}`} • {pkg.downloads_count} downloads
-              </CardDescription>
+      <div className="flex-1 flex flex-col">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {getCategoryIcon(pkg.tags)}
+              <div>
+                <CardTitle 
+                  className="text-white group-hover:text-gray-200 transition-colors"
+                  style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                >
+                  {pkg.name}
+                </CardTitle>
+                <CardDescription className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {pkg.version && `v${pkg.version}`} • {pkg.downloads_count} downloads
+                </CardDescription>
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <p className="text-white mb-4 line-clamp-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {pkg.description || 'No description available'}
-        </p>
+        </CardHeader>
+        
+        <CardContent className="pt-0 flex-1 flex flex-col">
+          <p className="text-white mb-4 line-clamp-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {pkg.description || 'No description available'}
+          </p>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Array.isArray(pkg.tags) && pkg.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="secondary" className="bg-white/10 text-gray-300 border-white/20">
-              {tag}
-            </Badge>
-          ))}
-          {Array.isArray(pkg.tags) && pkg.tags.length > 3 && (
-            <Badge variant="outline" className="text-gray-400 border-white/20">
-              +{pkg.tags.length - 3}
-            </Badge>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {new Date(pkg.created_at).toLocaleDateString()}
+          <div className="flex flex-wrap gap-2 mb-4 min-h-[32px]">
+            {Array.isArray(pkg.tags) && pkg.tags.slice(0, 3).map(tag => (
+              <Badge key={tag} variant="secondary" className="bg-white/10 text-white border-white/20 hover:bg-white/10 hover:text-white transition-all duration-200">
+                {tag}
+              </Badge>
+            ))}
+            {Array.isArray(pkg.tags) && pkg.tags.length > 3 && (
+              <Badge variant="outline" className="text-gray-400 border-white/20">
+                +{pkg.tags.length - 3}
+              </Badge>
+            )}
           </div>
-          <div className="text-sm text-gray-400 group-hover:text-white transition-colors" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-            View details →
-          </div>
+          <div className="flex-grow" />
+        </CardContent>
+      </div>
+      <div className="flex items-center justify-between px-6 pb-4 pt-0 mt-auto">
+        <div className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {new Date(pkg.created_at).toLocaleDateString()}
         </div>
-      </CardContent>
+        <div className="text-sm text-gray-400 group-hover:text-white transition-colors" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+          View details →
+        </div>
+      </div>
     </Card>
   )
 
@@ -443,7 +439,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 </h2>
                 <div className="flex gap-2 flex-wrap mb-1">
                   {Array.isArray(selectedPackage.tags) && selectedPackage.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="bg-white/10 text-gray-300 border-white/20">
+                    <Badge key={tag} variant="secondary" className="bg-white/10 text-white border-white/20 hover:bg-white/10 hover:text-white transition-all duration-200">
                       {tag}
                     </Badge>
                   ))}

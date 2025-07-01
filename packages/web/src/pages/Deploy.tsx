@@ -56,7 +56,7 @@ const Deploy = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                <label className="block text-sm font-medium text-gray-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                   GitHub Account
                 </label>
                 <GitHubAccountSelector 
@@ -64,11 +64,11 @@ const Deploy = () => {
                   className="w-full"
                 />
               </div>
-              {activeGitHubAccount && (
+              {/* {activeGitHubAccount && (
                 <div className="text-sm text-gray-400 mt-1">
                   Using repositories from: <span className="font-medium text-white">{activeGitHubAccount.username}</span>
                 </div>
-              )}
+              )} */}
             </div>
             {/* Sleek Deployment Wizard */}
             <DeployWizardWithGitHubApp onDeploy={handleDeploy} />

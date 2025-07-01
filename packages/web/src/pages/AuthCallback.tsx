@@ -29,7 +29,7 @@ const AuthCallback = () => {
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center space-y-6">
         <div className="flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <Loader2 className="w-8 h-8 animate-spin text-white" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Authentication</h1>
@@ -37,7 +37,7 @@ const AuthCallback = () => {
         </div>
         <div className="flex justify-center">
           <div className="w-32 h-1 bg-gray-800 rounded-full overflow-hidden">
-            <div className="h-full bg-indigo-400 animate-pulse rounded-full"></div>
+            <div className="h-full bg-white/10 animate-pulse rounded-full"></div>
           </div>
         </div>
       </div>
