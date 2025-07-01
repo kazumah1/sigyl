@@ -2,6 +2,59 @@
 
 ## 🎯 Current Status: MVP Ready for Launch + CLI/SDK Published
 
+### 🚨 HIGH PRIORITY: Custom Domains for MCPs (IMPLEMENTED)
+
+**Problem Solved**: Raw Cloud Run URLs exposed competitive intelligence:
+- ❌ `https://sigyl-mcp-weather-api-lrzo3avokq-uc.a.run.app/mcp`
+- Revealed: Google Cloud Run usage, naming patterns, easy catalog scraping
+
+**Solution Implemented**: Professional API-based proxy system:
+- ✅ `https://api.sigyl.dev/mcp/weather-api`
+- ✅ `https://api.sigyl.dev/mcp/database-tools`
+- ✅ `https://api.sigyl.dev/mcp/user-package-name`
+
+**Technical Implementation**:
+- **MCP Proxy Router**: `packages/registry-api/src/routes/mcpProxy.ts`
+  - Dynamic URL resolution from database
+  - Caching for performance (5-minute TTL)
+  - Proper error handling and CORS
+  - Request logging and monitoring
+- **Deployment Service Updates**: `packages/registry-api/src/services/deployer.ts`
+  - Stores both Cloud Run URL (internal) and proxy URL (public)
+  - Returns proxy URL to users
+  - Database stores proxy URL as `source_api_url`
+- **Frontend Integration**: `packages/web/src/pages/MCPPackagePage.tsx`
+  - Displays clean proxy URLs to users
+  - Copy functionality for easy sharing
+  - Hides underlying infrastructure
+- **CLI Integration**: Already uses `source_api_url` from package data
+  - Automatically gets proxy URLs
+  - No changes needed to CLI
+
+**Benefits Achieved**:
+- 🔒 **Hide infrastructure** from competitors
+- 🎯 **Professional appearance** for enterprise customers  
+- 🛡️ **Prevent catalog scraping** (can't guess URL patterns)
+- 📈 **Brand consistency** (api.sigyl.dev subdomain)
+- 💰 **$0 cost** (no load balancer required)
+- ⚡ **High performance** (direct proxy, minimal overhead)
+- 🔧 **Easy maintenance** (single codebase, integrated monitoring)
+
+**Security Features**:
+- Request validation and sanitization
+- Rate limiting through existing API middleware
+- CORS headers for web compatibility
+- Error handling without information leakage
+- Request logging for monitoring and debugging
+
+**URL Pattern**:
+- **Public**: `api.sigyl.dev/mcp/{package-name}`
+- **Internal**: `{cloud-run-url}` (hidden from users)
+- **Database**: Stores proxy URL as public API URL
+- **CLI**: Uses proxy URLs automatically
+
+**Status**: ✅ **PRODUCTION READY**
+
 ### ✅ COMPLETED - Core Platform Features
 - **Registry API**: Full MCP package management with Supabase backend
 - **Container Builder**: Google Cloud Run deployment with enhanced security

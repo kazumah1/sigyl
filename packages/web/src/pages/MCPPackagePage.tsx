@@ -60,7 +60,7 @@ const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, session, isGitHubAppSessionValid, activeGitHubAccount } = useAuth();
+  const { user, session, activeGitHubAccount } = useAuth();
   
   const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -156,18 +156,28 @@ const MCPPackagePage = () => {
     }
   }, [pkg, isOwner]);
 
+  // Copy to clipboard helper function
+  const copyToClipboard = async (text: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(successMessage);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
   // Get the correct token for API authentication
   // Priority: GitHub App token > Supabase JWT token
   const getAuthToken = async () => {
     console.log('🔍 getAuthToken: Starting authentication check...');
     
     try {
-      console.log('🔍 getAuthToken: isGitHubAppSessionValid:', isGitHubAppSessionValid ? isGitHubAppSessionValid() : 'function not available');
       console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
       console.log('🔍 getAuthToken: session exists:', !!session);
       
       // First check if we have a valid GitHub App session
-      if (isGitHubAppSessionValid && isGitHubAppSessionValid()) {
+      if (activeGitHubAccount) {
         const githubAppToken = localStorage.getItem('github_app_access_token');
         console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
         
@@ -186,7 +196,7 @@ const MCPPackagePage = () => {
           });
         }
       } else {
-        console.log('❌ GitHub App session is not valid');
+        console.log('❌ No active GitHub account');
       }
       
       // Fall back to Supabase session token - try session first, then refresh if needed
@@ -1197,6 +1207,28 @@ const MCPPackagePage = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* MCP Server URL Display */}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold mb-4 text-white">MCP Server URL</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-gray-900 rounded-lg p-3">
+                  <code className="text-green-400 font-mono text-sm break-all">
+                    {pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(pkg.source_api_url || `https://api.sigyl.dev/mcp/${pkg.name}`, 'URL copied!')}
+                    className="ml-3 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 flex-shrink-0"
+                    title="Copy URL"
+                  >
+                    <Copy className="w-4 h-4 text-gray-300" />
+                  </button>
+                </div>
+                <p className="text-gray-400 text-sm">
+                  Use this URL to connect to the MCP server from your AI client.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
