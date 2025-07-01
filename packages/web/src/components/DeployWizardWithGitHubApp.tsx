@@ -29,7 +29,7 @@ interface DeployWizardWithGitHubAppProps {
 
 const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
   const navigate = useNavigate()
-  const { user, activeGitHubAccount, clearInvalidInstallations } = useAuth()
+  const { user, activeGitHubAccount } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -141,9 +141,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
   const handleClearInstallations = () => {
     console.log('User requested to clear invalid installations')
-    clearInvalidInstallations()
-    setInstallationError(false)
-    setError(null)
     // The component will re-render and show the GitHubAppInstall component
   }
 
@@ -213,8 +210,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
   if (!installationId) {
     // Build the GitHub App install URL with backend callback as redirect_uri
-    const state = encodeURIComponent(window.location.origin + '/login?afterInstall=1')
-    const installUrl = `https://github.com/apps/${GITHUB_APP_NAME}/installations/new?state=${state}&request_oauth_on_install=true&redirect_uri=${encodeURIComponent(BACKEND_CALLBACK_URL)}`
+    const installUrl = `https://github.com/apps/${GITHUB_APP_NAME}/installations/new?state=${encodeURIComponent(window.location.origin + '/post-install-login')}&request_oauth_on_install=true&redirect_uri=${encodeURIComponent(BACKEND_CALLBACK_URL)}`
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Github className="w-12 h-12 text-gray-400 mb-4" />

@@ -22,6 +22,7 @@ import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Footer from './components/Footer';
+import PostInstallLogin from './pages/PostInstallLogin';
 import './index.css';
 
 // Extend window interface for gtag
@@ -53,6 +54,7 @@ function AppRoutes() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/post-install-login" element={<PostInstallLogin />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
