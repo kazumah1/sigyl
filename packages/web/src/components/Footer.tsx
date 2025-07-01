@@ -13,7 +13,7 @@ const Footer = () => {
     <footer className="w-full bg-[#111113] border-t border-white/10 py-8 px-4 mt-20 relative z-10">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0">
         {/* Left: Social Icons */}
-        <div className="flex items-center gap-6">
+        {/* <div className="flex items-center gap-6">
           <a href="https://github.com/sigyl-ai" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-gray-400 hover:text-white transition-colors text-2xl">
             <FaGithub />
           </a>
@@ -31,7 +31,7 @@ const Footer = () => {
           <a href="mailto:info@sigyl.dev" aria-label="Email" className="text-gray-400 hover:text-white transition-colors text-2xl">
             <FaEnvelope />
           </a>
-        </div>
+        </div> */}
         {/* Center: Copyright */}
         <div className="text-gray-400 text-sm font-medium" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           © 2025 SIGYL. All rights reserved.

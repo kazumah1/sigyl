@@ -27,7 +27,7 @@ export class MarketplaceService {
   /**
    * Search for MCP packages in the registry
    */
-  static async searchPackages(filters: MarketplaceFilters = {}): Promise<PackageSearchResult> {
+  static async searchPackages(filters: MarketplaceFilters = {}, options?: { signal?: AbortSignal }): Promise<PackageSearchResult> {
     try {
       const params = new URLSearchParams()
       
@@ -36,7 +36,7 @@ export class MarketplaceService {
       if (filters.limit) params.append('limit', filters.limit.toString())
       if (filters.offset) params.append('offset', filters.offset.toString())
 
-      const response = await fetch(`${REGISTRY_API_BASE}/packages/search?${params}`)
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/search?${params}`, { signal: options?.signal })
       
       if (!response.ok) {
         throw new Error(`Search failed: ${response.status} ${response.statusText}`)
@@ -45,6 +45,7 @@ export class MarketplaceService {
       const result = await response.json()
       return result.data
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to search packages:', error)
       // Return empty result on error
       return {
@@ -59,9 +60,9 @@ export class MarketplaceService {
   /**
    * Get all packages (for marketplace display)
    */
-  static async getAllPackages(): Promise<MCPPackage[]> {
+  static async getAllPackages(options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
-      const response = await fetch(`${REGISTRY_API_BASE}/packages`)
+      const response = await fetch(`${REGISTRY_API_BASE}/packages`, { signal: options?.signal })
       
       if (!response.ok) {
         throw new Error(`Failed to fetch packages: ${response.status} ${response.statusText}`)
@@ -70,6 +71,7 @@ export class MarketplaceService {
       const result = await response.json()
       return result.data || []
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch all packages:', error)
       return []
     }
@@ -78,9 +80,9 @@ export class MarketplaceService {
   /**
    * Get package details by ID
    */
-  static async getPackageById(packageId: string): Promise<PackageWithDetails | null> {
+  static async getPackageById(packageId: string, options?: { signal?: AbortSignal }): Promise<PackageWithDetails | null> {
     try {
-      const response = await fetch(`${REGISTRY_API_BASE}/packages/id/${encodeURIComponent(packageId)}`)
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/id/${encodeURIComponent(packageId)}`, { signal: options?.signal })
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -92,6 +94,7 @@ export class MarketplaceService {
       const result = await response.json()
       return result.data
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch package by ID:', error)
       return null
     }
@@ -100,9 +103,9 @@ export class MarketplaceService {
   /**
    * Get package details by name
    */
-  static async getPackageDetails(packageName: string): Promise<PackageWithDetails | null> {
+  static async getPackageDetails(packageName: string, options?: { signal?: AbortSignal }): Promise<PackageWithDetails | null> {
     try {
-      const response = await fetch(`${REGISTRY_API_BASE}/packages/${encodeURIComponent(packageName)}`)
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/${encodeURIComponent(packageName)}`, { signal: options?.signal })
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -114,6 +117,7 @@ export class MarketplaceService {
       const result = await response.json()
       return result.data
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch package details:', error)
       return null
     }
@@ -190,15 +194,16 @@ export class MarketplaceService {
   /**
    * Get popular packages (based on download count)
    */
-  static async getPopularPackages(limit: number = 6): Promise<MCPPackage[]> {
+  static async getPopularPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
-      const allPackages = await this.getAllPackages()
+      const allPackages = await this.getAllPackages(options)
       
       // Sort by download count and return top packages
       return allPackages
         .sort((a, b) => (b.downloads_count || 0) - (a.downloads_count || 0))
         .slice(0, limit)
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch popular packages:', error)
       return []
     }
@@ -207,15 +212,16 @@ export class MarketplaceService {
   /**
    * Get packages by category/tags
    */
-  static async getPackagesByCategory(category: string, limit: number = 20): Promise<MCPPackage[]> {
+  static async getPackagesByCategory(category: string, limit: number = 20, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
       const result = await this.searchPackages({
         tags: [category],
         limit
-      })
+      }, options)
       
       return result.packages
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch packages by category:', error)
       return []
     }
@@ -224,9 +230,9 @@ export class MarketplaceService {
   /**
    * Get trending packages (recently created with high downloads)
    */
-  static async getTrendingPackages(limit: number = 6): Promise<MCPPackage[]> {
+  static async getTrendingPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
-      const allPackages = await this.getAllPackages()
+      const allPackages = await this.getAllPackages(options)
       
       // Sort by recent creation and download count
       return allPackages
@@ -237,6 +243,7 @@ export class MarketplaceService {
         })
         .slice(0, limit)
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch trending packages:', error)
       return []
     }

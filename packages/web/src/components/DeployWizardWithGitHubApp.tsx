@@ -247,7 +247,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                   variant="outline"
                   size="sm"
                   onClick={() => setShowPrivate(!showPrivate)}
-                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30"
+                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:text-white hover:border-white/30"
                 >
                   {showPrivate ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   {showPrivate ? 'Hide Private' : 'Show Private'}
@@ -257,7 +257,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                   size="sm"
                   onClick={() => loadRepositories(installationId)}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-2 min-h-[44px] touch-manipulation border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -428,155 +428,155 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
           : 'max-h-0 opacity-0'
       }`}>
         {selectedRepo && (
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Rocket className="w-5 h-5 text-white" />
-                    Deploy Configuration
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Configure deployment settings for {selectedRepo.full_name}
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackToRepos}
-                  className="flex items-center gap-2 border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Repositories
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              {/* Repository Info */}
-              <div className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-lg">
-                <Github className="w-8 h-8 text-gray-300" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-white">{selectedRepo.full_name}</h4>
-                  <p className="text-sm text-gray-400">
-                    {selectedRepo.description || 'No description available'}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {selectedRepo.private && (
-                      <Badge variant="outline" className="text-xs border-white/20 text-white">
-                        <Lock className="w-3 h-3 mr-1" />
-                        Private
-                      </Badge>
-                    )}
-                    {selectedRepo.has_sigyl && (
-                      <Badge className="text-xs bg-white/10 text-white">
-                        <Settings className="w-3 h-3 mr-1" />
-                        Sigyl Ready
-                      </Badge>
-                    )}
-                    {selectedRepo.has_mcp && !selectedRepo.has_sigyl && (
-                      <Badge className="text-xs bg-white/10 text-white">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        MCP Ready
-                      </Badge>
-                    )}
-                    {selectedRepo.sigyl_config && (
-                      <Badge variant="outline" className="text-xs border-white/20 text-white">
-                        <Code className="w-3 h-3 mr-1" />
-                        {selectedRepo.sigyl_config.runtime}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Branch Selection */}
-              <div>
-                <Label htmlFor="branch" className="text-white">Branch</Label>
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                  <SelectTrigger className="bg-black border-white/10 text-white">
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-white/10">
-                    <SelectItem value="main">main</SelectItem>
-                    <SelectItem value="master">master</SelectItem>
-                    <SelectItem value="develop">develop</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* MCP Metadata Display */}
-              {loadingMetadata ? (
-                <div className="flex items-center gap-2 text-gray-300">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Loading MCP configuration...</span>
-                </div>
-              ) : mcpMetadata ? (
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-white">MCP Configuration</h4>
-                  <div className="grid gap-4 p-4 bg-black border border-white/10 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-300">Name</Label>
-                      <p className="text-sm text-white">{mcpMetadata.name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-300">Description</Label>
-                      <p className="text-sm text-white">{mcpMetadata.description}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-300">Port</Label>
-                      <p className="text-sm text-white">{mcpMetadata.port}</p>
-                    </div>
-                    {mcpMetadata.tools && mcpMetadata.tools.length > 0 && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-300">Tools ({mcpMetadata.tools.length})</Label>
-                        <div className="space-y-2">
-                          {mcpMetadata.tools.map((tool, index) => (
-                            <div key={index} className="text-sm p-2 bg-black border border-white/10 rounded">
-                              <strong className="text-white">{tool.name}</strong>: <span className="text-gray-300">{tool.description}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : selectedRepo.has_mcp && (
-                <Alert className="border-yellow-500 bg-yellow-500/10">
-                  <AlertCircle className="h-4 w-4 text-yellow-500" />
-                  <AlertDescription className="text-gray-300">
-                    MCP configuration found but could not be loaded. The deployment will proceed with default settings.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Deployment Error */}
-              {deployError && (
-                <Alert className="border-red-500 bg-red-500/10">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <AlertDescription className="text-gray-300">{deployError}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Deploy Button */}
+          <div className="relative">
+            <div className="mb-4">
               <Button
-                onClick={handleDeploy}
-                disabled={deploying}
-                className="w-full btn-modern"
+                variant="outline"
+                size="sm"
+                onClick={handleBackToRepos}
+                className="flex items-center gap-2 border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white"
               >
-                {deploying ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Deploying...
-                  </>
-                ) : (
-                  <>
-                    <Rocket className="w-4 h-4 mr-2" />
-                    Deploy MCP Server
-                  </>
-                )}
+                <ArrowLeft className="w-4 h-4" />
+                Back to Repositories
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+            <Card className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Rocket className="w-5 h-5 text-white" />
+                  Deploy Configuration
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Configure deployment settings for {selectedRepo.full_name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Repository Info */}
+                <div className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-lg">
+                  <Github className="w-8 h-8 text-gray-300" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-white">{selectedRepo.full_name}</h4>
+                    <p className="text-sm text-gray-400">
+                      {selectedRepo.description || 'No description available'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {selectedRepo.private && (
+                        <Badge variant="outline" className="text-xs border-white/20 text-white">
+                          <Lock className="w-3 h-3 mr-1" />
+                          Private
+                        </Badge>
+                      )}
+                      {selectedRepo.has_sigyl && (
+                        <Badge className="text-xs bg-white/10 text-white">
+                          <Settings className="w-3 h-3 mr-1" />
+                          Sigyl Ready
+                        </Badge>
+                      )}
+                      {selectedRepo.has_mcp && !selectedRepo.has_sigyl && (
+                        <Badge className="text-xs bg-white/10 text-white">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          MCP Ready
+                        </Badge>
+                      )}
+                      {selectedRepo.sigyl_config && (
+                        <Badge variant="outline" className="text-xs border-white/20 text-white">
+                          <Code className="w-3 h-3 mr-1" />
+                          {selectedRepo.sigyl_config.runtime}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Branch Selection */}
+                <div>
+                  <Label htmlFor="branch" className="text-white">Branch</Label>
+                  <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                    <SelectTrigger className="bg-black border-white/10 text-white">
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-white/10">
+                      <SelectItem value="main">main</SelectItem>
+                      <SelectItem value="master">master</SelectItem>
+                      <SelectItem value="develop">develop</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* MCP Metadata Display */}
+                {loadingMetadata ? (
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading MCP configuration...</span>
+                  </div>
+                ) : mcpMetadata ? (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-white">MCP Configuration</h4>
+                    <div className="grid gap-4 p-4 bg-black border border-white/10 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-300">Name</Label>
+                        <p className="text-sm text-white">{mcpMetadata.name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-300">Description</Label>
+                        <p className="text-sm text-white">{mcpMetadata.description}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-300">Port</Label>
+                        <p className="text-sm text-white">{mcpMetadata.port}</p>
+                      </div>
+                      {mcpMetadata.tools && mcpMetadata.tools.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-300">Tools ({mcpMetadata.tools.length})</Label>
+                          <div className="space-y-2">
+                            {mcpMetadata.tools.map((tool, index) => (
+                              <div key={index} className="text-sm p-2 bg-black border border-white/10 rounded">
+                                <strong className="text-white">{tool.name}</strong>: <span className="text-gray-300">{tool.description}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : selectedRepo.has_mcp && (
+                  <Alert className="border-yellow-500 bg-yellow-500/10">
+                    <AlertCircle className="h-4 w-4 text-yellow-500" />
+                    <AlertDescription className="text-gray-300">
+                      MCP configuration found but could not be loaded. The deployment will proceed with default settings.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Deployment Error */}
+                {deployError && (
+                  <Alert className="border-red-500 bg-red-500/10">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <AlertDescription className="text-gray-300">{deployError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Deploy Button */}
+                <Button
+                  onClick={handleDeploy}
+                  disabled={deploying}
+                  className="w-full btn-modern hover:bg-neutral-900 hover:text-white"
+                >
+                  {deploying ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deploying...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="w-4 h-4 mr-2" />
+                      Deploy MCP Server
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
@@ -612,7 +612,7 @@ const RepoCard: React.FC<RepoCardProps> = ({ repo, isSelected, onSelect, configT
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             {configType === 'sigyl' && (
-              <Badge className="text-xs bg-white/10 text-white font-medium">
+              <Badge variant="outline" className="text-xs border-white/20 text-white">
                 <Settings className="w-3 h-3 mr-1" />
                 sigyl.yaml
               </Badge>

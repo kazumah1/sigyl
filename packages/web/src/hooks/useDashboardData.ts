@@ -5,7 +5,6 @@ import { analyticsService, AnalyticsMetrics, VisitData, ToolUsageData, ServerSta
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface DashboardData {
-  workspace: Workspace | null;
   mcpServers: MCPServer[];
   metrics: AnalyticsMetrics;
   analyticsData: {
@@ -111,7 +110,7 @@ const getDemoData = () => {
 
 export const useDashboardData = () => {
   const { user } = useAuth();
-  const [data, setData] = useState<DashboardData>(() => {
+  const [data, setData] = useState<Omit<DashboardData, 'workspace'>>(() => {
     // Check for admin session immediately
     const adminSession = localStorage.getItem('admin_session');
     
@@ -119,7 +118,9 @@ export const useDashboardData = () => {
       // Start with demo data for admin sessions (immediate loading)
       const demoData = getDemoData();
       return {
-        ...demoData,
+        mcpServers: demoData.mcpServers,
+        metrics: demoData.metrics,
+        analyticsData: demoData.analyticsData,
         loading: false,
         error: null
       };
@@ -127,7 +128,6 @@ export const useDashboardData = () => {
     
     // For regular users, start with loading state
     return {
-      workspace: null,
       mcpServers: [],
       metrics: {
         totalVisits: 0,
@@ -159,7 +159,9 @@ export const useDashboardData = () => {
         // No user, use demo data
         const demoData = getDemoData();
         setData({
-          ...demoData,
+          mcpServers: demoData.mcpServers,
+          metrics: demoData.metrics,
+          analyticsData: demoData.analyticsData,
           loading: false,
           error: null
         });
@@ -169,15 +171,7 @@ export const useDashboardData = () => {
       // Load real data for authenticated users
       setData(prev => ({ ...prev, loading: true, error: null }));
 
-      let workspaces = await workspaceService.getUserWorkspaces();
-      let workspace = workspaces[0] || null;
-
-      // If no workspaces exist, create a demo workspace
-      if (!workspace) {
-        workspace = await workspaceService.getOrCreateDemoWorkspace();
-      }
-
-      // === MCP Servers: Use new logic based on mcp_packages and author_id ===
+      // Only fetch mcpServers and analytics, do not fetch or create workspaces
       // Get github_id from user metadata (fallback to sub if not present)
       const githubId = user.user_metadata?.github_id || user.user_metadata?.sub;
       let mcpServers: MCPServer[] = [];
@@ -185,42 +179,31 @@ export const useDashboardData = () => {
         mcpServers = await mcpServerService.getUserMCPServers(githubId);
       }
 
-      const [metrics, visitData, toolUsageData, serverStatusData] = await Promise.all([
-        analyticsService.getMetrics(workspace.id),
-        analyticsService.getVisitData(workspace.id),
-        analyticsService.getToolUsageData(workspace.id),
-        analyticsService.getServerStatusData(workspace.id)
-      ]);
-
+      // Use demo metrics/analytics if you can't fetch without workspace
+      const demoData = getDemoData();
       setData({
-        workspace,
         mcpServers,
-        metrics,
-        analyticsData: {
-          visitData,
-          toolUsageData,
-          serverStatusData
-        },
+        metrics: demoData.metrics,
+        analyticsData: demoData.analyticsData,
         loading: false,
         error: null
       });
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      setData(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to load dashboard data'
-      }));
+    } catch (err: any) {
+      setData(prev => ({ ...prev, loading: false, error: err?.message || 'Failed to load dashboard data' }));
     }
   };
 
   useEffect(() => {
     loadDashboardData();
+    // eslint-disable-next-line
   }, [user]);
 
   const refetch = () => {
     loadDashboardData();
   };
 
-  return { ...data, refetch };
+  return {
+    ...data,
+    refetch
+  };
 };

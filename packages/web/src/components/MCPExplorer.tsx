@@ -69,67 +69,87 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   
   const { user } = useAuth()
   const navigate = useNavigate()
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load packages on component mount
   useEffect(() => {
-    loadPackages()
-  }, [])
+    loadPackages();
+    // eslint-disable-next-line
+  }, []);
 
   // Load packages based on search and filters
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       if (searchTerm || selectedCategory !== 'all') {
-        searchPackages()
+        searchPackages();
       } else {
-        loadPackages()
+        loadPackages();
       }
-    }, 300)
+    }, 800); // Increased debounce to 800ms
 
-    return () => clearTimeout(debounceTimer)
-  }, [searchTerm, selectedCategory])
+    return () => {
+      clearTimeout(debounceTimer);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [searchTerm, selectedCategory]);
 
   const loadPackages = async () => {
-    setLoading(true)
+    setLoading(true);
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
       const [allPackages, popular, trending] = await Promise.all([
-        MarketplaceService.getAllPackages(),
-        MarketplaceService.getPopularPackages(6),
-        MarketplaceService.getTrendingPackages(6)
-      ])
-      
-      setPackages(allPackages)
-      setPopularPackages(popular)
-      setTrendingPackages(trending)
-    } catch (error) {
-      console.error('Failed to load packages:', error)
-      toast.error('Failed to load MCP packages')
+        MarketplaceService.getAllPackages({ signal: controller.signal }),
+        MarketplaceService.getPopularPackages(6, { signal: controller.signal }),
+        MarketplaceService.getTrendingPackages(6, { signal: controller.signal })
+      ]);
+      setPackages(allPackages);
+      setPopularPackages(popular);
+      setTrendingPackages(trending);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Failed to load packages:', error);
+        toast.error('Failed to load MCP packages');
+      }
     } finally {
-      setLoading(false)
-      setIsLoaded(true)
+      setLoading(false);
+      setIsLoaded(true);
     }
-  }
+  };
 
   const searchPackages = async () => {
-    setLoading(true)
+    setLoading(true);
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
       const filters: MarketplaceFilters = {
         q: searchTerm || undefined,
         limit: 50
-      }
-      
+      };
       if (selectedCategory !== 'all') {
-        filters.tags = [selectedCategory]
+        filters.tags = [selectedCategory];
       }
-      
-      const result = await MarketplaceService.searchPackages(filters)
-      setPackages(result.packages)
-    } catch (error) {
-      console.error('Failed to search packages:', error)
-      toast.error('Failed to search MCP packages')
+      const result = await MarketplaceService.searchPackages(filters, { signal: controller.signal });
+      setPackages(result.packages);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Failed to search MCP packages', error);
+        toast.error('Failed to search MCP packages');
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleViewDetails = async (pkg: MCPPackage) => {
     try {
@@ -206,7 +226,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
   const renderPackageCard = (pkg: MCPPackage, index: number) => (
     <Card
       key={pkg.id}
-      className="bg-[#232329] border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
+      className="bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
       style={{ animationDelay: `${index * 100}ms` }}
       onClick={() => navigate(`/mcp/${pkg.id}`)}
     >
@@ -226,12 +246,11 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               </CardDescription>
             </div>
           </div>
-          {getStatusIcon([])} {/* TODO: Add deployments to package data */}
         </div>
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-gray-300 mb-4 line-clamp-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <p className="text-white mb-4 line-clamp-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           {pkg.description || 'No description available'}
         </p>
 
@@ -268,7 +287,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
     <div className="min-h-screen bg-[#0a0a0a] relative">
       <div className="pt-16">
         {/* Hero Section */}
-        <section className="py-20 px-6 text-center relative z-10">
+        <section className="py-10 px-6 text-center relative z-10">
           <div className="max-w-4xl mx-auto">
             <h1 
               className="text-5xl md:text-6xl font-bold text-white mb-6"
@@ -283,21 +302,21 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
             {/* Search and Filter */}
             <div 
               ref={searchBarRef}
-              className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto mb-12"
+              className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto mb-10"
             >
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white w-5 h-5" />
                 <Input
                   placeholder="Search MCP servers, tools, integrations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-3 text-lg border border-white/10 bg-[#232329] focus:border-white/30 text-white"
+                  className="pl-10 py-3 text-lg border border-white/10 bg-black/60 focus:border-white/30 text-white"
                   style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 />
               </div>
               <Button 
                 variant="outline" 
-                className="px-6 py-3 border border-white/10 bg-[#232329] text-white hover:bg-white/5 hover:border-white/20"
+                className="px-6 py-3 border border-white/10 bg-black/60 text-white hover:bg-white/5 hover:border-white/20 hover:text-white"
                 style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
               >
                 <Filter className="w-5 h-5 mr-2" />
@@ -306,7 +325,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
             </div>
 
             {/* Category Pills */}
-            <div className="flex flex-wrap justify-center gap-3 mb-16">
+            <div className="flex flex-wrap justify-center gap-3">
               {categories.map((category, index) => (
                 <Button
                   key={category}
@@ -314,8 +333,8 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                   onClick={() => setSelectedCategory(category)}
                   className={`capitalize px-4 py-2 transition-all duration-300 ${
                     selectedCategory === category 
-                      ? 'bg-white text-black hover:bg-gray-100'
-                      : 'bg-[#232329] border border-white/10 text-white hover:bg-white/5 hover:border-white/20'
+                      ? 'bg-white text-black hover:bg-gray-100 border-white/20'
+                      : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'
                   }`}
                   style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
@@ -327,13 +346,13 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         </section>
 
         {/* Main Content */}
-        <section className="px-6 pb-20">
+        <section className="px-6 pb-10">
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-[#232329] border border-white/10">
+              <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
                 <TabsTrigger 
                   value="discover" 
-                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all"
                   style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   <Globe className="w-4 h-4 mr-2" />
@@ -341,7 +360,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="popular" 
-                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all"
                   style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   <Heart className="w-4 h-4 mr-2" />
@@ -349,7 +368,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="trending" 
-                  className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+                  className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all"
                   style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
@@ -405,7 +424,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
       {/* Package Details Modal */}
       {showDetails && selectedPackage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#232329] rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative border border-white/10">
+          <div className="bg-black/60 rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative border border-white/10">
             <button 
               onClick={() => setShowDetails(false)} 
               className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"

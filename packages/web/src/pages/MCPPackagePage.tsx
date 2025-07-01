@@ -42,7 +42,8 @@ import {
   ChevronUp,
   FileText,
   MessageCircle,
-  Copy as CopyIcon
+  Copy as CopyIcon,
+  Code2
 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -641,7 +642,7 @@ const MCPPackagePage = () => {
         <Button
           variant="outline"
           onClick={() => navigate(isOwner ? '/dashboard' : '/marketplace')}
-          className="mb-6 border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+          className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to {isOwner ? 'Dashboard' : 'Marketplace'}
@@ -652,7 +653,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4">
             <Button
               onClick={() => setEditMode(true)}
-              className="bg-blue-600 text-white"
+              className="btn-modern"
             >
               Edit
             </Button>
@@ -662,7 +663,7 @@ const MCPPackagePage = () => {
           <div className="flex justify-end mb-4 gap-2">
             <Button
               onClick={handleApplyEdit}
-              className="bg-green-600 text-white"
+              className="btn-modern"
               disabled={saving}
             >
               {saving ? 'Saving...' : 'Apply'}
@@ -670,7 +671,7 @@ const MCPPackagePage = () => {
             <Button
               onClick={() => setEditMode(false)}
               variant="ghost"
-              className="text-gray-400"
+              className="text-gray-400 hover:text-white hover:bg-[#23232a]"
               disabled={saving}
             >
               Cancel
@@ -681,8 +682,8 @@ const MCPPackagePage = () => {
         {/* New Deployment Success Alert */}
         {isNewDeployment && deploymentStatus === 'success' && (
           <Alert className="mb-6 border-green-500 bg-green-500/10">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            <AlertDescription className="text-green-400">
+            <CheckCircle className="h-4 w-4 text-white" />
+            <AlertDescription className="text-white">
               🎉 Your MCP server has been deployed successfully! It's now running and ready to use.
             </AlertDescription>
           </Alert>
@@ -758,8 +759,8 @@ const MCPPackagePage = () => {
         {/* Deployment Error Alert */}
         {deploymentStatus === 'failed' && deploymentError && (
           <Alert className="mb-6 border-red-500 bg-red-500/10">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <AlertDescription className="text-red-400">
+            <AlertCircle className="h-4 w-4 text-white" />
+            <AlertDescription className="text-white">
               <div className="space-y-2">
                 <div className="font-semibold">Deployment Failed</div>
                 <div>{deploymentError}</div>
@@ -767,7 +768,7 @@ const MCPPackagePage = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleRetryDeployment}
-                  className="mt-2 border-red-500 text-red-400 hover:bg-red-500/10"
+                  className="mt-2 border-white text-white hover:bg-[#23232a] hover:text-white"
                 >
                   Try Again
                 </Button>
@@ -796,17 +797,13 @@ const MCPPackagePage = () => {
                   <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
                 )}
                 {isOwner && (
-                  <Badge className="bg-blue-500/20 text-blue-400 flex items-center gap-1">
+                  <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1">
                     <User className="w-3 h-3" />
                     Owner
                   </Badge>
                 )}
                 {pkg.deployments && pkg.deployments.length > 0 && (
-                  <Badge className={`flex items-center gap-1 ${
-                    pkg.deployments.some(d => d.status === 'active') ? 'bg-green-500/20 text-green-400' :
-                    pkg.deployments.some(d => d.status === 'failed') ? 'bg-red-500/20 text-red-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
+                  <Badge className="flex items-center gap-1 bg-white/10 text-white border-white/20">
                     {pkg.deployments.some(d => d.status === 'active') ? <CheckCircle className="w-3 h-3" /> :
                      pkg.deployments.some(d => d.status === 'failed') ? <AlertCircle className="w-3 h-3" /> :
                      <Pause className="w-3 h-3" />}
@@ -827,7 +824,7 @@ const MCPPackagePage = () => {
                   <Button
                     onClick={handleCopyServiceUrl}
                     variant="outline"
-                    className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+                    className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Service URL
@@ -836,7 +833,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleRestartService}
                   variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Restart Service
@@ -844,7 +841,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleStopService}
                   variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                 >
                   <Pause className="w-4 h-4 mr-2" />
                   Stop Service
@@ -852,7 +849,7 @@ const MCPPackagePage = () => {
                 <Button
                   onClick={handleDeleteService}
                   variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Service
@@ -862,31 +859,32 @@ const MCPPackagePage = () => {
               <>
                 <Button
                   onClick={handleInstallClick}
-                  className="bg-white text-black hover:bg-gray-200 transition-all duration-200 font-semibold px-8 border border-gray-300"
+                  className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-gray-100 hover:text-black transition-colors"
                   disabled={loading}
+                  variant="secondary"
                   size="lg"
                 >
                   Connect
                 </Button>
-                {pkg.source_api_url && (
+                {/* {pkg.source_api_url && (
                   <Button
                     onClick={() => window.open(pkg.source_api_url, '_blank')}
-                    variant="outline"
-                    className="border-white text-white bg-transparent hover:bg-white hover:text-black transition-all duration-200"
+                    size="lg"
+                    className="btn-modern hover:bg-neutral-900 hover:text-white"
                   >
                     <Github className="w-4 h-4 mr-2" />
                     View on GitHub
                   </Button>
-                )}
+                )} */}
               </>
             )}
           </div>
           </div>
           <div className="flex items-center gap-4 text-gray-400 mb-4">
-            <span className="flex items-center gap-1">
+            {/* <span className="flex items-center gap-1">
               <User className="w-4 h-4" />
               by {pkg.author_id || 'Unknown'}
-            </span>
+            </span> */}
             <span className="flex items-center gap-1">
               <Package className="w-4 h-4" />
               v{editMode ? editFields.version || '1.0.0' : pkg.version || '1.0.0'}
@@ -937,35 +935,35 @@ const MCPPackagePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Tabs defaultValue={isOwner ? "overview" : "overview"} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-900/50">
-                <TabsTrigger value="overview" className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
+              <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
+                <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <BookOpen className="w-5 h-5 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="tools" className="flex items-center gap-2">
-                  <Code className="w-4 h-4" />
+                <TabsTrigger value="tools" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                  <Code2 className="w-5 h-5 mr-2" />
                   Tools
                 </TabsTrigger>
                 {isOwner ? (
-                  <TabsTrigger value="logs" className="flex items-center gap-2">
-                    <Terminal className="w-4 h-4" />
+                  <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                    <Terminal className="w-5 h-5 mr-2" />
                     Logs
                   </TabsTrigger>
                 ) : (
-                  <TabsTrigger value="deployment" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
+                  <TabsTrigger value="deployment" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+                    <Settings className="w-5 h-5 mr-2" />
                     Deployment
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="api" className="flex items-center gap-2">
+                {/* <TabsTrigger value="api" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <Globe className="w-4 h-4" />
                   API
-                </TabsTrigger>
+                </TabsTrigger> */}
               </TabsList>
 
               <TabsContent value="overview" className="mt-6">
                 <div className="space-y-6">
-                  <Card className="bg-gray-900/50 border-gray-800">
+                  <Card className="bg-black/60 border border-white/10">
                     <CardHeader>
                       <CardTitle className="text-white">Description</CardTitle>
                     </CardHeader>
@@ -986,7 +984,7 @@ const MCPPackagePage = () => {
               </TabsContent>
 
               <TabsContent value="tools" className="mt-6">
-                <Card className="bg-gray-900/50 border-gray-800">
+                <Card className="bg-black/60 border border-white/10 ">
                   <CardHeader>
                     <CardTitle className="text-white">Available Tools</CardTitle>
                   </CardHeader>
@@ -1000,7 +998,7 @@ const MCPPackagePage = () => {
                             : (tool as any)?.description || 'Tool functionality and usage details would be displayed here.';
 
                           return (
-                            <div key={index} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-gray-700">
                               <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
                                 <Code className="w-4 h-4" />
                                 {toolName}
@@ -1033,7 +1031,7 @@ const MCPPackagePage = () => {
                           disabled={isRefreshing}
                           variant="outline"
                           size="sm"
-                          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                          className="border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white"
                         >
                           <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                           Refresh
@@ -1053,7 +1051,7 @@ const MCPPackagePage = () => {
                 </TabsContent>
               ) : (
                 <TabsContent value="deployment" className="mt-6">
-                  <Card className="bg-gray-900/50 border-gray-800">
+                  <Card className="bg-black/60 border border-white/10">
                     <CardHeader>
                       <CardTitle className="text-white">Deployment Guide</CardTitle>
                     </CardHeader>
@@ -1064,8 +1062,8 @@ const MCPPackagePage = () => {
                             <Download className="w-4 h-4" />
                             Quick Install
                           </h4>
-                          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                            <code className="text-green-400">npm install {pkg.name.toLowerCase().replace(/\s+/g, '-')}</code>
+                          <div className="bg-white/10 p-4 rounded-lg border border-gray-700">
+                            <code className="text-white">npm install {pkg.name.toLowerCase().replace(/\s+/g, '-')}</code>
                           </div>
                         </div>
                         <div>
@@ -1073,7 +1071,7 @@ const MCPPackagePage = () => {
                             <Settings className="w-4 h-4" />
                             Configuration
                           </h4>
-                          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                          <div className="bg-white/10 p-4 rounded-lg border border-gray-700">
                             <pre className="text-gray-300 text-sm overflow-x-auto">
 {`{
   "mcpServers": {
@@ -1096,7 +1094,7 @@ const MCPPackagePage = () => {
               )}
 
               <TabsContent value="api" className="mt-6">
-                <Card className="bg-gray-900/50 border-gray-800">
+                <Card className="bg-black/60 border border-white/10">
                   <CardHeader>
                     <CardTitle className="text-white">API Reference</CardTitle>
                   </CardHeader>
@@ -1114,7 +1112,7 @@ const MCPPackagePage = () => {
                           <Button
                             onClick={() => window.open(pkg.source_api_url, '_blank')}
                             variant="outline"
-                            className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                            className="border-white/20 text-white bg-black hover:bg-white/10 hover:border-white/30 hover:text-white"
                           >
                             <Github className="w-4 h-4 mr-2" />
                             View on GitHub
@@ -1131,7 +1129,7 @@ const MCPPackagePage = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Package Info */}
-            <Card className="bg-gray-900/50 border-gray-800">
+            <Card className="bg-black/60 border border-white/10">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Package className="w-4 h-4" />
@@ -1153,15 +1151,15 @@ const MCPPackagePage = () => {
                     <span className="text-white">{pkg.version || '1.0.0'}</span>
                   )}
                 </div>
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <span className="text-gray-400">Author</span>
                   <span className="text-white">{pkg.author_id || 'Unknown'}</span>
-                </div>
+                </div> */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Last Updated</span>
                   <span className="text-white">{new Date(pkg.updated_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <span className="text-gray-400">Logo URL</span>
                   {editMode ? (
                     <input
@@ -1174,8 +1172,8 @@ const MCPPackagePage = () => {
                   ) : (
                     <span className="text-white break-all">{pkg.logo_url || '-'}</span>
                   )}
-                </div>
-                <div className="flex items-center justify-between">
+                </div> */}
+                {/* <div className="flex items-center justify-between">
                   <span className="text-gray-400">Screenshots</span>
                   {editMode ? (
                     <input
@@ -1188,7 +1186,7 @@ const MCPPackagePage = () => {
                   ) : (
                     <span className="text-white break-all">{Array.isArray(pkg.screenshots) ? pkg.screenshots.join(', ') : pkg.screenshots || '-'}</span>
                   )}
-                </div>
+                </div> */}
                 {!isOwner && (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400">Downloads</span>
