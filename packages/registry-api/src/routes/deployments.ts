@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { CloudRunService, CloudRunConfig } from 'container-builder/index';
+import { CloudRunService, CloudRunConfig } from '../../container-builder/src/gcp/cloudRunService';
 import { PackageService } from '../services/packageService';
 
 const router = express.Router();
