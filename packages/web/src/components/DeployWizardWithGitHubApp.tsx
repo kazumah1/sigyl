@@ -226,13 +226,13 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
           ? 'max-h-0 opacity-0' 
           : 'max-h-[5000px] opacity-100'
       }`}>
-        <Card className="bg-[#18181b] border border-[#23232a] rounded-2xl p-6">
+        <Card className="bg-[#18181b] border border-white/10 rounded-2xl p-6">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-white">
               <Shield className="w-5 h-5 text-white" />
               Select Repository
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-white">
               Choose a repository to deploy as an MCP server using GitHub App
             </CardDescription>
           </CardHeader>
@@ -246,7 +246,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                   placeholder="Filter by name or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="min-h-[44px] bg-black border-white/10 border-2text-white placeholder-gray-400 rounded-lg w-full"
+                  className="min-h-[44px] bg-black border-white/10 border-2text-white placeholder-white rounded-lg w-full"
                 />
               </div>
               <Button
@@ -274,7 +274,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
             {installationError && (
               <Alert className="border-yellow-500 bg-yellow-500/10">
                 <AlertCircle className="h-4 w-4 text-yellow-500" />
-                <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-gray-300">
+                <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-white">
                   <span>GitHub App installation may be corrupted or expired.</span>
                   <Button
                     variant="outline"
@@ -301,7 +301,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
               <div className="flex items-center justify-center py-12">
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="w-8 h-8 animate-spin text-white" />
-                  <p className="text-sm text-gray-400 text-center">Loading repositories...</p>
+                  <p className="text-sm text-white text-center">Loading repositories...</p>
                 </div>
               </div>
             )}
@@ -357,7 +357,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 {regularRepos.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-4">
-                      <Github className="w-5 h-5 text-gray-400" />
+                      <Github className="w-5 h-5 text-white" />
                       <h3 className="text-lg font-semibold text-white">Other Repositories</h3>
                       <Badge variant="outline" className="ml-auto border-white/20 text-white">{regularRepos.length}</Badge>
                     </div>
@@ -377,9 +377,9 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
                 {filteredRepos.length === 0 && (
                   <div className="text-center py-12">
-                    <Github className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <Github className="w-12 h-12 text-white mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2 text-white">No repositories found</h3>
-                    <p className="text-sm text-gray-400 mb-4">
+                    <p className="text-sm text-white mb-4">
                       {searchTerm ? 'Try adjusting your search terms.' : 'No repositories match your current filters.'}
                     </p>
                     {searchTerm && (
@@ -398,9 +398,9 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
 
             {!loading && repositories.length === 0 && !error && (
               <div className="text-center py-12">
-                <Github className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <Github className="w-12 h-12 text-white mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2 text-white">No repositories available</h3>
-                <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">
+                <p className="text-sm text-white mb-4 max-w-md mx-auto">
                   Make sure the GitHub App has access to your repositories. You may need to configure repository access in your GitHub settings.
                 </p>
                 <Button

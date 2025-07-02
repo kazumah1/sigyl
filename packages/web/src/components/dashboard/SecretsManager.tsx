@@ -466,11 +466,11 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       <CardContent>
         <Tabs defaultValue="secrets" className="w-full">
           <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
-            <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+            <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
               <Lock className="w-4 h-4 mr-2" />
               Environment Variables
             </TabsTrigger>
-            <TabsTrigger value="api-keys" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
+            <TabsTrigger value="api-keys" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
               <Key className="w-4 h-4 mr-2" />
               API Keys
             </TabsTrigger>
@@ -543,7 +543,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 placeholder="Enter API key name"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="bg-[#23232a] border-[#2d2d36] text-white h-10 text-base font-semibold"
+                className="bg-white/10 border-white/10 text-white h-10 text-base font-semibold"
                 disabled={isCreatingApiKey}
               />
               <Button 
@@ -661,14 +661,14 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
             <div className="space-y-6">
               {/* Quick Templates */}
               <div>
-                <Label className="text-sm font-semibold text-gray-300 mb-2 block">Quick Templates</Label>
+                <Label className="text-sm font-semibold text-white mb-2 block">Quick Templates</Label>
                 <div className="flex flex-wrap gap-3">
                   {secretTemplates.map((template) => (
                     <Button
                       key={template.key}
                       size="sm"
                       onClick={() => handleTemplateSelect(template)}
-                      className="text-xs bg-[#23232a] border-white/20 text-white/80 hover:bg-[#23232a] hover:text-white rounded-lg font-semibold px-4 py-2"
+                      className="text-xs bg-white/10 border-white/20 text-white/80 hover:bg-[#23232a] hover:text-white rounded-lg font-semibold px-4 py-2"
                     >
                       {template.key}
                     </Button>
@@ -676,47 +676,47 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 </div>
               </div>
               <div>
-                <Label htmlFor="key" className="text-sm font-semibold text-gray-300 mb-1">Key</Label>
+                <Label htmlFor="key" className="text-sm font-semibold text-white mb-1">Key</Label>
                 <Input
                   id="key"
                   placeholder="e.g., OPENAI_API_KEY"
                   value={formData.key}
                   onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white rounded-lg h-11"
+                  className="bg-white/10 border-white/10 text-white rounded-lg h-11"
                 />
               </div>
               <div>
-                <Label htmlFor="value" className="text-sm font-semibold text-gray-300 mb-1">Value</Label>
+                <Label htmlFor="value" className="text-sm font-semibold text-white mb-1">Value</Label>
                 <Textarea
                   id="value"
                   placeholder="Enter the secret value"
                   value={formData.value}
                   onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white rounded-lg min-h-[80px]"
+                  className="bg-white/10 border-white/10 text-white rounded-lg min-h-[80px]"
                 />
               </div>
               <div>
-                <Label htmlFor="description" className="text-sm font-semibold text-gray-300 mb-1">Description (Optional)</Label>
+                <Label htmlFor="description" className="text-sm font-semibold text-white mb-1">Description (Optional)</Label>
                 <Input
                   id="description"
                   placeholder="Brief description of this secret"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-[#23232a] border-white/10 text-white rounded-lg h-11"
+                  className="bg-white/10 border-white/10 text-white rounded-lg h-11"
                 />
               </div>
             </div>
             <DialogFooter className="mt-8 flex gap-3">
               <Button
                 onClick={() => setIsSecretDialogOpen(false)}
-                className="bg-transparent border border-white/20 text-gray-400 hover:bg-[#23232a] hover:text-white rounded-lg h-10 px-6 font-semibold"
+                className="btn-modern hover:bg-neutral-900 hover:text-white"
               >
                 Cancel
               </Button>
               <Button
                 onClick={editingSecret ? handleUpdateSecret : handleCreateSecret}
                 disabled={isCreatingSecret || !formData.key.trim() || !formData.value.trim()}
-                className="bg-black border border-white text-white hover:bg-white hover:text-black"
+                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
               >
                 {isCreatingSecret ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -762,7 +762,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               <Button
                 variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="border-white/20 text-black bg-white hover:bg-gray-100 px-6 py-2"
+                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
               >
                 Close
               </Button>

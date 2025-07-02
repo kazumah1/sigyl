@@ -67,7 +67,7 @@ const Index = () => {
             <Button 
               size="lg" 
               onClick={() => navigate('/deploy')}
-              className="w-full sm:w-auto bg-white text-black border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold hover:bg-gray-100 hover:text-black transition-colors min-h-[48px] touch-manipulation font-[500]" 
+              className="w-full sm:w-auto bg-white text-black border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold hover:bg-neutral-900 hover:border-neutral-900 hover:text-white transition-colors min-h-[48px] touch-manipulation font-[500]" 
               style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
             >
               Get Started Free
@@ -76,7 +76,8 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               onClick={() => navigate('/marketplace')}
-              className="w-full sm:w-auto btn-modern min-h-[48px] touch-manipulation text-lg font-semibold"
+              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
+              className="w-full sm:w-auto bg-black/60 text-white border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold hover:bg-neutral-900 hover:border-neutral-900 hover:text-white transition-colors min-h-[48px] touch-manipulation font-[500]"
             >
               Marketplace
             </Button>
