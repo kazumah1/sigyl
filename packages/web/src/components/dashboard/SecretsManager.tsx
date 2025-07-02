@@ -762,7 +762,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               <Button
                 variant="outline"
                 onClick={() => { setShowKeyModal(false); setNewlyCreatedKey(null); }}
-                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                className="border-white/20 text-black bg-white hover:bg-gray-100 px-6 py-2"
               >
                 Close
               </Button>
