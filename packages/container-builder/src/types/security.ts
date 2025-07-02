@@ -103,6 +103,7 @@ export interface RepositoryAnalysis {
   dependencies: string[];
   devDependencies: string[];
   sigylConfig?: SigylConfig;
+  hasMcpYaml?: boolean;
 }
 
 /**
