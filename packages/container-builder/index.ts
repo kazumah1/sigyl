@@ -390,4 +390,6 @@ export async function pushDockerImage(imageName: string, registry: string, tag: 
     throw new Error(`Docker push failed: ${error}`)
   }
 }
+
+export * from './src/index';
   
