@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { glob } from 'glob';
+import glob from 'glob';
 import * as yaml from 'js-yaml';
 import { Octokit } from '@octokit/rest';
 import * as crypto from 'crypto';
@@ -375,7 +375,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     ];
 
     for (const pattern of patterns) {
-      const matches = await glob(pattern, { 
+      const matches = glob.sync(pattern, {
         cwd: localPath,
         ignore: ['node_modules/**', 'dist/**', 'build/**', '.git/**']
       });
