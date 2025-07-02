@@ -104,6 +104,7 @@ export interface RepositoryAnalysis {
   devDependencies: string[];
   sigylConfig?: SigylConfig;
   hasMcpYaml?: boolean;
+  hasSmitheryYaml?: boolean;
 }
 
 /**

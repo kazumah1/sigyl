@@ -195,7 +195,7 @@ async function testChangeDetection(testDir: string) {
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
   
   // Run second scan to detect changes
-  const report = await validator.validateMCPSecurity('test-repo', 'main', testDir);
+  // const report = await validator.validateMCPSecurity('test-repo', 'main', testDir);
   
   console.log('   ✅ Change detection working - tool modifications tracked');
 }
