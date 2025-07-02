@@ -56,7 +56,7 @@ const Index = () => {
       <PageHeader />
       <HeroSection
         title="deploying servers for the world of AI agents."
-        subtitle="fast deployment enterprise MCP hosting & marketplace"
+        subtitle="fast deployment, enterprise MCP hosting, & marketplace"
         buttons={
           <>
             <Button 
