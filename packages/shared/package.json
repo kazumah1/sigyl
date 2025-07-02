@@ -1,0 +1,6 @@
+{
+  "name": "@sigyl/shared",
+  "version": "1.0.0",
+  "main": "types.js",
+  "types": "types.d.ts"
+} 
