@@ -1,8 +1,9 @@
 import { MCPSecurityValidator } from '../security/validator';
 import { SecurityReport } from '../types/security';
 import { SigylConfigUnion, NodeRuntimeConfig, ContainerRuntimeConfig } from '../types/config';
-import { GoogleAuth, JWT, OAuth2Client } from 'google-auth-library';
-import * as fs from 'fs';
+import { GoogleAuth } from 'google-auth-library';
+// import { JWT, OAuth2Client } from 'google-auth-library'; // <-- comment out if unused
+// import * as fs from 'fs'; // <-- comment out if unused
 
 export interface CloudRunDeploymentRequest {
   repoUrl: string;
