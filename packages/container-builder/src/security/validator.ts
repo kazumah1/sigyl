@@ -11,15 +11,16 @@ import {
   SecuritySeverity,
   RepositoryAnalysis,
   FileAnalysis,
-  MCPConfig,
-  MCPConfigSchema,
-  PatternMatch
+  MCPConfig
 } from '../types/security';
-import { SECURITY_PATTERNS, getBlockingPatterns } from './patterns';
+import { SECURITY_PATTERNS } from './patterns';
 import { PatternMatcher } from './patternMatcher';
 import { RepositoryAnalyzer } from './repositoryAnalyzer';
 import { SigylConfig } from '../types/config';
-import { ConfigSchema as SigylConfigSchema } from '../types/config';
+// If you need the runtime schema, import the actual zod schema value
+// import { ConfigSchema as SigylConfigSchema } from '../types/config';
+// If you only need the type, use:
+// import type { ConfigSchema as SigylConfigSchema } from '../types/config';
 
 /**
  * Tool description analysis result
@@ -228,7 +229,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
 
     // Check MCP config files for tool definitions
     // Note: Our MCPConfig interface may not have tools, so we check for any additional properties
-    const mcpConfig = repoAnalysis.mcpConfig as any;
+    const mcpConfig = repoAnalysis.sigylConfig as any;
     if (mcpConfig?.tools) {
       for (const tool of mcpConfig.tools) {
         if (tool.description) {
@@ -327,7 +328,13 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
         }
       }
 
-      // Step 5: Generate security report
+      // Step 5: Add configuration-based vulnerabilities
+      if (repoAnalysis.sigylConfig && 'name' in repoAnalysis.sigylConfig) {
+        const configVulns = this.validateMCPConfiguration(repoAnalysis.sigylConfig as any);
+        vulnerabilities.push(...configVulns);
+      }
+
+      // Step 6: Generate security report
       const report = this.generateSecurityReport(
         repoUrl,
         branch,
@@ -343,7 +350,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
         analysisResults: toolAnalysisResults
       };
 
-      // Step 6: Log critical findings
+      // Step 7: Log critical findings
       this.logCriticalFindings(report);
 
       return report;
@@ -421,8 +428,8 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     }
 
     // Add configuration-based vulnerabilities
-    if (repoAnalysis.mcpConfig) {
-      const configVulns = this.validateMCPConfiguration(repoAnalysis.mcpConfig);
+    if (repoAnalysis.sigylConfig && 'name' in repoAnalysis.sigylConfig) {
+      const configVulns = this.validateMCPConfiguration(repoAnalysis.sigylConfig as any);
       vulnerabilities.push(...configVulns);
     }
 
@@ -611,7 +618,7 @@ Answer only with "YES" or "NO". If you are not sure, answer "NO".`;
     if (sigylConfigFile) {
       try {
         const configData = yaml.load(sigylConfigFile.content);
-        sigylConfig = SigylConfigSchema.parse(configData);
+        sigylConfig = configData as SigylConfig;
       } catch (error) {
         console.warn('Could not parse MCP configuration:', error);
       }
