@@ -294,3 +294,12 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
 - No plaintext secret values are ever exposed in list or get-by-id API responses.
 - Only the user who creates/updates a secret sees the value, and only at that moment.
 - Follows industry best practices for secret management security. 
+
+## [UI Update] MCP Icons Now Use favicon.png
+
+- All MCP/package icons in the marketplace grid, MCP package page, and MCP server list now use favicon.png for a consistent branded look.
+- Replaced previous generic icons (code, package, status, etc.) with favicon.png in:
+  - Marketplace cards (MCPExplorer)
+  - MCP package page (MCPPackagePage)
+  - MCP server list (MCPServersList)
+- Also removed the star rating UI from the MCP package page. 

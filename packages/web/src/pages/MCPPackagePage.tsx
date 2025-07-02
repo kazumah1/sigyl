@@ -407,21 +407,6 @@ const MCPPackagePage = () => {
     }
   }, [isDeploying, isOwner, deploymentSteps, pkg]);
 
-  const handleRate = async (rating: number) => {
-    if (!pkg || !user) {
-      toast.error('Please log in to rate packages');
-      return;
-    }
-
-    try {
-      // In real implementation, this would call your API
-      setUserRating(rating);
-      toast.success(`Rated ${pkg.name} ${rating} stars`);
-    } catch (error) {
-      toast.error('Failed to rate package');
-    }
-  };
-
   const handleDownload = async () => {
     if (!pkg) return;
 
@@ -635,7 +620,7 @@ const MCPPackagePage = () => {
           style={cellStyle}
           type="button"
         >
-          <img src="/cursor.png" alt="Cursor" className="w-5 h-5" /> Cursor
+          <img src="/favicon.png" alt="Cursor" className="w-5 h-5" /> Cursor
         </Button>
       </a>
     );
@@ -840,7 +825,7 @@ const MCPPackagePage = () => {
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
             <div className="p-5 bg-white/10 rounded-xl">
-              <Package className="w-12 h-12 text-white" />
+              <img src="/favicon.png" alt={pkg.name} className="w-24 h-24 rounded-lg object-contain border border-white/10" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -957,35 +942,6 @@ const MCPPackagePage = () => {
               Updated {new Date(pkg.updated_at).toLocaleDateString()}
             </span>
           </div>
-          {/* Rating (only for non-owners) */}
-          {!isOwner && (
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => handleRate(star)}
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(null)}
-                    className="transition-colors"
-                    disabled={!user}
-                  >
-                    <Star
-                      className={`w-6 h-6 ${
-                        star <= (hoveredRating || userRating || 0)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-600'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-              <span className="text-gray-400">
-                Rate this package
-                {userRating && <span className="ml-2 text-blue-400">Your rating: {userRating}</span>}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Content */}

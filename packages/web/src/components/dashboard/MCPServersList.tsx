@@ -203,7 +203,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1 min-w-0">
                   <div className="mt-1">
-                    {getStatusIcon(server.status, server.deployment_status)}
+                    <img src="/favicon.png" alt={server.name} className="w-8 h-8 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">

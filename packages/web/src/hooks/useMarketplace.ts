@@ -97,7 +97,7 @@ export const useMarketplace = () => {
         rating: Number(pkg.rating) || 0,
         category: pkg.category || 'general',
         verified: pkg.verified || false,
-        logo_url: pkg.logo_url || '/placeholder.svg',
+        logo_url: '/favicon.png',
         screenshots: Array.isArray(pkg.screenshots) ? pkg.screenshots as string[] : [],
         tools: Array.isArray(pkg.tools) ? pkg.tools as string[] : [],
         last_updated: pkg.last_updated || pkg.created_at || new Date().toISOString(),

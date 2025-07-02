@@ -228,7 +228,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {getCategoryIcon(pkg.tags)}
+              <img src="/favicon.png" alt={pkg.name} className="w-14 h-14 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3" />
               <div>
                 <CardTitle 
                   className="text-white group-hover:text-gray-200 transition-colors"
@@ -429,7 +429,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
             </button>
             
             <div className="flex gap-6 items-center mb-6">
-              {getCategoryIcon(selectedPackage.tags)}
+              <img src="/favicon.png" alt={selectedPackage.name} className="w-14 h-14 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3" />
               <div>
                 <h2 
                   className="text-2xl font-bold text-white mb-1"

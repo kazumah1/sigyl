@@ -50,7 +50,7 @@ export const MarketplaceModal = ({ open, onClose, mcp, onInstall, onRate }: Mark
       <div className="bg-neutral-900 rounded-xl shadow-2xl w-full max-w-2xl p-8 relative border border-white/10">
         <button onClick={onClose} className="absolute top-4 right-4 text-white/60 hover:text-white text-2xl">×</button>
         <div className="flex gap-6 items-center mb-6">
-          <img src={mcp.logo} alt={mcp.name} className="w-20 h-20 rounded-lg bg-neutral-800 object-contain border border-white/10" />
+          <img src="/favicon.png" alt={mcp.name} className="w-20 h-20 rounded-lg bg-neutral-800 object-contain border border-white/10" />
           <div>
             <h2 className="text-2xl font-bold text-white mb-1">{mcp.name}</h2>
             <div className="flex gap-2 flex-wrap mb-1">
