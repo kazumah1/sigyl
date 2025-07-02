@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface HeroSectionProps {
   title: string;
@@ -6,81 +6,13 @@ interface HeroSectionProps {
   buttons: React.ReactNode;
 }
 
-const STAR_COUNT = 180;
-
-function randomBetween(a: number, b: number) {
-  return a + Math.random() * (b - a);
-}
-
 export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, buttons }) => {
-  const starsRef = useRef<HTMLCanvasElement>(null);
   const [showContent, setShowContent] = useState(false);
 
   // Fade in content after 1 second
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 1000);
     return () => clearTimeout(timer);
-  }, []);
-
-  // Draw and animate stars (bright, sharp, always visible in black area)
-  useEffect(() => {
-    const canvas = starsRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let animationId: number;
-    let stars: {x: number, y: number, r: number, tw: number, sparkle: number}[] = [];
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      // Make the star field fill the entire black area up to the next section (no extra black gap)
-      canvas.height = Math.round(window.innerHeight * 0.5); // 50vh, but will fill parent div
-      stars = Array.from({length: STAR_COUNT}, () => ({
-        x: randomBetween(0, canvas.width),
-        y: randomBetween(0, canvas.height),
-        r: randomBetween(0.7, 1.5),
-        tw: randomBetween(0, Math.PI * 2),
-        sparkle: Math.random()
-      }));
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Draw stars (no fade, always visible in black area)
-      stars.forEach(star => {
-        // Twinkle and sparkle
-        star.tw += 0.018 + Math.random() * 0.012;
-        star.sparkle += (Math.random() - 0.5) * 0.08;
-        star.sparkle = Math.max(0, Math.min(1, star.sparkle));
-        // Brighter, sparkly, and some stars pulse
-        const baseAlpha = 0.95 + 0.05 * Math.sin(star.tw + star.sparkle * 2 * Math.PI);
-        const sparkleAlpha = baseAlpha + 0.18 * Math.abs(Math.sin(star.tw * 2 + star.sparkle * 6));
-        const alpha = Math.min(1, sparkleAlpha);
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.r * (1 + 0.18 * Math.sin(star.tw * 2)), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 2 + 4 * star.sparkle; // sharp
-        ctx.fill();
-        // Occasional sparkle effect
-        if (star.sparkle > 0.85 && Math.random() > 0.7) {
-          ctx.globalAlpha = 0.5 * star.sparkle;
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.r * 2, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255,255,255,0.7)';
-          ctx.shadowBlur = 8;
-          ctx.fill();
-        }
-        ctx.restore();
-      });
-      animationId = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationId);
-    };
   }, []);
 
   return (
@@ -119,14 +51,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, butto
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
         </div>
       </section>
-      {/* Star field below the image, fills black area, no extra black space */}
-      <div style={{ position: 'relative', width: '100%', height: '50vh', background: '#000', marginTop: '-2px', overflow: 'hidden' }}>
-        <canvas
-          ref={starsRef}
-          className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none"
-          style={{ transition: 'opacity 0.3s', display: 'block' }}
-        />
-      </div>
     </>
   );
 }; 
