@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Shield, Zap, Globe } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import { HeroSection } from "@/components/HeroSection";
 import {
   Accordion,
   AccordionContent,
@@ -52,18 +53,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Liquid Glass Blobs */}
-      <div className="liquid-glass-blob blob-1" />
-      <div className="liquid-glass-blob blob-2" />
-      <div className="liquid-glass-blob blob-3" />
       <PageHeader />
-      
-      {/* Hero Section */}
-      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 relative z-10">
-        <div className="container mx-auto text-center">
-          <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl">MCP deployment<br />for scale.</h1>
-          <p className="hero-subheading text-lg sm:text-xl">Deploy, manage, and scale your Model Context Protocol servers with enterprise-grade infrastructure. Built for developers who demand reliability and performance.</p>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-12 sm:mb-16">
+      <HeroSection
+        title="deploying servers for the world of AI agents."
+        subtitle="fast deployment enterprise MCP hosting & marketplace"
+        buttons={
+          <>
             <Button 
               size="lg" 
               onClick={() => navigate('/deploy')}
@@ -81,42 +76,46 @@ const Index = () => {
             >
               Marketplace
             </Button>
-          </div>
-
-          {/* Dashboard Preview - Enhanced Mobile Responsiveness */}
-          <div className="max-w-6xl mx-auto px-2 sm:px-0">
-            {/* Painterly wrapper with @Test_5.png background - now clearly visible */}
-            <div className="dashboard-painterly-wrapper relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{background: 'rgba(0,0,0,0.10)'}}>
-              <img src="/Test_5.png" alt="Painterly Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:1, filter:'blur(1px) brightness(0.85)'}} />
-              {/* SIGYL Dashboard Panel - Mobile Optimized */}
-              <div className="liquid-glass-dashboard enhanced-glass-panel rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative mx-auto my-8 sm:my-12" style={{maxWidth:'700px', boxShadow:'0 12px 48px 0 rgba(0,0,0,0.38)', border:'1.5px solid rgba(255,255,255,0.22)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)', background:'rgba(30,32,40,0.72)', padding:'0'}}>
-                <div className="liquid-glass-highlight absolute top-0 left-0 w-full h-6 sm:h-8 z-10" style={{opacity:0.85}} />
-                <div className="flex items-center space-x-2 p-3 sm:p-5 rounded-t-2xl sm:rounded-t-3xl" style={{background:'rgba(30,32,40,0.92)', borderBottom:'1px solid rgba(255,255,255,0.10)'}}>
-                  <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-yellow-400 rounded-full"></div>
-                  <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-200 text-sm sm:text-base ml-2 sm:ml-4 font-semibold tracking-wide">SIGYL Dashboard</span>
+          </>
+        }
+      />
+      {/* Liquid Glass Blobs */}
+      <div className="liquid-glass-blob blob-1" />
+      <div className="liquid-glass-blob blob-2" />
+      <div className="liquid-glass-blob blob-3" />
+      {/* Dashboard Preview - Enhanced Mobile Responsiveness */}
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 relative z-10">
+        <div className="container mx-auto text-center">
+          {/* Painterly wrapper with @Test_5.png background - now clearly visible */}
+          <div className="dashboard-painterly-wrapper relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{background: 'rgba(0,0,0,0.10)'}}>
+            <img src="/Test_5.png" alt="Painterly Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:1, filter:'blur(1px) brightness(0.85)'}} />
+            {/* SIGYL Dashboard Panel - Mobile Optimized */}
+            <div className="liquid-glass-dashboard enhanced-glass-panel rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative mx-auto my-8 sm:my-12" style={{maxWidth:'700px', boxShadow:'0 12px 48px 0 rgba(0,0,0,0.38)', border:'1.5px solid rgba(255,255,255,0.22)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)', background:'rgba(30,32,40,0.72)', padding:'0'}}>
+              <div className="liquid-glass-highlight absolute top-0 left-0 w-full h-6 sm:h-8 z-10" style={{opacity:0.85}} />
+              <div className="flex items-center space-x-2 p-3 sm:p-5 rounded-t-2xl sm:rounded-t-3xl" style={{background:'rgba(30,32,40,0.92)', borderBottom:'1px solid rgba(255,255,255,0.10)'}}>
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-red-500 rounded-full"></div>
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-yellow-400 rounded-full"></div>
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-200 text-sm sm:text-base ml-2 sm:ml-4 font-semibold tracking-wide">SIGYL Dashboard</span>
+              </div>
+              <div className="p-6 sm:p-8 lg:p-12 space-y-6 sm:space-y-8 flex flex-col items-center justify-center text-center" style={{background:'transparent', borderRadius:'0 0 1rem 1rem sm:0 0 1.5rem 1.5rem'}}>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-4 tracking-tight">MCP Server Status</h3>
+                <div className="space-y-3 sm:space-y-5 w-full flex flex-col items-center">
+                  <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 justify-center">
+                    <div className="w-3 h-3 bg-green-400 rounded-full shadow-md"></div>
+                    <span className="text-green-400 font-semibold text-base sm:text-lg text-center">E-commerce Integration deployed successfully</span>
+                  </div>
+                  <div className="text-blue-400 text-sm sm:text-base font-medium text-center">Handling 1.2K requests/min across 12 endpoints</div>
                 </div>
-                <div className="p-6 sm:p-8 lg:p-12 space-y-6 sm:space-y-8 flex flex-col items-center justify-center text-center" style={{background:'transparent', borderRadius:'0 0 1rem 1rem sm:0 0 1.5rem 1.5rem'}}>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-4 tracking-tight">MCP Server Status</h3>
-                  <div className="space-y-3 sm:space-y-5 w-full flex flex-col items-center">
-                    <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 justify-center">
-                      <div className="w-3 h-3 bg-green-400 rounded-full shadow-md"></div>
-                      <span className="text-green-400 font-semibold text-base sm:text-lg text-center">E-commerce Integration deployed successfully</span>
-                    </div>
-                    <div className="text-blue-400 text-sm sm:text-base font-medium text-center">Handling 1.2K requests/min across 12 endpoints</div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-gray-400 w-full mt-2 space-y-2 sm:space-y-0">
-                    <span className="text-center sm:text-left">Last updated: 2 seconds ago</span>
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-gray-400 w-full mt-2 space-y-2 sm:space-y-0">
+                  <span className="text-center sm:text-left">Last updated: 2 seconds ago</span>
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-
       {/* Features Section - Enhanced Mobile Layout */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -140,7 +139,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
       {/* Stats Section - Mobile Optimized */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -194,7 +192,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
       {/* FAQ Section - Modern Glassy Style */}
       <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
@@ -225,7 +222,6 @@ const Index = () => {
           </Accordion>
         </div>
       </section>
-
       {/* CTA Section - ENHANCED DASHBOARD PANEL */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
