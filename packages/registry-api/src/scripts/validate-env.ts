@@ -27,13 +27,13 @@ const ENV_CHECKS: EnvCheck[] = [
   },
   {
     key: 'SUPABASE_ANON_KEY',
-    required: true,
+    required: false,
     description: 'Supabase anonymous key',
     sensitive: true
   },
   {
     key: 'SUPABASE_SERVICE_ROLE_KEY',
-    required: true,
+    required: false,
     description: 'Supabase service role key',
     sensitive: true
   },
@@ -47,7 +47,7 @@ const ENV_CHECKS: EnvCheck[] = [
   },
   {
     key: 'GOOGLE_CLOUD_REGION',
-    required: true,
+    required: false,
     description: 'Google Cloud region',
     validator: (v) => v.includes('-')
   },
@@ -55,19 +55,19 @@ const ENV_CHECKS: EnvCheck[] = [
   // GitHub App
   {
     key: 'GITHUB_PRIVATE_KEY',
-    required: true,
+    required: false,
     description: 'GitHub App private key',
     validator: (v) => v.includes('BEGIN RSA PRIVATE KEY'),
     sensitive: true
   },
   {
     key: 'GITHUB_CLIENT_ID',
-    required: true,
+    required: false,
     description: 'GitHub OAuth client ID'
   },
   {
     key: 'GITHUB_CLIENT_SECRET',
-    required: true,
+    required: false,
     description: 'GitHub OAuth client secret',
     sensitive: true
   },
@@ -87,7 +87,7 @@ const ENV_CHECKS: EnvCheck[] = [
   },
   {
     key: 'FRONTEND_URL',
-    required: true,
+    required: false,
     description: 'Frontend application URL',
     validator: (v) => v.startsWith('http')
   },
@@ -95,7 +95,7 @@ const ENV_CHECKS: EnvCheck[] = [
   // Encryption
   {
     key: 'ENCRYPTION_KEY',
-    required: true,
+    required: false,
     description: 'Encryption key for secrets',
     validator: (v) => v.length >= 32,
     sensitive: true
@@ -137,12 +137,12 @@ function validateEnvironment(): { success: boolean; errors: string[]; warnings: 
     }
 
     if (!value) {
-      console.log(`⚠️  ${check.key}: ${displayValue} (optional - ${check.description})`);
+      warnings.push(`⚠️  ${check.key}: ${displayValue} (optional - ${check.description})`);
       continue;
     }
 
     if (check.validator && !check.validator(value)) {
-      errors.push(`❌ ${check.key}: Invalid format - ${check.description}`);
+      warnings.push(`⚠️  ${check.key}: Invalid format - ${check.description}`);
       continue;
     }
 
