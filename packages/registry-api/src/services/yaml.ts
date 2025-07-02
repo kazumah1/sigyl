@@ -1,4 +1,4 @@
-import { Octokit } from 'octokit'
+import { Octokit } from '@octokit/rest'
 import yaml from 'js-yaml'
 import { z } from 'zod'
 

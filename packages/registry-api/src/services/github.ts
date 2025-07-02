@@ -1,4 +1,4 @@
-import { Octokit } from 'octokit'
+import { Octokit } from '@octokit/rest'
 
 export async function getUserRepos(token: string) {
   const octokit = new Octokit({ auth: token })

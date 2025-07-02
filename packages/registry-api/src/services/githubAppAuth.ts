@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { Octokit } from 'octokit';
+import { Octokit } from '@octokit/rest';
 
 export function signGitHubAppJWT(appId: string, privateKey: string): string {
   const now = Math.floor(Date.now() / 1000);
