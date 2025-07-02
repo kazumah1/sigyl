@@ -990,4 +990,6 @@ export function generateCloudRunConfig(options?: {
       failureThreshold: 3
     }
   };
-} 
+}
+
+export type { SigylConfigUnion } from '../types/config'; 
