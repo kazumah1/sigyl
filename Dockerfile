@@ -1,35 +1,22 @@
 # Production Dockerfile for Sigil MCP Registry API (Monorepo Root)
-FROM node:18-alpine AS base
+FROM node:18-alpine AS builder
 
-# Install dependencies only when needed
-FROM base AS deps
 WORKDIR /app
 
-# Copy root package files
-COPY package.json package-lock.json ./
-
-# Copy all package.json files for workspaces
-COPY packages/shared/package*.json ./packages/shared/
-COPY packages/container-builder/package*.json ./packages/container-builder/
-COPY packages/registry-api/package*.json ./packages/registry-api/
-
-# Install dependencies (including workspaces)
-RUN npm ci
-
-# Build the application
-FROM base AS builder
-WORKDIR /app
-
-# Copy all source code
+# Copy all files (including all workspaces and their package.json)
 COPY . .
 
-# Build all workspaces
+# Install dependencies for all workspaces
+RUN npm ci
+
+# Build all workspaces (or just the ones needed)
 RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=packages/container-builder
 RUN npm run build --workspace=packages/registry-api
 
 # Production image
-FROM base AS runner
+FROM node:18-alpine AS runner
+
 WORKDIR /app
 
 # Create non-root user for security
@@ -38,7 +25,7 @@ RUN adduser --system --uid 1001 apiuser
 
 # Copy built application and dependencies
 COPY --from=builder --chown=apiuser:apiuser /app/packages/registry-api/dist ./dist
-COPY --from=deps --chown=apiuser:apiuser /app/node_modules ./node_modules
+COPY --from=builder --chown=apiuser:apiuser /app/node_modules ./node_modules
 COPY --from=builder --chown=apiuser:apiuser /app/packages/registry-api/package.json ./package.json
 
 # Switch to non-root user
