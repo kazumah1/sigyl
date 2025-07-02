@@ -18,8 +18,6 @@ yarn-error.log*
 *~
 README.md
 .gitignore
-Dockerfile
-.dockerignore
 test-deployments.js
 *.test.ts
 *.test.js
@@ -28,4 +26,7 @@ test-deployments.js
 migrations/
 scripts/test*
 scripts/debug*
-scripts/seed* 
+scripts/seed*
+packages/web
+packages/cli
+packages/sdk
