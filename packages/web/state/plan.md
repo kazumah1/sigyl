@@ -1,5 +1,15 @@
 ## [Latest Updates] Rate Limiting Fix & UI Color Fixes ✅
 
+### [Fix] Duplicate API Path Issue
+- **Problem**: API calls were failing with 404 errors in the production environment due to a duplicated `/api/v1` in the request URL (e.g., `/api/v1/api/v1/profiles/me`).
+- **Root Cause**: The `VITE_REGISTRY_API_URL` in production already contained `/api/v1`, but the frontend code was unconditionally appending another `/api/v1`, causing a malformed URL. The local environment was unaffected as it used a default URL without the path.
+- **Locations**:
+    - `packages/web/src/services/profilesService.ts`
+    - `packages/web/src/services/mcpServerService.ts`
+    - `packages/web/src/services/analyticsService.ts`
+- **Solution**: The `apiCall` helper function in the affected services was updated to be more intelligent. It now checks if the base URL already ends with `/api/v1` and only appends it if necessary.
+- **Result**: API URLs are now constructed correctly in both local and production environments, resolving the 404 errors.
+
 ### 4. **Button Color UI Fixes** ✅ **COMPLETED**
 - **Problem**: Multiple button color issues in popups
   - API key popup close button: white text on white background (unreadable)
