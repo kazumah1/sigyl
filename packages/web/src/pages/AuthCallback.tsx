@@ -1,48 +1,41 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthCallback = () => {
-  const [message, setMessage] = useState('Processing authentication...')
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    // Let the AuthContext handle the authentication
-    // This component just shows a loading state
-    const timer = setTimeout(() => {
-      setMessage('Authentication complete! Redirecting...')
-    }, 1000)
-
-    // Fallback redirect after 5 seconds in case something goes wrong
-    const fallbackTimer = setTimeout(() => {
-      console.log('AuthCallback: Fallback redirect to deploy page')
-      navigate('/deploy', { replace: true })
-    }, 5000)
-
-    return () => {
-      clearTimeout(timer)
-      clearTimeout(fallbackTimer)
+    // This component's job is to wait for the session to be established by the AuthProvider.
+    // The AuthProvider handles the auth hash from the URL (#access_token=...).
+    if (!loading) {
+      if (session) {
+        // Once the session is loaded, we can redirect.
+        const searchParams = new URLSearchParams(location.search);
+        const redirectTo = searchParams.get('redirect_to');
+        
+        // Navigate to the intended page, or the dashboard as a fallback.
+        console.log(`AuthCallback: Redirecting to ${redirectTo || '/dashboard'}`);
+        navigate(redirectTo || '/dashboard', { replace: true });
+      } else {
+        // If there's no session after loading, something went wrong.
+        console.error('AuthCallback: No session found after authentication.');
+        navigate('/login', { replace: true });
+      }
     }
-  }, [navigate])
+  }, [session, loading, navigate, location.search]);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-center space-y-6">
-        <div className="flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Authentication</h1>
-          <p className="text-gray-400">{message}</p>
-        </div>
-        <div className="flex justify-center">
-          <div className="w-32 h-1 bg-gray-800 rounded-full overflow-hidden">
-            <div className="h-full bg-white/10 animate-pulse rounded-full"></div>
-          </div>
-        </div>
+    <div className="flex items-center justify-center h-screen bg-black">
+      <div className="text-center">
+        <Loader2 className="w-12 h-12 mx-auto text-white animate-spin" />
+        <p className="mt-4 text-white">Authenticating, please wait...</p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthCallback 
+export default AuthCallback; 

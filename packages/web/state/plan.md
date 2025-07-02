@@ -303,3 +303,31 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
   - MCP package page (MCPPackagePage)
   - MCP server list (MCPServersList)
 - Also removed the star rating UI from the MCP package page. 
+
+## [Git] Merge Conflict Resolved in SecretsManager.tsx
+- Resolved a merge conflict in the button styles for the Copy and Close buttons in SecretsManager.tsx.
+- Used explicit color classes for both buttons for clarity and consistency.
+- Successfully rebased on main and pushed the changes to the remote repository. 
+
+## [URGENT] OAuth Redirect Fix Required ⚠️
+
+### **Production OAuth Redirect Issue** 🚨 **NEEDS GITHUB & SUPABASE CONFIG UPDATE**
+- **Problem**: GitHub sign-in redirects to `http://localhost:8080/auth/callback` even in production.
+- **Root Cause**: A misunderstanding of the OAuth flow has led to incorrect configuration in the GitHub OAuth App and Supabase.
+- **Correct Flow**:
+  1. User clicks login on `sigyl.dev`.
+  2. The site redirects to GitHub for authentication.
+  3. GitHub **must** redirect back to your **Supabase Auth Callback URL** (`https://zcudhsyvfrlfgqqhjrqv.supabase.co/auth/v1/callback`).
+  4. Supabase creates the user session, then redirects the user back to your site's `Site URL` (`https://sigyl.dev`).
+
+### **Required Configuration Changes** 🔧
+
+1.  **In your GitHub OAuth App settings:**
+    *   The **Authorization callback URL** field MUST be set to your Supabase callback URL: `https://zcudhsyvfrlfgqqhjrqv.supabase.co/auth/v1/callback`.
+    *   It should NOT be `sigyl.dev/auth/callback`.
+
+2.  **In your Supabase Project settings:**
+    *   Under **Authentication -> URL Configuration**, the **Site URL** MUST be set to your production frontend URL: `https://sigyl.dev`.
+    *   Under **Redirect URLs**, you should have patterns for both production and local development, e.g., `https://sigyl.dev/**` and `http://localhost:8080/**`.
+
+- **Status**: 🔧 **PENDING PRODUCTION ENV VARIABLE CONFIGURATION** 

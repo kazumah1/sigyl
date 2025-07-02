@@ -50,6 +50,9 @@ export const corsOptions = {
       'https://localhost:8080',
       process.env.FRONTEND_URL,
       process.env.PRODUCTION_URL,
+      'http://localhost:4173',
+      'https://zcudhsyvfrlfgqqhjrqv.supabase.co',
+      'https://www.sigyl.dev',
       // Add your production domains here
     ].filter(Boolean);
 

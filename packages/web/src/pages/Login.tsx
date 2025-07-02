@@ -27,10 +27,12 @@ const Login = () => {
   const handleGitHubLogin = async () => {
     setLoading(true);
     try {
+      const from = location.state?.from?.pathname || '/dashboard';
+      const redirectToUrl = `${window.location.origin}/auth/callback?redirect_to=${encodeURIComponent(from)}`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '/auth/callback',
+          redirectTo: redirectToUrl,
           scopes: 'read:user user:email'
         }
       });
