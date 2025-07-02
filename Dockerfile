@@ -9,9 +9,10 @@ COPY . .
 # Install dependencies for all workspaces
 RUN npm ci
 
-# Build all workspaces (or just the ones needed)
-RUN npm run build --workspace=packages/shared
-RUN npm run build --workspace=packages/container-builder
+# Debug: List contents of packages/shared and show its package.json
+RUN ls -l /app/packages/shared && cat /app/packages/shared/package.json
+
+# Build only the registry-api workspace
 RUN npm run build --workspace=packages/registry-api
 
 # Production image
