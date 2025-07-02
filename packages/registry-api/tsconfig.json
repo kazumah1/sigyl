@@ -3,8 +3,8 @@
     "target": "ES2020",
     "module": "commonjs",
     "lib": ["ES2020"],
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "dist",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,10 +19,17 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": false
+    "exactOptionalPropertyTypes": false,
+    "baseUrl": ".",
+    "paths": {
+      "container-builder/*": ["container-builder/src/*"],
+      "shared/*": ["shared/src/*"]
+    }
   },
   "include": [
-    "src/**/*"
+    "src",
+    "container-builder/src",
+    "shared/src"
   ],
   "exclude": [
     "node_modules",

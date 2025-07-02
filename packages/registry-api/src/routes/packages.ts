@@ -280,7 +280,7 @@ router.delete('/:id', requirePermissions(['write']), async (req: Request, res: R
     
     if (activeDeployments.length > 0) {
       try {
-        const { CloudRunService } = await import('@sigil/container-builder');
+        const { CloudRunService } = await import('container-builder/index');
         
         const CLOUD_RUN_CONFIG = {
           projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',

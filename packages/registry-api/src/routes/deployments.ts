@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { CloudRunService, CloudRunConfig } from '@sigil/container-builder';
+import { CloudRunService, CloudRunConfig } from 'container-builder/index';
 import { PackageService } from '../services/packageService';
 
 const router = express.Router();

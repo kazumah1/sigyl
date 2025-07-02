@@ -1,4 +1,4 @@
-import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '@sigil/container-builder';
+import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from 'container-builder/index';
 import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
 
