@@ -109,11 +109,10 @@ router.get('/', requireHybridAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // Decrypt values and format response
+    // DO NOT return value in list response
     const secrets = data?.map(secret => ({
       id: secret.id,
       key: secret.key,
-      value: decrypt(secret.value),
       description: secret.description,
       mcp_server_id: secret.mcp_server_id,
       is_encrypted: true,
@@ -164,13 +163,13 @@ router.get('/:id', requireHybridAuth, async (req, res) => {
       throw error;
     }
 
+    // DO NOT return value in get-by-id response
     const response: APIResponse<{ secret: any }> = {
       success: true,
       data: {
         secret: {
           id: data.id,
           key: data.key,
-          value: decrypt(data.value),
           description: data.description,
           mcp_server_id: data.mcp_server_id,
           is_encrypted: true,

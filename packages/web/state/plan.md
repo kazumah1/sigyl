@@ -278,4 +278,19 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
 
 ## Next Steps
 - Implement actual profile editing and settings functionality.
-- Optionally, re-add GitHub integration button with working logic. 
+- Optionally, re-add GitHub integration button with working logic.
+
+## [Security Update] Secrets API: No Plaintext Values in GET/List
+
+### Problem
+- Secrets API was returning plaintext secret values in GET/list responses, which is a security risk.
+
+### Solution
+- **Backend**: GET /api/v1/secrets and GET /api/v1/secrets/:id no longer return the value field. Only POST/PUT return value (to creator/updater).
+- **Frontend**: Updated to never expect value in GET/list. UI no longer shows/copies secret values in the list.
+- **Types**: Secret.value is now optional, only present on create/update.
+
+### Result
+- No plaintext secret values are ever exposed in list or get-by-id API responses.
+- Only the user who creates/updates a secret sees the value, and only at that moment.
+- Follows industry best practices for secret management security. 

@@ -511,14 +511,6 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => toggleValueVisibility(secret.id)}
-                          className="text-gray-400 hover:text-white h-8 w-8"
-                        >
-                          {showValues[secret.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
                           onClick={() => openEditDialog(secret)}
                           className="text-gray-400 hover:text-white h-8 w-8"
                         >
@@ -532,30 +524,11 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(secret.value || '');
-                            toast({
-                              title: "Copied to clipboard",
-                              description: "Secret value has been copied to your clipboard.",
-                            });
-                          }}
-                          className="text-gray-400 hover:text-white h-8 w-8"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                     {secret.description && (
                       <p className="text-gray-400 text-sm mb-2 text-left">{secret.description}</p>
                     )}
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm font-mono text-gray-300 bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
-                        {showValues[secret.id] ? secret.value : '••••••••••••••••'}
-                      </code>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -627,19 +600,6 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                             <code className="text-sm font-mono text-white bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
                               {fullKey}
                             </code>
-                            <div className="flex items-center gap-1 ml-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(fullKey);
-                                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
-                                }}
-                                className="bg-transparent text-gray-400 hover:text-white hover:bg-[#23232a] h-8 w-8"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            </div>
                           </>
                         ) : (
                           <code className="text-sm font-mono text-gray-300 bg-[#23232a] px-3 py-2 rounded flex-1 text-left">

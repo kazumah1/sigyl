@@ -4,7 +4,7 @@ const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://local
 export interface Secret {
   id: string;
   key: string;
-  value: string;
+  value?: string;
   description?: string;
   mcp_server_id?: string;
   is_encrypted: boolean;
@@ -154,7 +154,7 @@ export class SecretsService {
       const secrets = await this.getSecrets(token, mcpServerId);
       const envVars: Record<string, string> = {};
       secrets.forEach(secret => {
-        envVars[secret.key] = secret.value;
+        envVars[secret.key] = secret.value || '';
       });
       return envVars;
     } catch (error) {

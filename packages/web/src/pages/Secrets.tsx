@@ -19,6 +19,20 @@ interface SecretFormData {
   value: string;
 }
 
+function getAuthToken(): string | null {
+  // Try to get Supabase session token first
+  const supabaseSession = JSON.parse(localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token') || '{}');
+  if (supabaseSession?.access_token) {
+    return supabaseSession.access_token;
+  }
+  // Fallback to GitHub token
+  const githubToken = localStorage.getItem('github_app_token');
+  if (githubToken && githubToken !== 'db_restored_token') {
+    return githubToken;
+  }
+  return null;
+}
+
 const Secrets = () => {
   const { user } = useAuth();
   const [secrets, setSecrets] = useState<Secret[]>([]);
@@ -55,18 +69,16 @@ const Secrets = () => {
   const currentTheme = themes.dark;
 
   const fetchSecrets = async () => {
-    if (!user?.access_token) return;
-
+    const token = getAuthToken();
+    if (!token) return;
     try {
       const response = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/secrets`, {
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-
       const result = await response.json();
-      
       if (result.success) {
         setSecrets(result.data);
       } else {
@@ -86,8 +98,8 @@ const Secrets = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user?.access_token) {
+    const token = getAuthToken();
+    if (!token) {
       toast.error('Authentication required');
       return;
     }
@@ -113,7 +125,7 @@ const Secrets = () => {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
@@ -137,7 +149,8 @@ const Secrets = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user?.access_token) {
+    const token = getAuthToken();
+    if (!token) {
       toast.error('Authentication required');
       return;
     }
@@ -150,7 +163,7 @@ const Secrets = () => {
       const response = await fetch(`${import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000'}/api/v1/secrets/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -361,18 +374,6 @@ const Secrets = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleValueVisibility(secret.id)}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        {showValues[secret.id] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
