@@ -91,7 +91,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     const code = req.query.code as string;
     const state = req.query.state as string; // This should contain the redirect URL
     
-    console.log('GitHub App callback received:', { installationId, code, state });
+    // console.log('GitHub App callback received:', { installationId, code, state });
     if (!installationId || !code) {
       return res.status(400).json({ error: 'Missing installation_id or code' });
     }
@@ -109,7 +109,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       })
     });
     const tokenData = await tokenRes.json() as GitHubTokenResponse;
-    console.log('GitHub token exchange response:', tokenData);
+    // console.log('GitHub token exchange response:', tokenData);
     if (!tokenData.access_token) {
       return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData });
     }
@@ -131,7 +131,7 @@ router.get('/callback', async (req: Request, res: Response) => {
         });
         if (orgRes.ok) {
           const org = await orgRes.json() as GitHubOrg;
-          console.log('Fetched org details:', org); // Debug log
+          // console.log('Fetched org details:', org); // Debug log
           if (org.name) {
             accountLogin = org.name;
           }
@@ -163,7 +163,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       if (existingProfile && existingProfile.id) {
         supabaseUserId = existingProfile.id;
       }
-      const { data: profile, error: profileError } = await userInstallationService.supabase
+      const { data: profile } = await userInstallationService.supabase
         .from('profiles')
         .upsert({
           id: supabaseUserId || undefined,
@@ -178,7 +178,7 @@ router.get('/callback', async (req: Request, res: Response) => {
         .select()
         .single();
 
-      console.log('Profile upsert result:', profile, profileError);
+      // console.log('Profile upsert result:', profile, profileError);
 
       if (profile && profile.id) {
         profileId = profile.id;
@@ -279,11 +279,11 @@ router.get('/installations/:installationId/repositories', async (req: Request, r
   try {
     const { installationId } = req.params;
     
-    console.log('=== GET REPOSITORIES DEBUG ===');
-    console.log('Requested installation ID:', installationId);
-    console.log('GitHub App ID:', process.env.GITHUB_APP_ID);
-    console.log('GitHub Private Key present:', !!process.env.GITHUB_PRIVATE_KEY);
-    console.log('GitHub Private Key length:', process.env.GITHUB_PRIVATE_KEY?.length || 0);
+    // console.log('=== GET REPOSITORIES DEBUG ===');
+    // console.log('Requested installation ID:', installationId);
+    // console.log('GitHub App ID:', process.env.GITHUB_APP_ID);
+    // console.log('GitHub Private Key present:', !!process.env.GITHUB_PRIVATE_KEY);
+    // console.log('GitHub Private Key length:', process.env.GITHUB_PRIVATE_KEY?.length || 0);
     
     if (!installationId) {
       return res.status(400).json({ error: 'Installation ID is required' });
@@ -299,18 +299,18 @@ router.get('/installations/:installationId/repositories', async (req: Request, r
     }
 
     // Get installation token
-    console.log('Generating JWT for GitHub App...');
+    // console.log('Generating JWT for GitHub App...');
     const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
-    console.log('JWT generated successfully');
+    // console.log('JWT generated successfully');
     
-    console.log('Requesting installation access token for installation:', installationId);
+    // console.log('Requesting installation access token for installation:', installationId);
     const installToken = await getInstallationAccessToken(jwt, Number(installationId));
-    console.log('Installation access token received');
+
     
     // Fetch repositories from GitHub
-    console.log('Fetching repositories...');
+    // console.log('Fetching repositories...');
     const repos = await listRepos(installToken);
-    console.log('Repositories fetched successfully, count:', repos.length);
+    // console.log('Repositories fetched successfully, count:', repos.length);
     
     // Check for MCP files in each repository
     const reposWithMCP = await Promise.all(
@@ -391,8 +391,8 @@ router.get('/installations/:installationId/repositories', async (req: Request, r
       data: reposWithMCP
     });
   } catch (error) {
-    console.error('=== REPOSITORIES ERROR ===');
-    console.error('Error fetching repositories:', error);
+    // console.error('=== REPOSITORIES ERROR ===');
+    // console.error('Error fetching repositories:', error);
     
     // Enhanced error response
     let errorMessage = 'Failed to fetch repositories';
@@ -528,24 +528,24 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
     const { installationId } = req.params;
     const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
     
-    console.log('📝 Deployment request received:', {
-      installationId,
-      repoUrl,
-      owner,
-      repo,
-      branch,
-      userId,
-      selectedSecrets: selectedSecrets ? Object.keys(selectedSecrets) : [],
-      environmentVariables: environmentVariables ? Object.keys(environmentVariables) : []
-    });
+    // console.log('📝 Deployment request received:', {
+    //   installationId,
+    //   repoUrl,
+    //   owner,
+    //   repo,
+    //   branch,
+    //   userId,
+    //   selectedSecrets: selectedSecrets ? Object.keys(selectedSecrets) : [],
+    //   environmentVariables: environmentVariables ? Object.keys(environmentVariables) : []
+    // });
     
     if (!installationId || !repoUrl || !owner || !repo) {
-      console.error('❌ Missing required fields:', {
-        installationId: !!installationId,
-        repoUrl: !!repoUrl,
-        owner: !!owner,
-        repo: !!repo
-      });
+      // console.error('❌ Missing required fields:', {
+      //   installationId: !!installationId,
+      //   repoUrl: !!repoUrl,
+      //   owner: !!owner,
+      //   repo: !!repo
+      // });
       
       return res.status(400).json({ 
         success: false,
@@ -553,7 +553,7 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
       });
     }
 
-    console.log(`🚀 Starting deployment for ${owner}/${repo} via GitHub App installation ${installationId}`);
+    // console.log(`🚀 Starting deployment for ${owner}/${repo} via GitHub App installation ${installationId}`);
 
     // Get installation token
     const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
@@ -573,18 +573,18 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
       githubToken: installToken
     };
 
-    console.log('📦 Deploying with request:', {
-      repoUrl,
-      repoName: `${owner}/${repo}`,
-      branch,
-      hasGithubToken: !!installToken
-    });
+    // console.log('📦 Deploying with request:', {
+    //   repoUrl,
+    //   repoName: `${owner}/${repo}`,
+    //   branch,
+    //   hasGithubToken: !!installToken
+    // });
 
     // Deploy to Google Cloud Run
     const deploymentResult = await deployRepo(deploymentRequest);
 
     if (!deploymentResult.success) {
-      console.error('❌ Deployment failed:', deploymentResult.error);
+      // console.error('❌ Deployment failed:', deploymentResult.error);
       
       return res.status(500).json({
         success: false,
@@ -593,7 +593,7 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
       });
     }
 
-    console.log('✅ Deployment successful:', deploymentResult.deploymentUrl);
+    // console.log('✅ Deployment successful:', deploymentResult.deploymentUrl);
 
     // Return success response with package ID
     res.json({
@@ -606,7 +606,7 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
     });
 
   } catch (error) {
-    console.error('❌ GitHub App deployment error:', error);
+    // console.error('❌ GitHub App deployment error:', error);
     res.status(500).json({ 
       success: false,
       error: error instanceof Error ? error.message : 'Unknown deployment error'
@@ -620,7 +620,7 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
     const { installationId } = req.body;
     const userId = (req.user as any)?.id; // Supabase Auth UUID or github_12345
     if (!userId || !installationId) {
-      console.error('[associate-installation] Missing userId or installationId', { userId, installationId });
+      // console.error('[associate-installation] Missing userId or installationId', { userId, installationId });
       return res.status(400).json({ error: 'Missing user ID or installationId' });
     }
     const githubId = /^github_/.test(userId) ? userId.replace('github_', '') : null;
@@ -630,7 +630,7 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
     let upsertResult;
     if (githubId) {
       // Upsert by github_id
-      console.log(`[associate-installation] Upserting by github_id: ${githubId}`, { updateFields });
+      // console.log(`[associate-installation] Upserting by github_id: ${githubId}`, { updateFields });
       upsertResult = await userInstallationService.supabase
         .from('profiles')
         .upsert({
@@ -638,10 +638,10 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
           ...updateFields
         })
         .select();
-      console.log('[associate-installation] Upsert result (github_id):', upsertResult);
+      // console.log('[associate-installation] Upsert result (github_id):', upsertResult);
     } else {
       // Upsert by id (UUID)
-      console.log(`[associate-installation] Upserting by id: ${userId}`, { updateFields });
+      // console.log(`[associate-installation] Upserting by id: ${userId}`, { updateFields });
       upsertResult = await userInstallationService.supabase
         .from('profiles')
         .upsert({
@@ -649,11 +649,11 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
           ...updateFields
         })
         .select();
-      console.log('[associate-installation] Upsert result (id):', upsertResult);
+      // console.log('[associate-installation] Upsert result (id):', upsertResult);
     }
     return res.json({ success: true, upsertResult });
   } catch (err) {
-    console.error('Error associating GitHub App installation:', err);
+    // console.error('Error associating GitHub App installation:', err);
     return res.status(500).json({ error: 'Internal server error', details: (err as any)?.message });
   }
 });

@@ -95,13 +95,13 @@ const createDynamicProxy = () => {
         [`^/api/v1/mcp/${packageName}`]: '', // Remove the prefix
       },
       on: {
-        proxyReq: (proxyReq, req) => {
+        proxyReq: (proxyReq) => {
           // Add headers to identify the proxy
           proxyReq.setHeader('X-Forwarded-By', 'sigyl-mcp-proxy');
           proxyReq.setHeader('X-Package-Name', packageName);
           
           // Log the proxy request
-          console.log(`Proxying ${req.method} ${req.url} -> ${deploymentUrl}${proxyReq.path}`);
+        //   console.log(`Proxying ${req.method} ${req.url} -> ${deploymentUrl}${proxyReq.path}`);
         },
         proxyRes: (proxyRes) => {
           // Add CORS headers

@@ -9,9 +9,9 @@ const router = express.Router();
 // Create secret
 router.post('/', requireHybridAuth, async (req, res) => {
   try {
-    console.log('POST /api/v1/secrets called');
-    console.log('req.user:', req.user);
-    console.log('body:', req.body);
+    // console.log('POST /api/v1/secrets called');
+    // console.log('req.user:', req.user);
+    // console.log('body:', req.body);
     const { key, value, description, mcp_server_id } = req.body;
     const userId = req.user!.user_id;
 

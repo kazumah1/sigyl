@@ -21,7 +21,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
     const repoName = repoUrl.replace('https://github.com/', '');
     const [owner, repo] = repoName.split('/');
     
-    console.log(`🚀 Starting deployment for ${repoName}...`);
+    // console.log(`🚀 Starting deployment for ${repoName}...`);
 
     // Fetch MCP metadata
     let metadata;
@@ -68,11 +68,11 @@ router.post('/deploy', async (req: Request, res: Response) => {
     }
 
     const deploymentUrl = deploymentResult.deploymentUrl!;
-    console.log('✅ Deployment successful:', deploymentUrl);
+    // console.log('✅ Deployment successful:', deploymentUrl);
 
     // MCP-specific health check
     try {
-      console.log('🔍 Performing MCP health check...');
+      // console.log('🔍 Performing MCP health check...');
       const healthRes = await fetch(`${deploymentUrl}/mcp`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
@@ -81,16 +81,17 @@ router.post('/deploy', async (req: Request, res: Response) => {
       if (!healthRes.ok) {
         console.warn(`⚠️ MCP endpoint health check failed with status ${healthRes.status}`);
         // Don't fail deployment, just warn
-      } else {
-        console.log('✅ MCP endpoint is healthy');
-      }
+      } 
+      // else {
+      //   console.log('✅ MCP endpoint is healthy');
+      // }
     } catch (err) {
       console.warn('⚠️ MCP health check failed:', err instanceof Error ? err.message : String(err));
       // Don't fail deployment, just warn
     }
 
     // Register the package in the registry
-    console.log('📝 Registering package in registry...');
+    // console.log('📝 Registering package in registry...');
     const registered = await packageService.createPackage({
       name: metadata.name,
       ...(metadata.version && { version: metadata.version }),
@@ -116,7 +117,7 @@ router.post('/deploy', async (req: Request, res: Response) => {
       );
     }
 
-    console.log('🎉 Deployment and registration complete!');
+    // console.log('🎉 Deployment and registration complete!');
 
     res.json({ 
       success: true,

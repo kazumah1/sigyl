@@ -22,7 +22,7 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { limit = 100, since } = req.query;
 
-    console.log(`📋 Fetching logs for deployment ${id}...`);
+    // console.log(`📋 Fetching logs for deployment ${id}...`);
 
     // Check if Google Cloud credentials are configured
     if (!CLOUD_RUN_CONFIG.projectId) {
@@ -66,7 +66,7 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
         });
       }
 
-      console.log(`✅ Retrieved ${filteredLogs.length} log entries`);
+      // console.log(`✅ Retrieved ${filteredLogs.length} log entries`);
 
       res.json({
         success: true,
@@ -120,7 +120,7 @@ router.get('/:id/health', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    console.log(`🔍 Checking health for deployment ${id}...`);
+    // console.log(`🔍 Checking health for deployment ${id}...`);
 
     // Get deployment info from database
     const deployment = await packageService.getDeploymentById(id);
@@ -163,7 +163,7 @@ router.get('/:id/health', async (req: Request, res: Response) => {
     // Update deployment health status in database
     await packageService.updateDeploymentHealth(id, healthStatus, new Date().toISOString());
 
-    console.log(`🔍 Health check complete: ${healthStatus} (${responseTime}ms)`);
+    // console.log(`🔍 Health check complete: ${healthStatus} (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -197,7 +197,7 @@ router.post('/:id/restart', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    console.log(`🔄 Restarting deployment ${id}...`);
+    // console.log(`🔄 Restarting deployment ${id}...`);
 
     // Check if Google Cloud credentials are configured
     if (!CLOUD_RUN_CONFIG.projectId) {
@@ -230,7 +230,7 @@ router.post('/:id/restart', async (req: Request, res: Response) => {
         // Update deployment status
         await packageService.updateDeploymentHealth(id, 'unknown', new Date().toISOString());
 
-        console.log('✅ Service restart initiated');
+        // console.log('✅ Service restart initiated');
 
         res.json({
           success: true,
@@ -277,7 +277,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { force = false } = req.query;
 
-    console.log(`🗑️ Deleting deployment ${id}${force ? ' (forced)' : ''}...`);
+    // console.log(`🗑️ Deleting deployment ${id}${force ? ' (forced)' : ''}...`);
 
     // Check if Google Cloud credentials are configured
     if (!CLOUD_RUN_CONFIG.projectId) {
@@ -310,7 +310,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
         // Update deployment status in database
         await packageService.updateDeploymentStatus(id, 'inactive');
         
-        console.log('✅ Service deleted from Google Cloud Run');
+        // console.log('✅ Service deleted from Google Cloud Run');
 
         res.json({
           success: true,
@@ -373,7 +373,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
 
-    console.log('📋 Fetching deployments...');
+    // console.log('📋 Fetching deployments...');
 
     // Get deployments from database
     const deployments = await packageService.getAllDeployments({
@@ -441,7 +441,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/:id/redeploy', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    console.log(`🔄 Redeploying deployment ${id}...`);
+    // console.log(`🔄 Redeploying deployment ${id}...`);
 
     // Get deployment info from database
     const deployment = await packageService.getDeploymentById(id);

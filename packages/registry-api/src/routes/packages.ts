@@ -273,7 +273,7 @@ router.delete('/:id', requirePermissions(['write']), async (req: Request, res: R
       return res.status(400).json(response);
     }
 
-    console.log(`🗑️ Starting deletion of package ${packageData.name} (${id})`);
+    // console.log(`🗑️ Starting deletion of package ${packageData.name} (${id})`);
 
     // First delete from Google Cloud Run if there are active deployments
     const activeDeployments = packageData.deployments?.filter(d => d.status === 'active') || [];
@@ -294,11 +294,11 @@ router.delete('/:id', requirePermissions(['write']), async (req: Request, res: R
           
           for (const deployment of activeDeployments) {
             const serviceName = deployment.id; // Use deployment ID as service name
-            console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
+            // console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
             
             const deleted = await cloudRunService.deleteService(serviceName);
             if (deleted) {
-              console.log(`✅ Deleted Cloud Run service: ${serviceName}`);
+              // console.log(`✅ Deleted Cloud Run service: ${serviceName}`);
             } else {
               console.warn(`⚠️ Failed to delete Cloud Run service: ${serviceName}`);
             }
@@ -324,7 +324,7 @@ router.delete('/:id', requirePermissions(['write']), async (req: Request, res: R
       return res.status(500).json(response);
     }
 
-    console.log(`✅ Successfully deleted package ${packageData.name} and all related data`);
+    //  console.log(`✅ Successfully deleted package ${packageData.name} and all related data`);
 
     const response: APIResponse<null> = {
       success: true,

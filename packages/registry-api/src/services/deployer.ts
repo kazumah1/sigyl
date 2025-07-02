@@ -37,7 +37,7 @@ export interface DeploymentResult {
  */
 export async function deployRepo(request: DeploymentRequest): Promise<DeploymentResult> {
   try {
-    console.log('🚀 Starting Google Cloud Run deployment for:', request.repoName);
+    // console.log('🚀 Starting Google Cloud Run deployment for:', request.repoName);
 
     if (!CLOUD_RUN_CONFIG.projectId) {
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
@@ -48,9 +48,9 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // Try to fetch sigyl.yaml configuration
     let sigylConfig;
     try {
-      console.log('📋 Fetching sigyl.yaml configuration...');
+      // console.log('📋 Fetching sigyl.yaml configuration...');
       sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
-      console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+      // console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
     } catch (error) {
       console.error('⚠️ Could not fetch sigyl.yaml,', error);
       throw new Error('sigyl.yaml could not be fetched or parsed. Deployment cannot continue.');
@@ -65,7 +65,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     };
 
     // Initialize Cloud Run service
-    console.log("cloud run config", CLOUD_RUN_CONFIG);
+    // console.log("cloud run config", CLOUD_RUN_CONFIG);
     const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
     // Prepare Cloud Run deployment request with Sigyl configuration
@@ -78,7 +78,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       githubToken: request.githubToken
     };
 
-    console.log('🔒 Deploying with security validation...');
+    // console.log('🔒 Deploying with security validation...');
 
     // Deploy to Cloud Run with integrated security validation
     const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
@@ -92,8 +92,8 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       };
     }
 
-    console.log('✅ Successfully deployed to Google Cloud Run:', cloudRunResult.deploymentUrl);
-    console.log('🔗 MCP endpoint available at:', `${cloudRunResult.deploymentUrl}/mcp`);
+    // console.log('✅ Successfully deployed to Google Cloud Run:', cloudRunResult.deploymentUrl);
+    // console.log('🔗 MCP endpoint available at:', `${cloudRunResult.deploymentUrl}/mcp`);
 
     // === Insert/Upsert into mcp_packages ===
     let packageId: string | null = null;
@@ -109,7 +109,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       if (githubIdNumeric.startsWith('github_')) {
         githubIdNumeric = githubIdNumeric.replace('github_', '');
       }
-      console.log('[DEPLOY] userId is not a UUID, looking up in profiles table by github_id:', githubIdNumeric);
+      // console.log('[DEPLOY] userId is not a UUID, looking up in profiles table by github_id:', githubIdNumeric);
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -120,26 +120,26 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       }
       if (profile && profile.id) {
         authorIdToUse = profile.id;
-        console.log('[DEPLOY] Found UUID for github_id:', authorIdToUse);
+        // console.log('[DEPLOY] Found UUID for github_id:', authorIdToUse);
       } else {
         console.warn('[DEPLOY] No profile found for github_id', githubIdNumeric);
         authorIdToUse = null;
       }
     }
-    console.log('[DEPLOY] Using author_id:', authorIdToUse);
-    console.log('[DEPLOY] Incoming request.userId:', request.userId);
+    // console.log('[DEPLOY] Using author_id:', authorIdToUse);
+    // console.log('[DEPLOY] Incoming request.userId:', request.userId);
 
     // Use configSchema from sigylConfig
     if (sigylConfig && typeof sigylConfig === 'object') {
       if ('startCommand' in sigylConfig && sigylConfig.startCommand && typeof sigylConfig.startCommand === 'object' && 'configSchema' in sigylConfig.startCommand) {
         configSchema = sigylConfig.startCommand.configSchema;
-        console.log('[DEPLOY] Using configSchema from sigylConfig.startCommand.configSchema');
+        // console.log('[DEPLOY] Using configSchema from sigylConfig.startCommand.configSchema');
       } else if ('configSchema' in sigylConfig) {
         configSchema = sigylConfig.configSchema;
-        console.log('[DEPLOY] Using configSchema from sigylConfig.configSchema');
+        // console.log('[DEPLOY] Using configSchema from sigylConfig.configSchema');
       }
     }
-    console.log('[DEPLOY] Parsed configSchema:', JSON.stringify(configSchema, null, 2));
+    // console.log('[DEPLOY] Parsed configSchema:', JSON.stringify(configSchema, null, 2));
     if (configSchema && typeof configSchema === 'object' && configSchema.type === 'object' && configSchema.properties && typeof configSchema.properties === 'object') {
       const requiredKeys = Array.isArray(configSchema.required) ? configSchema.required : [];
       for (const [key, prop] of Object.entries(configSchema.properties)) {
@@ -153,8 +153,8 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         }
       }
     }
-    console.log('[DEPLOY] Computed requiredSecrets:', JSON.stringify(requiredSecrets, null, 2));
-    console.log('[DEPLOY] Computed optionalSecrets:', JSON.stringify(optionalSecrets, null, 2));
+    // console.log('[DEPLOY] Computed requiredSecrets:', JSON.stringify(requiredSecrets, null, 2));
+    // console.log('[DEPLOY] Computed optionalSecrets:', JSON.stringify(optionalSecrets, null, 2));
     try {
       // Fetch tools from the deployed server (handle event-stream)
       const toolsResp = await fetch(`${cloudRunResult.deploymentUrl}/mcp`, {
@@ -182,7 +182,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools)) {
         tools = toolsData.result.tools;
       }
-      console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
+      // console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
         name: request.repoName,
@@ -201,7 +201,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         // TODO: Add 'optional_secrets' column to mcp_packages table if not present
         optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null
       };
-      console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
+      // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
       const { data: pkgData, error: pkgError } = await supabase
         .from('mcp_packages')
         .upsert([
@@ -220,13 +220,13 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     if (cloudRunResult.deploymentUrl && packageId && tools.length > 0) {
       try {
         for (const tool of tools) {
-          console.log('[DEPLOY] Upserting mcp_tools with:', JSON.stringify({
-            package_id: packageId,
-            tool_name: tool.name,
-            description: tool.description || null,
-            input_schema: tool.inputSchema || null,
-            output_schema: tool.outputSchema || null
-          }, null, 2));
+          // console.log('[DEPLOY] Upserting mcp_tools with:', JSON.stringify({
+          //   package_id: packageId,
+          //   tool_name: tool.name,
+          //   description: tool.description || null,
+          //   input_schema: tool.inputSchema || null,
+          //   output_schema: tool.outputSchema || null
+          // }, null, 2));
           await supabase.from('mcp_tools').upsert({
             package_id: packageId,
             tool_name: tool.name,
