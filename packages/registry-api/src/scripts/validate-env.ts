@@ -167,8 +167,7 @@ function checkDependencies() {
     '@supabase/supabase-js',
     'google-auth-library',
     '@google-cloud/cloudbuild',
-    '@google-cloud/run',
-    'octokit'
+    '@google-cloud/run'
   ];
 
   let allPresent = true;
