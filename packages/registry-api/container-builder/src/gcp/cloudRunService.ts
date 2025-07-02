@@ -54,9 +54,7 @@ export class CloudRunService {
   private async getAccessToken(): Promise<string> {
     // Debug: Check environment variables
     console.log('[CloudRunService] Environment debug:');
-    console.log('  GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
     console.log('  File exists:', process.env.GOOGLE_APPLICATION_CREDENTIALS ? require('fs').existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS) : 'N/A');
-    console.log('  Working directory:', process.cwd());
     
     try {
       // Create a fresh JWT instance each time to ensure environment variables are picked up
