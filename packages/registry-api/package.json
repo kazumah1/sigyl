@@ -19,7 +19,8 @@
     "debug:secrets": "ts-node src/scripts/debugSecrets.ts",
     "validate-env": "ts-node src/scripts/validate-env.ts",
     "prestart": "npm run validate-env",
-    "predeploy": "npm run validate-env"
+    "predeploy": "npm run validate-env",
+    "postbuild": "ls -l dist"
   },
   "dependencies": {
     "@google-cloud/cloudbuild": "^5.1.0",
