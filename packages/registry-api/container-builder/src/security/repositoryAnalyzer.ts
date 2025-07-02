@@ -203,6 +203,7 @@ export class RepositoryAnalyzer {
       hasDockerfile,
       hasMcpYaml,
       hasSmitheryYaml,
+      hasSigylYaml: false,
       files,
       dependencies,
       devDependencies

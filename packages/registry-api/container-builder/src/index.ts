@@ -28,7 +28,7 @@ export type {
 export * from './types/security';
 
 // Legacy function - replaced with security-first approach
-export async function buildMCPDockerfile(sourceDir: string, outDir: string) {
+export async function buildMCPDockerfile(_sourceDir: string, _outDir: string) {
   console.warn('⚠️ buildMCPDockerfile is deprecated. Use CloudRunService with Sigyl schema instead.');
   console.warn('📋 Migrate to sigyl.yaml with runtime: "node" or runtime: "container"');
   // TODO: Implement secure MCP container building with new schema

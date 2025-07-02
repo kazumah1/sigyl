@@ -39,7 +39,7 @@ export interface BuildOptions {
   platform?: string
 }
 
-export async function buildMCPDockerfile(options: BuildOptions): Promise<string> {
+export async function buildMCPDockerfile(_sourceDir: string, _outDir: string, options: BuildOptions): Promise<string> {
   const { sourceDir, outDir, mcpConfigPath = 'mcp.yaml' } = options
   
   // Ensure output directory exists
@@ -359,7 +359,7 @@ export async function buildDockerImage(options: BuildOptions): Promise<string> {
   const { outDir, buildArgs = {}, platform = 'linux/amd64' } = options
   
   // Generate Dockerfile first
-  await buildMCPDockerfile(options)
+  await buildMCPDockerfile(options.sourceDir, options.outDir, options)
   
   // Build Docker image
   const imageName = `mcp-server-${Date.now()}`
