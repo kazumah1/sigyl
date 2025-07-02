@@ -1,4 +1,4 @@
-# MCP Registry API
+# Sigyl Registry API
 
 Express.js + TypeScript API server for the MCP (Model Context Protocol) package registry.
 
@@ -18,7 +18,7 @@ npm install
 # Or from this package directory
 cd packages/registry-api
 npm install
-```
+``` 
 
 ### Environment Setup
 
