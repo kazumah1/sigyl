@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface HeroSectionProps {
   title: string;
@@ -14,6 +14,13 @@ function randomBetween(a: number, b: number) {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, buttons }) => {
   const starsRef = useRef<HTMLCanvasElement>(null);
+  const [showContent, setShowContent] = useState(false);
+
+  // Fade in content after 1 second
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Draw and animate stars (bright, sharp, always visible in black area)
   useEffect(() => {
@@ -96,7 +103,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, butto
             WebkitBackdropFilter: 'blur(0.5px)',
           }}
         />
-        <div className="relative z-30 flex flex-col items-center justify-center text-center px-4 w-full">
+        <div className={`relative z-30 flex flex-col items-center justify-center text-center px-4 w-full transition-opacity duration-1000 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
           <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-white drop-shadow-xl mb-6" style={{letterSpacing:'-0.03em', textShadow:'0 4px 32px #0008'}}>
             {title}
           </h1>

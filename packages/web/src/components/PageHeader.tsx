@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/UserProfile";
 import { useNavigate } from "react-router-dom";
@@ -17,8 +17,19 @@ const PageHeader = () => {
     }
   })();
 
+  // Hide nav bar on landing page until 1 second has passed
+  const [showNav, setShowNav] = useState(window.location.pathname !== '/');
+  useEffect(() => {
+    if (window.location.pathname !== '/') {
+      setShowNav(true);
+      return;
+    }
+    const timer = setTimeout(() => setShowNav(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <header className={`fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10 transition-opacity duration-700 ${showNav ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
