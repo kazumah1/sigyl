@@ -1,5 +1,5 @@
 # Production Dockerfile for Sigil MCP Registry API (Monorepo Root)
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN ls -l /app/packages/shared && cat /app/packages/shared/package.json
 RUN npm run build --workspace=packages/registry-api
 
 # Production image
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
