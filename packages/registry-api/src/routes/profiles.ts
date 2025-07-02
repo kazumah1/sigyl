@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../config/database';
 import { requireHybridAuth } from '../middleware/auth';
 import { APIResponse } from '../types';
+import { supabaseAdmin } from '../config/supabaseAdmin';
 
 const router = Router();
 
@@ -186,24 +187,33 @@ router.delete('/me', requireHybridAuth, async (req: Request, res: Response) => {
       profileId = req.user!.key_id.substring('supabase_'.length);
     }
 
-    const { error } = await supabase
+    // 1. Delete from 'profiles' table (optional, as it might be handled by foreign keys)
+    const { error: profileError } = await supabase
       .from('profiles')
       .delete()
       .eq('id', profileId);
 
-    if (error) {
-      console.error('Error deleting profile:', error);
+    if (profileError) {
+      console.warn('Warning: could not delete from profiles table:', profileError.message);
+      // Not returning an error, as the auth user deletion is more critical
+    }
+    
+    // 2. Delete from Supabase Auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(profileId);
+
+    if (authError) {
+      console.error('Error deleting user from Supabase Auth:', authError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to delete profile',
-        message: error.message
+        error: 'Failed to delete user authentication data',
+        message: authError.message
       });
     }
 
     const response: APIResponse<null> = {
       success: true,
       data: null,
-      message: 'Profile deleted successfully'
+      message: 'Profile and associated user deleted successfully'
     };
 
     return res.json(response);

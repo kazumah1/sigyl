@@ -207,7 +207,7 @@ const SettingsPage: React.FC = () => {
                   </div>
                   <div className="text-gray-400 text-xs mt-2">Only dark theme is currently supported.</div>
                 </div>
-                {/* <div className="mt-8">
+                <div className="mt-8">
                   <label className="block text-gray-300 mb-2">Danger Zone</label>
                   <Button variant="destructive" onClick={handleDeleteAccount} className="flex items-center gap-2" disabled={deleting}>
                     <Trash2 className="w-4 h-4" /> {deleting ? 'Deleting...' : 'Delete Account'}
@@ -225,7 +225,7 @@ const SettingsPage: React.FC = () => {
                       {deleteError && <div className="text-red-400 mt-2">{deleteError}</div>}
                     </div>
                   )}
-                </div> */}
+                </div>
               </CardContent>
             </Card>
           )}

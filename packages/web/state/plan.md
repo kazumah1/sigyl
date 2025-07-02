@@ -1,5 +1,18 @@
 ## [Latest Updates] Rate Limiting Fix & UI Color Fixes ✅
 
+### [Feature] Full-Stack Profile & Settings Management
+- **Summary**: Implemented full-stack functionality for the `/settings` page, including profile updates and a secure account deletion process.
+- **Profile Tab**:
+    - Users can now update their "Display Name".
+    - The frontend calls the `PUT /api/v1/profiles/me` endpoint to save changes.
+- **Settings Tab**:
+    - The "Delete Account" feature has been enabled.
+    - It uses a two-step confirmation process to prevent accidental deletion.
+- **Backend**:
+    - The `DELETE /api/v1/profiles/me` endpoint was enhanced to be more robust.
+    - It now uses a Supabase admin client to delete the user from `auth.users`, ensuring their session is terminated and they are fully removed from the system, in addition to deleting their profile data.
+- **Result**: The settings page is now fully functional, providing users with essential account management capabilities.
+
 ### [Fix] Duplicate API Path Issue
 - **Problem**: API calls were failing with 404 errors in the production environment due to a duplicated `/api/v1` in the request URL (e.g., `/api/v1/api/v1/profiles/me`).
 - **Root Cause**: The `VITE_REGISTRY_API_URL` in production already contained `/api/v1`, but the frontend code was unconditionally appending another `/api/v1`, causing a malformed URL. The local environment was unaffected as it used a default URL without the path.
