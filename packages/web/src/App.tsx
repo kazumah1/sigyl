@@ -48,6 +48,27 @@ function AppRoutes() {
     trackPageView(location.pathname + location.search);
   }, [location]);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    // Temporarily disable smooth scrolling to avoid animation
+    const html = document.documentElement;
+    const body = document.body;
+    const originalHtmlScrollBehavior = html.style.scrollBehavior;
+    const originalBodyScrollBehavior = body.style.scrollBehavior;
+    
+    html.style.scrollBehavior = 'auto';
+    body.style.scrollBehavior = 'auto';
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+    
+    // Restore smooth scrolling after a brief delay
+    setTimeout(() => {
+      html.style.scrollBehavior = originalHtmlScrollBehavior;
+      body.style.scrollBehavior = originalBodyScrollBehavior;
+    }, 100);
+  }, [location.pathname]);
+
   return (
     <div className="App min-h-screen flex flex-col">
       <div className="flex-1">
