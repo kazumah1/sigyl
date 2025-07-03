@@ -15,9 +15,9 @@ async function startServer() {
 
     // Start the server
     app.listen(PORT, () => {
-      console.log(`🚀 MCP Registry API running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`📦 API docs: http://localhost:${PORT}/api/v1/packages`);
+      console.log(`🚀 Sigyl Registry API running on https://api.sigyl.dev`);
+      console.log(`📊 Health check: https://api.sigyl.dev/health`);
+      console.log(`📦 API docs: https://api.sigyl.dev/api/v1/packages`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
