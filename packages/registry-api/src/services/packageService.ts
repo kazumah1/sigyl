@@ -297,7 +297,7 @@ export class PackageService {
    */
   async deletePackage(packageId: string, userId?: string): Promise<boolean> {
     try {
-      console.log(`🗑️ Deleting package ${packageId} and all related data...`);
+      // console.log(`🗑️ Deleting package ${packageId} and all related data...`);
 
       // First verify ownership if userId is provided
       if (userId) {
@@ -328,7 +328,7 @@ export class PackageService {
         throw new Error(`Failed to delete package tools: ${toolsError.message}`);
       }
 
-      console.log('✅ Deleted package tools');
+      // console.log('✅ Deleted package tools');
 
       // 2. Delete deployments
       const { error: deploymentsError } = await supabase
@@ -341,7 +341,7 @@ export class PackageService {
         throw new Error(`Failed to delete package deployments: ${deploymentsError.message}`);
       }
 
-      console.log('✅ Deleted package deployments');
+      // console.log('✅ Deleted package deployments');
 
       // 3. Delete secrets if they exist
       try {
@@ -352,9 +352,10 @@ export class PackageService {
 
         if (secretsError) {
           console.warn('⚠️ Failed to delete secrets (table may not exist):', secretsError);
-        } else {
-          console.log('✅ Deleted package secrets');
-        }
+        } 
+        // else {
+        //   console.log('✅ Deleted package secrets');
+        // }
       } catch (error) {
         console.warn('⚠️ Secrets table may not exist, skipping...');
       }
@@ -368,9 +369,10 @@ export class PackageService {
 
         if (ratingsError) {
           console.warn('⚠️ Failed to delete ratings (table may not exist):', ratingsError);
-        } else {
-          console.log('✅ Deleted package ratings');
-        }
+        } 
+        // else {
+        //   console.log('✅ Deleted package ratings');
+        // }
       } catch (error) {
         console.warn('⚠️ Ratings table may not exist, skipping...');
       }
@@ -384,9 +386,10 @@ export class PackageService {
 
         if (downloadsError) {
           console.warn('⚠️ Failed to delete download records (table may not exist):', downloadsError);
-        } else {
-          console.log('✅ Deleted package download records');
-        }
+        } 
+        // else {
+        //   console.log('✅ Deleted package download records');
+        // }
       } catch (error) {
         console.warn('⚠️ Download records table may not exist, skipping...');
       }
@@ -402,7 +405,7 @@ export class PackageService {
         throw new Error(`Failed to delete package: ${packageError.message}`);
       }
 
-      console.log('✅ Successfully deleted package and all related data');
+      // console.log('✅ Successfully deleted package and all related data');
       return true;
 
     } catch (error) {
