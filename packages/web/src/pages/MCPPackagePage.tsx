@@ -626,6 +626,24 @@ const MCPPackagePage = () => {
     );
   })();
 
+  useEffect(() => {
+    const anyModalOpen = showDeleteModal || showInstallModal || showJsonConfig;
+    if (anyModalOpen) {
+      // Calculate scrollbar width
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.setProperty('--scrollbar-width', `${scrollBarWidth}px`);
+      document.body.classList.add('body-modal-open');
+    } else {
+      document.body.classList.remove('body-modal-open');
+      document.body.style.removeProperty('--scrollbar-width');
+    }
+    // Clean up on unmount
+    return () => {
+      document.body.classList.remove('body-modal-open');
+      document.body.style.removeProperty('--scrollbar-width');
+    };
+  }, [showDeleteModal, showInstallModal, showJsonConfig]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">

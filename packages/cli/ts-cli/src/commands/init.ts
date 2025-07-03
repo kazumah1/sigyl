@@ -59,69 +59,7 @@ async function generateMCPConfig(options: InitOptions): Promise<void> {
 		runtime: "node",
 		language: options.serverLanguage || "typescript",
 		startCommand: {
-			type: "http",
-			configSchema: {
-				type: "object",
-				required: ["apiKey", "environment"],
-				properties: {
-					apiKey: {
-						type: "string",
-						title: "MCP API Key",
-						description: "Your MCP API key (required)"
-					},
-					serviceName: {
-						type: "string",
-						title: "Service Name",
-						default: "my-mcp-service",
-						description: "Name of the MCP-compatible service"
-					},
-					logLevel: {
-						type: "string",
-						title: "Log Level",
-						default: "info",
-						enum: ["debug", "info", "warn", "error"],
-						description: "Logging verbosity level"
-					},
-					timeout: {
-						type: "number",
-						title: "Timeout",
-						description: "Request timeout in seconds",
-						default: 30,
-						minimum: 1,
-						maximum: 300
-					},
-					enableMetrics: {
-						type: "boolean",
-						title: "Enable Metrics",
-						description: "Enable metrics collection",
-						default: false
-					},
-					allowedClients: {
-						type: "array",
-						title: "Allowed Clients",
-						description: "List of client IDs allowed to access the server",
-						items: { type: "string" },
-						default: []
-					},
-					customSettings: {
-						type: "object",
-						title: "Custom Settings",
-						description: "Advanced custom settings for the server",
-						properties: {
-							maxConnections: { type: "number", default: 100 },
-							useCache: { type: "boolean", default: true }
-						},
-						default: {}
-					},
-					environment: {
-						type: "string",
-						title: "Environment",
-						description: "Deployment environment",
-						enum: ["development", "staging", "production"],
-						default: "development"
-					}
-				}
-			}
+			type: "http"
 		}
 	};
 

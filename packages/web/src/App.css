@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+.body-modal-open {
+  padding-right: var(--scrollbar-width, 0px);
+  overflow: hidden;
+}
