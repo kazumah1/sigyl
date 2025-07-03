@@ -16,6 +16,7 @@ import mcpProxyRouter from './routes/mcpProxy';
 import analyticsRouter from './routes/analytics';
 import mcpServersRouter from './routes/mcpServers';
 import profilesRouter from './routes/profiles';
+import docsRouter from './routes/docs';
 import { APIResponse } from './types';
 import {
   generalRateLimit,
@@ -100,6 +101,7 @@ app.use('/api/v1/mcp', mcpProxyRouter);
 app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/v1/mcp-servers', mcpServersRouter);
 app.use('/api/v1/profiles', profilesRouter);
+app.use('/api/v1/docs', docsRouter);
 
 // API documentation endpoint
 app.get('/api', (_req, res) => {

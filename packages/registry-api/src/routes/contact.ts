@@ -188,7 +188,7 @@ router.post('/', async (req, res) => {
     ]);
 
     // Log successful submission
-    console.log(`Contact form submitted successfully: ${name} (${email}) - ${reason}`);
+    // console.log(`Contact form submitted successfully: ${name} (${email}) - ${reason}`);
 
     const response: APIResponse<{ message: string }> = {
       success: true,

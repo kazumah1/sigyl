@@ -636,3 +636,23 @@ Following the initial migration, several frontend components were still making d
 The frontend is now **100% API-driven** with no direct database dependencies. All data flows through the backend API with proper authentication, validation, and error handling.
 
 ### ✅ COMPLETE - Technical Issue Resolution Post-Migration
+
+# Project Plan Update
+
+## Docs API Endpoint
+- Added `/api/v1/docs` route to the registry API.
+- Supports listing available docs and fetching individual docs by name (without extension).
+- Serves `.mdx` files from `packages/registry-api/docs` as raw markdown (Content-Type: text/markdown).
+- Returns 404 for missing docs, 400 for invalid names.
+- No authentication required.
+
+## MCP Tool for Docs
+- Added `getDocContent` tool to the MCP server.
+- Takes a `docName` (string, no extension), fetches the doc from the registry API, and returns the raw markdown.
+- Handles errors and returns error messages as text.
+- Uses `node-fetch` for HTTP requests.
+- Registry API URL is configurable via `REGISTRY_API_URL` env var, defaults to localhost:3000.
+
+## .mdx Support
+- Docs files can be `.mdx` (markdown with JSX), but are returned as raw markdown (not rendered HTML).
+- This is compatible with LLM and downstream consumers that expect markdown.
