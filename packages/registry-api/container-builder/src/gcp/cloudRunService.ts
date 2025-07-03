@@ -684,7 +684,12 @@ EOF`
         console.log('✅ Cloud Run service deployed successfully');
         console.log(`🌐 Service URL: ${serviceUrl}`);
         // Patch: Allow unauthenticated invocations
-        // await this.allowUnauthenticated(serviceName); // Removed as allowUnauthenticated no longer exists
+        try {
+          await this.allowUnauthenticated(serviceName);
+          console.log('✅ Allowed unauthenticated invocations for Cloud Run service.');
+        } catch (err) {
+          console.warn('⚠️ Failed to set unauthenticated invoker policy:', err);
+        }
         return {
           serviceUrl,
           serviceName
@@ -696,6 +701,35 @@ EOF`
     } catch (error) {
       console.error('❌ Cloud Run deployment failed:', error);
       throw new Error(`Failed to deploy to Cloud Run: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Set IAM policy to allow unauthenticated invocations (allUsers as run.invoker)
+   */
+  private async allowUnauthenticated(serviceName: string): Promise<void> {
+    const url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}:setIamPolicy`;
+    const accessToken = await this.getAccessToken();
+    const body = {
+      policy: {
+        bindings: [
+          {
+            role: "roles/run.invoker",
+            members: ["allUsers"]
+          }
+        ]
+      }
+    };
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to set IAM policy: ${response.status} ${await response.text()}`);
     }
   }
 

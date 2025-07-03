@@ -137,6 +137,11 @@ const MCPPackagePage = () => {
     { name: 'Service Ready', description: 'Configuring and starting service' }
   ];
 
+  const [ownerViewMode, setOwnerViewMode] = useState<'owner' | 'public'>('owner');
+  // Use ownerViewMode to determine if we are in owner or public view
+  const effectiveIsOwner = isOwner && ownerViewMode === 'owner';
+  const effectiveIsPublic = isOwner && ownerViewMode === 'public';
+
   useEffect(() => {
     if (id) {
       loadPackageData();
@@ -700,18 +705,29 @@ const MCPPackagePage = () => {
       <PageHeader />
       
       <div className="container mx-auto px-6 py-8 mt-16">
+        {/* Owner View Toggle Button */}
+        {isOwner && (
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+              onClick={() => setOwnerViewMode(ownerViewMode === 'owner' ? 'public' : 'owner')}
+            >
+              {ownerViewMode === 'owner' ? 'View Server Page' : 'Edit Server Page'}
+            </Button>
+          </div>
+        )}
         {/* Back Navigation */}
         <Button
           variant="outline"
-          onClick={() => navigate(isOwner ? '/dashboard' : '/marketplace')}
+          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/marketplace')}
           className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to {isOwner ? 'Dashboard' : 'Marketplace'}
+          Back to {effectiveIsOwner ? 'Dashboard' : 'Marketplace'}
         </Button>
-
         {/* Edit Button (Owner Only) */}
-        {isOwner && !editMode && (
+        {effectiveIsOwner && !editMode && (
           <div className="flex justify-end mb-4">
             <Button
               onClick={() => setEditMode(true)}
@@ -721,7 +737,7 @@ const MCPPackagePage = () => {
             </Button>
           </div>
         )}
-        {isOwner && editMode && (
+        {effectiveIsOwner && editMode && (
           <div className="flex justify-end mb-4 gap-2">
             <Button
               onClick={handleApplyEdit}
@@ -740,7 +756,6 @@ const MCPPackagePage = () => {
             </Button>
           </div>
         )}
-
         {/* New Deployment Success Alert */}
         {isNewDeployment && deploymentStatus === 'success' && (
           <Alert className="mb-6 border-green-500 bg-green-500/10">
@@ -750,9 +765,8 @@ const MCPPackagePage = () => {
             </AlertDescription>
           </Alert>
         )}
-
         {/* Deployment Progress Section */}
-        {isDeploying && isOwner && deploymentStatus === 'deploying' && (
+        {isDeploying && effectiveIsOwner && deploymentStatus === 'deploying' && (
           <Card className="mb-6 bg-gray-900/50 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -817,7 +831,6 @@ const MCPPackagePage = () => {
             </CardContent>
           </Card>
         )}
-
         {/* Deployment Error Alert */}
         {deploymentStatus === 'failed' && deploymentError && (
           <Alert className="mb-6 border-red-500 bg-red-500/10">
@@ -838,7 +851,6 @@ const MCPPackagePage = () => {
             </AlertDescription>
           </Alert>
         )}
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
@@ -858,7 +870,7 @@ const MCPPackagePage = () => {
                 ) : (
                   <h1 className="text-4xl font-bold text-white">{pkg.name}</h1>
                 )}
-                {isOwner && (
+                {effectiveIsOwner && (
                   <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1 hover:bg-neutral-900 hover:text-white">
                     <User className="w-3 h-3" />
                     Owner
@@ -880,7 +892,7 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
-            {isOwner ? (
+            {effectiveIsOwner ? (
               <>
                 {pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
                   <Button
@@ -943,10 +955,6 @@ const MCPPackagePage = () => {
           </div>
           </div>
           <div className="flex items-center gap-4 text-gray-400 mb-4">
-            {/* <span className="flex items-center gap-1">
-              <User className="w-4 h-4" />
-              by {pkg.author_id || 'Unknown'}
-            </span> */}
             <span className="flex items-center gap-1">
               <Package className="w-4 h-4" />
               v{editMode ? editFields.version || '1.0.0' : pkg.version || '1.0.0'}
@@ -961,11 +969,10 @@ const MCPPackagePage = () => {
             </span>
           </div>
         </div>
-
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Tabs defaultValue={isOwner ? "overview" : "overview"} className="w-full">
+            <Tabs defaultValue={effectiveIsOwner ? "overview" : "overview"} className="w-full">
               <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
                 <TabsTrigger value="overview" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <BookOpen className="w-5 h-5 mr-2" />
@@ -975,7 +982,7 @@ const MCPPackagePage = () => {
                   <Code2 className="w-5 h-5 mr-2" />
                   Tools
                 </TabsTrigger>
-                {isOwner ? (
+                {effectiveIsOwner ? (
                   <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Terminal className="w-5 h-5 mr-2" />
                     Logs
@@ -991,7 +998,6 @@ const MCPPackagePage = () => {
                   API
                 </TabsTrigger> */}
               </TabsList>
-
               <TabsContent value="overview" className="mt-6">
                 <div className="space-y-6">
                   <Card className="bg-black/60 border border-white/10">
@@ -1013,7 +1019,6 @@ const MCPPackagePage = () => {
                   </Card>
                 </div>
               </TabsContent>
-
               <TabsContent value="tools" className="mt-6">
                 <Card className="bg-black/60 border border-white/10 ">
                   <CardHeader>
@@ -1050,8 +1055,7 @@ const MCPPackagePage = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              {isOwner ? (
+              {effectiveIsOwner ? (
                 <TabsContent value="logs" className="mt-6">
                   <Card className="bg-black/60 border border-white/10">
                     <CardHeader>
@@ -1123,7 +1127,6 @@ const MCPPackagePage = () => {
                   </Card>
                 </TabsContent>
               )}
-
               <TabsContent value="api" className="mt-6">
                 <Card className="bg-black/60 border border-white/10">
                   <CardHeader>
@@ -1156,7 +1159,6 @@ const MCPPackagePage = () => {
               </TabsContent>
             </Tabs>
           </div>
-
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Package Info */}
@@ -1182,10 +1184,6 @@ const MCPPackagePage = () => {
                     <span className="text-white">{pkg.version || '1.0.0'}</span>
                   )}
                 </div>
-                {/* <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Author</span>
-                  <span className="text-white">{pkg.author_id || 'Unknown'}</span>
-                </div> */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Last Updated</span>
                   <span className="text-white">{new Date(pkg.updated_at).toLocaleDateString()}</span>
@@ -1226,7 +1224,6 @@ const MCPPackagePage = () => {
                 )}
               </CardContent>
             </Card>
-
             {/* MCP Server URL Display */}
             <div className="bg-black/60 rounded-lg p-6 border border-white/10">
               <h3 className="text-lg font-semibold mb-4 text-white">MCP Server URL</h3>
