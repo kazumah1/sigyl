@@ -1,0 +1,69 @@
+---
+title: "CLI Reference"
+description: "Usage and command reference for the Sigyl CLI."
+---
+
+# CLI Usage & Command Reference
+
+<Callout type="info">
+  Use <b>sigyl --help</b> to see all available commands and options in your terminal.
+</Callout>
+
+<Accordion title="Common Commands">
+  - <code>sigyl install &lt;package&gt;</code>: Install MCP package (supports <code>--client</code>, <code>--list</code>, <code>--remove</code>)
+  - <code>sigyl config</code>: Configure registry URL and API key
+  - <code>sigyl config show</code>: Show current config
+  - <code>sigyl config reset</code>: Reset config to defaults
+  - <code>sigyl integrate [directory]</code>: Integrate MCP endpoints into an existing Express app
+  - <code>sigyl scan [directory]</code>: Scan Express app and generate standalone MCP server
+  - <code>sigyl init</code>: Create a template MCP server
+  - <code>sigyl dev [directory]</code>: Start dev mode with hot reload
+  - <code>sigyl inspect [server-path]</code>: Launch MCP Inspector UI
+  - <code>sigyl clean</code>: Remove generated files
+  - <code>sigyl build</code>: Build MCP server from TypeScript to JavaScript
+</Accordion>
+
+<Accordion title="Install Command Options">
+  - <code>--client &lt;client&gt;</code>: Target client (<code>claude</code>, <code>vscode</code>, <code>cursor</code>)
+  - <code>--list</code>: List installed MCP servers
+  - <code>--remove &lt;name&gt;</code>: Remove an MCP server
+  - <code>--env &lt;key=value&gt;</code>: Set environment variables
+  - <code>--cwd &lt;path&gt;</code>: Set working directory
+  - <code>--profile &lt;profile&gt;</code>: Use a named profile
+  - <code>--key &lt;key&gt;</code>: Use a specific API key
+</Accordion>
+
+<Accordion title="Integration Command">
+  Adds MCP endpoints to your Express app.
+  
+  Example:
+  
+  ```bash
+  sigyl integrate ./my-express-app --out .sigyl-mcp --endpoint /mcp --language typescript
+  # Then add to your app:
+  import { addMCPEndpoints } from './.sigyl-mcp/integration'
+  addMCPEndpoints(app)
+  ```
+</Accordion>
+
+<Accordion title="Scan/Init/Dev">
+  - <code>scan</code>: Generates a new MCP server from an existing Express app.
+  - <code>init</code>: Creates a template MCP server (with sample tool).
+  - <code>dev</code>: Hot-reloads MCP server and Express app for rapid development.
+</Accordion>
+
+<Accordion title="Inspect">
+  - <code>inspect</code>: Launches a UI to test your MCP server or endpoint.
+</Accordion>
+
+<Accordion title="Clean/Build">
+  - <code>clean</code>: Removes generated files.
+  - <code>build</code>: Compiles TypeScript MCP server to JavaScript.
+</Accordion>
+
+<Expandable title="Advanced CLI Options">
+  - <code>--env &lt;key=value&gt;</code>: Set environment variables  
+  - <code>--cwd &lt;path&gt;</code>: Set working directory  
+  - <code>--profile &lt;profile&gt;</code>: Use a named profile  
+  - <code>--key &lt;key&gt;</code>: Use a specific API key  
+</Expandable> 

@@ -1,0 +1,62 @@
+---
+title: "Configuration & Authentication"
+description: "Configure Sigyl for public and private packages."
+---
+
+# Configuration & Authentication
+
+<Callout type="warning">
+  Never share your API key publicly. Use environment variables for secrets.
+</Callout>
+
+<Accordion title="CLI Configuration">
+  <Fields>
+    <Fields.Field name="Public packages" type="none">
+      No config needed.
+    </Fields.Field>
+    <Fields.Field name="Private packages or custom registry" type="steps">
+      1. Run <code>sigyl config</code> and follow prompts for registry URL and API key.<br/>
+      2. API key: Get from <a href="https://sigyl.dev/dashboard">sigyl.dev/dashboard</a>.
+    </Fields.Field>
+    <Fields.Field name="View config" type="command">
+      sigyl config show
+    </Fields.Field>
+    <Fields.Field name="Reset config" type="command">
+      sigyl config reset
+    </Fields.Field>
+    <Fields.Field name="Config file" type="path">
+      <code>~/.sigyl/config.json</code> (macOS/Linux), <code>%USERPROFILE%\.sigyl\config.json</code> (Windows)
+    </Fields.Field>
+    <Fields.Field name="Env vars (for dev)" type="env">
+      <code>SIGYL_REGISTRY_URL</code>, <code>SIGYL_API_KEY</code>
+    </Fields.Field>
+  </Fields>
+  
+  ```bash
+  export SIGYL_REGISTRY_URL="http://localhost:3000"
+  export SIGYL_API_KEY="sk_your_key_here"
+  ```
+</Accordion>
+
+<Accordion title="SDK Configuration">
+  <Fields>
+    <Fields.Field name="apiKey" type="string" required>
+      Your MCP API key (required)
+    </Fields.Field>
+    <Fields.Field name="registryUrl" type="string" defaultValue="https://api.sigyl.dev/api/v1">
+      MCP registry URL
+    </Fields.Field>
+    <Fields.Field name="requireAuth" type="boolean" defaultValue="true">
+      Require authentication for SDK operations
+    </Fields.Field>
+  </Fields>
+  
+  ```typescript
+  import { MCPConnectSDK } from '@sigyl-dev/sdk';
+  const sdk = new MCPConnectSDK({
+    registryUrl: 'https://api.sigyl.dev/api/v1',
+    apiKey: process.env.SIGYL_API_KEY,
+    requireAuth: true
+  });
+  ```
+</Accordion> 

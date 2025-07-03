@@ -1,0 +1,141 @@
+---
+title: "MCP Server Templates & Integration"
+icon: "code"
+description: "Templates and integration details for MCP servers with Sigyl."
+---
+
+# MCP Server Templates & Integration
+
+<Callout type="info">
+  You can customize your server using the <code>sigyl.yaml</code> file and extend functionality in <code>server.ts</code>.
+</Callout>
+
+<Card
+  title="sigyl.yaml"
+  description="MCP server config (JSON Schema for tool/server options)"
+  icon="settings"
+/>
+<Card
+  title="server.ts"
+  description="Example MCP server (Express + MCP SDK)"
+  icon="code"
+/>
+
+<Accordion title="What is an MCP Server Template?">
+  An MCP server template is a pre-configured project that helps you quickly launch a Model Context Protocol server with best practices.
+</Accordion>
+
+<Fields>
+  <Fields.Field name="apiKey" type="string" required>
+    Your MCP API key (required)
+  </Fields.Field>
+  <Fields.Field name="serviceName" type="string" defaultValue="my-mcp-service">
+    Name of the MCP-compatible service
+  </Fields.Field>
+  <Fields.Field name="logLevel" type="string" defaultValue="info" enum={['debug', 'info', 'warn', 'error']}>
+    Logging verbosity level
+  </Fields.Field>
+</Fields>
+
+<CodeGroup>
+  <CodeGroup.Tab label="sigyl.yaml">
+    {`runtime: node
+language: typescript
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    required:
+      - apiKey
+      - environment
+    properties:
+      apiKey:
+        type: string
+        title: MCP API Key
+        description: Your MCP API key (required)
+      serviceName:
+        type: string
+        title: Service Name
+        default: my-mcp-service
+        description: Name of the MCP-compatible service
+      logLevel:
+        type: string
+        title: Log Level
+        default: info
+        enum:
+          - debug
+          - info
+          - warn
+          - error
+        description: Logging verbosity level
+      timeout:
+        type: number
+        title: Timeout
+        description: Request timeout in seconds
+        default: 30
+        minimum: 1
+        maximum: 300
+      enableMetrics:
+        type: boolean
+        title: Enable Metrics
+        description: Enable metrics collection
+        default: false
+      allowedClients:
+        type: array
+        title: Allowed Clients
+        description: List of client IDs allowed to access the server
+        items:
+          type: string
+        default: []
+      customSettings:
+        type: object
+        title: Custom Settings
+        description: Advanced custom settings for the server
+        properties:
+          maxConnections:
+            type: number
+            default: 100
+          useCache:
+            type: boolean
+            default: true
+        default: {}
+      environment:
+        type: string
+        title: Environment
+        description: Deployment environment
+        enum:
+          - development
+          - staging
+          - production
+        default: development`}
+  </CodeGroup.Tab>
+  <CodeGroup.Tab label="server.ts">
+    {`import express from "express";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
+import { z } from "zod"
+
+export default function createStatelessServer({ config }: { config: any }) {
+  const server = new McpServer({ name: "generated-mcp-server", version: "1.0.0" });
+  server.tool(
+    "reverseString",
+    "Reverse a string value",
+    { value: z.string().describe("String to reverse") },
+    async ({ value }) => ({ content: [{ type: "text", text: value.split("").reverse().join("") }] })
+  );
+  return server.server;
+}
+
+const app = express();
+app.use(express.json());
+app.post('/mcp', async (req, res) => {
+  const server = createStatelessServer({ config: {} });
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  res.on('close', () => { transport.close(); server.close(); });
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
+const port = process.env.PORT || 8080;
+app.listen(port, () => { console.log("MCP Server listening on port " + port); });`}
+  </CodeGroup.Tab>
+</CodeGroup> 

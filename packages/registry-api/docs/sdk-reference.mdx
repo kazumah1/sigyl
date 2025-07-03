@@ -1,0 +1,40 @@
+---
+title: "SDK Reference"
+description: "Usage and API reference for the Sigyl SDK."
+---
+
+# SDK Usage & API Reference
+
+<Callout type="tip">
+  The SDK is fully typed for TypeScript users, but works great in JavaScript too!
+</Callout>
+
+<Accordion title="Core Functions">
+  - <code>connect(packageName, toolName, options?)</code>: Connect to a tool in a package.
+  - <code>connectDirect(toolUrl, options?)</code>: Connect directly to a tool by URL.
+  - <code>searchPackages(query?, tags?, limit?, offset?, config?)</code>: Search for packages.
+  - <code>getPackage(name, config?)</code>: Get details about a package.
+  - <code>invoke(toolUrl, input, config?)</code>: Manually invoke a tool by URL.
+  - <code>registerMCP(packageData, apiKey?, config?)</code>: Register a new MCP package (requires API key).
+</Accordion>
+
+<Accordion title="SDK Class">
+  <CodeGroup>
+    <CodeGroup.Tab label="TypeScript">
+      {`import { MCPConnectSDK } from '@sigyl-dev/sdk';
+const sdk = new MCPConnectSDK({ registryUrl, apiKey, requireAuth: true });
+const results = await sdk.searchPackages('text', ['nlp'], 5);
+const allTools = await sdk.connectAll('text-processor');
+const summary = await allTools.summarize({ text: 'Hello world' });`}
+    </CodeGroup.Tab>
+    <CodeGroup.Tab label="JavaScript">
+      {`const { MCPConnectSDK } = require('@sigyl-dev/sdk');
+const sdk = new MCPConnectSDK({ registryUrl, apiKey, requireAuth: true });
+// ...same usage as above`}
+    </CodeGroup.Tab>
+  </CodeGroup>
+</Accordion>
+
+<Accordion title="Types">
+  All types are exported: <code>MCPPackage</code>, <code>MCPTool</code>, <code>PackageWithDetails</code>, <code>ToolFunction</code>, <code>SDKConfig</code>, etc.
+</Accordion> 
