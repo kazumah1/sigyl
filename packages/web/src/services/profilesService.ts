@@ -54,15 +54,41 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
+// In-memory cache for current profile
+let cachedProfile: Profile | null = null;
+let cacheTimestamp: number | null = null;
+let inflightProfilePromise: Promise<Profile | null> | null = null;
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
 export const profilesService = {
-  async getCurrentProfile(): Promise<Profile | null> {
-    try {
-      const result = await apiCall('/profiles/me');
-      return result.data || null;
-    } catch (error) {
-      console.error('Error fetching current profile:', error);
-      return null;
+  async getCurrentProfile(forceRefresh = false): Promise<Profile | null> {
+    const now = Date.now();
+    if (!forceRefresh && cachedProfile && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION_MS)) {
+      return cachedProfile;
     }
+    if (!forceRefresh && inflightProfilePromise) {
+      return inflightProfilePromise;
+    }
+    inflightProfilePromise = (async () => {
+      try {
+        const result = await apiCall('/profiles/me');
+        cachedProfile = result.data || null;
+        cacheTimestamp = Date.now();
+        return cachedProfile;
+      } catch (error) {
+        console.error('Error fetching current profile:', error);
+        return null;
+      } finally {
+        inflightProfilePromise = null;
+      }
+    })();
+    return inflightProfilePromise;
+  },
+
+  clearProfileCache() {
+    cachedProfile = null;
+    cacheTimestamp = null;
+    inflightProfilePromise = null;
   },
 
   async updateCurrentProfile(updates: Partial<Profile>): Promise<Profile | null> {
