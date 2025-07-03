@@ -120,13 +120,18 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    const packageData = await packageService.getPackageBySlug(slug);
+    // Try by slug first
+    let packageData = await packageService.getPackageBySlug(slug);
+    // Fallback: try by name if not found by slug
+    if (!packageData) {
+      packageData = await packageService.getPackageByName(slug);
+    }
     
     if (!packageData) {
       const response: APIResponse<null> = {
         success: false,
         error: 'Package not found',
-        message: `Package with slug '${slug}' does not exist`
+        message: `Package with slug or name '${slug}' does not exist`
       };
       return res.status(404).json(response);
     }
