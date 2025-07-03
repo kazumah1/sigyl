@@ -58,6 +58,7 @@ router.get('/', optionalAuth, async (_req: Request, res: Response) => {
 router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
+    console.log(`[packages.ts] /:slug route called with slug=`, slug);
     
     if (!slug || slug.trim().length === 0) {
       const response: APIResponse<null> = {
@@ -69,9 +70,11 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
     }
 
     // Try by slug first
+    console.log(`[packages.ts] Calling getPackageBySlug with slug=`, slug);
     let packageData = await packageService.getPackageBySlug(slug);
     // Fallback: try by name if not found by slug
     if (!packageData) {
+      console.log(`[packages.ts] getPackageBySlug returned null, calling getPackageByName with name=`, slug);
       packageData = await packageService.getPackageByName(slug);
     }
     
@@ -79,7 +82,7 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
       const response: APIResponse<null> = {
         success: false,
         error: 'Package not found',
-        message: `Package with slug or name '${slug}' does not exist`
+        message: 'No package found with the given slug or name'
       };
       return res.status(404).json(response);
     }
@@ -87,17 +90,15 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
     const response: APIResponse<typeof packageData> = {
       success: true,
       data: packageData,
-      message: 'Package retrieved successfully'
+      message: 'Package retrieved by slug or name'
     };
-    
     return res.json(response);
   } catch (error) {
     const response: APIResponse<null> = {
       success: false,
-      error: 'Failed to retrieve package',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to retrieve package by slug or name',
+      message: error instanceof Error ? error.message : 'Unknown error'
     };
-    
     return res.status(500).json(response);
   }
 });
@@ -181,6 +182,7 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
 router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log(`[packages.ts] /id/:id route called with id=`, id);
     
     if (!id || id.trim().length === 0) {
       const response: APIResponse<null> = {
@@ -191,13 +193,15 @@ router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
+    // Only use getPackageById, never fallback to name
+    console.log(`[packages.ts] Calling getPackageById with id=`, id);
     const packageData = await packageService.getPackageById(id);
     
     if (!packageData) {
       const response: APIResponse<null> = {
         success: false,
         error: 'Package not found',
-        message: `Package with ID '${id}' does not exist`
+        message: 'No package found with the given ID'
       };
       return res.status(404).json(response);
     }
@@ -205,17 +209,15 @@ router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
     const response: APIResponse<typeof packageData> = {
       success: true,
       data: packageData,
-      message: 'Package retrieved successfully'
+      message: 'Package retrieved by ID'
     };
-    
     return res.json(response);
   } catch (error) {
     const response: APIResponse<null> = {
       success: false,
-      error: 'Failed to retrieve package',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to retrieve package by ID',
+      message: error instanceof Error ? error.message : 'Unknown error'
     };
-    
     return res.status(500).json(response);
   }
 });
