@@ -254,7 +254,7 @@ export class MarketplaceService {
    */
   static async incrementDownloadCount(packageId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${REGISTRY_API_BASE}/packages/${encodeURIComponent(packageId)}/increment-downloads`, {
+      const response = await fetch(`${REGISTRY_API_BASE}/packages/id/${encodeURIComponent(packageId)}/increment-downloads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

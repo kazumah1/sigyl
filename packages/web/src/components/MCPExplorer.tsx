@@ -231,8 +231,9 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               <img src="/favicon.png" alt={pkg.name} className="w-14 h-14 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3" />
               <div>
                 <CardTitle 
-                  className="text-white group-hover:text-gray-200 transition-colors"
+                  className="text-white group-hover:text-gray-200 transition-colors truncate whitespace-nowrap overflow-hidden max-w-[180px]"
                   style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                  title={pkg.name}
                 >
                   {pkg.name}
                 </CardTitle>
