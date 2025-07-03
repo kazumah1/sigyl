@@ -78,7 +78,8 @@ async function resolveRemoteMCPServer(pkgName: string, apiKey?: string, profile?
 			url: packageInfo.source_api_url,
 			api_key: apiKey || 'demo-key',
 			profile: profile || 'default',
-			name: pkgName,
+			name: packageInfo.name,
+			slug: pkgName,
 			packageInfo
 		};
 	} catch (error) {
@@ -151,7 +152,7 @@ export function createInstallCommand(): Command {
 
 // Install remote MCP server for client
 async function installRemoteServer(
-	remote: { url: string; api_key: string; profile: string; name: string; packageInfo: any },
+	remote: { url: string; api_key: string; profile: string; name: string; slug: string; packageInfo: any },
 	options: InstallOptions,
 	client: SupportedClient
 ): Promise<void> {
@@ -159,11 +160,20 @@ async function installRemoteServer(
 	const fs = require("fs");
 	const os = require("os");
 	const path = require("path");
-	
+	const { getRegistryConfig } = require("../lib/config");
+
 	console.log(chalk.blue(`📦 Installing ${remote.name} for ${client}...`));
-	
+
 	if (client === "claude") {
-		// Write config file for Claude Desktop (mcpServers field) using 'command' and 'args' (smithery style)
+		// Use API key from config unless overridden
+		const configApiKey = getRegistryConfig().apiKey;
+		const apiKeyToUse = options.key || configApiKey;
+		if (!apiKeyToUse) {
+			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
+			process.exit(1);
+		}
+
+		// Write config file for Claude Desktop (mcpServers field) using HTTP/gateway style
 		const configPath = path.join(
 			os.homedir(),
 			"Library/Application Support/Claude/claude_desktop_config.json"
@@ -175,15 +185,16 @@ async function installRemoteServer(
 			} catch {}
 		}
 		let mcpServers: Record<string, any> = config.mcpServers || {};
-		mcpServers[remote.name] = {
+		// Use package name as key, but slug for run command
+		mcpServers[serverName] = {
 			command: "npx",
 			args: [
 				"-y",
-				"sigyl/cli@latest",
+				"@sigyl-dev/cli@latest",
 				"run",
-				remote.name,
+				remote.slug,
 				"--key",
-				remote.api_key,
+				apiKeyToUse,
 				"--profile",
 				remote.profile
 			]
@@ -193,11 +204,19 @@ async function installRemoteServer(
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Claude Desktop!`));
 		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart Claude Desktop to load the new server."));
 		return;
 	}
 	if (client === "vscode") {
+		// Use API key from config unless overridden
+		const configApiKey = getRegistryConfig().apiKey;
+		const apiKeyToUse = options.key || configApiKey;
+		if (!apiKeyToUse) {
+			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
+			process.exit(1);
+		}
+
 		// Write config file for VS Code (mcpServers field) using 'command' and 'args' (smithery style)
 		const configPath = path.join(os.homedir(), ".vscode", "mcp_servers.json");
 		let config = { mcpServers: {} };
@@ -207,15 +226,16 @@ async function installRemoteServer(
 			} catch {}
 		}
 		let mcpServers: Record<string, any> = config.mcpServers || {};
-		mcpServers[remote.name] = {
+		// Use package name as key, but slug for run command
+		mcpServers[serverName] = {
 			command: "npx",
 			args: [
 				"-y",
-				"sigyl/cli@latest",
+				"@sigyl-dev/cli@latest",
 				"run",
-				remote.name,
+				remote.slug,
 				"--key",
-				remote.api_key,
+				apiKeyToUse,
 				"--profile",
 				remote.profile
 			]
@@ -225,11 +245,19 @@ async function installRemoteServer(
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for VS Code!`));
 		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart VS Code to load the new server."));
 		return;
 	}
 	if (client === "cursor") {
+		// Use API key from config unless overridden
+		const configApiKey = getRegistryConfig().apiKey;
+		const apiKeyToUse = options.key || configApiKey;
+		if (!apiKeyToUse) {
+			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
+			process.exit(1);
+		}
+
 		// Write config file for Cursor (mcpServers field) using 'command' and 'args' (smithery style)
 		const configPath = path.join(os.homedir(), ".cursor", "mcp_servers.json");
 		let config = { mcpServers: {} };
@@ -239,15 +267,16 @@ async function installRemoteServer(
 			} catch {}
 		}
 		let mcpServers: Record<string, any> = config.mcpServers || {};
-		mcpServers[remote.name] = {
+		// Use package name as key, but slug for run command
+		mcpServers[serverName] = {
 			command: "npx",
 			args: [
 				"-y",
-				"sigyl/cli@latest",
+				"@sigyl-dev/cli@latest",
 				"run",
-				remote.name,
+				remote.slug,
 				"--key",
-				remote.api_key,
+				apiKeyToUse,
 				"--profile",
 				remote.profile
 			]
@@ -257,7 +286,7 @@ async function installRemoteServer(
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Cursor!`));
 		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y sigyl/cli@latest run ${remote.name} --key <api_key> --profile <profile>`));
+		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart Cursor to load the new server."));
 		return;
 	}

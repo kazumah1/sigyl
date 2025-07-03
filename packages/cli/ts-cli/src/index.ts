@@ -7,6 +7,7 @@ import { scanAndGenerate } from "./commands/scan"
 import { initTemplate } from "./commands/init"
 import { dev } from "./commands/dev"
 import { createInstallCommand } from "./commands/install"
+import { createRunCommand } from "./commands/run"
 import inspectCommand from "./commands/inspect"
 import { integrateWithExpress } from "./commands/integrate"
 import { configCommand } from "./commands/config"
@@ -158,6 +159,11 @@ program
 // INSTALL Command - Install in Claude Desktop (legacy)
 // ============================================================================
 program.addCommand(createInstallCommand())
+
+// ============================================================================
+// RUN Command - Run MCP server
+// ============================================================================
+program.addCommand(createRunCommand())
 
 // ============================================================================
 // CLEAN Command - Clean generated files (legacy)
