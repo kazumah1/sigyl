@@ -585,4 +585,18 @@ router.get('/marketplace/all', async (_req: Request, res: Response) => {
   }
 });
 
+// POST /api/v1/packages/id/:id/increment-downloads - Increment downloads count for a package by ID
+router.post('/id/:id/increment-downloads', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
+    }
+    await packageService.updatePackageDownloads(id);
+    return res.json({ success: true, message: 'Download count incremented (by ID)' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to increment download count', message: error instanceof Error ? error.message : 'Unknown error occurred' });
+  }
+});
+
 export default router;
