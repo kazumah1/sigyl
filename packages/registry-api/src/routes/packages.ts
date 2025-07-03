@@ -54,6 +54,64 @@ router.get('/', optionalAuth, async (_req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/packages/id/:id - Get package by ID (optional auth for analytics)
+router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log(`[packages.ts] /id/:id route called with id=`, id);
+    
+    if (!id || id.trim().length === 0) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid package ID',
+        message: 'Package ID is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Only use getPackageById, never fallback to name
+    console.log(`[packages.ts] Calling getPackageById with id=`, id);
+    const packageData = await packageService.getPackageById(id);
+    
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: 'No package found with the given ID'
+      };
+      return res.status(404).json(response);
+    }
+
+    const response: APIResponse<typeof packageData> = {
+      success: true,
+      data: packageData,
+      message: 'Package retrieved by ID'
+    };
+    return res.json(response);
+  } catch (error) {
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve package by ID',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+    return res.status(500).json(response);
+  }
+});
+
+// POST /api/v1/packages/id/:id/increment-downloads - Increment downloads count for a package by ID
+router.post('/id/:id/increment-downloads', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
+    }
+    await packageService.updatePackageDownloads(id);
+    return res.json({ success: true, message: 'Download count incremented (by ID)' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to increment download count', message: error instanceof Error ? error.message : 'Unknown error occurred' });
+  }
+});
+
 // GET /api/v1/packages/:slug - Get package by slug (was by name)
 router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
   try {
@@ -174,50 +232,6 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
     
-    return res.status(500).json(response);
-  }
-});
-
-// GET /api/v1/packages/id/:id - Get package by ID (optional auth for analytics)
-router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    console.log(`[packages.ts] /id/:id route called with id=`, id);
-    
-    if (!id || id.trim().length === 0) {
-      const response: APIResponse<null> = {
-        success: false,
-        error: 'Invalid package ID',
-        message: 'Package ID is required'
-      };
-      return res.status(400).json(response);
-    }
-
-    // Only use getPackageById, never fallback to name
-    console.log(`[packages.ts] Calling getPackageById with id=`, id);
-    const packageData = await packageService.getPackageById(id);
-    
-    if (!packageData) {
-      const response: APIResponse<null> = {
-        success: false,
-        error: 'Package not found',
-        message: 'No package found with the given ID'
-      };
-      return res.status(404).json(response);
-    }
-
-    const response: APIResponse<typeof packageData> = {
-      success: true,
-      data: packageData,
-      message: 'Package retrieved by ID'
-    };
-    return res.json(response);
-  } catch (error) {
-    const response: APIResponse<null> = {
-      success: false,
-      error: 'Failed to retrieve package by ID',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    };
     return res.status(500).json(response);
   }
 });
@@ -582,20 +596,6 @@ router.get('/marketplace/all', async (_req: Request, res: Response) => {
       message: 'Failed to fetch marketplace packages'
     };
     return res.status(500).json(response);
-  }
-});
-
-// POST /api/v1/packages/id/:id/increment-downloads - Increment downloads count for a package by ID
-router.post('/id/:id/increment-downloads', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    if (!id || id.trim().length === 0) {
-      return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
-    }
-    await packageService.updatePackageDownloads(id);
-    return res.json({ success: true, message: 'Download count incremented (by ID)' });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: 'Failed to increment download count', message: error instanceof Error ? error.message : 'Unknown error occurred' });
   }
 });
 
