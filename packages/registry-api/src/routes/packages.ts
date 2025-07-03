@@ -107,7 +107,7 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
 });
 
 // GET /api/v1/packages/:slug - Get package by slug (was by name)
-router.get('/:slug', optionalAuth, async (req: Request, res: Response) => {
+router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
     
