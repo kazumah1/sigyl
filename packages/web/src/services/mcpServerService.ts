@@ -1,5 +1,5 @@
 // Remove direct supabase import and replace with API calls
-const API_BASE_URL = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1';
 
 export interface MCPServer {
   id: string;
@@ -34,8 +34,13 @@ const getAuthToken = (): string | null => {
 // Helper function to make API calls
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
+  const baseUrl = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000';
   
-  const response = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
+  const finalUrl = baseUrl.endsWith('/api/v1') 
+    ? `${baseUrl}${endpoint}` 
+    : `${baseUrl}/api/v1${endpoint}`;
+
+  const response = await fetch(finalUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
