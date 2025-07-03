@@ -106,27 +106,27 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/packages/:name - Get package by name (optional auth for analytics)
-router.get('/:name', optionalAuth, async (req: Request, res: Response) => {
+// GET /api/v1/packages/:slug - Get package by slug (was by name)
+router.get('/:slug', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const { name } = req.params;
+    const { slug } = req.params;
     
-    if (!name || name.trim().length === 0) {
+    if (!slug || slug.trim().length === 0) {
       const response: APIResponse<null> = {
         success: false,
-        error: 'Invalid package name',
-        message: 'Package name is required'
+        error: 'Invalid package slug',
+        message: 'Package slug is required'
       };
       return res.status(400).json(response);
     }
 
-    const packageData = await packageService.getPackageByName(name);
+    const packageData = await packageService.getPackageBySlug(slug);
     
     if (!packageData) {
       const response: APIResponse<null> = {
         success: false,
         error: 'Package not found',
-        message: `Package '${name}' does not exist`
+        message: `Package with slug '${slug}' does not exist`
       };
       return res.status(404).json(response);
     }

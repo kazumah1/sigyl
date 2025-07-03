@@ -413,4 +413,38 @@ export class PackageService {
       throw error;
     }
   }
+
+  async getPackageBySlug(slug: string): Promise<PackageWithDetails | null> {
+    const { data: packageData, error: packageError } = await supabase
+      .from('mcp_packages')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (packageError || !packageData) {
+      return null;
+    }
+
+    // Get deployments
+    const { data: deployments, error: deploymentsError } = await supabase
+      .from('mcp_deployments')
+      .select('*')
+      .eq('package_id', packageData.id);
+
+    // Get tools
+    const { data: tools, error: toolsError } = await supabase
+      .from('mcp_tools')
+      .select('*')
+      .eq('package_id', packageData.id);
+
+    if (deploymentsError || toolsError) {
+      throw new Error('Failed to fetch package details');
+    }
+
+    return {
+      ...packageData,
+      deployments: deployments || [],
+      tools: tools || []
+    };
+  }
 } 
