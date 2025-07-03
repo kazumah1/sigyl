@@ -18,7 +18,7 @@
   },
   "include": [
     "src/**/*"
-  ],
+, "src/gcp"  ],
   "exclude": [
     "node_modules",
     "dist",

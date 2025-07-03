@@ -30,7 +30,7 @@
     "src",
     "container-builder/src",
     "shared/src"
-  ],
+, "container-builder/src/gcp"  ],
   "exclude": [
     "node_modules",
     "dist",
