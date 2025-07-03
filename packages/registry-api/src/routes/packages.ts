@@ -31,6 +31,77 @@ const searchQuerySchema = z.object({
   offset: z.string().optional().transform((val: string | undefined) => val ? parseInt(val, 10) : 0)
 });
 
+// GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
+router.get('/', optionalAuth, async (_req: Request, res: Response) => {
+  try {
+    const packages = await packageService.getAllPackages();
+    
+    const response: APIResponse<typeof packages> = {
+      success: true,
+      data: packages,
+      message: `Retrieved ${packages.length} packages`
+    };
+    
+    return res.json(response);
+  } catch (error) {
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve packages',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+    
+    return res.status(500).json(response);
+  }
+});
+
+// GET /api/v1/packages/:slug - Get package by slug (was by name)
+router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    
+    if (!slug || slug.trim().length === 0) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid package slug',
+        message: 'Package slug is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Try by slug first
+    let packageData = await packageService.getPackageBySlug(slug);
+    // Fallback: try by name if not found by slug
+    if (!packageData) {
+      packageData = await packageService.getPackageByName(slug);
+    }
+    
+    if (!packageData) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: `Package with slug or name '${slug}' does not exist`
+      };
+      return res.status(404).json(response);
+    }
+
+    const response: APIResponse<typeof packageData> = {
+      success: true,
+      data: packageData,
+      message: 'Package retrieved successfully'
+    };
+    
+    return res.json(response);
+  } catch (error) {
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve package',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+    
+    return res.status(500).json(response);
+  }
+});
+
 // POST /api/v1/packages - Create a new package (requires write permission)
 router.post('/', requirePermissions(['write']), async (req: Request, res: Response) => {
   try {
@@ -106,54 +177,6 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/packages/:slug - Get package by slug (was by name)
-router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
-  try {
-    const { slug } = req.params;
-    
-    if (!slug || slug.trim().length === 0) {
-      const response: APIResponse<null> = {
-        success: false,
-        error: 'Invalid package slug',
-        message: 'Package slug is required'
-      };
-      return res.status(400).json(response);
-    }
-
-    // Try by slug first
-    let packageData = await packageService.getPackageBySlug(slug);
-    // Fallback: try by name if not found by slug
-    if (!packageData) {
-      packageData = await packageService.getPackageByName(slug);
-    }
-    
-    if (!packageData) {
-      const response: APIResponse<null> = {
-        success: false,
-        error: 'Package not found',
-        message: `Package with slug or name '${slug}' does not exist`
-      };
-      return res.status(404).json(response);
-    }
-
-    const response: APIResponse<typeof packageData> = {
-      success: true,
-      data: packageData,
-      message: 'Package retrieved successfully'
-    };
-    
-    return res.json(response);
-  } catch (error) {
-    const response: APIResponse<null> = {
-      success: false,
-      error: 'Failed to retrieve package',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-    
-    return res.status(500).json(response);
-  }
-});
-
 // GET /api/v1/packages/id/:id - Get package by ID (optional auth for analytics)
 router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
@@ -190,29 +213,6 @@ router.get('/id/:id', optionalAuth, async (req: Request, res: Response) => {
     const response: APIResponse<null> = {
       success: false,
       error: 'Failed to retrieve package',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-    
-    return res.status(500).json(response);
-  }
-});
-
-// GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
-router.get('/', optionalAuth, async (_req: Request, res: Response) => {
-  try {
-    const packages = await packageService.getAllPackages();
-    
-    const response: APIResponse<typeof packages> = {
-      success: true,
-      data: packages,
-      message: `Retrieved ${packages.length} packages`
-    };
-    
-    return res.json(response);
-  } catch (error) {
-    const response: APIResponse<null> = {
-      success: false,
-      error: 'Failed to retrieve packages',
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
     
