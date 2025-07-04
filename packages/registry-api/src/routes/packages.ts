@@ -294,41 +294,28 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
       return res.status(400).json(response);
     }
 
-    // console.log(`🗑️ Starting deletion of package ${packageData.name} (${id})`);
-
     // First delete from Google Cloud Run if there are active deployments
-    const activeDeployments = packageData.deployments?.filter(d => d.status === 'active') || [];
-    
-    if (activeDeployments.length > 0) {
+    const serviceName = packageData.service_name;
+    if (serviceName) {
       try {
-        const { CloudRunService } = await import('container-builder/index');
-        
+        const { CloudRunService } = await import('../container-builder/src/gcp/cloudRunService');
         const CLOUD_RUN_CONFIG = {
           projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
           region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
           serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
           keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
         };
-
         if (CLOUD_RUN_CONFIG.projectId) {
           const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
-          
-          for (const deployment of activeDeployments) {
-            const serviceName = deployment.id; // Use deployment ID as service name
-            // console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
-            
-            const deleted = await cloudRunService.deleteService(serviceName);
-            if (deleted) {
-              // console.log(`✅ Deleted Cloud Run service: ${serviceName}`);
-            } else {
-              console.warn(`⚠️ Failed to delete Cloud Run service: ${serviceName}`);
-            }
+          const deleted = await cloudRunService.deleteService(serviceName);
+          if (!deleted) {
+            console.warn(`⚠️ Failed to delete Cloud Run service: ${serviceName}`);
           }
         } else {
           console.warn('⚠️ Google Cloud Run not configured, skipping service deletion');
         }
       } catch (cloudError) {
-        console.error('❌ Error deleting Cloud Run services:', cloudError);
+        console.error('❌ Error deleting Cloud Run service:', cloudError);
         // Continue with database deletion even if Cloud Run deletion fails
       }
     }
@@ -344,8 +331,6 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
       };
       return res.status(500).json(response);
     }
-
-    //  console.log(`✅ Successfully deleted package ${packageData.name} and all related data`);
 
     const response: APIResponse<null> = {
       success: true,
