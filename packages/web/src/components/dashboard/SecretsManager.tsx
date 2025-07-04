@@ -584,7 +584,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                         </div>
                         <div className="flex items-center gap-2">
                           {apiKey.last_used ? (
-                            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-white border-white/20">
+                            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-white border-white/20 hover:bg-white/10 hover:text-white">
                               Last used {new Date(apiKey.last_used).toLocaleDateString()}
                             </Badge>
                           ) : (

@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
-import { requirePermissions, optionalAuth } from '../middleware/auth';
-import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
+import { requirePermissions, optionalAuth, authenticateHybrid } from '../middleware/auth';
+import { APIResponse, CreatePackageRequest, PackageSearchQuery, Permission } from '../types';
 import { supabase } from '../config/database';
 
 const router = Router();
@@ -30,6 +30,9 @@ const searchQuerySchema = z.object({
   limit: z.string().optional().transform((val: string | undefined) => val ? parseInt(val, 10) : 20),
   offset: z.string().optional().transform((val: string | undefined) => val ? parseInt(val, 10) : 0)
 });
+
+// Helper for hybrid permissions (API key or session)
+const requireHybridPermissions = (permissions: Permission[]) => authenticateHybrid({ required: true, permissions });
 
 // GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
 router.get('/', optionalAuth, async (_req: Request, res: Response) => {
@@ -257,8 +260,8 @@ router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, re
   }
 });
 
-// DELETE /api/v1/packages/:id - Delete package and Cloud Run service (requires authentication)
-router.delete('/:id', requirePermissions(['write']), async (req: Request, res: Response) => {
+// DELETE /api/v1/packages/:id - Delete package and Cloud Run service (supports API key or session auth)
+router.delete('/:id', requireHybridPermissions(['write']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { confirmName } = req.body;

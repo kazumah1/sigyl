@@ -136,19 +136,6 @@
   }
 }
 
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-}
-
 .btn-secondary {
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -178,7 +165,8 @@
 
 .card-modern:hover, .card-modern:focus-within {
   background: rgb(48, 48, 50);
-  border: rgb(89, 89, 91)
+  border: 1.5px solid rgb(89, 89, 91);
+  box-shadow: 0 16px 48px 0 rgba(0,0,0,0.28);
 }
 
 .card-modern.zoom:hover, .card-modern.zoom:focus-within {
@@ -342,10 +330,6 @@ button, a, input, select, textarea {
 .prose a {
   color: #60a5fa;
   text-decoration: underline;
-}
-
-.prose a:hover {
-  color: #93c5fd;
 }
 
 .prose strong {
