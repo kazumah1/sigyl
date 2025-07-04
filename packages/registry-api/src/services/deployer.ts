@@ -239,19 +239,19 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       }
     }
 
-    // 2. Poll health endpoint (e.g., /health or /mcp) for up to 2 minutes
+    // 2. Poll /mcp endpoint for up to 2 minutes
     const startTime = Date.now();
-    const healthUrl = `${cloudRunResult.deploymentUrl}/health`;
+    const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
     while (Date.now() - startTime < 120000) {
-      const healthResp = await fetch(healthUrl, {
+      const mcpResp = await fetch(mcpUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
         }
       });
-      if (healthResp.ok) {
-        console.log('✅ MCP server is healthy');
-        // 3. If healthy, update ready: true
+      if (mcpResp.ok) {
+        console.log('✅ MCP server is ready (responded to /mcp)');
+        // 3. If ready, update ready: true
         const { error: pkgError } = await supabase
           .from('mcp_packages')
           .update({ ready: true })
@@ -450,19 +450,19 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       logs.push('✅ Updated mcp_tools');
     }
 
-    // 2. Poll health endpoint (e.g., /health or /mcp) for up to 2 minutes
+    // 2. Poll /mcp endpoint for up to 2 minutes
     const startTime = Date.now();
-    const healthUrl = `${cloudRunResult.deploymentUrl}/health`;
+    const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
     while (Date.now() - startTime < 120000) {
-      const healthResp = await fetch(healthUrl, {
+      const mcpResp = await fetch(mcpUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
         }
       });
-      if (healthResp.ok) {
-        console.log('✅ MCP server is healthy');
-        // 3. If healthy, update ready: true
+      if (mcpResp.ok) {
+        console.log('✅ MCP server is ready (responded to /mcp)');
+        // 3. If ready, update ready: true
         const { error: pkgError } = await supabase
           .from('mcp_packages')
           .update({ ready: true })

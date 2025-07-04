@@ -176,66 +176,7 @@ export class CloudRunService {
     
     try {
       const accessToken = await this.getAccessToken();
-      
-      // --- Framework detection and health injection logic ---
-      let framework = 'express'; // default
-      let healthInjection = '';
-      try {
-        // Download package.json from the repo (using GitHub API)
-        const pkgJsonResp = await fetch(
-          `https://raw.githubusercontent.com/${request.repoName}/${request.branch || 'main'}/package.json`
-        );
-        if (pkgJsonResp.ok) {
-          const pkgJsonRaw = await pkgJsonResp.text();
-          let pkgJson: any = {};
-          try {
-            pkgJson = JSON.parse(pkgJsonRaw);
-          } catch (e) {
-            pkgJson = {};
-          }
-          if (pkgJson && typeof pkgJson === 'object') {
-            const deps = Object.assign({}, pkgJson.dependencies || {}, pkgJson.devDependencies || {});
-            if (deps['express']) {
-              framework = 'express';
-            } else if (deps['fastify']) {
-              framework = 'fastify';
-            } else {
-              framework = 'unknown';
-              console.warn('[buildNodeRuntime] Could not detect known framework in package.json. Defaulting to express health injection.');
-            }
-          } else {
-            framework = 'unknown';
-            console.warn('[buildNodeRuntime] package.json is not a valid object. Defaulting to express.');
-          }
-        } else {
-          console.warn('[buildNodeRuntime] Could not fetch package.json for framework detection. Defaulting to express.');
-        }
-      } catch (err) {
-        console.warn('[buildNodeRuntime] Error detecting framework:', err);
-      }
-      if (framework === 'express') {
-        healthInjection = `
-# Inject health.js for Express
-RUN echo "module.exports = (app) => { try { app.get('/health', (req, res) => res.status(200).json({status:'ok'})); } catch(e) {} };" > health.js
-# Prepend require('./health')(app) to server.js if it exists
-RUN if [ -f server.js ]; then sed -i '1irequire(\'./health\')(module.exports || global.app || app);' server.js; fi
-`;
-      } else if (framework === 'fastify') {
-        healthInjection = `
-# Inject health.js for Fastify
-RUN echo "module.exports = (app) => { try { if (app.route) { app.route({ method: 'GET', url: '/health', handler: (req, reply) => reply.send({ status: 'ok' }) }); } } catch(e) {} };" > health.js
-# Prepend require('./health')(app) to server.js if it exists
-RUN if [ -f server.js ]; then sed -i '1irequire(\'./health\')(module.exports || global.app || app);' server.js; fi
-`;
-      } else {
-        // Default to Express injection for unknown
-        healthInjection = `
-# Inject health.js for Express (default)
-RUN echo "module.exports = (app) => { try { app.get('/health', (req, res) => res.status(200).json({status:'ok'})); } catch(e) {} };" > health.js
-RUN if [ -f server.js ]; then sed -i '1irequire(\'./health\')(module.exports || global.app || app);' server.js; fi
-`;
-      }
-      // --- End framework detection ---
+      // No health endpoint injection needed
       // Create Cloud Build configuration that downloads source from GitHub using token
       const buildConfig = {
         steps: [
@@ -306,9 +247,6 @@ COPY . .
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production
 
-# Inject health endpoint for Express (easy to extend for other frameworks)
-${healthInjection}
-
 # Change ownership to non-root user
 RUN chown -R mcpuser:mcpuser /app
 USER mcpuser
@@ -319,9 +257,9 @@ ENV MCP_TRANSPORT=http
 ENV MCP_ENDPOINT=/mcp
 ENV PORT=8080
 
-# Health check
+# Health check (now only checks /mcp)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/health || curl -f http://localhost:8080/mcp || exit 1
+  CMD curl -f http://localhost:8080/mcp || exit 1
 
 # Expose port
 EXPOSE 8080
