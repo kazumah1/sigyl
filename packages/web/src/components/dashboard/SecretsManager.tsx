@@ -453,7 +453,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   };
 
   return (
-    <Card className="bg-[#18181b] border border-[#23232a] rounded-2xl p-6 w-full max-w-5xl mx-auto">
+    <Card className="bg-black border border-white/10 rounded-2xl w-full max-w-5xl mx-auto">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>
           <Lock className="w-5 h-5 text-white" />
@@ -465,7 +465,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="secrets" className="w-full">
-          <TabsList className="flex w-full bg-black/60 border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
+          <TabsList className="flex w-full bg-black border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
             <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
               <Lock className="w-4 h-4 mr-2" />
               Environment Variables
