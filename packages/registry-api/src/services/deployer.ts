@@ -211,8 +211,6 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         .select();
       if (pkgError) {
         console.error('❌ Failed to upsert mcp_packages:', pkgError);
-      } else if (pkgData && pkgData.length > 0) {
-        packageId = pkgData[0].id;
       }
     } catch (err) {
       console.error('❌ Error fetching or inserting tools:', err);
