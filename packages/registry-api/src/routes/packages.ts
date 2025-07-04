@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
-import { requirePermissions, optionalAuth, authenticateHybrid, requireSupabaseAuth } from '../middleware/auth';
-import { APIResponse, CreatePackageRequest, PackageSearchQuery, Permission } from '../types';
+import { requirePermissions, optionalAuth, requireSupabaseAuth } from '../middleware/auth';
+import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
 import { supabase } from '../config/database';
 
 const router = Router();
