@@ -7,6 +7,7 @@ export interface MCPPackage {
   description?: string;
   author_id?: string;
   source_api_url?: string;
+  service_name?: string;
   tags?: string[];
   downloads_count: number;
   required_secrets?: MCPSecret[];
