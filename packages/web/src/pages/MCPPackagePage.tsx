@@ -142,6 +142,8 @@ const MCPPackagePage = () => {
   const effectiveIsOwner = isOwner && ownerViewMode === 'owner';
   const effectiveIsPublic = isOwner && ownerViewMode === 'public';
 
+  const [isRedeploying, setIsRedeploying] = useState(false);
+
   useEffect(() => {
     if (id) {
       loadPackageData();
@@ -649,6 +651,44 @@ const MCPPackagePage = () => {
     };
   }, [showDeleteModal, showInstallModal, showJsonConfig]);
 
+  const handleRedeploy = async () => {
+    if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
+      toast.error('No deployment found to redeploy');
+      return;
+    }
+
+    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
+    if (!activeDeployment) {
+      toast.error('No active deployment found to redeploy');
+      return;
+    }
+
+    setIsRedeploying(true);
+    try {
+      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Redeployment started successfully');
+        // Refresh package data to get updated deployment status
+        loadPackageData();
+      } else {
+        toast.error(data.error || 'Failed to redeploy');
+      }
+    } catch (error) {
+      console.error('Redeploy error:', error);
+      toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsRedeploying(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -895,31 +935,26 @@ const MCPPackagePage = () => {
             {effectiveIsOwner ? (
               <>
                 {pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
-                  <Button
-                    onClick={handleCopyServiceUrl}
-                    variant="outline"
-                    className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy Service URL
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleCopyServiceUrl}
+                      variant="outline"
+                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Service URL
+                    </Button>
+                    <Button
+                      onClick={handleRedeploy}
+                      variant="outline"
+                      disabled={isRedeploying}
+                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
+                      {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                    </Button>
+                  </>
                 )}
-                {/* <Button
-                  onClick={handleRestartService}
-                  variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Restart Service
-                </Button> */}
-                {/* <Button
-                  onClick={handleStopService}
-                  variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                >
-                  <Pause className="w-4 h-4 mr-2" />
-                  Stop Service
-                </Button> */}
                 <Button
                   onClick={handleDeleteService}
                   variant="outline"
