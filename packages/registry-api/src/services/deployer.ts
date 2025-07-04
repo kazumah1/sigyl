@@ -191,7 +191,6 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         description: `MCP server for ${request.repoName}`,
         author_id: authorIdToUse,
         source_api_url: cloudRunResult.deploymentUrl || null,
-        service_name: cloudRunResult.serviceName || null,
         tags: null,
         logo_url: null,
         screenshots: null,
@@ -199,6 +198,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         category: 'general',
         verified: false,
         required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
+        // TODO: Add 'optional_secrets' column to mcp_packages table if not present
         optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
         ready: false
       };
@@ -415,7 +415,6 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       version: mcpYaml?.version || null,
       description: mcpYaml?.description || null,
       source_api_url: cloudRunResult.deploymentUrl || null,
-      service_name: cloudRunResult.serviceName || null,
       tags: (mcpYaml && 'tags' in mcpYaml) ? (mcpYaml as any).tags : null,
       logo_url: (mcpYaml && 'logo_url' in mcpYaml) ? (mcpYaml as any).logo_url : null,
       screenshots: (mcpYaml && 'screenshots' in mcpYaml) ? (mcpYaml as any).screenshots : null,
