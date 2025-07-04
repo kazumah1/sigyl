@@ -239,29 +239,51 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       }
     }
 
-    // 2. Poll /mcp endpoint for up to 2 minutes
+    // 2. Poll /mcp endpoint for up to 2 minutes using POST and JSON-RPC body
     const startTime = Date.now();
     const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
     while (Date.now() - startTime < 120000) {
       const mcpResp = await fetch(mcpUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'Accept': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream'
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/list',
+          params: {}
+        })
       });
       if (mcpResp.ok) {
-        console.log('✅ MCP server is ready (responded to /mcp)');
-        // 3. If ready, update ready: true
-        const { error: pkgError } = await supabase
-          .from('mcp_packages')
-          .update({ ready: true })
-          .eq('id', packageId);
-        if (pkgError) {
-          console.error('❌ Failed to update mcp_packages:', pkgError);
-        } else {
-          console.log('✅ Updated mcp_packages');
+        try {
+          const text = await mcpResp.text();
+          // Try to parse event-stream or JSON
+          let data: any = {};
+          const match = text.match(/data: (\{.*\})/);
+          if (match) {
+            data = JSON.parse(match[1]);
+          } else {
+            data = JSON.parse(text);
+          }
+          if (data && data.result) {
+            console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
+            // 3. If ready, update ready: true
+            const { error: pkgError } = await supabase
+              .from('mcp_packages')
+              .update({ ready: true })
+              .eq('id', packageId);
+            if (pkgError) {
+              console.error('❌ Failed to update mcp_packages:', pkgError);
+            } else {
+              console.log('✅ Updated mcp_packages');
+            }
+            break;
+          }
+        } catch (err) {
+          // Ignore parse errors, keep polling
         }
-        break;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -450,29 +472,51 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       logs.push('✅ Updated mcp_tools');
     }
 
-    // 2. Poll /mcp endpoint for up to 2 minutes
+    // 2. Poll /mcp endpoint for up to 2 minutes using POST and JSON-RPC body
     const startTime = Date.now();
     const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
     while (Date.now() - startTime < 120000) {
       const mcpResp = await fetch(mcpUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'Accept': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream'
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/list',
+          params: {}
+        })
       });
       if (mcpResp.ok) {
-        console.log('✅ MCP server is ready (responded to /mcp)');
-        // 3. If ready, update ready: true
-        const { error: pkgError } = await supabase
-          .from('mcp_packages')
-          .update({ ready: true })
-          .eq('id', packageId);
-        if (pkgError) {
-          console.error('❌ Failed to update mcp_packages:', pkgError);
-        } else {
-          console.log('✅ Updated mcp_packages');
+        try {
+          const text = await mcpResp.text();
+          // Try to parse event-stream or JSON
+          let data: any = {};
+          const match = text.match(/data: (\{.*\})/);
+          if (match) {
+            data = JSON.parse(match[1]);
+          } else {
+            data = JSON.parse(text);
+          }
+          if (data && data.result) {
+            console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
+            // 3. If ready, update ready: true
+            const { error: pkgError } = await supabase
+              .from('mcp_packages')
+              .update({ ready: true })
+              .eq('id', packageId);
+            if (pkgError) {
+              console.error('❌ Failed to update mcp_packages:', pkgError);
+            } else {
+              console.log('✅ Updated mcp_packages');
+            }
+            break;
+          }
+        } catch (err) {
+          // Ignore parse errors, keep polling
         }
-        break;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
