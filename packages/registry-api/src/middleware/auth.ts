@@ -263,6 +263,10 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
         }
       }
 
+      // DEBUG LOGS
+      console.log('DEBUG: Raw JWT:', token);
+      console.log('DEBUG: Decoded user ID:', authenticatedUser?.user_id);
+
       if (!authenticatedUser) {
         console.log('❌ Both authentication methods failed');
         if (options.required) {
