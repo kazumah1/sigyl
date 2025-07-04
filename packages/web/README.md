@@ -1,4 +1,4 @@
-# SIGYL Agent Forge
+# SIGYL
 
 A modern, dark-themed web application for deploying and managing MCP (Model Context Protocol) servers with GitHub OAuth authentication and a dynamic marketplace.
 
