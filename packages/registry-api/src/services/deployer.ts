@@ -1,3 +1,4 @@
+// @ts-ignore
 import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '../../container-builder/src/gcp/cloudRunService';
 import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
