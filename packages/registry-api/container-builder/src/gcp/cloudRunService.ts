@@ -842,16 +842,22 @@ EOF`
   async deleteService(serviceName: string): Promise<boolean> {
     try {
       console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
-      
-      const response = await this.cloudRunRequest('DELETE', `/v1/namespaces/${this.projectId}/services/${serviceName}`);
-      
+      // Use the correct endpoint for fully managed Cloud Run
+      const url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`;
+      console.log(`[deleteService] DELETE URL:`, url);
+      console.log(`[deleteService] projectId: ${this.projectId}, region: ${this.region}, serviceName: ${serviceName}`);
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${await this.getAccessToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error(`Failed to delete service: ${response.status}`);
       }
-      
       console.log('✅ Cloud Run service deleted successfully');
       return true;
-      
     } catch (error) {
       console.error('❌ Failed to delete service:', error);
       return false;
