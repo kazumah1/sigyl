@@ -361,3 +361,9 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
 - This ensures that deleting a server removes both the record from the `mcp_packages` table and the corresponding Google Cloud service.
 - A confirmation prompt now requires the user to type the server name to confirm deletion, reducing accidental deletions.
 - The UI and code have been updated to reflect this change. 
+
+## [2024-06-28] MCP Package Logo Upload
+- Owners can now upload a logo image (PNG/JPG) for their MCP package/server from the edit page.
+- The image is uploaded to Supabase Storage (bucket: mcp-logos) and the public URL is saved as logo_url.
+- The logo preview updates immediately after upload.
+- Editing the logo_url field directly is now disabled; logo is set by upload only. 

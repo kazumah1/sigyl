@@ -144,6 +144,9 @@ const MCPPackagePage = () => {
 
   const [isRedeploying, setIsRedeploying] = useState(false);
 
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     if (id) {
       loadPackageData();
@@ -689,6 +692,47 @@ const MCPPackagePage = () => {
     }
   };
 
+  // Logo upload handler
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !pkg) return;
+    setLogoUploading(true);
+    setLogoUploadError(null);
+    try {
+      // Only allow PNG/JPG
+      if (!['image/png', 'image/jpeg'].includes(file.type)) {
+        setLogoUploadError('Only PNG or JPG images are allowed.');
+        setLogoUploading(false);
+        return;
+      }
+      // Upload to Supabase Storage (bucket: mcp-logos)
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${pkg.id}/logo.${fileExt}`;
+      // Remove any existing file first (optional, ignore error)
+      await supabase.storage.from('mcp-logos').remove([`${pkg.id}/logo.png`, `${pkg.id}/logo.jpg`]);
+      // Upload new file
+      const { error: uploadError } = await supabase.storage.from('mcp-logos').upload(filePath, file, { upsert: true, contentType: file.type });
+      if (uploadError) {
+        setLogoUploadError('Upload failed: ' + uploadError.message);
+        setLogoUploading(false);
+        return;
+      }
+      // Get public URL
+      const { data } = supabase.storage.from('mcp-logos').getPublicUrl(filePath);
+      if (!data?.publicUrl) {
+        setLogoUploadError('Failed to get public URL for logo.');
+        setLogoUploading(false);
+        return;
+      }
+      setEditFields(prev => ({ ...prev, logo_url: data.publicUrl }));
+      toast.success('Logo uploaded!');
+    } catch (err: any) {
+      setLogoUploadError(err.message || 'Failed to upload logo');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -866,8 +910,28 @@ const MCPPackagePage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
-            <div className="p-5 bg-white/10 rounded-xl">
-              <img src="/favicon.png" alt={pkg.name} className="w-24 h-24 rounded-lg object-contain border border-white/10" />
+            <div className="p-5 bg-white/10 rounded-xl relative">
+              <img
+                src={editMode ? (editFields.logo_url || '/favicon.png') : (pkg.logo_url || '/favicon.png')}
+                alt={pkg.name}
+                className="w-24 h-24 rounded-lg object-contain border border-white/10"
+                style={{ background: '#222' }}
+              />
+              {editMode && effectiveIsOwner && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full flex flex-col items-center">
+                  <label className="bg-black/60 text-white px-2 py-1 rounded cursor-pointer border border-white/20 text-xs hover:bg-black/80 transition-all">
+                    {logoUploading ? 'Uploading...' : 'Change Logo'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      onChange={handleLogoFileChange}
+                      disabled={logoUploading}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {logoUploadError && <div className="text-red-400 text-xs mt-1">{logoUploadError}</div>}
+                </div>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -1207,6 +1271,14 @@ const MCPPackagePage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="flex items-center justify-center mb-4">
+                  <img
+                    src={editMode ? (editFields.logo_url || '/favicon.png') : (pkg.logo_url || '/favicon.png')}
+                    alt={pkg.name}
+                    className="w-16 h-16 rounded-lg object-contain border border-white/10"
+                    style={{ background: '#222' }}
+                  />
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Version</span>
                   {editMode ? (
@@ -1225,34 +1297,9 @@ const MCPPackagePage = () => {
                   <span className="text-gray-400">Last Updated</span>
                   <span className="text-white">{new Date(pkg.updated_at).toLocaleDateString()}</span>
                 </div>
-                {/* <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Logo URL</span>
-                  {editMode ? (
-                    <input
-                      type="text"
-                      name="logo_url"
-                      value={editFields.logo_url}
-                      onChange={handleEditFieldChange}
-                      className="w-full px-2 py-1 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
-                    />
-                  ) : (
-                    <span className="text-white break-all">{pkg.logo_url || '-'}</span>
-                  )}
-                </div> */}
-                {/* <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Screenshots</span>
-                  {editMode ? (
-                    <input
-                      type="text"
-                      name="screenshots"
-                      value={editFields.screenshots}
-                      onChange={handleEditFieldChange}
-                      className="w-full px-2 py-1 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
-                    />
-                  ) : (
-                    <span className="text-white break-all">{Array.isArray(pkg.screenshots) ? pkg.screenshots.join(', ') : pkg.screenshots || '-'}</span>
-                  )}
-                </div> */}
+                {editMode && effectiveIsOwner && (
+                  <div className="text-xs text-gray-400 mb-2">Logo is set by uploading an image above. You cannot edit the URL directly.</div>
+                )}
                 {!isOwner && (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400">Downloads</span>
