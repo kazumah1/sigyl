@@ -390,4 +390,41 @@ async function validateSupabaseJWT(token: string): Promise<any> {
 /**
  * Require hybrid authentication for all requests
  */
-export const requireHybridAuth = authenticateHybrid({ required: true }); 
+export const requireHybridAuth = authenticateHybrid({ required: true });
+
+// Supabase JWT-only authentication middleware
+export const requireSupabaseAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token',
+        message: 'Authorization header missing'
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token',
+        message: error?.message || 'Invalid Supabase JWT'
+      });
+    }
+    req.user = {
+      user_id: user.id,
+      key_id: `supabase_${user.id}`,
+      permissions: ['read', 'write'],
+      is_active: true,
+      ...user
+    };
+    next();
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication failed',
+      message: err instanceof Error ? err.message : 'Unknown error'
+    });
+  }
+}; 

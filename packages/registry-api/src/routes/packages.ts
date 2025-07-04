@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
-import { requirePermissions, optionalAuth, authenticateHybrid } from '../middleware/auth';
+import { requirePermissions, optionalAuth, authenticateHybrid, requireSupabaseAuth } from '../middleware/auth';
 import { APIResponse, CreatePackageRequest, PackageSearchQuery, Permission } from '../types';
 import { supabase } from '../config/database';
 
@@ -260,8 +260,8 @@ router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, re
   }
 });
 
-// DELETE /api/v1/packages/:id - Delete package and Cloud Run service (supports API key or session auth)
-router.delete('/:id', requireHybridPermissions(['write']), async (req: Request, res: Response) => {
+// DELETE /api/v1/packages/:id - Delete package and Cloud Run service (session auth only)
+router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { confirmName } = req.body;
