@@ -226,17 +226,20 @@ RUN if [ -f package-lock.json ]; then \
       npm install; \
     fi && npm cache clean --force
 
+${config.language === 'typescript' ? `
 # Copy TypeScript configuration and source files
 COPY tsconfig.json ./
 COPY *.ts ./
 COPY sigyl.yaml ./
 
-${config.language === 'typescript' ? `
 # Build TypeScript - compile to JavaScript
 RUN npm run build
 # Debug: List files after build to verify compilation
 RUN echo "=== Files after TypeScript compilation ===" && ls -la /app && echo "=== Looking for server.js ===" && ls -la server.js 2>/dev/null || echo "server.js not found!"
-` : ''}
+` : `
+# For JavaScript projects, just copy sigyl.yaml (if present)
+COPY sigyl.yaml ./
+`}
 
 # Copy any remaining files (in case there are other assets)
 COPY . .

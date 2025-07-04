@@ -251,7 +251,7 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
             }
             authenticatedUser = {
               key_id: `supabase_${supabaseUser.id}`,
-              user_id: supabaseUser.id,
+              user_id: user.id,
               permissions: ['read', 'write'],
               is_active: true
             };

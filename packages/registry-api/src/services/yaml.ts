@@ -10,7 +10,7 @@ const MCPSecretSchema = z.object({
   type: z.enum(['string', 'number', 'boolean']).default('string'),
 })
 
-// Zod schema matching the CLI's sigyl.yaml output
+// Zod schema matching the CLI's mcp.yaml output
 const MCPToolSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -58,12 +58,12 @@ export async function fetchMCPYaml(
   const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
     owner,
     repo,
-    path: 'sigyl.yaml',
+    path: 'mcp.yaml',
     ref: branch,
   })
 
   if (!data || Array.isArray(data) || typeof data !== 'object' || !('content' in data) || typeof data.content !== 'string') {
-    throw new Error('sigyl.yaml file content not found in GitHub API response');
+    throw new Error('mcp.yaml file content not found in GitHub API response');
   }
 
   const file = Buffer.from(data.content, 'base64').toString('utf-8')
@@ -71,7 +71,7 @@ export async function fetchMCPYaml(
   const result = MCPMetadataSchema.safeParse(parsed)
   if (!result.success) {
     throw new Error(
-      'Invalid sigyl.yaml structure: ' + JSON.stringify(result.error.format(), null, 2)
+      'Invalid mcp.yaml structure: ' + JSON.stringify(result.error.format(), null, 2)
     )
   }
   return result.data
