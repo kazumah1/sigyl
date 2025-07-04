@@ -219,6 +219,13 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               onClick={() => navigate(`/mcp/${server.id}`)}
               style={{ position: 'relative' }}
             >
+              {/* Click to edit label */}
+              <span
+                className="absolute top-3 right-4 text-xs text-gray-400 bg-black/70 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-white/10"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+              >
+                Click to edit
+              </span>
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1 min-w-0">
                   <div className="mt-1">
@@ -394,7 +401,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-black/90 border border-white/10 rounded-2xl p-8 w-full max-w-md relative shadow-2xl backdrop-blur-lg">
               <h2 className="text-xl font-bold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Confirm Deletion</h2>
-              <p className="text-gray-300 mb-4">Type the server name <span className="font-bold text-white">{deletingServer.name}</span> to confirm deletion. This will also remove the service from Google Cloud.</p>
+              <p className="text-gray-300 mb-4">Type <span className="font-bold text-white">{deletingServer.name}</span> to confirm deletion. This will also remove the service from Google Cloud.</p>
               <input
                 type="text"
                 value={deleteConfirmName}

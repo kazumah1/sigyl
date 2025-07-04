@@ -1703,21 +1703,23 @@ const MCPPackagePage = () => {
       </Dialog>
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-lg transition-all duration-300 bg-gray-900 border-gray-700 text-white" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
+        <DialogContent className="max-w-lg transition-all duration-300 bg-black border-white/10 text-white" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
           <DialogHeader>
             <DialogTitle className="text-white">Confirm Deletion</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-gray-300">Are you sure you want to delete this MCP server? This action cannot be undone.</p>
             <div>
-              <Label htmlFor="deleteConfirmName" className="text-gray-300">Enter the package name to confirm:</Label>
+              <Label htmlFor="deleteConfirmName" className="text-white">
+                Enter <span className="font-bold text-white">{pkg?.name}</span> to confirm:
+              </Label>
               <Input
                 id="deleteConfirmName"
                 name="deleteConfirmName"
                 value={deleteConfirmName}
                 onChange={(e) => setDeleteConfirmName(e.target.value)}
                 placeholder="Enter the package name"
-                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
+                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white"
               />
             </div>
           </div>
