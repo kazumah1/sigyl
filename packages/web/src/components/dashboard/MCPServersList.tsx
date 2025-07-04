@@ -52,6 +52,8 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   const [refreshKey, setRefreshKey] = useState(0);
   const [localServers, setLocalServers] = useState(servers);
   const [redeployingId, setRedeployingId] = useState<string | null>(null);
+  const [deletingServer, setDeletingServer] = useState<MCPServer | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
   // Keep localServers in sync with prop
   React.useEffect(() => {
@@ -86,19 +88,9 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
 
   const handleServerAction = async (action: string, serverId: string, serverName?: string) => {
     if (action === 'delete') {
-      const confirmName = prompt('Type the server name to confirm deletion. This will also remove the service from Google Cloud.');
-      if (!confirmName || confirmName !== serverName) {
-        toast.error('Server name does not match. Deletion cancelled.');
-        return;
-      }
-      toast.info('Deleting server...');
-      const result = await deploymentService.deletePackage(serverId, confirmName);
-      if (result.success) {
-        toast.success('Server deleted and removed from Google Cloud!');
-        setLocalServers((prev) => prev.filter((s) => s.id !== serverId));
-      } else {
-        toast.error('Failed to delete server.' + (result.error ? ` ${result.error}` : ''));
-      }
+      setDeletingServer(localServers.find((s) => s.id === serverId) || null);
+      setDeleteConfirmName('');
+      return;
     } else if (action === 'stop') {
       toast.info('Stopping server is not yet implemented.');
     } else if (action === 'redeploy') {
@@ -178,6 +170,29 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   const handleEditCancel = () => {
     setEditingServer(null);
     setError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingServer) return;
+    if (deleteConfirmName !== deletingServer.name) {
+      toast.error('Server name does not match. Deletion cancelled.');
+      return;
+    }
+    toast.info('Deleting server...');
+    const result = await deploymentService.deletePackage(deletingServer.id, deleteConfirmName);
+    if (result.success) {
+      toast.success('Server deleted and removed from Google Cloud!');
+      setLocalServers((prev) => prev.filter((s) => s.id !== deletingServer.id));
+      setDeletingServer(null);
+      setDeleteConfirmName('');
+    } else {
+      toast.error('Failed to delete server.' + (result.error ? ` ${result.error}` : ''));
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeletingServer(null);
+    setDeleteConfirmName('');
   };
 
   return (
@@ -275,7 +290,6 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                       <Play className="w-4 h-4" />
                     </Button>
                   )}
-                  {/* Delete button now deletes both the database record and the Google Cloud service */}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -369,6 +383,30 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                 <Button onClick={handleEditCancel} variant="ghost" className="text-gray-400">Cancel</Button>
                 <Button onClick={handleEditSave} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deletingServer && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-black/90 border border-white/10 rounded-2xl p-8 w-full max-w-md relative shadow-2xl backdrop-blur-lg">
+              <h2 className="text-xl font-bold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>Confirm Deletion</h2>
+              <p className="text-gray-300 mb-4">Type the server name <span className="font-bold text-white">{deletingServer.name}</span> to confirm deletion. This will also remove the service from Google Cloud.</p>
+              <input
+                type="text"
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+                className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none mb-4"
+                placeholder="Enter server name to confirm"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <Button onClick={handleDeleteCancel} variant="ghost" className="text-gray-400">Cancel</Button>
+                <Button onClick={handleDeleteConfirm} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={deleteConfirmName !== deletingServer.name}>
+                  Delete
                 </Button>
               </div>
             </div>

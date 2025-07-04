@@ -1293,7 +1293,7 @@ const MCPPackagePage = () => {
       </div>
       {/* Install Modal */}
       <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
-        <DialogContent className="max-w-4xl transition-all duration-300 bg-black/60 border-white/10 text-white" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
+        <DialogContent className="max-w-4xl transition-all duration-300 bg-black border-white/10 text-white" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
           {installStep === 1 && (
             <>
               <DialogHeader>
@@ -1318,7 +1318,7 @@ const MCPPackagePage = () => {
                           value={secretFields[secret.name] || ''}
                           onChange={handleSecretChange}
                           placeholder={secret.description || secret.name}
-                          className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
+                          className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white"
                           type={secret.type === 'number' ? 'number' : 'text'}
                         />
                         {secretErrors[secret.name] && <div className="text-red-400 text-xs mt-1">{secretErrors[secret.name]}</div>}
