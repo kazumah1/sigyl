@@ -543,7 +543,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 placeholder="Enter API key name"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="bg-white/10 border-white/10 text-white h-10 text-base font-semibold"
+                className="bg-black border-white/10 text-white h-10 text-base font-semibold placeholder:text-white"
                 disabled={isCreatingApiKey}
               />
               <Button 
@@ -574,7 +574,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 {apiKeys.map((apiKey) => {
                   const fullKey = getFullKeyForDisplay(apiKey);
                   return (
-                    <div key={apiKey.id} className="bg-[#18181b] border border-[#23232a] rounded-2xl p-5 flex flex-col gap-2">
+                    <div key={apiKey.id} className="bg-black border border-white/10 rounded-2xl p-5 flex flex-col gap-2">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <h3 className="text-white font-medium text-left">{apiKey.name}</h3>
@@ -597,12 +597,12 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                       <div className="flex items-center gap-2 mb-2">
                         {fullKey ? (
                           <>
-                            <code className="text-sm font-mono text-white bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
+                            <code className="text-sm font-mono text-white bg-black border border-white/10 px-3 py-2 rounded flex-1 text-left">
                               {fullKey}
                             </code>
                           </>
                         ) : (
-                          <code className="text-sm font-mono text-gray-300 bg-[#23232a] px-3 py-2 rounded flex-1 text-left">
+                          <code className="text-sm font-mono text-white bg-black border border-white/10 px-3 py-2 rounded flex-1 text-left">
                             {`${apiKey.key_prefix}...`}
                           </code>
                         )}

@@ -177,8 +177,8 @@
 }
 
 .card-modern:hover, .card-modern:focus-within {
-  box-shadow: 0 16px 48px 0 rgba(0,0,0,0.28);
-  transform: translateY(-6px) scale(1.025);
+  background: 'white/10';
+  border: 'white/20'
 }
 
 .card-modern.no-zoom:hover, .card-modern.no-zoom:focus-within {
