@@ -203,7 +203,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         ready: false
       };
       // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
-      const { data: pkgData, error: pkgError } = await supabase
+      const { error: pkgError } = await supabase
         .from('mcp_packages')
         .upsert([
           mcpPackagesPayload
@@ -254,7 +254,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       if (healthResp.ok) {
         console.log('✅ MCP server is healthy');
         // 3. If healthy, update ready: true
-        const { data: pkgData, error: pkgError } = await supabase
+        const { error: pkgError } = await supabase
           .from('mcp_packages')
           .update({ ready: true })
           .eq('id', packageId);
@@ -464,7 +464,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       if (healthResp.ok) {
         console.log('✅ MCP server is healthy');
         // 3. If healthy, update ready: true
-        const { data: pkgData, error: pkgError } = await supabase
+        const { error: pkgError } = await supabase
           .from('mcp_packages')
           .update({ ready: true })
           .eq('id', packageId);

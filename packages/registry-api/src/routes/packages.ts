@@ -31,9 +31,6 @@ const searchQuerySchema = z.object({
   offset: z.string().optional().transform((val: string | undefined) => val ? parseInt(val, 10) : 0)
 });
 
-// Helper for hybrid permissions (API key or session)
-const requireHybridPermissions = (permissions: Permission[]) => authenticateHybrid({ required: true, permissions });
-
 // GET /api/v1/packages - Get all packages (publicly accessible for marketplace)
 router.get('/', optionalAuth, async (_req: Request, res: Response) => {
   try {
