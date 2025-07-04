@@ -301,9 +301,7 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
         const { CloudRunService } = await import('../../container-builder/src/gcp/cloudRunService');
         const CLOUD_RUN_CONFIG = {
           projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
-          region: process.env.GOOGLE_CLOUD_REGION || 'us-central1',
-          serviceAccountKey: process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY || '',
-          keyFilePath: process.env.GOOGLE_CLOUD_KEY_FILE_PATH || ''
+          region: process.env.GOOGLE_CLOUD_REGION || 'us-central1'
         };
         if (CLOUD_RUN_CONFIG.projectId) {
           const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
