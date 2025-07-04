@@ -745,6 +745,7 @@ const MCPPackagePage = () => {
       <PageHeader />
       
       <div className="container mx-auto px-6 py-8 mt-16">
+        <div className="flex justify-between items-center mb-6">
         {/* Owner View Toggle Button */}
         {isOwner && (
           <div className="flex justify-end mb-4">
@@ -766,36 +767,7 @@ const MCPPackagePage = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to {effectiveIsOwner ? 'Dashboard' : 'Marketplace'}
         </Button>
-        {/* Edit Button (Owner Only) */}
-        {effectiveIsOwner && !editMode && (
-          <div className="flex justify-end mb-4">
-            <Button
-              onClick={() => setEditMode(true)}
-              className="btn-modern hover:bg-neutral-900 hover:text-white"
-            >
-              Edit
-            </Button>
-          </div>
-        )}
-        {effectiveIsOwner && editMode && (
-          <div className="flex justify-end mb-4 gap-2">
-            <Button
-              onClick={handleApplyEdit}
-              className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Apply'}
-            </Button>
-            <Button
-              onClick={() => setEditMode(false)}
-              variant="ghost"
-              className="text-gray-400 hover:text-white hover:bg-[#23232a]"
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
+        </div>
         {/* New Deployment Success Alert */}
         {isNewDeployment && deploymentStatus === 'success' && (
           <Alert className="mb-6 border-green-500 bg-green-500/10">
@@ -954,6 +926,36 @@ const MCPPackagePage = () => {
                       {isRedeploying ? 'Redeploying...' : 'Redeploy'}
                     </Button>
                   </>
+                )}
+                {/* Edit Button (Owner Only) */}
+                {effectiveIsOwner && !editMode && (
+                  <div className="flex justify-end mb-4">
+                    <Button
+                      onClick={() => setEditMode(true)}
+                      className="btn-modern hover:bg-neutral-900 hover:text-white"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                )}
+                {effectiveIsOwner && editMode && (
+                  <div className="flex justify-end mb-4 gap-2">
+                    <Button
+                      onClick={handleApplyEdit}
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving...' : 'Apply'}
+                    </Button>
+                    <Button
+                      onClick={() => setEditMode(false)}
+                      variant="ghost"
+                      className="text-gray-400 hover:text-white hover:bg-[#23232a]"
+                      disabled={saving}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 )}
                 <Button
                   onClick={handleDeleteService}

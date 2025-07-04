@@ -181,11 +181,15 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
     toast.info('Deleting server...');
     // Get Supabase JWT
     let supabaseToken = '';
+    let supabaseUserId = '';
     try {
       const { data: { session } } = await supabase.auth.getSession();
       supabaseToken = session?.access_token || '';
+      supabaseUserId = session?.user?.id || '';
+      console.log('Frontend user ID:', supabaseUserId);
     } catch (e) {
       supabaseToken = '';
+      supabaseUserId = '';
     }
     const result = await deploymentService.deletePackage(deletingServer.id, deleteConfirmName, supabaseToken);
     if (result.success) {

@@ -311,6 +311,9 @@ export class PackageService {
           throw new Error('Package not found');
         }
 
+        // DEBUG LOGS
+        console.log('DEBUG: author_id in package:', packageData.author_id, 'userId from session:', userId);
+
         if (packageData.author_id !== userId) {
           throw new Error('Unauthorized: You can only delete your own packages');
         }
