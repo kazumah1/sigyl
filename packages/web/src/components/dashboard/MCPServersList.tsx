@@ -179,7 +179,15 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       return;
     }
     toast.info('Deleting server...');
-    const result = await deploymentService.deletePackage(deletingServer.id, deleteConfirmName);
+    // Get Supabase JWT
+    let supabaseToken = '';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      supabaseToken = session?.access_token || '';
+    } catch (e) {
+      supabaseToken = '';
+    }
+    const result = await deploymentService.deletePackage(deletingServer.id, deleteConfirmName, supabaseToken);
     if (result.success) {
       toast.success('Server deleted and removed from Google Cloud!');
       setLocalServers((prev) => prev.filter((s) => s.id !== deletingServer.id));
