@@ -177,12 +177,13 @@
 }
 
 .card-modern:hover, .card-modern:focus-within {
-  background: 'white/10';
-  border: 'white/20'
+  background: rgb(48, 48, 50);
+  border: rgb(89, 89, 91)
 }
 
-.card-modern.no-zoom:hover, .card-modern.no-zoom:focus-within {
-  transform: none;
+.card-modern.zoom:hover, .card-modern.zoom:focus-within {
+  transform: translateY(-6px) scale(1.025);
+  box-shadow: 0 16px 48px 0 rgba(0,0,0,0.28);
 }
 
 h1, h2, h3, h4, h5, h6 {
