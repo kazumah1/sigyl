@@ -790,6 +790,15 @@ const MCPPackagePage = () => {
       
       <div className="container mx-auto px-6 py-8 mt-16">
         <div className="flex justify-between items-center mb-6">
+        {/* Back Navigation */}
+        <Button
+          variant="outline"
+          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/marketplace')}
+          className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to {effectiveIsOwner ? 'Dashboard' : 'Marketplace'}
+        </Button>
         {/* Owner View Toggle Button */}
         {isOwner && (
           <div className="flex justify-end mb-4">
@@ -802,15 +811,6 @@ const MCPPackagePage = () => {
             </Button>
           </div>
         )}
-        {/* Back Navigation */}
-        <Button
-          variant="outline"
-          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/marketplace')}
-          className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to {effectiveIsOwner ? 'Dashboard' : 'Marketplace'}
-        </Button>
         </div>
         {/* New Deployment Success Alert */}
         {isNewDeployment && deploymentStatus === 'success' && (

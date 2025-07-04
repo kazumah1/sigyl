@@ -30,6 +30,7 @@ interface MCPServer {
   endpoint_url: string;
   github_repo: string;
   created_at: string;
+  ready: boolean;
 }
 
 interface MCPServersListProps {
@@ -73,7 +74,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
     return <AlertCircle className="w-4 h-4 text-gray-400" />;
   };
 
-  const getStatusBadge = (status: string, deploymentStatus: string) => {
+  const getStatusBadge = (status: string, deploymentStatus: string, ready: boolean) => {
     if (deploymentStatus === 'deploying') {
       return <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/20 text-xs px-2 py-1 whitespace-nowrap">Deploying</Badge>;
     }
@@ -82,6 +83,9 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
     }
     if (status === 'active') {
       return <Badge className="bg-green-400/20 text-green-400 border-green-400/20 text-xs px-2 py-1 whitespace-nowrap hover:bg-green-400/20 hover:text-green-400">Active</Badge>;
+    }
+    if (!ready) {
+      return <Badge className="bg-gray-400/20 text-gray-400 border-gray-400/20 text-xs px-2 py-1 whitespace-nowrap">Not Ready</Badge>;
     }
     return <Badge className="bg-gray-400/20 text-gray-400 border-gray-400/20 text-xs px-2 py-1 whitespace-nowrap">Inactive</Badge>;
   };
@@ -246,7 +250,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-white font-semibold text-lg truncate transition-colors" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>{server.name}</h3>
-                      {getStatusBadge(server.status, server.deployment_status)}
+                      {getStatusBadge(server.status, server.deployment_status, server.ready)}
                     </div>
                     <p className="text-gray-300 text-sm mb-3 line-clamp-2" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}>{server.description}</p>
                     

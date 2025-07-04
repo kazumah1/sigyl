@@ -43,6 +43,8 @@ export class MarketplaceService {
       }
 
       const result = await response.json()
+      // Only return ready packages
+      result.data.packages = result.data.packages?.filter((p: any) => p.ready === true) || [];
       return result.data
     } catch (error) {
       if (error.name === 'AbortError') throw error;
@@ -69,7 +71,7 @@ export class MarketplaceService {
       }
 
       const result = await response.json()
-      return result.data || []
+      return result.data?.filter(p => p.ready === true) || []
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch all packages:', error)
@@ -197,9 +199,9 @@ export class MarketplaceService {
   static async getPopularPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
       const allPackages = await this.getAllPackages(options)
-      
-      // Sort by download count and return top packages
+      // Only ready packages
       return allPackages
+        .filter(p => p.ready === true)
         .sort((a, b) => (b.downloads_count || 0) - (a.downloads_count || 0))
         .slice(0, limit)
     } catch (error) {
@@ -218,8 +220,8 @@ export class MarketplaceService {
         tags: [category],
         limit
       }, options)
-      
-      return result.packages
+      // Only ready packages
+      return result.packages?.filter((p: any) => p.ready === true) || [];
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch packages by category:', error)
@@ -233,9 +235,9 @@ export class MarketplaceService {
   static async getTrendingPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
       const allPackages = await this.getAllPackages(options)
-      
-      // Sort by recent creation and download count
+      // Only ready packages
       return allPackages
+        .filter(p => p.ready === true)
         .sort((a, b) => {
           const aScore = (a.downloads_count || 0) * (new Date(a.created_at).getTime() / Date.now())
           const bScore = (b.downloads_count || 0) * (new Date(b.created_at).getTime() / Date.now())

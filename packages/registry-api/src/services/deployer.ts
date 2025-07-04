@@ -199,7 +199,8 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         verified: false,
         required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
         // TODO: Add 'optional_secrets' column to mcp_packages table if not present
-        optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null
+        optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
+        ready: false
       };
       // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
       const { data: pkgData, error: pkgError } = await supabase
@@ -238,6 +239,33 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       } catch (err) {
         console.error('❌ Error inserting tools:', err);
       }
+    }
+
+    // 2. Poll health endpoint (e.g., /health or /mcp) for up to 2 minutes
+    const startTime = Date.now();
+    const healthUrl = `${cloudRunResult.deploymentUrl}/health`;
+    while (Date.now() - startTime < 120000) {
+      const healthResp = await fetch(healthUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (healthResp.ok) {
+        console.log('✅ MCP server is healthy');
+        // 3. If healthy, update ready: true
+        const { data: pkgData, error: pkgError } = await supabase
+          .from('mcp_packages')
+          .update({ ready: true })
+          .eq('id', packageId);
+        if (pkgError) {
+          console.error('❌ Failed to update mcp_packages:', pkgError);
+        } else {
+          console.log('✅ Updated mcp_packages');
+        }
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     return {
@@ -395,7 +423,8 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       tools: tools as any[],
       category: (mcpYaml && 'category' in mcpYaml) ? (mcpYaml as any).category : 'general',
       verified: false,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      ready: false
     };
     const { error: pkgError } = await supabase
       .from('mcp_packages')
@@ -421,6 +450,34 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       }
       logs.push('✅ Updated mcp_tools');
     }
+
+    // 2. Poll health endpoint (e.g., /health or /mcp) for up to 2 minutes
+    const startTime = Date.now();
+    const healthUrl = `${cloudRunResult.deploymentUrl}/health`;
+    while (Date.now() - startTime < 120000) {
+      const healthResp = await fetch(healthUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (healthResp.ok) {
+        console.log('✅ MCP server is healthy');
+        // 3. If healthy, update ready: true
+        const { data: pkgData, error: pkgError } = await supabase
+          .from('mcp_packages')
+          .update({ ready: true })
+          .eq('id', packageId);
+        if (pkgError) {
+          console.error('❌ Failed to update mcp_packages:', pkgError);
+        } else {
+          console.log('✅ Updated mcp_packages');
+        }
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     return {
       success: true,
       deploymentUrl: cloudRunResult.deploymentUrl,

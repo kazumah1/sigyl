@@ -875,6 +875,9 @@ EOF`
 
     return fetch(url, options);
   }
+
+  // Add a function: async pollServiceHealth(url: string, timeoutMs = 120000): Promise<boolean>
+  // It should poll url + '/health' (or '/mcp' if /health fails) every 5s until healthy or timeout.
 }
 
 /**

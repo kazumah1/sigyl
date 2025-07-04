@@ -14,6 +14,7 @@ export interface MCPPackage {
   updated_at: string
   logo_url?: string;
   screenshots?: string[] | string;
+  ready?: boolean;
 }
 
 export interface MCPDeployment {
@@ -47,6 +48,7 @@ export interface PackageWithDetails extends MCPPackage {
   }>
   logo_url?: string;
   screenshots?: string[] | string;
+  ready?: boolean;
 }
 
 export interface PackageSearchResult {
