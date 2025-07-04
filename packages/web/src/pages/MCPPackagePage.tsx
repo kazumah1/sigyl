@@ -1293,7 +1293,7 @@ const MCPPackagePage = () => {
       </div>
       {/* Install Modal */}
       <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
-        <DialogContent className="max-w-4xl transition-all duration-300 bg-gray-900 border-gray-700 text-white" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
+        <DialogContent className="max-w-4xl transition-all duration-300 bg-black/60 border-white/10 text-white" style={{ minHeight: 380, maxHeight: '80vh', overflowY: 'auto' }}>
           {installStep === 1 && (
             <>
               <DialogHeader>
@@ -1318,7 +1318,7 @@ const MCPPackagePage = () => {
                           value={secretFields[secret.name] || ''}
                           onChange={handleSecretChange}
                           placeholder={secret.description || secret.name}
-                          className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                          className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
                           type={secret.type === 'number' ? 'number' : 'text'}
                         />
                         {secretErrors[secret.name] && <div className="text-red-400 text-xs mt-1">{secretErrors[secret.name]}</div>}
@@ -1329,7 +1329,7 @@ const MCPPackagePage = () => {
                       <div>
                         <button
                           type="button"
-                          className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
+                          className={`flex items-center gap-2 px-3 py-1 rounded-md border border-white/20 bg-white/10 text-white text-sm mt-2 hover:bg-white/10 hover:text-white transition focus:outline-none`}
                           onClick={() => setShowOptionalSecrets((v) => !v)}
                           aria-expanded={showOptionalSecrets}
                         >
@@ -1354,7 +1354,7 @@ const MCPPackagePage = () => {
                                     value={secretFields[secret.name] || ''}
                                     onChange={handleSecretChange}
                                     placeholder={secret.description || secret.name}
-                                    className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                                    className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
                                     type={secret.type === 'number' ? 'number' : 'text'}
                                   />
                                 </div>
@@ -1535,19 +1535,18 @@ const MCPPackagePage = () => {
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                        const profileId = user?.id || '';
                         let vscodeApiKey = '';
                         if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
                           vscodeApiKey = fullApiKeys[apiKeys[0].id];
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --key ${vscodeApiKey}`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
                         incrementDownloadCount();
                       }}
-                      disabled={!user?.id || apiKeys.length === 0}
+                      disabled={apiKeys.length === 0}
                     >
                       <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
                     </Button>
@@ -1592,19 +1591,18 @@ const MCPPackagePage = () => {
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                        const profileId = user?.id || '';
                         let claudeApiKey = '';
                         if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
                           claudeApiKey = fullApiKeys[apiKeys[0].id];
                         } else {
                           claudeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude --key ${claudeApiKey}`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
                         incrementDownloadCount();
                       }}
-                      disabled={!user?.id || apiKeys.length === 0}
+                      disabled={apiKeys.length === 0}
                     >
                       <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
                     </Button>
@@ -1617,81 +1615,76 @@ const MCPPackagePage = () => {
                   )}
                   {cursorButton}
                   {/* JSON/Config Button/Field logic */}
-                  <>
-                    <Button
-                      variant="outline"
-                      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
-                      style={cellStyle}
-                      onClick={() => {
-                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                        const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
-                        const profileId = user?.id || '';
-                        const configObj = {
-                          [pkgName]: {
-                            command: "npx",
-                            args: [
-                              "-y",
-                              "@sigyl-dev/cli@latest",
-                              "run",
-                              pkgName,
-                              "--key",
-                              apiKey,
-                              "--profile",
-                              profileId
-                            ]
-                          }
-                        };
-                        setJsonConfig(JSON.stringify(configObj, null, 2));
-                        setShowJsonConfig(true);
-                        incrementDownloadCount();
-                      }}
-                      disabled={!user?.id || apiKeys.length === 0}
-                    >
-                      <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
-                    </Button>
-                    {/* JSON Config Modal/Menu */}
-                    {showJsonConfig && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                        <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg p-6 max-w-lg w-full relative">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="text-lg font-semibold text-white flex items-center gap-2">
-                              <span className="font-mono text-lg">{'{ }'}</span> MCP Server JSON Config
-                            </div>
-                            <button
-                              className="text-gray-400 hover:text-white text-xl font-bold focus:outline-none"
-                              onClick={() => setShowJsonConfig(false)}
-                              aria-label="Close"
-                            >
-                              ×
-                            </button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
+                    style={cellStyle}
+                    onClick={() => {
+                      const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                      const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
+                      const configObj = {
+                        [pkgName]: {
+                          command: "npx",
+                          args: [
+                            "-y",
+                            "@sigyl-dev/cli@latest",
+                            "run",
+                            pkgName,
+                            "--key",
+                            apiKey
+                          ]
+                        }
+                      };
+                      setJsonConfig(JSON.stringify(configObj, null, 2));
+                      setShowJsonConfig(true);
+                      incrementDownloadCount();
+                    }}
+                    disabled={apiKeys.length === 0}
+                  >
+                    <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
+                  </Button>
+                  {/* JSON Config Modal/Menu */}
+                  {showJsonConfig && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-lg font-semibold text-white flex items-center gap-2">
+                            <span className="font-mono text-lg">{'{ }'}</span> MCP Server JSON Config
                           </div>
-                          <pre className="bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200 rounded p-4 text-sm overflow-x-auto max-h-80 mb-4 select-all">
-                            {jsonConfig}
-                          </pre>
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              className="btn-modern hover:bg-neutral-900 hover:text-white"
-                              onClick={() => {
-                                copyToClipboard(jsonConfig, 'JSON copied!');
-                                incrementDownloadCount();
-                              }}
-                            >
-                              <CopyIcon className="w-4 h-4" />
-                              {jsonConfigCopied ? 'Copied!' : 'Copy JSON'}
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              onClick={() => setShowJsonConfig(false)}
-                              className="text-gray-400 hover:text-white hover:bg-gray-800"
-                            >
-                              Close
-                            </Button>
-                          </div>
+                          <button
+                            className="text-gray-400 hover:text-white text-xl font-bold focus:outline-none"
+                            onClick={() => setShowJsonConfig(false)}
+                            aria-label="Close"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <pre className="bg-white/10 border-white/20 text-white hover:bg-white/10 transition-all duration-200 rounded p-4 text-sm overflow-x-auto max-h-80 mb-4 select-all">
+                          {jsonConfig}
+                        </pre>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="btn-modern hover:bg-neutral-900 hover:text-white"
+                            onClick={() => {
+                              copyToClipboard(jsonConfig, 'JSON copied!');
+                              incrementDownloadCount();
+                            }}
+                          >
+                            <CopyIcon className="w-4 h-4" />
+                            {jsonConfigCopied ? 'Copied!' : 'Copy JSON'}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => setShowJsonConfig(false)}
+                            className="text-gray-400 hover:text-white hover:bg-gray-800"
+                          >
+                            Close
+                          </Button>
                         </div>
                       </div>
-                    )}
-                  </>
+                    </div>
+                  )}
                 </div>
               </div>
               <DialogFooter className="mt-8">
@@ -1724,7 +1717,7 @@ const MCPPackagePage = () => {
                 value={deleteConfirmName}
                 onChange={(e) => setDeleteConfirmName(e.target.value)}
                 placeholder="Enter the package name"
-                className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
               />
             </div>
           </div>

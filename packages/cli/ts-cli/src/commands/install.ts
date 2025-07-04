@@ -105,7 +105,6 @@ export function createInstallCommand(): Command {
 		.option("--client <client>", "Target client: claude, cursor, vscode (default: claude)")
 		.option("--env <key=value>", "Environment variables (can be used multiple times)", [])
 		.option("--cwd <path>", "Working directory for the server")
-		.option("--profile <profile>", "Profile name for the MCP config")
 		.option("--key <key>", "API key for the MCP server")
 		.action(async (pkgName: string, options: InstallOptions) => {
 			try {
@@ -141,7 +140,7 @@ export function createInstallCommand(): Command {
 				}
 
 				// Resolve remote MCP server details from the registry API
-				const remote = await resolveRemoteMCPServer(pkgName, options.key, options.profile);
+				const remote = await resolveRemoteMCPServer(pkgName, options.key /*, options.profile*/);
 				await installRemoteServer(remote, options, client);
 			} catch (error) {
 				console.error(chalk.red("❌ Install command failed:"), error)
@@ -194,17 +193,13 @@ async function installRemoteServer(
 				"run",
 				remote.slug,
 				"--key",
-				apiKeyToUse,
-				"--profile",
-				remote.profile
+				apiKeyToUse
 			]
 		};
 		config.mcpServers = mcpServers;
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Claude Desktop!`));
-		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart Claude Desktop to load the new server."));
 		return;
 	}
@@ -235,17 +230,13 @@ async function installRemoteServer(
 				"run",
 				remote.slug,
 				"--key",
-				apiKeyToUse,
-				"--profile",
-				remote.profile
+				apiKeyToUse
 			]
 		};
 		config.mcpServers = mcpServers;
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for VS Code!`));
-		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart VS Code to load the new server."));
 		return;
 	}
@@ -276,17 +267,13 @@ async function installRemoteServer(
 				"run",
 				remote.slug,
 				"--key",
-				apiKeyToUse,
-				"--profile",
-				remote.profile
+				apiKeyToUse
 			]
 		};
 		config.mcpServers = mcpServers;
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Cursor!`));
-		console.log(chalk.gray(`  Profile: ${remote.profile}`));
-		console.log(chalk.gray(`  Command: npx -y @sigyl-dev/cli@latest run ${remote.slug} --key <api_key> --profile <profile>`));
 		console.log(chalk.yellow("\n🔄 Please restart Cursor to load the new server."));
 		return;
 	}

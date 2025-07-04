@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 interface RunOptions {
   key?: string;
-  profile?: string;
   endpoint?: string;
 }
 
@@ -13,7 +12,6 @@ export function createRunCommand(): Command {
     .description("Run a remote MCP server as a local proxy for Claude Desktop")
     .argument("<package>", "MCP package slug (@github-username/repo-name)")
     .option("--key <key>", "API key for authentication")
-    .option("--profile <profile>", "Profile ID for the MCP server")
     .option("--endpoint <endpoint>", "Custom endpoint URL (optional)")
     .action(async (packageSlug: string, options: RunOptions) => {
       try {
@@ -52,9 +50,8 @@ async function runMCPProxy(packageSlug: string, options: RunOptions): Promise<vo
   // Start the MCP proxy
   console.error(chalk.blue(`🚀 Starting MCP proxy for ${packageSlug}...`));
   console.error(chalk.gray(`   Endpoint: ${mcpEndpoint}`));
-  console.error(chalk.gray(`   Profile: ${options.profile || 'default'}`));
 
-  await startStdioProxy(mcpEndpoint, apiKey, options.profile);
+  await startStdioProxy(mcpEndpoint, apiKey);
 }
 
 async function fetchPackageInfo(packageSlug: string, apiKey: string, registryUrl: string): Promise<any> {
@@ -77,13 +74,12 @@ async function fetchPackageInfo(packageSlug: string, apiKey: string, registryUrl
   }
 }
 
-async function startStdioProxy(mcpEndpoint: string, apiKey: string, profile?: string): Promise<void> {
+async function startStdioProxy(mcpEndpoint: string, apiKey: string): Promise<void> {
   const { createMCPStdioProxy } = await import("../lib/mcp-proxy");
   
   const proxy = new createMCPStdioProxy({
     endpoint: mcpEndpoint,
-    apiKey,
-    profile
+    apiKey
   });
 
   await proxy.start();
