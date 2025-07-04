@@ -11,7 +11,7 @@ interface RunOptions {
 export function createRunCommand(): Command {
   return new Command("run")
     .description("Run a remote MCP server as a local proxy for Claude Desktop")
-    .argument("<package>", "MCP package slug (e.g., 1CharlieMartin/sigyl-mcp)")
+    .argument("<package>", "MCP package slug (@github-username/repo-name)")
     .option("--key <key>", "API key for authentication")
     .option("--profile <profile>", "Profile ID for the MCP server")
     .option("--endpoint <endpoint>", "Custom endpoint URL (optional)")

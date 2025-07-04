@@ -1542,7 +1542,7 @@ const MCPPackagePage = () => {
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --profile ${profileId} --key ${vscodeApiKey}`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
                         incrementDownloadCount();
@@ -1599,7 +1599,7 @@ const MCPPackagePage = () => {
                         } else {
                           claudeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `sigyl install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude --profile ${profileId} --key ${claudeApiKey}`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
                         incrementDownloadCount();
@@ -1628,9 +1628,11 @@ const MCPPackagePage = () => {
                         const profileId = user?.id || '';
                         const configObj = {
                           [pkgName]: {
-                            command: "sigyl",
+                            command: "npx",
                             args: [
-                              "install",
+                              "-y",
+                              "@sigyl-dev/cli@latest",
+                              "run",
                               pkgName,
                               "--key",
                               apiKey,
