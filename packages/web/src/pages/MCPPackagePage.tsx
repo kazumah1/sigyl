@@ -698,6 +698,17 @@ const MCPPackagePage = () => {
     if (!file || !pkg) return;
     setLogoUploading(true);
     setLogoUploadError(null);
+
+    // LOGGING STARTS HERE
+    console.log('--- LOGO UPLOAD DEBUG ---');
+    console.log('pkg.id:', pkg.id);
+    console.log('user.id:', user?.id);
+    console.log('pkg.author_id:', pkg.author_id);
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${pkg.id}/logo.${fileExt}`;
+    console.log('filePath:', filePath);
+    // LOGGING ENDS HERE
+
     try {
       // Only allow PNG/JPG
       if (!['image/png', 'image/jpeg'].includes(file.type)) {
@@ -706,11 +717,7 @@ const MCPPackagePage = () => {
         return;
       }
       // Upload to Supabase Storage (bucket: mcp-logos)
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${pkg.id}/logo.${fileExt}`;
-      // Remove any existing file first (optional, ignore error)
       await supabase.storage.from('mcp-logos').remove([`${pkg.id}/logo.png`, `${pkg.id}/logo.jpg`]);
-      // Upload new file
       const { error: uploadError } = await supabase.storage.from('mcp-logos').upload(filePath, file, { upsert: true, contentType: file.type });
       if (uploadError) {
         setLogoUploadError('Upload failed: ' + uploadError.message);
