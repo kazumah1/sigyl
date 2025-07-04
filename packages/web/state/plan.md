@@ -354,3 +354,10 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
     *   Under **Redirect URLs**, you should have patterns for both production and local development, e.g., `https://sigyl.dev/**` and `http://localhost:8080/**`.
 
 - **Status**: 🔧 **PENDING PRODUCTION ENV VARIABLE CONFIGURATION** 
+
+## [2024-06-28] Update: MCP Server Delete Button
+
+- The MCP server delete button in the dashboard now uses `deploymentService.deletePackage` instead of `deleteDeployment`.
+- This ensures that deleting a server removes both the record from the `mcp_packages` table and the corresponding Google Cloud service.
+- A confirmation prompt now requires the user to type the server name to confirm deletion, reducing accidental deletions.
+- The UI and code have been updated to reflect this change. 

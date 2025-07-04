@@ -649,7 +649,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
 
         {/* Secret Creation/Edit Dialog */}
         <Dialog open={isSecretDialogOpen} onOpenChange={setIsSecretDialogOpen}>
-          <DialogContent className="bg-[#18181b] border-[#23232a] rounded-2xl p-8">
+          <DialogContent className="bg-black/60 text-white border-[#23232a] rounded-2xl p-8">
             <DialogHeader>
               <DialogTitle className="text-white text-2xl font-bold mb-1">
                 {editingSecret ? 'Edit Environment Variable' : 'Add Environment Variable'}
@@ -679,10 +679,10 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 <Label htmlFor="key" className="text-sm font-semibold text-white mb-1">Key</Label>
                 <Input
                   id="key"
-                  placeholder="e.g., OPENAI_API_KEY"
+                  placeholder="OPENAI_API_KEY"
                   value={formData.key}
                   onChange={(e) => setFormData(prev => ({ ...prev, key: e.target.value }))}
-                  className="bg-white/10 border-white/10 text-white rounded-lg h-11"
+                  className="bg-black/60 border-white/10 text-white rounded-lg h-11"
                 />
               </div>
               <div>
@@ -692,7 +692,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   placeholder="Enter the secret value"
                   value={formData.value}
                   onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                  className="bg-white/10 border-white/10 text-white rounded-lg min-h-[80px]"
+                  className="bg-black/60 border-white/10 text-white rounded-lg min-h-[80px]"
                 />
               </div>
               <div>
@@ -702,7 +702,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                   placeholder="Brief description of this secret"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-white/10 border-white/10 text-white rounded-lg h-11"
+                  className="bg-black/60 border-white/10 text-white rounded-lg h-11"
                 />
               </div>
             </div>

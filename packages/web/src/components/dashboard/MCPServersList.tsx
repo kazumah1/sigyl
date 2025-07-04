@@ -79,21 +79,25 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       return <Badge className="bg-red-400/20 text-red-400 border-red-400/20 text-xs px-2 py-1 whitespace-nowrap">Error</Badge>;
     }
     if (status === 'active') {
-      return <Badge className="bg-green-400/20 text-green-400 border-green-400/20 text-xs px-2 py-1 whitespace-nowrap">Active</Badge>;
+      return <Badge className="bg-green-400/20 text-green-400 border-green-400/20 text-xs px-2 py-1 whitespace-nowrap hover:bg-green-400/20 hover:text-green-400">Active</Badge>;
     }
     return <Badge className="bg-gray-400/20 text-gray-400 border-gray-400/20 text-xs px-2 py-1 whitespace-nowrap">Inactive</Badge>;
   };
 
-  const handleServerAction = async (action: string, serverId: string) => {
+  const handleServerAction = async (action: string, serverId: string, serverName?: string) => {
     if (action === 'delete') {
-      if (!window.confirm('Are you sure you want to delete this server? This will also remove the service from Google Cloud.')) return;
+      const confirmName = prompt('Type the server name to confirm deletion. This will also remove the service from Google Cloud.');
+      if (!confirmName || confirmName !== serverName) {
+        toast.error('Server name does not match. Deletion cancelled.');
+        return;
+      }
       toast.info('Deleting server...');
-      const success = await deploymentService.deleteDeployment(serverId);
-      if (success) {
+      const result = await deploymentService.deletePackage(serverId, confirmName);
+      if (result.success) {
         toast.success('Server deleted and removed from Google Cloud!');
         setLocalServers((prev) => prev.filter((s) => s.id !== serverId));
       } else {
-        toast.error('Failed to delete server.');
+        toast.error('Failed to delete server.' + (result.error ? ` ${result.error}` : ''));
       }
     } else if (action === 'stop') {
       toast.info('Stopping server is not yet implemented.');
@@ -271,19 +275,11 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                       <Play className="w-4 h-4" />
                     </Button>
                   )}
+                  {/* Delete button now deletes both the database record and the Google Cloud service */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleEditClick(server); }}
-                    className="text-gray-400 hover:text-white hover:bg-white/10"
-                    title="Edit server"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleServerAction('delete', server.id); }}
+                    onClick={(e) => { e.stopPropagation(); handleServerAction('delete', server.id, server.name); }}
                     className="text-gray-400 hover:text-red-400 hover:bg-red-400/10"
                     title="Delete server"
                   >
@@ -371,7 +367,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <Button onClick={handleEditCancel} variant="ghost" className="text-gray-400">Cancel</Button>
-                <Button onClick={handleEditSave} className="bg-blue-600 text-white" disabled={saving}>
+                <Button onClick={handleEditSave} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
