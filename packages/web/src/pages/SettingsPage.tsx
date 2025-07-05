@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { profilesService, Profile } from '@/services/profilesService';
 import { useTheme } from '@/contexts/ThemeContext';
 import PageHeader from '@/components/PageHeader';
+import { getGitHubAppInstallUrl } from '@/lib/githubApp';
 
 const sidebarItems = [
   { label: 'Profile', icon: UserIcon, key: 'profile' },
@@ -206,6 +207,20 @@ const SettingsPage: React.FC = () => {
                     {/* Only dark theme is supported */}
                   </div>
                   <div className="text-gray-400 text-xs mt-2">Only dark theme is currently supported.</div>
+                </div>
+                <div className="mb-8 mt-8">
+                  <label className="block text-gray-300 mb-2">GitHub App</label>
+                  <Button
+                    className="btn-modern flex items-center gap-2"
+                    onClick={() => window.open(getGitHubAppInstallUrl('manage'), '_blank', 'noopener,noreferrer')}
+                    variant="secondary"
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                    Reconfigure Allowed Repos
+                  </Button>
+                  <div className="text-gray-400 text-xs mt-2">
+                    Manage which repositories the <span className="font-mono">sigyl-dev</span> GitHub App can access.
+                  </div>
                 </div>
                 <div className="mt-8">
                   <label className="block text-gray-300 mb-2">Danger Zone</label>

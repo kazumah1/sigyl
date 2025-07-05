@@ -1058,7 +1058,7 @@ const MCPPackagePage = () => {
               <>
                 <Button
                   onClick={handleInstallClick}
-                  className="bg-white text-black border border-white rounded-md px-6 py-2 font-semibold hover:bg-neutral-900 hover:text-white transition-colors"
+                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
                   disabled={loading}
                   variant="secondary"
                   size="lg"
@@ -1107,7 +1107,7 @@ const MCPPackagePage = () => {
                   <Code2 className="w-5 h-5 mr-2" />
                   Tools
                 </TabsTrigger>
-                {effectiveIsOwner ? (
+                {/* {effectiveIsOwner ? (
                   <TabsTrigger value="logs" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                     <Terminal className="w-5 h-5 mr-2" />
                     Logs
@@ -1117,7 +1117,7 @@ const MCPPackagePage = () => {
                     <Settings className="w-5 h-5 mr-2" />
                     Deployment
                   </TabsTrigger>
-                )}
+                )} */}
                 {/* <TabsTrigger value="api" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-[#23232a] data-[state=active]:text-white data-[state=active]:font-bold text-gray-400 font-semibold rounded-xl transition-all">
                   <Globe className="w-4 h-4" />
                   API
