@@ -1020,7 +1020,7 @@ const MCPPackagePage = () => {
                   <div className="flex justify-end mb-4">
                     <Button
                       onClick={() => setEditMode(true)}
-                      className="btn-modern hover:bg-neutral-900 hover:text-white"
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
                     >
                       Edit
                     </Button>
@@ -1391,7 +1391,7 @@ const MCPPackagePage = () => {
                           value={secretFields[secret.name] || ''}
                           onChange={handleSecretChange}
                           placeholder={secret.description || secret.name}
-                          className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white"
+                          className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
                           type={secret.type === 'number' ? 'number' : 'text'}
                         />
                         {secretErrors[secret.name] && <div className="text-red-400 text-xs mt-1">{secretErrors[secret.name]}</div>}
@@ -1427,7 +1427,7 @@ const MCPPackagePage = () => {
                                     value={secretFields[secret.name] || ''}
                                     onChange={handleSecretChange}
                                     placeholder={secret.description || secret.name}
-                                    className="mt-1 bg-white/10 border-white/20 text-white placeholder-white"
+                                    className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
                                     type={secret.type === 'number' ? 'number' : 'text'}
                                   />
                                 </div>
@@ -1799,7 +1799,7 @@ const MCPPackagePage = () => {
           <DialogFooter>
             <Button
               onClick={handleConfirmDelete}
-              className="bg-red-600 text-white"
+              className="bg-red-600 text-white hover:bg-red-700"
               disabled={!deleteConfirmName || isDeleting}
             >
               {isDeleting ? 'Deleting...' : 'Delete'}

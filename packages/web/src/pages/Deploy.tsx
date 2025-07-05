@@ -5,12 +5,12 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import DeployWizardWithGitHubApp from "@/components/DeployWizardWithGitHubApp";
-import GitHubAccountSelector from "@/components/GitHubAccountSelector";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { getGitHubAppInstallUrl } from "@/lib/githubApp";
 
 const Deploy = () => {
-  const { user, activeGitHubAccount } = useAuth();
+  const { user, activeGitHubAccount, githubAccounts, setActiveGitHubAccount } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
 
@@ -27,6 +27,7 @@ const Deploy = () => {
   const handleAccountChange = (account: any) => {
     console.log('Switched to GitHub account:', account.username);
     toast.success(`Switched to ${account.username}`);
+    setActiveGitHubAccount(account);
   };
 
   const DeployContent = () => (
@@ -52,26 +53,40 @@ const Deploy = () => {
             <div className="flex flex-col gap-2">
               {user && (
                 <div className="text-gray-400 text-sm mb-1">
-                  Deploying as: <span className="font-medium text-white">{user.user_metadata?.user_name || user.email}</span>
+                  Deploying as: {activeGitHubAccount?.username || user.user_metadata?.user_name || user.email}
                 </div>
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  GitHub Account
+                  GitHub Account / Organization
                 </label>
-                <GitHubAccountSelector 
-                  onAccountChange={handleAccountChange}
-                  className="w-full"
-                />
-              </div>
-              {/* {activeGitHubAccount && (
-                <div className="text-sm text-gray-400 mt-1">
-                  Using repositories from: <span className="font-medium text-white">{activeGitHubAccount.username}</span>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    className="bg-black border border-white/20 text-white rounded-lg px-3 py-2 min-w-[180px]"
+                    value={activeGitHubAccount?.installationId || ''}
+                    onChange={e => {
+                      const selected = githubAccounts.find(acc => acc.installationId === Number(e.target.value));
+                      if (selected) handleAccountChange(selected);
+                    }}
+                  >
+                    {githubAccounts.length === 0 && <option value="">No accounts found</option>}
+                    {githubAccounts.map(acc => (
+                      <option key={acc.installationId} value={acc.installationId}>
+                        {acc.username} ({acc.accountType})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="ml-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => window.open(getGitHubAppInstallUrl(), '_blank')}
+                  >
+                    Add Account/Org
+                  </button>
                 </div>
-              )} */}
+              </div>
             </div>
             {/* Sleek Deployment Wizard */}
-            <DeployWizardWithGitHubApp onDeploy={handleDeploy} />
+            <DeployWizardWithGitHubApp onDeploy={handleDeploy} activeGitHubAccount={activeGitHubAccount} />
           </div>
         </div>
       </div>

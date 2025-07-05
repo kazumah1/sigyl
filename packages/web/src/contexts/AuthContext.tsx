@@ -98,6 +98,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getInitialSession()
   }, [])
 
+  // After session initialization, fetch all GitHub App installations/accounts/orgs for the user
+  useEffect(() => {
+    const fetchGitHubAccounts = async () => {
+      if (!user) {
+        setGitHubAccounts([])
+        setActiveGitHubAccount(null)
+        return
+      }
+      try {
+        // Assume backend endpoint returns all installations for the user
+        const res = await fetch(`${REGISTRY_API_BASE}/github/installations`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (!res.ok) throw new Error('Failed to fetch GitHub accounts')
+        const data = await res.json()
+        // data.installations: array of { installationId, username, fullName, avatarUrl, email, accountLogin, accountType }
+        setGitHubAccounts(data.installations || [])
+        // Set the first account as active if none is active
+        if (!activeGitHubAccount && data.installations && data.installations.length > 0) {
+          setActiveGitHubAccount(data.installations[0])
+        }
+      } catch (err) {
+        setGitHubAccounts([])
+        setActiveGitHubAccount(null)
+        console.error('Failed to fetch GitHub accounts:', err)
+      }
+    }
+    fetchGitHubAccounts()
+  }, [user])
+
   // Centralized GitHub App installation check with sessionStorage caching
   useEffect(() => {
     const checkInstallation = async () => {

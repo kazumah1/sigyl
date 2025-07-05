@@ -25,11 +25,21 @@ const BACKEND_CALLBACK_URL = `${REGISTRY_API_BASE}/github/callback`
 
 interface DeployWizardWithGitHubAppProps {
   onDeploy?: (deployment: any) => void
+  activeGitHubAccount?: {
+    installationId: number
+    username: string
+    fullName?: string
+    avatarUrl?: string
+    email?: string
+    isActive: boolean
+    accountLogin: string
+    accountType: string
+  } | null
 }
 
-const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy }) => {
+const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ onDeploy, activeGitHubAccount }) => {
   const navigate = useNavigate()
-  const { user, installationId, hasInstallation, installationCheckError } = useAuth()
+  const { user, installationId: authInstallationId, hasInstallation, installationCheckError } = useAuth()
   const [repositories, setRepositories] = useState<GitHubAppRepository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<GitHubAppRepository | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('main')
@@ -42,6 +52,9 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   const [installationError, setInstallationError] = useState<boolean>(false)
   const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
+
+  // Use the installationId from the activeGitHubAccount prop if provided, else fallback to AuthContext
+  const installationId = activeGitHubAccount?.installationId ?? authInstallationId;
 
   console.log('🔍 DeployWizardWithGitHubApp state:', {
     hasUser: !!user,

@@ -219,7 +219,7 @@ const SettingsPage: React.FC = () => {
                     Reconfigure Allowed Repos
                   </Button>
                   <div className="text-gray-400 text-xs mt-2">
-                    Manage which repositories the <span className="font-mono">sigyl-dev</span> GitHub App can access.
+                    Manage which repositories Sigyl can access.
                   </div>
                 </div>
                 <div className="mt-8">
