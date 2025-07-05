@@ -734,7 +734,23 @@ const MCPPackagePage = () => {
       // Add cache-busting query param
       const cacheBustedUrl = data.publicUrl + '?t=' + Date.now();
       setEditFields(prev => ({ ...prev, logo_url: cacheBustedUrl }));
-      toast.success('Logo uploaded!');
+
+      // Update the logo_url in the database via backend API
+      const apiUrl = `https://api.sigyl.dev/api/v1/packages/${pkg.id}/logo`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ logo_url: cacheBustedUrl })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        setLogoUploadError('Logo uploaded, but failed to update database: ' + (result.error || 'Unknown error'));
+      } else {
+        toast.success('Logo uploaded and saved!');
+      }
     } catch (err: any) {
       setLogoUploadError(err.message || 'Failed to upload logo');
     } finally {

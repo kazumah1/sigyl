@@ -582,4 +582,46 @@ router.get('/marketplace/all', async (_req: Request, res: Response) => {
   }
 });
 
+// POST /api/v1/packages/:id/logo - Update the logo_url for a package (owner only)
+router.post('/:id/logo', requireSupabaseAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { logo_url } = req.body;
+    const userId = req.user?.user_id;
+
+    if (!logo_url || typeof logo_url !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing or invalid logo_url' });
+    }
+
+    // Fetch the package to check ownership
+    const { data: pkg, error: fetchError } = await supabase
+      .from('mcp_packages')
+      .select('author_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !pkg) {
+      return res.status(404).json({ success: false, error: 'Package not found' });
+    }
+    if (pkg.author_id !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to update this package' });
+    }
+
+    // Update the logo_url
+    const { error: updateError } = await supabase
+      .from('mcp_packages')
+      .update({ logo_url })
+      .eq('id', id);
+
+    if (updateError) {
+      return res.status(500).json({ success: false, error: updateError.message });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating package logo:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 export default router;
