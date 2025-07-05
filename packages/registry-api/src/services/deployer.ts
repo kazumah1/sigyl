@@ -203,14 +203,18 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         ready: false
       };
       // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
-      const { error: pkgError } = await supabase
+      const { error: pkgError, data: pkgRows } = await supabase
         .from('mcp_packages')
-        .upsert([
-          mcpPackagesPayload
-        ], { onConflict: 'source_api_url' })
+        .update(mcpPackagesPayload)
+        .eq('id', packageId)
         .select();
+      if ((!packageId || packageId === null) && pkgRows && pkgRows.length > 0) {
+        packageId = pkgRows[0].id;
+      }
       if (pkgError) {
-        console.error('❌ Failed to upsert mcp_packages:', pkgError);
+        console.error('❌ Failed to update mcp_packages:', pkgError);
+      } else {
+        console.log('✅ Updated mcp_packages');
       }
     } catch (err) {
       console.error('❌ Error fetching or inserting tools:', err);
