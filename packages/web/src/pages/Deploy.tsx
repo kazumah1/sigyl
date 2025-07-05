@@ -61,14 +61,7 @@ const Deploy = () => {
             <div className="flex flex-col gap-2">
               {user && (
                 <div className="text-gray-400 text-sm mb-1">
-                  Deploying as: {activeGitHubAccount?.username || user.user_metadata?.user_name || user.email}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  GitHub Account / Organization
-                </label>
-                <div className="flex gap-2 mt-2">
+                  Deploying as:
                   <select
                     className="bg-black border border-white/20 text-white rounded-lg px-3 py-2 min-w-[180px]"
                     value={activeGitHubAccount?.installationId || ''}
@@ -80,18 +73,12 @@ const Deploy = () => {
                     {githubAccounts.length === 0 && <option value="">No accounts found</option>}
                     {githubAccounts.map(acc => (
                       <option key={acc.installationId} value={acc.installationId}>
-                        {acc.orgName ? acc.orgName : acc.username} ({acc.accountType})
+                        {acc.orgName ? acc.orgName : acc.username}
                       </option>
                     ))}
                   </select>
-                  <button
-                    className="ml-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    onClick={() => window.open(getGitHubAppInstallUrl(), '_blank')}
-                  >
-                    Add Account/Org
-                  </button>
                 </div>
-              </div>
+              )}
             </div>
             {/* Sleek Deployment Wizard */}
             <DeployWizardWithGitHubApp onDeploy={handleDeploy} activeGitHubAccount={activeGitHubAccount} />
