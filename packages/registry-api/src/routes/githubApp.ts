@@ -706,4 +706,38 @@ router.get('/installations', authenticate, async (req: Request, res: Response) =
   }
 });
 
+router.get('/check-installation/by-profile/:profileId', async (req: Request, res: Response) => {
+  try {
+    const { profileId } = req.params;
+    if (!profileId) {
+      return res.status(400).json({ error: 'Profile ID is required' });
+    }
+
+    const { data, error } = await userInstallationService.supabase
+      .from('github_installations')
+      .select('*')
+      .eq('profile_id', profileId);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    if (data && data.length > 0) {
+      return res.json({
+        hasInstallation: true,
+        installations: data.map(row => ({
+          installationId: row.installation_id,
+          accountLogin: row.account_login,
+          accountType: row.account_type,
+          orgName: row.org_name || null,
+          profileId: row.profile_id,
+        }))
+      });
+    } else {
+      return res.json({ hasInstallation: false });
+    }
+  } catch (error) {
+    console.error('Error checking installation:', error);
+    return res.status(500).json({ error: 'Failed to check installation' });
+  }
+});
+
 export default router;

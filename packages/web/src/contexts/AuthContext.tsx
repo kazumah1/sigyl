@@ -109,9 +109,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return
       }
       try {
-        const githubUsername = user.user_metadata?.user_name;
-        if (!githubUsername) return;
-        const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`);
+        const profileId = user.id;
+        if (!profileId) return;
+        const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/by-profile/${profileId}`);
         if (!res.ok) throw new Error('Failed to fetch GitHub installations');
         const data = await res.json();
         if (data.hasInstallation && data.installations && data.installations.length > 0) {
