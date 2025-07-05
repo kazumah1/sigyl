@@ -93,7 +93,6 @@ router.get('/callback', async (req: Request, res: Response) => {
     const code = req.query.code as string;
     const state = req.query.state as string; // This should contain the redirect URL
     
-    // console.log('GitHub App callback received:', { installationId, code, state });
     if (!installationId || !code) {
       return res.status(400).json({ error: 'Missing installation_id or code' });
     }
@@ -111,7 +110,6 @@ router.get('/callback', async (req: Request, res: Response) => {
       })
     });
     const tokenData = await tokenRes.json() as GitHubTokenResponse;
-    // console.log('GitHub token exchange response:', tokenData);
     if (!tokenData.access_token) {
       return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData });
     }
@@ -122,33 +120,27 @@ router.get('/callback', async (req: Request, res: Response) => {
     });
     const user = await userRes.json() as GitHubUser;
 
-    // Fetch installation info to determine if this is an org and get org display name
-    let accountLogin = user.login;
-    let accountType = user.type || 'User';
-    if (user.type === 'Organization' || user.type === 'Bot') {
-      // If the user is an org, fetch the org details for display name
-      try {
-        const orgRes = await fetch(`https://api.github.com/orgs/${user.login}`, {
-          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-        });
-        if (orgRes.ok) {
-          const org = await orgRes.json() as GitHubOrg;
-          // console.log('Fetched org details:', org); // Debug log
-          if (org.name) {
-            accountLogin = org.name;
-          }
-        } else {
-          const errorText = await orgRes.text();
-          console.error('Failed to fetch org details:', orgRes.status, errorText);
-        }
-      } catch (err) {
-        console.error('Error fetching org details:', err);
+    // Always fetch installation info from GitHub
+    const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
+    const installationRes = await fetch(`https://api.github.com/app/installations/${installationId}`, {
+      headers: { 'Authorization': `Bearer ${jwt}` }
+    });
+    const installationData = await installationRes.json() as { account: { login: string, type: string } };
+    let accountLogin = installationData.account.login;
+    let accountType = installationData.account.type;
+    let orgName = null;
+    if (accountType === 'Organization') {
+      // Fetch org display name
+      const orgRes = await fetch(`https://api.github.com/orgs/${accountLogin}`, {
+        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      });
+      if (orgRes.ok) {
+        const org = await orgRes.json() as { name?: string };
+        orgName = org.name || null;
       }
-      accountType = 'Organization';
     }
 
     // Get installation token and repos
-    const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
     const installToken = await getInstallationAccessToken(jwt, installationId);
     const repos = await listRepos(installToken);
 
@@ -179,8 +171,6 @@ router.get('/callback', async (req: Request, res: Response) => {
         }, { onConflict: 'github_id' })
         .select()
         .single();
-
-      // console.log('Profile upsert result:', profile, profileError);
 
       if (profile && profile.id) {
         profileId = profile.id;
@@ -214,9 +204,10 @@ router.get('/callback', async (req: Request, res: Response) => {
           installation_id: installationId,
           account_login: accountLogin,
           account_type: accountType,
+          org_name: orgName,
           repositories: repos.map((repo: any) => repo.full_name),
           profile_id: profileId,
-        });
+        } as any);
       } catch (error) {
         console.error('Error storing installation:', error);
         // Continue even if storage fails
