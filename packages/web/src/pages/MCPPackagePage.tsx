@@ -1180,7 +1180,7 @@ const MCPPackagePage = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-              {effectiveIsOwner ? (
+              {/* {effectiveIsOwner ? (
                 <TabsContent value="logs" className="mt-6">
                   <Card className="bg-black/60 border border-white/10">
                     <CardHeader>
@@ -1251,7 +1251,7 @@ const MCPPackagePage = () => {
                     </CardContent>
                   </Card>
                 </TabsContent>
-              )}
+              )} */}
               <TabsContent value="api" className="mt-6">
                 <Card className="bg-black/60 border border-white/10">
                   <CardHeader>
