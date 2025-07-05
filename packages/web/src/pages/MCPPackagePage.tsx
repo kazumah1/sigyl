@@ -1007,8 +1007,9 @@ const MCPPackagePage = () => {
                     <Button
                       onClick={handleRedeploy}
                       variant="outline"
-                      disabled={isRedeploying}
+                      disabled={isRedeploying || !pkg || !pkg.deployments || pkg.deployments.length === 0}
                       className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                      title={(!pkg || !pkg.deployments || pkg.deployments.length === 0) ? 'No deployment found to redeploy' : ''}
                     >
                       <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
                       {isRedeploying ? 'Redeploying...' : 'Redeploy'}
