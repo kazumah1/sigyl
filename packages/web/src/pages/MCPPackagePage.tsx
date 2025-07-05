@@ -731,7 +731,9 @@ const MCPPackagePage = () => {
         setLogoUploading(false);
         return;
       }
-      setEditFields(prev => ({ ...prev, logo_url: data.publicUrl }));
+      // Add cache-busting query param
+      const cacheBustedUrl = data.publicUrl + '?t=' + Date.now();
+      setEditFields(prev => ({ ...prev, logo_url: cacheBustedUrl }));
       toast.success('Logo uploaded!');
     } catch (err: any) {
       setLogoUploadError(err.message || 'Failed to upload logo');
