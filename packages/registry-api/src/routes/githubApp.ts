@@ -658,4 +658,63 @@ router.post('/github/associate-installation', authenticate, async (req: Request,
   }
 });
 
+// List all GitHub App installations for the authenticated user
+router.get('/installations', authenticate, async (req: Request, res: Response) => {
+  try {
+    // Get the authenticated user's id (Supabase UUID or github_12345)
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Query github_installations and join with profiles to get user/org info
+    // Support both github_12345 and UUIDs
+    let query;
+    if (/^github_/.test(userId)) {
+      // If github_12345, join on github_id
+      const githubId = userId.replace('github_', '');
+      query = userInstallationService.supabase
+        .from('github_installations')
+        .select(`
+          installation_id,
+          account_login,
+          account_type,
+          profile_id,
+          profiles:profile_id (username, full_name, avatar_url, email)
+        `)
+        .eq('profile_id', githubId);
+    } else {
+      // If UUID, join on profile_id
+      query = userInstallationService.supabase
+        .from('github_installations')
+        .select(`
+          installation_id,
+          account_login,
+          account_type,
+          profile_id,
+          profiles:profile_id (username, full_name, avatar_url, email)
+        `)
+        .eq('profile_id', userId);
+    }
+    const { data, error } = await query;
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch installations', details: error.message });
+    }
+    // Map to frontend format
+    const installations = (data || []).map((row: any) => ({
+      installationId: row.installation_id,
+      username: row.profiles?.username || row.account_login,
+      fullName: row.profiles?.full_name || null,
+      avatarUrl: row.profiles?.avatar_url || null,
+      email: row.profiles?.email || null,
+      accountLogin: row.account_login,
+      accountType: row.account_type,
+    }));
+    return res.json({ installations });
+  } catch (err) {
+    console.error('Error fetching user installations:', err);
+    return res.status(500).json({ error: 'Failed to fetch installations' });
+  }
+});
+
 export default router;
