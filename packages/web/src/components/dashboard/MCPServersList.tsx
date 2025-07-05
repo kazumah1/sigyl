@@ -286,18 +286,33 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                 </div>
                 
                 <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                  {/* Redeploy Button: visible for all, disabled if not active */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleServerAction('redeploy', server.id); }}
-                    className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
-                    title={server.status === 'active' ? 'Redeploy server' : 'Redeploy only available for active servers'}
-                    disabled={redeployingId === server.id || server.status !== 'active'}
-                  >
-                    {redeployingId === server.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    <span className="ml-1">{redeployingId === server.id ? 'Redeploying...' : 'Redeploy'}</span>
-                  </Button>
+                  
+                  {detailed && server.status === 'active' && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); handleServerAction('redeploy', server.id); }}
+                        className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
+                        title="Redeploy server"
+                        disabled={redeployingId === server.id}
+                      >
+                        {redeployingId === server.id ? 'Redeploying...' : 'Redeploy'}
+                      </Button>
+                    </>
+                  )}
+                  
+                  {detailed && server.status === 'inactive' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleServerAction('start', server.id); }}
+                      className="text-gray-400 hover:text-white hover:bg-neutral-900"
+                      title="Start server"
+                    >
+                      <Play className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
