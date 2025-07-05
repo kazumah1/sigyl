@@ -63,12 +63,10 @@ const GITHUB_APP_CONFIG = {
  * This will redirect users to GitHub to install the app and authenticate
  */
 export function getGitHubAppInstallUrl(state?: string): string {
-  const redirectUrl = encodeURIComponent(window.location.origin + `/auth/callback`);
-  const stateParam = state || Math.random().toString(36).substring(2, 15);
-  
-  // Use the app's main page URL which handles both new and existing installations
-  let url = `https://github.com/apps/${GITHUB_APP_CONFIG.appName}?request_oauth_on_install=true&redirect_uri=${redirectUrl}&state=${stateParam}`;
-  return url;
+  const appName = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev';
+  const backendCallback = import.meta.env.VITE_REGISTRY_API_URL + '/github/callback';
+  const stateParam = state || encodeURIComponent(window.location.origin + '/post-install-login');
+  return `https://github.com/apps/${appName}/installations/new?state=${stateParam}&request_oauth_on_install=true&redirect_uri=${encodeURIComponent(backendCallback)}`;
 }
 
 /**
