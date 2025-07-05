@@ -34,23 +34,25 @@ const installationService = new InstallationService();
 router.get('/check-installation/:githubUsername', async (req: Request, res: Response) => {
   try {
     const { githubUsername } = req.params;
-    
     if (!githubUsername) {
       return res.status(400).json({ error: 'GitHub username is required' });
     }
 
-    const installation = await userInstallationService.getInstallationByGitHubUsername(githubUsername);
-    
-    if (installation) {
+    const installations = await userInstallationService.getInstallationByGitHubUsername(githubUsername);
+
+    if (installations && installations.length > 0) {
       return res.json({
         hasInstallation: true,
-        installationId: installation.installation_id,
-        githubUsername: installation.github_username
+        installations: installations.map(row => ({
+          installationId: row.installation_id,
+          accountLogin: row.account_login,
+          accountType: row.account_type,
+          orgName: row.org_name || null,
+          profileId: row.profile_id,
+        }))
       });
     } else {
-      return res.json({
-        hasInstallation: false
-      });
+      return res.json({ hasInstallation: false });
     }
   } catch (error) {
     console.error('Error checking installation:', error);

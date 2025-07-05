@@ -40,21 +40,20 @@ export class UserInstallationService {
   }
 
   /**
-   * Check if a GitHub username has an existing installation
+   * Check if a GitHub username or org has any installations
    */
-  async getInstallationByGitHubUsername(githubUsername: string): Promise<UserInstallationRecord | null> {
+  async getInstallationByGitHubUsername(githubUsername: string): Promise<any[]> {
     const { data, error } = await this.supabase
-      .from('user_installations')
+      .from('github_installations')
       .select('*')
-      .eq('github_username', githubUsername)
-      .single();
+      .ilike('account_login', githubUsername);
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+    if (error) {
       console.error('Error getting installation by GitHub username:', error);
       throw new Error(`Failed to get installation by GitHub username: ${error.message}`);
     }
 
-    return data;
+    return data || [];
   }
 
   /**

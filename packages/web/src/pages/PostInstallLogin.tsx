@@ -35,13 +35,13 @@ const PostInstallLogin = () => {
     <div className="flex items-center justify-center min-h-screen px-4 pt-20">
       <Card className="w-full max-w-md bg-gray-900/50 border-gray-800 backdrop-blur-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-indigo-300">One More Step!</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">One More Step!</CardTitle>
           <CardDescription className="text-gray-400 mt-2">
             Please sign in with GitHub again to complete your account setup after installing the GitHub App.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6 items-center">
-          <Button onClick={handleSignIn} className="w-full flex gap-2 items-center justify-center" size="lg">
+          <Button onClick={handleSignIn} className="w-full flex gap-2 items-center justify-center btn-modern-inverted hover:bg-neutral-900 hover:text-white" size="lg">
             <Github className="w-5 h-5" />
             Sign in with GitHub
           </Button>

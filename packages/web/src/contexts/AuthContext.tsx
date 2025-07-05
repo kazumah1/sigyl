@@ -15,6 +15,8 @@ interface GitHubAccount {
   isActive: boolean
   accountLogin: string
   accountType: string
+  orgName?: string | null
+  profileId?: string
 }
 
 type AuthContextType = {
@@ -98,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getInitialSession()
   }, [])
 
-  // After session initialization, fetch GitHub App installation for the user using check-installation endpoint
+  // After session initialization, fetch GitHub App installations for the user/org using check-installation endpoint
   useEffect(() => {
     const fetchGitHubAccounts = async () => {
       if (!user) {
@@ -110,21 +112,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const githubUsername = user.user_metadata?.user_name;
         if (!githubUsername) return;
         const res = await fetch(`${REGISTRY_API_BASE}/github/check-installation/${githubUsername}`);
-        if (!res.ok) throw new Error('Failed to fetch GitHub installation');
+        if (!res.ok) throw new Error('Failed to fetch GitHub installations');
         const data = await res.json();
-        if (data.hasInstallation && data.installationId) {
-          const account = {
-            installationId: data.installationId,
-            username: data.githubUsername,
-            fullName: user.user_metadata?.full_name || null,
-            avatarUrl: user.user_metadata?.avatar_url || null,
-            email: user.email,
-            isActive: true,
-            accountLogin: data.githubUsername,
-            accountType: 'User',
-          };
-          setGitHubAccounts([account]);
-          setActiveGitHubAccount(account);
+        if (data.hasInstallation && data.installations && data.installations.length > 0) {
+          const accounts = data.installations.map((row: any) => ({
+            installationId: row.installationId,
+            username: row.accountLogin,
+            accountType: row.accountType,
+            orgName: row.orgName,
+            profileId: row.profileId,
+          }));
+          setGitHubAccounts(accounts);
+          setActiveGitHubAccount(accounts[0]);
         } else {
           setGitHubAccounts([]);
           setActiveGitHubAccount(null);
@@ -132,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (err) {
         setGitHubAccounts([]);
         setActiveGitHubAccount(null);
-        console.error('Failed to fetch GitHub installation:', err);
+        console.error('Failed to fetch GitHub installations:', err);
       }
     };
     fetchGitHubAccounts();

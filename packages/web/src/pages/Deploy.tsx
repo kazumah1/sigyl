@@ -9,6 +9,14 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { getGitHubAppInstallUrl } from "@/lib/githubApp";
 
+type GitHubAccount = {
+  installationId: number;
+  username: string;
+  accountType: string;
+  orgName?: string | null;
+  profileId?: string;
+};
+
 const Deploy = () => {
   const { user, activeGitHubAccount, githubAccounts, setActiveGitHubAccount } = useAuth();
   const { theme } = useTheme();
@@ -72,7 +80,7 @@ const Deploy = () => {
                     {githubAccounts.length === 0 && <option value="">No accounts found</option>}
                     {githubAccounts.map(acc => (
                       <option key={acc.installationId} value={acc.installationId}>
-                        {acc.username} ({acc.accountType})
+                        {acc.orgName ? acc.orgName : acc.username} ({acc.accountType})
                       </option>
                     ))}
                   </select>
