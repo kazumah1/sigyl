@@ -228,7 +228,11 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/favicon.png" alt={pkg.name} className="w-14 h-14 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3" />
+              <img
+                src={pkg.logo_url ? pkg.logo_url : "/favicon.png"}
+                alt={pkg.name}
+                className="w-14 h-14 rounded-lg bg-neutral-800 object-contain border border-white/10 mr-3"
+              />
               <div>
                 <CardTitle 
                   className="text-white group-hover:text-gray-200 transition-colors truncate whitespace-nowrap overflow-hidden max-w-[180px]"

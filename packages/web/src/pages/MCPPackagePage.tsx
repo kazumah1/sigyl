@@ -483,19 +483,18 @@ const MCPPackagePage = () => {
 
     setIsDeleting(true);
     try {
-      // Import deployment service
-      const deploymentService = (await import('@/services/deploymentService')).default;
-      
-      // Get API key for authentication (try to get from stored keys)
-      let apiKey = '';
-      if (apiKeys.length > 0 && fullApiKeys[apiKeys[0].id]) {
-        apiKey = fullApiKeys[apiKeys[0].id];
-      } else if (apiKeys.length > 0) {
-        apiKey = apiKeys[0].key_prefix;
+      // Get Supabase JWT
+      let supabaseToken = '';
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || '';
+      } catch (e) {
+        supabaseToken = '';
       }
 
-      const result = await deploymentService.deletePackage(pkg.id, pkg.name, apiKey);
-      
+      // Use the same deploymentService as MCPServersList
+      const result = await (await import('@/services/deploymentService')).default.deletePackage(pkg.id, pkg.name, supabaseToken);
+
       if (result.success) {
         toast.success(`Successfully deleted ${pkg.name} and all its data`);
         setShowDeleteModal(false);
