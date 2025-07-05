@@ -1153,7 +1153,7 @@ const MCPPackagePage = () => {
                     {pkg.tools && pkg.tools.length > 0 ? (
                       <div className="space-y-4">
                         {pkg.tools.map((tool, index) => {
-                          const toolName = (tool as any)?.name || `Tool ${index + 1}`;
+                          const toolName = (tool as any)?.tool_name || `Tool ${index + 1}`;
                           const toolDescription = typeof tool === 'string' 
                             ? 'This tool provides additional functionality for the MCP server.'
                             : (tool as any)?.description || 'Tool functionality and usage details would be displayed here.';
