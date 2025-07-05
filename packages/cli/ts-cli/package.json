@@ -64,10 +64,12 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
     },
     "./wizard": {
-      "import": "./dist/wizard.js"
+      "import": "./dist/wizard.js",
+      "require": "./dist/wizard.js"
     }
   },
   "engines": {

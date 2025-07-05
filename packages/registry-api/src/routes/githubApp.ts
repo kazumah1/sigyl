@@ -21,10 +21,6 @@ interface GitHubUser {
   type?: string;
 }
 
-interface GitHubOrg {
-  name?: string;
-  login: string;
-}
 
 const router = express.Router();
 const userInstallationService = new UserInstallationService();
