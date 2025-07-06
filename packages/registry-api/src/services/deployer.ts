@@ -1,6 +1,7 @@
 import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '../../container-builder/src/gcp/cloudRunService';
 import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
+import { execSync } from 'child_process';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -30,6 +31,45 @@ export interface DeploymentResult {
   error?: string;
   securityReport?: any;
   proxyUrl?: string;
+}
+
+// Helper function to create backend service
+function createBackendService(backendServiceName: string) {
+  execSync(`gcloud compute backend-services create ${backendServiceName} \
+    --global \
+    --load-balancing-scheme=EXTERNAL \
+    --protocol=HTTPS`, {
+    stdio: 'inherit'
+  });
+}
+// Helper function to create NEG
+function createNeg(negName: string, region: string, cloudRunService: string) {
+  execSync(`gcloud compute network-endpoints create ${negName} \
+    --network-endpoint-type=serverless-cloud-run \
+    --cloud-run-service=${cloudRunService} \
+    --region=${region}`, {
+    stdio: 'inherit'
+  });
+}
+
+// Helper function to add NEG to backend service
+function addNegToBackendService(backendServiceName: string, negName: string, region: string) {
+  execSync(`gcloud compute backend-service add-backend ${backendServiceName} \
+    --global \
+    --network-endpoint-group=${negName} \
+    --network-endpoint-group-region=${region}`, {
+    stdio: 'inherit'
+  });
+}
+
+// Helper function to add routing rule
+function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string) {
+  execSync(`gcloud compute url-maps add-path-matcher ${urlMapName} \
+    --default-backend-service=${backendServiceName} \
+    --path-matcher-name=auto-matcher-${Date.now()} \
+    --path-rules="${path}=${backendServiceName}"`, {
+    stdio: 'inherit'
+  });
 }
 
 /**
@@ -90,10 +130,19 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         error: cloudRunResult.error || 'Google Cloud Run deployment failed',
         securityReport: cloudRunResult.securityReport
       };
-    }
+    } else {
+      // === Creating NEG ===
+      const negName = `neg-${cloudRunResult.serviceName}`;
+      const backendServiceName = `sigyl-backend-${cloudRunResult.serviceName}`;
+      const urlMapName = `sigyl-load-balancer`;
+      const region = CLOUD_RUN_CONFIG.region;
+      const path = `/@${request.repoName}`;
 
-    // console.log('✅ Successfully deployed to Google Cloud Run:', cloudRunResult.deploymentUrl);
-    // console.log('🔗 MCP endpoint available at:', `${cloudRunResult.deploymentUrl}/mcp`);
+      createBackendService(backendServiceName, region);
+      createNeg(negName, region, cloudRunResult.serviceName || '');
+      addNegToBackendService(backendServiceName, negName, region);
+      addPathRuletoUrlMap(urlMapName, path, backendServiceName);
+    }
 
     // === Insert/Upsert into mcp_packages ===
     let packageId: string | null = null;
@@ -190,7 +239,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         version: null,
         description: `MCP server for ${request.repoName}`,
         author_id: authorIdToUse,
-        source_api_url: cloudRunResult.deploymentUrl || null,
+        source_api_url: `https://server.sigyl.dev/@${request.repoName}`,
         service_name: cloudRunResult.serviceName || null,
         tags: null,
         logo_url: null,
