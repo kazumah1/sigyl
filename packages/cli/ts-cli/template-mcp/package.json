@@ -1,5 +1,5 @@
 {
-  "name": "sample-mcp",
+  "name": "self-server",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",

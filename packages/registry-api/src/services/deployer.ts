@@ -1,7 +1,7 @@
 import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfigUnion } from '../../container-builder/src/gcp/cloudRunService';
 import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
-import { execSync } from 'child_process';
+import { google } from 'googleapis';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -11,6 +11,10 @@ const CLOUD_RUN_CONFIG: CloudRunConfig = {
   serviceAccountKey: '',
   keyFilePath: ''
 };
+
+// Initialize Google Compute client
+const auth = new google.auth.GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+const compute = google.compute('v1');
 
 export interface DeploymentRequest {
   repoUrl: string;
@@ -34,41 +38,77 @@ export interface DeploymentResult {
 }
 
 // Helper function to create backend service
-function createBackendService(backendServiceName: string) {
-  execSync(`gcloud compute backend-services create ${backendServiceName} \
-    --global \
-    --load-balancing-scheme=EXTERNAL \
-    --protocol=HTTPS`, {
-    stdio: 'inherit'
+async function createBackendService(backendServiceName: string, project: string) {
+  const authClient = await auth.getClient();
+  await compute.backendServices.insert({
+    project,
+    requestBody: {
+      name: backendServiceName,
+      loadBalancingScheme: 'EXTERNAL',
+      protocol: 'HTTPS',
+      healthChecks: [], // Add health check URLs if needed
+    },
+    auth: authClient,
   });
 }
+
 // Helper function to create NEG
-function createNeg(negName: string, region: string, cloudRunService: string) {
-  execSync(`gcloud compute network-endpoints create ${negName} \
-    --network-endpoint-type=serverless-cloud-run \
-    --cloud-run-service=${cloudRunService} \
-    --region=${region}`, {
-    stdio: 'inherit'
+async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
+  const authClient = await auth.getClient();
+  await compute.networkEndpointGroups.insert({
+    project,
+    region,
+    requestBody: {
+      name: negName,
+      networkEndpointType: 'SERVERLESS',
+      cloudRun: {
+        service: cloudRunService,
+      },
+    },
+    auth: authClient,
   });
 }
 
 // Helper function to add NEG to backend service
-function addNegToBackendService(backendServiceName: string, negName: string, region: string) {
-  execSync(`gcloud compute backend-service add-backend ${backendServiceName} \
-    --global \
-    --network-endpoint-group=${negName} \
-    --network-endpoint-group-region=${region}`, {
-    stdio: 'inherit'
+async function addNegToBackendService(backendServiceName: string, negName: string, region: string, project: string) {
+  const authClient = await auth.getClient();
+  await compute.backendServices.addBackend({
+    project,
+    backendService: backendServiceName,
+    requestBody: {
+      backends: [
+        {
+          group: `projects/${project}/regions/${region}/networkEndpointGroups/${negName}`,
+        },
+      ],
+    },
+    auth: authClient,
   });
 }
 
 // Helper function to add routing rule
-function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string) {
-  execSync(`gcloud compute url-maps add-path-matcher ${urlMapName} \
-    --default-backend-service=${backendServiceName} \
-    --path-matcher-name=auto-matcher-${Date.now()} \
-    --path-rules="${path}=${backendServiceName}"`, {
-    stdio: 'inherit'
+async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
+  const authClient = await auth.getClient();
+  // Get the current URL map
+  const { data: urlMap } = await compute.urlMaps.get({
+    project,
+    urlMap: urlMapName,
+    auth: authClient,
+  });
+  // Add a new path rule to the first pathMatcher
+  const pathMatcher = urlMap.pathMatchers && urlMap.pathMatchers[0];
+  if (!pathMatcher) throw new Error('No pathMatcher found in URL map');
+  pathMatcher.pathRules = pathMatcher.pathRules || [];
+  pathMatcher.pathRules.push({
+    paths: [path],
+    service: `projects/${project}/global/backendServices/${backendServiceName}`,
+  });
+  // Patch the URL map
+  await compute.urlMaps.patch({
+    project,
+    urlMap: urlMapName,
+    requestBody: urlMap,
+    auth: authClient,
   });
 }
 
@@ -131,17 +171,18 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
         securityReport: cloudRunResult.securityReport
       };
     } else {
-      // === Creating NEG ===
+      // === Creating NEG and backend service using Google Cloud Node.js SDK ===
       const negName = `neg-${cloudRunResult.serviceName}`;
       const backendServiceName = `sigyl-backend-${cloudRunResult.serviceName}`;
       const urlMapName = `sigyl-load-balancer`;
       const region = CLOUD_RUN_CONFIG.region;
+      const project = CLOUD_RUN_CONFIG.projectId;
       const path = `/@${request.repoName}`;
 
-      createBackendService(backendServiceName);
-      createNeg(negName, region, cloudRunResult.serviceName || '');
-      addNegToBackendService(backendServiceName, negName, region);
-      addPathRuletoUrlMap(urlMapName, path, backendServiceName);
+      await createBackendService(backendServiceName, project);
+      await createNeg(negName, region, project, cloudRunResult.serviceName || '');
+      await addNegToBackendService(backendServiceName, negName, region, project);
+      await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
     }
 
     // === Insert/Upsert into mcp_packages ===

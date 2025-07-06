@@ -9,6 +9,7 @@ import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
+import cors from 'cors';
 
 // ============================================================================
 // SERVER CONFIGURATION
@@ -53,6 +54,7 @@ export default function createStatelessServer({
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.post('/mcp', async (req, res) => {
 	const server = createStatelessServer({ config: {} });
