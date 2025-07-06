@@ -68,6 +68,7 @@ export async function createNeg(negName: string, region: string, project: string
   await compute.networkEndpointGroups.insert({
     project,
     region,
+    zone: '',
     requestBody: {
       name: negName,
       networkEndpointType: 'SERVERLESS',
