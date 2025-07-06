@@ -100,7 +100,8 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         toast({ 
           title: 'Authentication Error', 
           description: 'Please sign in again to access secrets and API keys.', 
-          variant: 'destructive' 
+          variant: 'destructive',
+          duration: 1000
         });
         setIsLoadingSecrets(false);
         setIsLoadingApiKeys(false);
@@ -120,7 +121,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const fetchSecrets = async () => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to view secrets.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to view secrets.', variant: 'destructive', duration: 1000 });
       setIsLoadingSecrets(false);
       return;
     }
@@ -134,6 +135,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: "Failed to fetch secrets. Please try again.",
         variant: "destructive",
+        duration: 1000
       });
     } finally {
       setIsLoadingSecrets(false);
@@ -143,7 +145,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleCreateSecret = async () => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to create secrets.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to create secrets.', variant: 'destructive', duration: 1000 });
       return;
     }
     if (!formData.key.trim() || !formData.value.trim()) {
@@ -151,6 +153,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: "Key and value are required.",
         variant: "destructive",
+        duration: 1000
       });
       return;
     }
@@ -161,6 +164,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: "Key must be a valid environment variable name (uppercase letters, numbers, and underscores only).",
         variant: "destructive",
+        duration: 1000
       });
       return;
     }
@@ -189,6 +193,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "Secret Created",
         description: `Environment variable "${formData.key}" has been created successfully.`,
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to create secret:', error);
@@ -196,6 +201,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create secret",
         variant: "destructive",
+        duration: 1000
       });
     } finally {
       setIsCreatingSecret(false);
@@ -205,7 +211,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleUpdateSecret = async () => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to update secrets.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to update secrets.', variant: 'destructive', duration: 1000 });
       return;
     }
     if (!editingSecret) return;
@@ -236,6 +242,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "Secret Updated",
         description: `Environment variable "${formData.key}" has been updated successfully.`,
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to update secret:', error);
@@ -243,6 +250,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update secret",
         variant: "destructive",
+        duration: 1000
       });
     } finally {
       setIsCreatingSecret(false);
@@ -252,7 +260,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleDeleteSecret = async (id: string, key: string) => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to delete secrets.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to delete secrets.', variant: 'destructive', duration: 1000 });
       return;
     }
     try {
@@ -261,6 +269,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "Secret Deleted",
         description: `Environment variable "${key}" has been deleted.`,
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to delete secret:', error);
@@ -268,6 +277,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete secret",
         variant: "destructive",
+        duration: 1000
       });
     }
   };
@@ -310,7 +320,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const fetchAPIKeys = async () => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to view API keys.', variant: 'destructive', duration: 1000 });
       setIsLoadingApiKeys(false);
       return;
     }
@@ -324,6 +334,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: "Failed to fetch API keys. Please try again.",
         variant: "destructive",
+        duration: 1000
       });
     } finally {
       setIsLoadingApiKeys(false);
@@ -333,7 +344,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleCreateApiKey = async () => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to create API keys.', variant: 'destructive', duration: 1000 });
       return;
     }
     if (!newKeyName.trim()) return;
@@ -364,6 +375,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "API Key Created",
         description: `New API key "${newKeyName}" has been created successfully. Make sure to copy it now - you won't be able to see it again!`,
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to create API key:', error);
@@ -371,6 +383,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create API key",
         variant: "destructive",
+        duration: 1000
       });
     } finally {
       setIsCreatingApiKey(false);
@@ -380,7 +393,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleDeleteApiKey = async (id: string) => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to delete API keys.', variant: 'destructive', duration: 1000 });
       return;
     }
     setDeleteConfirmId(null);
@@ -396,6 +409,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "API Key Deleted",
         description: "API key has been permanently deleted.",
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to delete API key:', error);
@@ -403,6 +417,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete API key",
         variant: "destructive",
+        duration: 1000
       });
     }
   };
@@ -410,7 +425,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
   const handleDeactivateApiKey = async (id: string) => {
     const token = await getFreshToken();
     if (!token) {
-      toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'You must be logged in to deactivate API keys.', variant: 'destructive', duration: 1000 });
       return;
     }
     try {
@@ -421,6 +436,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       toast({
         title: "API Key Deactivated",
         description: "API key has been deactivated.",
+        duration: 1000
       });
     } catch (error) {
       console.error('Failed to deactivate API key:', error);
@@ -428,6 +444,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to deactivate API key",
         variant: "destructive",
+        duration: 1000
       });
     }
   };
@@ -466,13 +483,13 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       <CardContent>
         <Tabs defaultValue="secrets" className="w-full">
           <TabsList className="flex w-full bg-black border border-white/10 rounded-xl mb-6 h-12 items-stretch justify-around">
-            <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
-              <Lock className="w-4 h-4 mr-2" />
-              Environment Variables
-            </TabsTrigger>
             <TabsTrigger value="api-keys" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
               <Key className="w-4 h-4 mr-2" />
               API Keys
+            </TabsTrigger>
+            <TabsTrigger value="secrets" className="flex-1 h-full flex items-center justify-center px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:font-bold text-white font-semibold rounded-xl transition-all">
+              <Lock className="w-4 h-4 mr-2" />
+              Environment Variables
             </TabsTrigger>
           </TabsList>
 
@@ -543,7 +560,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
                 placeholder="Enter API key name"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="bg-black border-white/10 text-white h-10 text-base font-semibold placeholder:text-white"
+                className="bg-black border-white/10 text-white h-10 text-base font-semibold placeholder:text-white/50"
                 disabled={isCreatingApiKey}
               />
               <Button 
@@ -753,7 +770,7 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
               <Button
                 onClick={() => {
                   if (newlyCreatedKey) navigator.clipboard.writeText(newlyCreatedKey);
-                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard." });
+                  toast({ title: "Copied to clipboard", description: "API key has been copied to your clipboard.", variant: "default", duration: 1000 });
                 }}
                 className="bg-black border border-white text-white hover:bg-white hover:text-black px-6 py-2"
               >

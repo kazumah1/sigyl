@@ -461,13 +461,11 @@ main().catch((error) => {
 
 	private mapPropertiesToJSONSchema(properties: Record<string, any>): Record<string, any> {
 		const mapped: Record<string, any> = {}
-		
 		for (const [key, value] of Object.entries(properties)) {
 			const propertySchema: any = {
 				type: this.mapTypeToJSONSchema(value.type),
 				description: value.description || `Property: ${key}`
 			}
-			
 			// Add additional schema properties based on type
 			if (value.type === "string") {
 				// Could add format, pattern, minLength, maxLength, etc.
@@ -476,10 +474,8 @@ main().catch((error) => {
 			} else if (value.type === "array") {
 				// Could add items schema
 			}
-			
 			mapped[key] = propertySchema
 		}
-		
 		return mapped
 	}
 

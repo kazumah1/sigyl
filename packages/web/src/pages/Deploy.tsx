@@ -58,27 +58,30 @@ const Deploy = () => {
           {/* Glassy Card for Account Selector and Wizard */}
           <div className="w-full max-w-2xl bg-white/5 backdrop-blur-lg border border-white/15 rounded-2xl shadow-2xl mx-auto p-8 flex flex-col gap-8" style={{ boxShadow: '0 8px 32px 0 rgba(0,0,0,0.28)' }}>
             {/* GitHub Account Selector */}
-            <div className="flex flex-col gap-2">
-              {user && (
-                <div className="text-gray-400 text-sm mb-1">
-                  Deploying as:
-                  <select
-                    className="bg-black border border-white/20 text-white rounded-lg px-3 py-2 min-w-[180px]"
-                    value={activeGitHubAccount?.installationId || ''}
-                    onChange={e => {
-                      const selected = githubAccounts.find(acc => acc.installationId === Number(e.target.value));
-                      if (selected) handleAccountChange(selected);
-                    }}
-                  >
-                    {githubAccounts.length === 0 && <option value="">No accounts found</option>}
-                    {githubAccounts.map(acc => (
-                      <option key={acc.installationId} value={acc.installationId}>
-                        {acc.orgName ? acc.orgName : acc.username}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              <span className="text-gray-400 text-sm whitespace-nowrap">Deploying as:</span>
+              <select
+                className="bg-black border border-white/20 text-white rounded-lg px-3 py-2 min-w-[180px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={activeGitHubAccount?.installationId || ''}
+                onChange={e => {
+                  const selected = githubAccounts.find(acc => acc.installationId === Number(e.target.value));
+                  if (selected) handleAccountChange(selected);
+                }}
+              >
+                {githubAccounts.length === 0 && <option value="">No accounts found</option>}
+                {githubAccounts.map(acc => (
+                  <option key={acc.installationId} value={acc.installationId}>
+                    {acc.orgName ? acc.orgName : acc.username}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn-modern hover:bg-neutral-900 hover:text-white px-4 py-2 rounded-lg border border-white/20 text-sm"
+                onClick={() => window.open(getGitHubAppInstallUrl(), '_blank')}
+                type="button"
+              >
+                Add Account/Org
+              </button>
             </div>
             {/* Sleek Deployment Wizard */}
             <DeployWizardWithGitHubApp onDeploy={handleDeploy} activeGitHubAccount={activeGitHubAccount} />
