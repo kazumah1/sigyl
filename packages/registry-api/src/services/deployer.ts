@@ -13,7 +13,6 @@ const CLOUD_RUN_CONFIG: CloudRunConfig = {
 };
 
 // Auth and Compute client setup (do this once at module scope)
-const project = process.env.GCP_PROJECT_ID || 'your-gcp-project-id'; // Set this appropriately
 let auth: any;
 let compute: any;
 
