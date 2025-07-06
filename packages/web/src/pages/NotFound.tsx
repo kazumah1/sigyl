@@ -30,10 +30,10 @@ const NotFound = () => {
             </div>
             <nav className="flex items-center space-x-6">
               <button 
-                onClick={() => navigate('/marketplace')}
+                onClick={() => navigate('/registry')}
                 className="text-white font-bold tracking-tight hover:text-blue-400 transition-colors"
               >
-                Marketplace
+                Registry
               </button>
               <button 
                 onClick={() => navigate('/docs')}

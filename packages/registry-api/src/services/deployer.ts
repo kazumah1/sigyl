@@ -138,7 +138,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       const region = CLOUD_RUN_CONFIG.region;
       const path = `/@${request.repoName}`;
 
-      createBackendService(backendServiceName, region);
+      createBackendService(backendServiceName);
       createNeg(negName, region, cloudRunResult.serviceName || '');
       addNegToBackendService(backendServiceName, negName, region);
       addPathRuletoUrlMap(urlMapName, path, backendServiceName);

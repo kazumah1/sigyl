@@ -294,7 +294,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
               className="text-5xl md:text-6xl font-bold text-white mb-6"
               style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
             >
-              MCP Marketplace
+              MCP Registry
             </h1>
             <p className="text-xl text-gray-400 mb-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
               Discover and deploy Model Context Protocol servers. Connect your AI to the world.
@@ -311,7 +311,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                   placeholder="Search MCP servers, tools, integrations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-3 text-lg border border-white/10 bg-black/60 focus:border-white/30 text-white"
+                  className="pl-10 py-3 text-lg border border-white/10 bg-black/60 focus:border-white/30 text-white placeholder:text-white/50"
                   style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 />
               </div>

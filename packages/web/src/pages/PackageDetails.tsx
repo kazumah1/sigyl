@@ -117,11 +117,11 @@ const PackageDetails = () => {
             <div className="text-xl">Package not found</div>
             <Button
               variant="outline"
-              onClick={() => navigate('/marketplace')}
+              onClick={() => navigate('/registry')}
               className="border-gray-600 text-gray-300 hover:bg-gray-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Marketplace
+              Back to Registry
             </Button>
           </div>
         </div>
@@ -137,11 +137,11 @@ const PackageDetails = () => {
         {/* Back Navigation */}
         <Button
           variant="outline"
-          onClick={() => navigate('/marketplace')}
+          onClick={() => navigate('/registry')}
           className="mb-6 border-gray-600 text-gray-300 hover:bg-gray-800"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Marketplace
+          Back to Registry
         </Button>
 
         {/* Header */}

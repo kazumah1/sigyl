@@ -39,7 +39,7 @@ const PageHeader = () => {
   // Navigation links
   const navLinks = [
     { label: 'Dashboard', show: !!(user || adminSession), onClick: () => navigate('/dashboard') },
-    { label: 'Marketplace', show: true, onClick: () => navigate('/marketplace') },
+    { label: 'Registry', show: true, onClick: () => navigate('/registry') },
     { label: 'Docs', show: true, onClick: () => window.open('https://docs.sigyl.dev', '_blank') },
     { label: 'Pricing', show: true, onClick: () => navigate('/pricing') },
     // { label: 'Blog', show: true, onClick: () => navigate('/blog') },

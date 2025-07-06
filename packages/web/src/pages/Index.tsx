@@ -56,7 +56,7 @@ const Index = () => {
       <PageHeader />
       <HeroSection
         title="deploying servers for the world of AI agents."
-        subtitle="fast deployment, enterprise MCP hosting, & marketplace"
+        subtitle="fast deployment, enterprise MCP hosting, & registry"
         buttons={
           <>
             <Button 
@@ -70,11 +70,11 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/marketplace')}
+              onClick={() => navigate('/registry')}
               style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
               className="w-full sm:w-auto bg-black/60 text-white border border-white rounded-md px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold hover:bg-neutral-900 hover:border-neutral-900 hover:text-white transition-colors min-h-[48px] touch-manipulation font-[500]"
             >
-              Marketplace
+              Registry
             </Button>
           </>
         }

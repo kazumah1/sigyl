@@ -18,7 +18,7 @@ const Privacy = () => {
                 1. Introduction
               </h2>
               <p className="text-gray-300 leading-relaxed">
-                SIGYL ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Model Context Protocol (MCP) services, including our website, API, CLI tools, SDK, and marketplace (collectively, the "Services").
+                SIGYL ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Model Context Protocol (MCP) services, including our website, API, CLI tools, SDK, and registry (collectively, the "Services").
               </p>
             </section>
 

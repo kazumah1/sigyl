@@ -45,7 +45,7 @@ const Pricing = () => {
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> 1 hosted MCP server</li>
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> CLI access</li>
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> SDK access</li>
-                <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> Marketplace access</li>
+                <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> Registry access</li>
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> Dashboard access</li>
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> Standard security</li>
                 <li className="flex items-center gap-3 text-gray-300"><span className="text-green-400">✔</span> Standard support</li>

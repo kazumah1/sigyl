@@ -43,10 +43,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ workspaceName, userNa
           
           <nav className="flex items-center space-x-8">
             <button 
-              onClick={() => navigate('/marketplace')}
+              onClick={() => navigate('/registry')}
               className="text-gray-300 hover:text-white font-medium transition-colors"
             >
-              Marketplace
+              Registry
             </button>
             <button 
               onClick={() => navigate('/docs')}

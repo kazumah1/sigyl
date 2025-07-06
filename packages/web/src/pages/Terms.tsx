@@ -18,7 +18,7 @@ const Terms = () => {
                 1. Acceptance of Terms
               </h2>
               <p className="text-gray-300 leading-relaxed">
-                By accessing and using SIGYL's services, including but not limited to our MCP server hosting, CLI tools, SDK, and marketplace ("Services"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not use our Services.
+                By accessing and using SIGYL's services, including but not limited to our MCP server hosting, CLI tools, SDK, and registry ("Services"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not use our Services.
               </p>
             </section>
 
@@ -27,7 +27,7 @@ const Terms = () => {
                 2. Description of Services
               </h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                SIGYL provides Model Context Protocol (MCP) server hosting, deployment tools, CLI utilities, SDK access, and a marketplace for MCP-related tools and services. Our Services are designed to facilitate the development, deployment, and management of AI agent integrations.
+                SIGYL provides Model Context Protocol (MCP) server hosting, deployment tools, CLI utilities, SDK access, and a registry for MCP-related tools and services. Our Services are designed to facilitate the development, deployment, and management of AI agent integrations.
               </p>
               <p className="text-gray-300 leading-relaxed">
                 We reserve the right to modify, suspend, or discontinue any aspect of our Services at any time, with or without notice.

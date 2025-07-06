@@ -780,7 +780,7 @@ const MCPPackagePage = () => {
         <div className="container mx-auto px-6 py-8 mt-16">
           <div className="flex flex-col items-center justify-center h-64 space-y-6">
             <div className="text-center space-y-4">
-              <div className="text-2xl font-bold text-white">MCP Package not found</div>
+              <div className="text-2xl font-bold text-white">MCP Server not found</div>
               <p className="text-gray-400 max-w-md">
                 The package you're looking for doesn't exist or may have been removed.
               </p>
@@ -788,11 +788,11 @@ const MCPPackagePage = () => {
             <div className="flex gap-4">
               <Button
                 variant="outline"
-                onClick={() => navigate('/marketplace')}
+                onClick={() => navigate('/registry')}
                 className="border-gray-600 text-gray-300 hover:bg-gray-800"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Marketplace
+                Back to Registry
               </Button>
               <Button
                 variant="outline"
@@ -817,11 +817,11 @@ const MCPPackagePage = () => {
         {/* Back Navigation */}
         <Button
           variant="outline"
-          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/marketplace')}
+          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/regsitry')}
           className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to {effectiveIsOwner ? 'Dashboard' : 'Marketplace'}
+          Back to {effectiveIsOwner ? 'Dashboard' : 'Registry'}
         </Button>
         {/* Owner View Toggle Button */}
         {isOwner && (

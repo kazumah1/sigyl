@@ -10,7 +10,7 @@ export const DASHBOARD_ROUTES = {
 
 export const PLATFORM_ROUTES = {
   HOME: '/',
-  MARKETPLACE: '/marketplace',
+  MARKETPLACE: '/registry',
   DOCS: '/docs',
   BLOG: '/blog',
   LOGIN: '/login'

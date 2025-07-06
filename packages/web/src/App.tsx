@@ -88,8 +88,8 @@ function AppRoutes() {
               <Deploy />
             </ProtectedRoute>
           } />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/marketplace/package/:id" element={<PackageDetails />} />
+          <Route path="/registry" element={<Marketplace />} />
+          <Route path="/registry/package/:id" element={<PackageDetails />} />
           <Route path="/mcp/:id" element={<MCPPackagePage />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/pricing" element={<Pricing />} />

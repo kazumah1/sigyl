@@ -65,9 +65,9 @@ const GitHubAppInstall = () => {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/marketplace')}
+              onClick={() => navigate('/registry')}
             >
-              Browse Marketplace
+              Browse Registry
             </Button>
           </div>
         </CardContent>
@@ -137,11 +137,11 @@ const GitHubAppInstall = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate('/registry')}
             className="flex-1 h-14 rounded-xl font-semibold border-2 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white flex items-center justify-center transition-all duration-150"
             style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontWeight: 600 }}
           >
-            Browse Marketplace
+            Browse Registry
           </Button>
         </div>
 

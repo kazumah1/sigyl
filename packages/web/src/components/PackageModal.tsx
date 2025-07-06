@@ -61,7 +61,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({ package: pkg, isOpen
   const handleLearnMore = () => {
     if (pkg) {
       onClose();
-      navigate(`/marketplace/package/${pkg.id}`);
+      navigate(`/registry/package/${pkg.id}`);
     }
   };
 
