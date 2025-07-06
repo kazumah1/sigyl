@@ -367,3 +367,8 @@ The architecture is now **properly decoupled, secure, and scalable**! 🚀
 - The image is uploaded to Supabase Storage (bucket: mcp-logos) and the public URL is saved as logo_url.
 - The logo preview updates immediately after upload.
 - Editing the logo_url field directly is now disabled; logo is set by upload only. 
+
+## [Deploy Button Update] PageHeader
+- The Deploy button in the PageHeader now conditionally displays 'Log in' if the user is not logged in, and 'Deploy' if the user is authenticated.
+- If the user is not logged in, clicking the button triggers the GitHub App login flow via signInWithGitHubApp.
+- If the user is logged in, clicking the button navigates to the /deploy page as before. 

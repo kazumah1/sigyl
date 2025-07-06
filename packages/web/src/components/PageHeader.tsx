@@ -10,7 +10,7 @@ const HEADER_HEIGHT = 64; // px
 
 const PageHeader = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signInWithGitHubApp } = useAuth();
   const isMobile = useIsMobile();
   // Add admin session check
   const adminSession = (() => {
@@ -97,10 +97,17 @@ const PageHeader = () => {
                   </button>
                 ))}
                 <Button 
-                  onClick={() => navigate('/deploy')}
+                  onClick={async () => {
+                    if (user) {
+                      navigate('/deploy');
+                    } else {
+                      const url = await signInWithGitHubApp();
+                      window.location.href = url;
+                    }
+                  }}
                   className="btn-modern-inverted hover:bg-transparent hover:text-white"
                 >
-                  Deploy
+                  {user ? 'Deploy' : 'Log in'}
                 </Button>
                 <UserProfile />
               </nav>
@@ -129,10 +136,18 @@ const PageHeader = () => {
               </button>
             ))}
             <Button 
-              onClick={() => { navigate('/deploy'); setMobileMenuOpen(false); }}
+              onClick={async () => {
+                if (user) {
+                  navigate('/deploy');
+                } else {
+                  const url = await signInWithGitHubApp();
+                  window.location.href = url;
+                }
+                setMobileMenuOpen(false);
+              }}
               className="btn-modern-inverted mt-4 w-full text-lg py-3"
             >
-              Deploy
+              {user ? 'Deploy' : 'Log in'}
             </Button>
             <div className="mt-4 flex justify-center">
               <UserProfile />
