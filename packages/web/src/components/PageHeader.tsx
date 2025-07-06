@@ -97,14 +97,7 @@ const PageHeader = () => {
                   </button>
                 ))}
                 <Button 
-                  onClick={async () => {
-                    if (user) {
-                      navigate('/deploy');
-                    } else {
-                      const url = await signInWithGitHubApp();
-                      window.location.href = url;
-                    }
-                  }}
+                  onClick={() => navigate('/deploy')}
                   className="btn-modern-inverted hover:bg-transparent hover:text-white"
                 >
                   {user ? 'Deploy' : 'Log in'}
