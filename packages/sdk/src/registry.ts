@@ -6,7 +6,8 @@ import type {
   PackageSearchResult,
   CreatePackageRequest,
   APIResponse,
-  SDKConfig
+  SDKConfig,
+  MCPTool
 } from './types';
 
 // Default configuration
@@ -14,8 +15,12 @@ const DEFAULT_REGISTRY_URL = 'http://localhost:3000/api/v1';
 const DEFAULT_TIMEOUT = 10000;
 
 // Create axios instance with default config
+/**
+ * Always uses the official Sigyl registry API at https://api.sigyl.dev/api/v1
+ * Ignores any registryUrl passed in config.
+ */
 function createApiClient(config: SDKConfig = {}): AxiosInstance {
-  const registryUrl = config.registryUrl || DEFAULT_REGISTRY_URL;
+  const registryUrl = 'https://api.sigyl.dev/api/v1';
   const timeout = config.timeout || DEFAULT_TIMEOUT;
   
   const client = axios.create({
@@ -175,4 +180,56 @@ export async function invoke(
   });
   
   return response.data;
+}
+
+/**
+ * Retrieve MCP server URL and metadata by package name
+ */
+export async function getMCPServerUrlByName(
+  name: string,
+  config: SDKConfig = {}
+): Promise<{ url: string; package: MCPPackage } | null> {
+  const client = createApiClient(config);
+  try {
+    // TODO: Confirm endpoint on registry API
+    const pkg: MCPPackage = await client.get(`/packages/name/${encodeURIComponent(name)}`);
+    if (pkg && pkg.source_api_url) {
+      return { url: pkg.source_api_url, package: pkg };
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Semantic search for MCP servers (packages)
+ * @param query - user prompt or search string
+ * @param count - number of results to return (default 1)
+ */
+export async function semanticSearchMCPServers(
+  query: string,
+  count: number = 1,
+  config: SDKConfig = {}
+): Promise<MCPPackage[]> {
+  const client = createApiClient(config);
+  // TODO: Confirm endpoint on registry API
+  const resp = await client.post(`/packages/semantic-search`, { query, count });
+  return Array.isArray(resp) ? resp : [];
+}
+
+/**
+ * Semantic search for tools across all MCP servers
+ * @param query - user prompt or search string
+ * @param count - number of results to return (default 1)
+ */
+export async function semanticSearchTools(
+  query: string,
+  count: number = 1,
+  config: SDKConfig = {}
+): Promise<Array<MCPTool & { mcp_server: MCPPackage }>> {
+  const client = createApiClient(config);
+  // TODO: Confirm endpoint on registry API
+  const resp = await client.post(`/tools/semantic-search`, { query, count });
+  return Array.isArray(resp) ? resp : [];
 } 

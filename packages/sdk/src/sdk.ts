@@ -7,8 +7,7 @@ import type {
   CreatePackageRequest,
   ToolFunction
 } from './types';
-import { searchPackages, getPackage, invoke, getAllPackagesAdmin, registerMCP } from './registry';
-import { connect, connectDirect, connectClient, Client } from './connect';
+import { searchPackages, getPackage, getAllPackagesAdmin, getMCPServerUrlByName, semanticSearchMCPServers, semanticSearchTools } from './registry';
 
 /**
  * MCPConnectSDK - Advanced SDK class for working with MCP registry and tools
@@ -16,11 +15,17 @@ import { connect, connectDirect, connectClient, Client } from './connect';
 export class MCPConnectSDK {
   private config: SDKConfig;
 
+  /**
+   * MCPConnectSDK always uses the Sigyl registry API at https://api.sigyl.dev/api/v1
+   * The registryUrl cannot be overridden by user config.
+   * @param config - Only apiKey, timeout, and requireAuth are respected
+   */
   constructor(config: SDKConfig = {}) {
     this.config = {
-      registryUrl: 'http://localhost:3000/api/v1',
-      timeout: 10000,
-      ...config
+      registryUrl: 'https://api.sigyl.dev/api/v1',
+      timeout: config.timeout || 10000,
+      apiKey: config.apiKey,
+      requireAuth: config.requireAuth,
     };
   }
 
@@ -41,70 +46,6 @@ export class MCPConnectSDK {
    */
   async getPackage(name: string): Promise<PackageWithDetails> {
     return getPackage(name, this.config);
-  }
-
-  /**
-   * Connect to a specific tool in a package
-   */
-  async connect(packageName: string, toolName: string): Promise<ToolFunction> {
-    return connect(packageName, toolName, {
-      registryUrl: this.config.registryUrl,
-      timeout: this.config.timeout,
-      apiKey: this.config.apiKey
-    });
-  }
-
-  /**
-   * Smithery-style connect: returns a connected Client instance for a package
-   */
-  async connectClient(packageName: string): Promise<Client> {
-    return connectClient(packageName, {
-      registryUrl: this.config.registryUrl,
-      timeout: this.config.timeout,
-      apiKey: this.config.apiKey
-    });
-  }
-
-  /**
-   * Connect to all tools in a package and return an object with tool functions
-   */
-  async connectAll(packageName: string): Promise<Record<string, ToolFunction>> {
-    const packageData = await this.getPackage(packageName);
-    const tools: Record<string, ToolFunction> = {};
-    
-    for (const tool of packageData.tools) {
-      if (tool.tool_name) {
-        tools[tool.tool_name] = await this.connect(packageName, tool.tool_name);
-      }
-    }
-    
-    return tools;
-  }
-
-  /**
-   * Connect directly to a tool by URL (stateless, for backward compatibility)
-   */
-  async connectDirect(toolUrl: string) {
-    return connectDirect(toolUrl, {
-      timeout: this.config.timeout
-    });
-  }
-
-  /**
-   * Manually invoke a tool by URL
-   */
-  async invoke(toolUrl: string, input: any): Promise<any> {
-    return invoke(toolUrl, input, this.config);
-  }
-
-  /**
-   * Register a new MCP package in the registry
-   */
-  async registerMCP(packageData: CreatePackageRequest): Promise<MCPPackage> {
-    if (!this.config.apiKey) {
-      throw new Error('API key is required for registering MCP packages');
-    }
-    return registerMCP(packageData, this.config.apiKey, this.config);
   }
 
   /**
@@ -136,5 +77,30 @@ export class MCPConnectSDK {
    */
   getConfig(): SDKConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Retrieve MCP server URL and metadata by name
+   */
+  async getMCPServerUrlByName(name: string) {
+    return getMCPServerUrlByName(name, this.config);
+  }
+
+  /**
+   * Semantic search for MCP servers (packages)
+   * @param query - user prompt or search string
+   * @param count - number of results to return (default 1)
+   */
+  async semanticSearchMCPServers(query: string, count: number = 1) {
+    return semanticSearchMCPServers(query, count, this.config);
+  }
+
+  /**
+   * Semantic search for tools across all MCP servers
+   * @param query - user prompt or search string
+   * @param count - number of results to return (default 1)
+   */
+  async semanticSearchTools(query: string, count: number = 1) {
+    return semanticSearchTools(query, count, this.config);
   }
 } 

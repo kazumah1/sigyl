@@ -1,6 +1,6 @@
 # @sigyl-dev/sdk
 
-Developer SDK for Sigyl MCP Registry and Hosting Platform. This SDK provides a clean, developer-friendly interface for discovering, connecting to, and using MCP (Model Context Protocol) tools.
+Developer SDK for the Sigyl MCP Registry and Hosting Platform. This SDK provides a clean, developer-friendly interface for discovering and searching for MCP (Model Context Protocol) servers and tools. **It does not handle protocol-level tool invocation or server connection.**
 
 ## 🚀 Quick Start
 
@@ -9,196 +9,103 @@ npm install @sigyl-dev/sdk
 ```
 
 ```typescript
-import { connect, searchPackages, getPackage } from '@sigyl-dev/sdk';
+import { MCPConnectSDK } from '@sigyl-dev/sdk';
 
-// Connect to a tool from the registry
-const summarize = await connect('text-summarizer', 'summarize', {
-  registryUrl: 'http://localhost:3000/api/v1'
+const sdk = new MCPConnectSDK({
+  apiKey: 'sk_your_api_key_here', // Optional, for authenticated endpoints
+  timeout: 15000 // Optional
 });
 
-const result = await summarize({ 
-  text: "Long text to summarize...",
-  maxLength: 100 
-});
+// Search for MCP servers (packages) by keyword
+const results = await sdk.searchPackages('summarize');
+console.log(results.packages);
+
+// Semantic search for MCP servers based on a prompt
+const semanticResults = await sdk.semanticSearchMCPServers('summarize this text');
+console.log(semanticResults);
+
+// Semantic search for tools across all MCP servers
+const toolResults = await sdk.semanticSearchTools('OCR image to text');
+console.log(toolResults);
+
+// Get MCP server URL by name
+const mcpInfo = await sdk.getMCPServerUrlByName('text-summarizer');
+console.log(mcpInfo?.url);
 ```
 
 ## 🔐 Authentication
 
-The SDK supports API key authentication for secure operations. Some operations require authentication while others can be public.
+- The SDK supports API key authentication for secure operations.
+- Some endpoints require authentication, while others are public.
+- **API keys are obtained from your Sigyl dashboard.**
 
-### Getting an API Key
-
-1. Sign up at [Sigyl Platform](https://sigyl.dev)
-2. Go to your dashboard
-3. Generate an API key
-4. Use the key in your SDK configuration
-
-### Using Authentication
+### Using an API Key
 
 ```typescript
-import { MCPConnectSDK } from '@sigyl-dev/sdk';
-
-// Initialize with API key
 const sdk = new MCPConnectSDK({
-  registryUrl: 'http://localhost:3000/api/v1',
-  apiKey: 'sk_your_api_key_here',
-  requireAuth: true, // Require authentication for all operations
-  timeout: 15000
+  apiKey: 'sk_your_api_key_here'
 });
-
-// All operations will now use authentication
-const packages = await sdk.getAllPackages();
 ```
-
-### Authentication Levels
-
-| Operation | Default | With `requireAuth: true` |
-|-----------|---------|-------------------------|
-| `searchPackages()` | Public | Requires API key |
-| `getPackage()` | Public | Requires API key |
-| `connect()` | Public | Requires API key |
-| `registerMCP()` | **Always requires API key** | Requires API key |
-| `invoke()` | Depends on tool | Depends on tool |
 
 ## 📚 API Reference
 
-### Core Functions
+### MCPConnectSDK Methods
 
-#### `connect(packageName, toolName, options?)`
-Connect to a specific tool in a package from the registry.
+- `searchPackages(query, tags?, limit?, offset?)` — Search for MCP servers by keyword/tag.
+- `getPackage(name)` — Get detailed info about a specific MCP server.
+- `getMCPServerUrlByName(name)` — Retrieve the MCP server URL and metadata by name.
+- `semanticSearchMCPServers(query, count?)` — Semantic search for MCP servers (e.g., by user prompt).
+- `semanticSearchTools(query, count?)` — Semantic search for tools across all MCP servers.
+- `searchAllPackages(limit?)` — List all MCP servers (public operation).
+- `getAllPackages()` — List all MCP servers (admin operation, requires admin API key).
+- `updateConfig(newConfig)` — Update SDK configuration.
+- `getConfig()` — Get current SDK configuration.
 
-```typescript
-const tool = await connect('text-processor', 'summarize', {
-  registryUrl: 'http://localhost:3000/api/v1',
-  apiKey: 'sk_your_api_key_here', // Optional
-  timeout: 10000
-});
+### Types Exported
 
-const result = await tool({ text: "Hello world" });
-```
-
-#### `connectDirect(toolUrl, options?)`
-Connect directly to a tool by URL.
-
-```typescript
-const tool = await connectDirect('https://my-tool.com/summarize', {
-  timeout: 10000
-});
-
-const result = await tool({ text: "Hello world" });
-```
-
-#### `searchPackages(query?, tags?, limit?, offset?, config?)`
-Search for packages in the registry.
-
-```typescript
-const results = await searchPackages('text', ['nlp'], 10, 0, {
-  registryUrl: 'http://localhost:3000/api/v1',
-  apiKey: 'sk_your_api_key_here', // Optional
-  requireAuth: true // Optional: require authentication
-});
-
-console.log(`Found ${results.total} packages`);
-```
-
-#### `getPackage(name, config?)`
-Get detailed information about a specific package.
-
-```typescript
-const package = await getPackage('text-summarizer', {
-  registryUrl: 'http://localhost:3000/api/v1',
-  apiKey: 'sk_your_api_key_here' // Optional
-});
-
-console.log('Available tools:', package.tools.map(t => t.tool_name));
-```
-
-#### `invoke(toolUrl, input, config?)`
-Manually invoke a tool by URL.
-
-```typescript
-const result = await invoke('https://my-tool.com/summarize', {
-  text: "Hello world"
-}, {
-  apiKey: 'sk_your_api_key_here' // Optional
-});
-```
-
-#### `registerMCP(packageData, apiKey?, config?)`
-Register a new MCP package in the registry. **Always requires authentication.**
-
-```typescript
-const newPackage = await registerMCP({
-  name: 'my-tool',
-  description: 'A cool tool',
-  tags: ['nlp', 'text'],
-  tools: [{
-    tool_name: 'process',
-    description: 'Process text',
-    input_schema: { text: 'string' }
-  }]
-}, 'sk_your_api_key_here'); // Required
-```
-
-### SDK Class
-
-For more advanced usage, use the `MCPConnectSDK` class:
-
-```typescript
-import { MCPConnectSDK } from '@sigyl-dev/sdk';
-
-const sdk = new MCPConnectSDK({
-  registryUrl: 'http://localhost:3000/api/v1',
-  apiKey: 'sk_your_api_key_here', // Optional
-  requireAuth: true, // Optional: require authentication for all operations
-  timeout: 15000
-});
-
-// Search for packages
-const results = await sdk.searchPackages('text', ['nlp'], 5);
-
-// Connect to all tools in a package
-const allTools = await sdk.connectAll('text-processor');
-const summary = await allTools.summarize({ text: "Hello world" });
-```
+- `MCPPackage`, `MCPTool`, `MCPDeployment`, `PackageWithDetails`, `PackageSearchResult`, `SDKConfig`, `ConnectOptions`, `APIResponse`, `PackageSearchQuery`
 
 ## 🔧 Configuration
 
-### SDKConfig
+- The SDK **always connects to the official Sigyl registry** at `https://api.sigyl.dev/api/v1`.
+- Only `apiKey`, `timeout`, and `requireAuth` are configurable.
+
 ```typescript
-interface SDKConfig {
-  registryUrl?: string;  // Default: 'http://localhost:3000/api/v1'
-  timeout?: number;      // Default: 10000ms
-  apiKey?: string;       // For authenticated requests
-  requireAuth?: boolean; // Require authentication for all operations
+const sdk = new MCPConnectSDK({
+  apiKey: 'sk_your_api_key_here',
+  timeout: 10000, // Optional
+  requireAuth: true // Optional
+});
+```
+
+## 📝 Example Usage
+
+### Search for MCP Servers
+```typescript
+const results = await sdk.searchPackages('image');
+console.log(results.packages.map(pkg => pkg.name));
+```
+
+### Semantic Search for MCP Servers
+```typescript
+const servers = await sdk.semanticSearchMCPServers('translate English to French');
+console.log(servers);
+```
+
+### Semantic Search for Tools
+```typescript
+const tools = await sdk.semanticSearchTools('extract entities from text', 3);
+for (const tool of tools) {
+  console.log(tool.tool_name, tool.mcp_server.name, tool.description);
 }
 ```
 
-### ConnectOptions
+### Get MCP Server URL by Name
 ```typescript
-interface ConnectOptions {
-  registryUrl?: string;  // Registry API URL
-  timeout?: number;      // Request timeout
-  apiKey?: string;       // API key for authentication
-  headers?: Record<string, string>;  // Custom headers
+const info = await sdk.getMCPServerUrlByName('text-summarizer');
+if (info) {
+  console.log('MCP URL:', info.url);
 }
-```
-
-## 📦 Types
-
-The SDK exports all the types you need:
-
-```typescript
-import type {
-  MCPPackage,
-  MCPTool,
-  MCPDeployment,
-  PackageWithDetails,
-  PackageSearchResult,
-  ToolFunction,
-  SDKConfig,
-  AuthConfig
-} from '@sigyl-dev/sdk';
 ```
 
 ## 🛠️ Development
@@ -217,89 +124,11 @@ npm run dev
 npm run clean
 ```
 
-## 📋 Examples
+## ⚠️ Migration Note
 
-See the `examples/` directory for more detailed usage examples.
-
-### Basic Usage (No Authentication)
-```typescript
-import { connect, searchPackages } from '@sigyl-dev/sdk';
-
-async function main() {
-  // Search for text processing tools (public)
-  const results = await searchPackages('text', ['nlp']);
-  
-  // Connect to the first tool (public)
-  if (results.packages.length > 0) {
-    const tool = await connect(results.packages[0].name, 'process');
-    const result = await tool({ text: "Hello world" });
-    console.log(result);
-  }
-}
-```
-
-### Authenticated Usage
-```typescript
-import { MCPConnectSDK } from '@sigyl-dev/sdk';
-
-async function main() {
-  const sdk = new MCPConnectSDK({
-    registryUrl: 'https://registry.sigyl.dev/api/v1',
-    apiKey: 'sk_your_api_key_here',
-    requireAuth: true
-  });
-
-  // All operations require authentication
-  const allPackages = await sdk.getAllPackages();
-  
-  // Register a new package (always requires auth)
-  const newPackage = await sdk.registerMCP({
-    name: 'my-secure-tool',
-    description: 'A secure tool',
-    tools: [{
-      tool_name: 'secure-process',
-      description: 'Process data securely'
-    }]
-  });
-}
-```
-
-### Advanced Usage
-```typescript
-import { MCPConnectSDK } from '@sigyl-dev/sdk';
-
-async function main() {
-  const sdk = new MCPConnectSDK({
-    registryUrl: 'https://registry.sigyl.dev/api/v1'
-  });
-
-  // Get all available packages
-  const allPackages = await sdk.getAllPackages();
-  
-  // Connect to multiple tools
-  for (const pkg of allPackages.slice(0, 3)) {
-    try {
-      const tools = await sdk.connectAll(pkg.name);
-      console.log(`Connected to ${Object.keys(tools).length} tools in ${pkg.name}`);
-    } catch (error) {
-      console.log(`Failed to connect to ${pkg.name}:`, error.message);
-    }
-  }
-}
-```
-
-## 🔐 Security Best Practices
-
-1. **Never commit API keys** to version control
-2. **Use environment variables** for API keys:
-   ```typescript
-   const sdk = new MCPConnectSDK({
-     apiKey: process.env.SIGYL_API_KEY
-   });
-   ```
-3. **Rotate API keys** regularly
-4. **Use different keys** for development and production
-5. **Monitor API usage** through your Sigyl dashboard
+**This SDK no longer provides protocol-level tool invocation or direct MCP server connection.**
+- For tool invocation, use the official Model Context Protocol SDK (e.g., `@modelcontextprotocol/sdk`).
+- This SDK is now focused on discovery, search, and metadata lookup for the Sigyl registry only.
 
 ## 🤝 Contributing
 
