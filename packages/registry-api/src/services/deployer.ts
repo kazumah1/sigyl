@@ -12,9 +12,21 @@ const CLOUD_RUN_CONFIG: CloudRunConfig = {
   keyFilePath: ''
 };
 
-// Initialize Google Compute client
-const auth = new google.auth.GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
-const compute = google.compute('v1');
+// Auth and Compute client setup (do this once at module scope)
+const project = process.env.GCP_PROJECT_ID || 'your-gcp-project-id'; // Set this appropriately
+let auth: any;
+let compute: any;
+
+async function initGoogleClients() {
+  if (!auth) {
+    auth = await google.auth.getClient({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    });
+  }
+  if (!compute) {
+    compute = google.compute('v1');
+  }
+}
 
 export interface DeploymentRequest {
   repoUrl: string;
@@ -37,42 +49,39 @@ export interface DeploymentResult {
   proxyUrl?: string;
 }
 
-// Helper function to create backend service
-async function createBackendService(backendServiceName: string, project: string) {
-  const authClient = await auth.getClient();
+// Helper: Create Backend Service
+export async function createBackendService(backendServiceName: string, project: string) {
+  await initGoogleClients();
   await compute.backendServices.insert({
     project,
     requestBody: {
       name: backendServiceName,
       loadBalancingScheme: 'EXTERNAL',
       protocol: 'HTTPS',
-      healthChecks: [], // Add health check URLs if needed
     },
-    auth: authClient,
+    auth,
   });
 }
 
-// Helper function to create NEG
-async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
-  const authClient = await auth.getClient();
+// Helper: Create Serverless NEG
+export async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
+  await initGoogleClients();
   await compute.networkEndpointGroups.insert({
     project,
     region,
     requestBody: {
       name: negName,
       networkEndpointType: 'SERVERLESS',
-      cloudRun: {
-        service: cloudRunService,
-      },
+      cloudRun: { service: cloudRunService },
     },
-    auth: authClient,
+    auth,
   });
 }
 
-// Helper function to add NEG to backend service
-async function addNegToBackendService(backendServiceName: string, negName: string, region: string, project: string) {
-  const authClient = await auth.getClient();
-  await compute.backendServices.addBackend({
+// Helper: Add NEG to Backend Service
+export async function addNegToBackendService(backendServiceName: string, negName: string, region: string, project: string) {
+  await initGoogleClients();
+  await compute.backendServices.patch({
     project,
     backendService: backendServiceName,
     requestBody: {
@@ -82,20 +91,21 @@ async function addNegToBackendService(backendServiceName: string, negName: strin
         },
       ],
     },
-    auth: authClient,
+    auth,
   });
 }
 
-// Helper function to add routing rule
-async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
-  const authClient = await auth.getClient();
+// Helper: Add Path Rule to URL Map
+export async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
+  await initGoogleClients();
   // Get the current URL map
-  const { data: urlMap } = await compute.urlMaps.get({
+  const urlMapRes = await compute.urlMaps.get({
     project,
     urlMap: urlMapName,
-    auth: authClient,
+    auth,
   });
-  // Add a new path rule to the first pathMatcher
+  const urlMap = urlMapRes.data;
+  // Find the first path matcher and add a new path rule
   const pathMatcher = urlMap.pathMatchers && urlMap.pathMatchers[0];
   if (!pathMatcher) throw new Error('No pathMatcher found in URL map');
   pathMatcher.pathRules = pathMatcher.pathRules || [];
@@ -108,7 +118,7 @@ async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServ
     project,
     urlMap: urlMapName,
     requestBody: urlMap,
-    auth: authClient,
+    auth,
   });
 }
 
