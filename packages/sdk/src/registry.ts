@@ -119,26 +119,6 @@ export async function getPackage(
 }
 
 /**
- * Register a new MCP package in the registry
- * Note: Registration ALWAYS requires authentication
- */
-export async function registerMCP(
-  packageData: CreatePackageRequest,
-  apiKey?: string,
-  config: SDKConfig = {}
-): Promise<MCPPackage> {
-  // Registration always requires authentication
-  if (!apiKey && !config.apiKey) {
-    throw new Error('API key is required for registering MCP packages');
-  }
-  
-  const client = createApiClient({ ...config, apiKey: apiKey || config.apiKey });
-  
-  // The interceptor returns the data directly
-  return await client.post('/packages', packageData);
-}
-
-/**
  * Get all packages (admin operation)
  * Note: This requires admin API key with admin permissions
  */
@@ -152,34 +132,6 @@ export async function getAllPackagesAdmin(
   
   // The interceptor returns the data directly
   return await client.get('/packages/admin/all');
-}
-
-/**
- * Manually invoke a tool by URL
- * Note: Tool invocation may require authentication depending on the tool
- */
-export async function invoke(
-  toolUrl: string,
-  input: any,
-  config: SDKConfig = {}
-): Promise<any> {
-  const timeout = config.timeout || DEFAULT_TIMEOUT;
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
-  };
-  
-  // Add API key if provided
-  if (config.apiKey) {
-    headers['Authorization'] = `Bearer ${config.apiKey}`;
-  }
-  
-  const response = await axios.post(toolUrl, input, {
-    timeout,
-    headers
-  });
-  
-  return response.data;
 }
 
 /**
