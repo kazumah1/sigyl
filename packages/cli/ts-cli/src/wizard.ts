@@ -15,11 +15,9 @@ export async function runWizard() {
         name: "action",
         message: "What do you want to do?",
         choices: [
-          { name: "Generate a blank template MCP server", value: "init" },
-          { name: "Generate an MCP server from an express app", value: "integrate" },
-          { name: "Run the MCP Inspector", value: "inspect" },
-          { name: "Install MCP server in client", value: "install" },
-          { name: "Clean generated files", value: "clean" },
+          { name: "Generate a blank template", value: "init" },
+          { name: "Generate from express app", value: "integrate" },
+          { name: "Run inspector", value: "inspect" },
           { name: "Exit", value: "exit" }
         ]
       }
@@ -27,11 +25,12 @@ export async function runWizard() {
     switch (action) {
       case "init": {
         const { out, language, name } = await inquirer.prompt([
-          { type: "input", name: "out", message: "Output directory:", default: ".mcp-generated" },
+          { type: "input", name: "out", message: "Output directory:", default: "template-server" },
           { type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" },
           { type: "input", name: "name", message: "Server name:", default: "my-mcp-server" }
         ]);
         await initTemplate({ outDir: out, serverLanguage: language, name });
+        exit = true;
         break;
       }
       case "integrate": {
@@ -42,6 +41,7 @@ export async function runWizard() {
           { type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" }
         ]);
         await integrateWithExpress({ directory, outDir: out, serverLanguage: language, endpoint });
+        exit = true;
         break;
       }
       case "inspect": {
@@ -49,6 +49,7 @@ export async function runWizard() {
           { type: "input", name: "serverPath", message: "Path or URL to MCP server:", default: ".sigyl-mcp/integration" }
         ]);
         await inspectCommand([], serverPath);
+        exit = true;
         break;
       }
       case "install": {
@@ -65,6 +66,7 @@ export async function runWizard() {
         } else {
           console.log(chalk.yellow(`⚠️  Directory ${out} not found`));
         }
+        exit = true;
         break;
       }
       case "exit":

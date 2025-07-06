@@ -1,6 +1,6 @@
 {
   "name": "@sigyl-dev/cli",
-  "version": "1.1.1",
+  "version": "1.1.5",
   "type": "commonjs",
   "private": false,
   "description": "Official Sigyl CLI for installing and managing MCP (Model Context Protocol) packages. Zero-config installation for public packages, secure API-based authentication.",
@@ -57,6 +57,8 @@
     "dist/index.d.ts",
     "dist/logger.js",
     "dist/logger.d.ts",
+    "dist/wizard.js",
+    "dist/wizard.d.ts",
     "dist/commands",
     "dist/lib",
     "dist/types",

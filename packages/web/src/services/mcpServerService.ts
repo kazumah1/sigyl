@@ -12,6 +12,7 @@ export interface MCPServer {
   created_at: string;
   updated_at: string;
   workspace_id: string;
+  ready?: boolean;
 }
 
 // Helper function to get auth token

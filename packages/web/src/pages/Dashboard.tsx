@@ -182,8 +182,9 @@ const Dashboard = () => {
                           <div key={server.id} className="flex items-center justify-between gap-5 p-4 bg-white/10 rounded-lg">
                             <div className="flex items-center gap-4">
                               <div className={`w-3 h-3 rounded-full ${
-                                server.status === 'active' ? 'bg-green-400' : 
-                                server.deployment_status === 'deploying' ? 'bg-yellow-400' : 'bg-red-400'
+                                server.deployment_status === 'deploying' ? 'bg-yellow-400' :
+                                server.ready === false ? 'bg-red-400' :
+                                server.status === 'active' && server.ready !== false ? 'bg-green-400' : 'bg-gray-400'
                               }`} />
                               <div>
                                 <h4 className="text-white font-medium">{server.name}</h4>
@@ -195,8 +196,9 @@ const Dashboard = () => {
                                 {new Date(server.created_at).toLocaleDateString()}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {server.deployment_status === 'deploying' ? 'Deploying...' : 
-                                 server.status === 'active' ? 'Active' : 'Inactive'}
+                                {server.deployment_status === 'deploying' ? 'Deploying...' :
+                                 server.ready === false ? 'Error' :
+                                 server.status === 'active' && server.ready !== false ? 'Active' : 'Inactive'}
                               </p>
                             </div>
                           </div>
