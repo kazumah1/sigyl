@@ -11,6 +11,7 @@ import { createRunCommand } from "./commands/run"
 import inspectCommand from "./commands/inspect"
 import { integrateWithExpress } from "./commands/integrate"
 import { configCommand } from "./commands/config"
+import { authCommand } from "./commands/auth"
 import { existsSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import inquirer from "inquirer"
@@ -30,6 +31,11 @@ program
 // CONFIG Command - Configure CLI settings
 // ============================================================================
 program.addCommand(configCommand)
+
+// ============================================================================
+// AUTH Command - Browser-based authentication
+// ============================================================================
+program.addCommand(authCommand)
 
 // ============================================================================
 // INTEGRATE Command - Recommended developer flow

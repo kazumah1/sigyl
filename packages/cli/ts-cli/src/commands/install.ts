@@ -46,11 +46,18 @@ async function resolveRemoteMCPServer(pkgName: string, apiKey?: string, profile?
 				console.error(chalk.red(`❌ Package '${pkgName}' not found in the registry.`));
 				console.log(chalk.yellow(`💡 Check available packages at https://sigyl.dev/marketplace`));
 			} else if (response.status === 401) {
-				console.error(chalk.red(`❌ Authentication failed. Invalid API key.`));
-				console.log(chalk.yellow(`💡 Get your API key from https://sigyl.dev/dashboard`));
-				console.log(chalk.yellow(`💡 Or run 'sigyl config' to set it up`));
+				console.error(chalk.red(`❌ Authentication failed. Your API key is invalid or expired.`));
+				console.log();
+				console.log(chalk.yellow(`🔧 To fix this issue:`));
+				console.log(chalk.blue(`1. Get a new API key from https://sigyl.dev/dashboard`));
+				console.log(chalk.blue(`2. Update your configuration:`));
+				console.log(chalk.gray(`   Run: `) + chalk.cyan(`sigyl config`));
+				console.log(chalk.gray(`   Enter your new API key when prompted`));
+				console.log();
+				console.log(chalk.gray(`💡 Your current API key may have been revoked or expired.`));
 			} else {
 				console.error(chalk.red(`❌ Failed to fetch package information (${response.status})`));
+				console.log(chalk.yellow(`💡 This might be a temporary server issue. Please try again later.`));
 			}
 			process.exit(1);
 		}
@@ -163,15 +170,110 @@ async function installRemoteServer(
 
 	console.log(chalk.blue(`📦 Installing ${remote.name} for ${client}...`));
 
-	if (client === "claude") {
-		// Use API key from config unless overridden
-		const configApiKey = getRegistryConfig().apiKey;
-		const apiKeyToUse = options.key || configApiKey;
-		if (!apiKeyToUse) {
-			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
-			process.exit(1);
+	// Check for API key and provide helpful guidance if missing
+	const configApiKey = getRegistryConfig().apiKey;
+	const apiKeyToUse = options.key || configApiKey;
+	
+	if (!apiKeyToUse) {
+		console.log(chalk.red("❌ No API key found for authentication."));
+		console.log();
+		console.log(chalk.blue("🔐 Authentication required to install packages."));
+		
+		const inquirer = await import("inquirer");
+		const { authMethod } = await inquirer.default.prompt([
+			{
+				type: 'list',
+				name: 'authMethod',
+				message: 'How would you like to authenticate?',
+				choices: [
+					{ name: '🌐 Open browser (recommended)', value: 'browser' },
+					{ name: '🔑 Enter API key manually', value: 'manual' },
+					{ name: '❌ Cancel', value: 'cancel' }
+				],
+				default: 'browser'
+			}
+		]);
+
+		if (authMethod === 'cancel') {
+			console.log(chalk.yellow("Installation cancelled."));
+			process.exit(0);
 		}
 
+		if (authMethod === 'browser') {
+			console.log(chalk.blue("🌐 Opening browser for authentication..."));
+			console.log(chalk.gray("This will redirect you to GitHub to authenticate with Sigyl."));
+			console.log();
+
+			try {
+				// Import and use the browser auth function
+				const { performBrowserAuth } = await import('./auth');
+				const token = await performBrowserAuth();
+				
+				if (token) {
+					// Save the token
+					const { saveConfig, getRegistryConfig } = await import('../lib/config');
+					const currentConfig = getRegistryConfig();
+					saveConfig({
+						registryUrl: currentConfig.registryUrl,
+						apiKey: token
+					});
+					
+					console.log(chalk.green("✅ Authentication successful!"));
+					console.log();
+					
+					// Continue with installation using the new token
+					// Re-run the install with the new auth
+					return installRemoteServer(remote, { ...options, key: token }, client);
+				} else {
+					console.log(chalk.red("❌ Authentication failed or was cancelled."));
+					process.exit(1);
+				}
+			} catch (error) {
+				console.error(chalk.red("❌ Browser authentication failed:"), error instanceof Error ? error.message : String(error));
+				console.log(chalk.yellow("💡 Falling back to manual API key entry..."));
+				// Fall through to manual entry
+			}
+		}
+
+		if (authMethod === 'manual' || authMethod === 'browser') {
+			// Manual API key entry fallback
+			console.log(chalk.yellow("🔧 Manual API key setup:"));
+			console.log(chalk.gray("1. Go to https://sigyl.dev/dashboard"));
+			console.log(chalk.gray("2. Generate an API key"));
+			console.log(chalk.gray("3. Enter it below"));
+			console.log();
+
+			const { apiKey } = await inquirer.default.prompt([
+				{
+					type: 'password',
+					name: 'apiKey',
+					message: 'Enter your Sigyl API key:',
+					validate: (input: string) => {
+						if (!input) return 'API key is required';
+						if (!input.startsWith('sk_')) return 'API key must start with sk_';
+						if (input.length < 20) return 'API key seems too short, please check it';
+						return true;
+					}
+				}
+			]);
+
+			// Save the API key
+			const { saveConfig, getRegistryConfig } = await import('../lib/config');
+			const currentConfig = getRegistryConfig();
+			saveConfig({
+				registryUrl: currentConfig.registryUrl,
+				apiKey
+			});
+
+			console.log(chalk.green("✅ API key saved successfully!"));
+			console.log();
+			
+			// Continue with installation using the new API key
+			return installRemoteServer(remote, { ...options, key: apiKey }, client);
+		}
+	}
+
+	if (client === "claude") {
 		// Write config file for Claude Desktop (mcpServers field) using HTTP/gateway style
 		const configPath = path.join(
 			os.homedir(),
@@ -204,14 +306,6 @@ async function installRemoteServer(
 		return;
 	}
 	if (client === "vscode") {
-		// Use API key from config unless overridden
-		const configApiKey = getRegistryConfig().apiKey;
-		const apiKeyToUse = options.key || configApiKey;
-		if (!apiKeyToUse) {
-			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
-			process.exit(1);
-		}
-
 		// Write config file for VS Code (mcpServers field) using 'command' and 'args' (smithery style)
 		const configPath = path.join(os.homedir(), ".vscode", "mcp_servers.json");
 		let config = { mcpServers: {} };
@@ -241,14 +335,6 @@ async function installRemoteServer(
 		return;
 	}
 	if (client === "cursor") {
-		// Use API key from config unless overridden
-		const configApiKey = getRegistryConfig().apiKey;
-		const apiKeyToUse = options.key || configApiKey;
-		if (!apiKeyToUse) {
-			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
-			process.exit(1);
-		}
-
 		// Write config file for Cursor (mcpServers field) using 'command' and 'args' (smithery style)
 		const configPath = path.join(os.homedir(), ".cursor", "mcp_servers.json");
 		let config = { mcpServers: {} };

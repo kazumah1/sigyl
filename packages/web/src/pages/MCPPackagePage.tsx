@@ -260,13 +260,11 @@ const MCPPackagePage = () => {
     }
   };
 
-  // Fetch API keys and set profile on install modal open
+  // Fetch API keys when user is authenticated
   useEffect(() => {
-    if (showInstallModal && user) {
-      setInstallProfile(user.id);
+    if (user && !apiKeysLoading) {
       setApiKeysLoading(true);
       
-      // Use proper authentication token instead of user.id
       getAuthToken()
         .then(token => {
           if (token) {
@@ -277,7 +275,6 @@ const MCPPackagePage = () => {
         })
         .then(keys => {
           setApiKeys(keys);
-          setInstallApiKey('');
           // If any full keys are in localStorage, load them
           const stored = localStorage.getItem('sigyl_full_api_keys');
           if (stored) {
@@ -290,7 +287,46 @@ const MCPPackagePage = () => {
         })
         .finally(() => setApiKeysLoading(false));
     }
-  }, [showInstallModal, user]);
+  }, [user]);
+
+  // Fetch API keys and set profile on install modal open
+  useEffect(() => {
+    if (showInstallModal && user) {
+      setInstallProfile(user.id);
+      
+      // Only fetch API keys if we don't already have them
+      if (apiKeys.length === 0 && !apiKeysLoading) {
+        setApiKeysLoading(true);
+        
+        // Use proper authentication token instead of user.id
+        getAuthToken()
+          .then(token => {
+            if (token) {
+              return APIKeyService.getAPIKeys(token);
+            } else {
+              throw new Error('No authentication token available');
+            }
+          })
+          .then(keys => {
+            setApiKeys(keys);
+            setInstallApiKey('');
+            // If any full keys are in localStorage, load them
+            const stored = localStorage.getItem('sigyl_full_api_keys');
+            if (stored) {
+              setFullApiKeys(JSON.parse(stored));
+            }
+          })
+          .catch((error) => {
+            console.error('Failed to fetch API keys:', error);
+            setApiKeys([]);
+          })
+          .finally(() => setApiKeysLoading(false));
+      } else {
+        // Just set the profile if we already have API keys
+        setInstallProfile(user.id);
+      }
+    }
+  }, [showInstallModal, user, apiKeys.length, apiKeysLoading]);
 
   // Keep fullApiKeys in sync with localStorage if it changes elsewhere
   useEffect(() => {
@@ -1563,7 +1599,7 @@ const MCPPackagePage = () => {
                         setShowHttpApiInline(true);
                         incrementDownloadCount();
                       }}
-                      disabled={!pkg?.source_api_url || !user?.id || apiKeys.length === 0}
+                      disabled={!pkg?.source_api_url || !user?.id || apiKeysLoading || apiKeys.length === 0}
                     >
                       <Globe className="w-5 h-5" /> HTTP API
                     </Button>
@@ -1608,18 +1644,13 @@ const MCPPackagePage = () => {
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                        let vscodeApiKey = '';
-                        if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
-                          vscodeApiKey = fullApiKeys[apiKeys[0].id];
-                        } else {
-                          vscodeApiKey = apiKeys[0]?.key_prefix || '';
-                        }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --key ${vscodeApiKey}`;
+                        // Don't include API key in command - user should use 'sigyl config' instead
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode`;
                         setVSCodeCommand(command);
                         setShowVSCodeInline(true);
                         incrementDownloadCount();
                       }}
-                      disabled={apiKeys.length === 0}
+                      disabled={apiKeysLoading || apiKeys.length === 0}
                     >
                       <img src="/vscode.png" alt="VS Code" className="w-5 h-5" /> VS Code Extension
                     </Button>
@@ -1664,26 +1695,40 @@ const MCPPackagePage = () => {
                       style={cellStyle}
                       onClick={() => {
                         const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                        let claudeApiKey = '';
-                        if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
-                          claudeApiKey = fullApiKeys[apiKeys[0].id];
-                        } else {
-                          claudeApiKey = apiKeys[0]?.key_prefix || '';
-                        }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude --key ${claudeApiKey}`;
+                        // Don't include API key in command - user should use 'sigyl config' instead
+                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude`;
                         setClaudeCommand(command);
                         setShowClaudeInline(true);
                         incrementDownloadCount();
                       }}
-                      disabled={apiKeys.length === 0}
+                      disabled={apiKeysLoading || apiKeys.length === 0}
                     >
                       <img src="/claude.png" alt="Claude Desktop" className="w-5 h-5 rounded" /> Claude Desktop
                     </Button>
                   )}
                   {/* If no full API key is available, show a message to the user */}
-                  {apiKeys.length === 0 && (
-                    <div className="text-red-400 text-xs mb-2">
-                      No API key found. Please create an API key in your dashboard to use the install command.
+                  {apiKeys.length === 0 && !apiKeysLoading && (
+                    <div className="text-blue-400 text-xs mb-2">
+                      <div className="flex items-start gap-2">
+                        <div className="text-blue-400 mt-0.5">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium">Authentication required</p>
+                          <p className="text-blue-300 text-xs">
+                            The CLI will automatically prompt you to authenticate when you run the install command. 
+                            You can also create an API key in your <a href="/dashboard" className="underline hover:text-blue-200">dashboard</a> if needed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {apiKeysLoading && (
+                    <div className="text-blue-400 text-xs mb-2 flex items-center gap-2">
+                      <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                      Loading API keys...
                     </div>
                   )}
                   {cursorButton}
@@ -1694,7 +1739,7 @@ const MCPPackagePage = () => {
                     style={cellStyle}
                     onClick={() => {
                       const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
-                      const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
+                      // Don't include API key in config - user should use 'sigyl config' instead
                       const configObj = {
                         [pkgName]: {
                           command: "npx",
@@ -1702,9 +1747,7 @@ const MCPPackagePage = () => {
                             "-y",
                             "@sigyl-dev/cli@latest",
                             "run",
-                            pkgName,
-                            "--key",
-                            apiKey
+                            pkgName
                           ]
                         }
                       };
@@ -1712,7 +1755,7 @@ const MCPPackagePage = () => {
                       setShowJsonConfig(true);
                       incrementDownloadCount();
                     }}
-                    disabled={apiKeys.length === 0}
+                    disabled={apiKeysLoading || apiKeys.length === 0}
                   >
                     <span className="font-mono text-lg">{'{ }'}</span> JSON/Config
                   </Button>
