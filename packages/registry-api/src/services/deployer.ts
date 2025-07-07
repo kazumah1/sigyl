@@ -312,34 +312,56 @@ export async function deleteBackendService(backendServiceName: string, project: 
   await initGoogleClients();
   try {
     await waitForBackendDetachedFromUrlMap('sigyl-load-balancer', backendServiceName, project);
-    // Detach all NEGs from the backend service before attempting deletion
+    // Patch out all NEGs and wait for the patch operation to complete
     console.log(`[DETACH] Detaching all NEGs from backend service: ${backendServiceName}`);
-    await compute.backendServices.patch({
+    const patchOp = await compute.backendServices.patch({
       project,
       backendService: backendServiceName,
       requestBody: { backends: [] },
       auth,
     });
-    // Optionally wait until backends array is empty
-    let detached = false;
-    const maxWaitMs = 20000;
-    const start = Date.now();
-    while (!detached && Date.now() - start < maxWaitMs) {
-      const res = await compute.backendServices.get({ project, backendService: backendServiceName, auth });
-      if (!res.data.backends || res.data.backends.length === 0) {
-        detached = true;
-        break;
-      }
-      await sleep(1000);
+    const patchOpName = patchOp.data.name;
+    let patchOpStatus = patchOp.data.status;
+    const patchStart = Date.now();
+    let patchAttempt = 0;
+    const patchMaxWaitMs = 30000;
+    while (patchOpStatus !== 'DONE' && Date.now() - patchStart < patchMaxWaitMs) {
+      await sleep(getDelay(patchAttempt++));
+      const opRes = await compute.globalOperations.get({
+        project,
+        operation: patchOpName,
+        auth,
+      });
+      patchOpStatus = opRes.data.status;
     }
-    if (!detached) {
-      console.warn(`[DETACH] Backbone service ${backendServiceName} still has attached NEGs after ${maxWaitMs}ms`);
+    if (patchOpStatus !== 'DONE') {
+      console.warn(`[DETACH] Patch operation ${patchOpName} did not complete within ${patchMaxWaitMs}ms`);
     }
-    await compute.backendServices.delete({
+
+    console.log(`[DELETE] Deleting backend service: ${backendServiceName}`);
+    // Delete backend service and wait for deletion operation to complete
+    const deleteOp = await compute.backendServices.delete({
       project,
       backendService: backendServiceName,
       auth,
     });
+    const deleteOpName = deleteOp.data.name;
+    let deleteOpStatus = deleteOp.data.status;
+    const deleteStart = Date.now();
+    let deleteAttempt = 0;
+    const deleteMaxWaitMs = 30000;
+    while (deleteOpStatus !== 'DONE' && Date.now() - deleteStart < deleteMaxWaitMs) {
+      await sleep(getDelay(deleteAttempt++));
+      const opRes = await compute.globalOperations.get({
+        project,
+        operation: deleteOpName,
+        auth,
+      });
+      deleteOpStatus = opRes.data.status;
+    }
+    if (deleteOpStatus !== 'DONE') {
+      console.warn(`[DELETE] Delete operation ${deleteOpName} did not complete within ${deleteMaxWaitMs}ms`);
+    }
     return true;
   } catch (err) {
     console.error('Failed to delete backend service:', err);
