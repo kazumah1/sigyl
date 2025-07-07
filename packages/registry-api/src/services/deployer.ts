@@ -114,10 +114,9 @@ export async function createBackendService(backendServiceName: string, project: 
 export async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
   await initGoogleClients();
   try {
-    const res = await compute.networkEndpointGroups.get({
+    const res = await compute.regionNetworkEndpointGroups.get({
       project,
       region,
-      zone: undefined,
       networkEndpointGroup: negName,
       auth,
     });
