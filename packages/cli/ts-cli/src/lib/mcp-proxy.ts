@@ -36,11 +36,8 @@ export class createMCPStdioProxy {
 
   private async setupTransport(): Promise<void> {
     try {
-      // Ensure we're using the /mcp endpoint
-      let endpoint = this.endpoint;
-      if (!endpoint.endsWith('/mcp') && !endpoint.includes('/mcp')) {
-        endpoint = endpoint.endsWith('/') ? endpoint + 'mcp' : endpoint + '/mcp';
-      }
+      // Use the endpoint as provided (do not append /mcp)
+      const endpoint = this.endpoint;
 
       // Create the transport URL with query parameters like Smithery
       const url = new URL(endpoint);

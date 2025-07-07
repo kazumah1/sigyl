@@ -5,6 +5,7 @@ import { verboseLog } from "../logger"
 import type { ExpressEndpoint } from "./express-scanner"
 import express from "express"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
+import cors from "cors"
 
 export interface MCPGenerationOptions {
 	appPort?: string
@@ -78,6 +79,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
 import express from "express"
+import cors from "cors"
 
 // ============================================================================
 // SERVER CONFIGURATION
@@ -194,6 +196,7 @@ ${this.generateParameterHandling(endpoint)}
 
 const app = express()
 app.use(express.json())
+app.use(cors({ origin: "http://localhost:3001" }))
 
 app.post('/mcp', async (req, res) => {
 	const server = createStatelessServer({ config: {} })
@@ -230,11 +233,13 @@ app.listen(port, () => {
 				"@modelcontextprotocol/sdk": "^1.10.1",
 				"zod": "^3.22.0",
 				"express": "^4.18.2",
-				"@types/express": "^4.17.33"
+				"@types/express": "^4.17.33",
+				"cors": "^2.8.5"
 			},
 			devDependencies: {
 				"typescript": "^5.0.0",
-				"@types/node": "^20.0.0"
+				"@types/node": "^20.0.0",
+				"@types/cors": "^2.8.17"
 			}
 		};
 		writeFileSync(join(this.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
@@ -263,71 +268,97 @@ app.listen(port, () => {
 		endpoints: ExpressEndpoint[],
 		options: MCPGenerationOptions
 	): Promise<void> {
-		const serverCode = `import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+		const serverCode = `/**
+ * Auto-generated MCP Server from Express endpoints (JavaScript)
+ *
+ * This server provides tools that map to your Express API endpoints.
+ * Each tool makes HTTP requests to your Express application and returns the responses.
+ *
+ * To add a new tool manually, follow the template at the bottom of this file.
+ */
 
-// Tool handlers
-${endpoints.map(endpoint => {
-	const toolName = this.generateToolName(endpoint)
-	return `import { ${toolName} } from "./tools/${toolName}.js";`
-}).join('\n')}
+const express = require("express");
+const cors = require("cors");
+const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
+const { z } = require("zod");
 
-const server = new Server(
-	{
+// ============================================================================
+// SERVER CONFIGURATION
+// ============================================================================
+
+function createStatelessServer({ config }) {
+	const server = new McpServer({
 		name: "generated-mcp-server",
 		version: "1.0.0",
-	},
-	{
-		capabilities: {
-			tools: {},
-		},
-	}
-);
+	});
 
-// List available tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-	return {
-		tools: [
+	// ============================================================================
+	// AUTO-GENERATED TOOLS FROM EXPRESS ENDPOINTS
+	// ============================================================================
+	// These tools were automatically generated from your Express application.
+	// Each tool corresponds to an endpoint in your Express app.
+
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
-	return `{
-		name: "${toolName}",
-		description: "${endpoint.description || `${endpoint.method} ${endpoint.path}`}",
-		inputSchema: {
-			type: "object",
-			properties: ${JSON.stringify(this.generateToolSchema(endpoint))},
-			required: ${JSON.stringify(endpoint.parameters?.filter(p => p.required).map(p => p.name) || [])}
+	const description = endpoint.description || `${endpoint.method} ${endpoint.path}`
+	return `	// ===== ${endpoint.method.toUpperCase()} ${endpoint.path} =====
+	server.tool(
+		"${toolName}",
+		"${description}",
+		{},
+		async (args) => {
+			return { content: [ { type: "text", text: "Dummy response from ${toolName}" } ] };
 		}
-	}`
-}).join(',\n')}
-		]
-	};
-});
+	);
+`}).join('\n\n')}
 
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-	const { name, arguments: args } = request.params;
+	// ============================================================================
+	// MANUAL TOOL TEMPLATE
+	// ============================================================================
+	// To add a new tool manually, use the following simple template:
+	/*
+	server.tool(
+	  "reverseString",
+	  "Reverse a string value",
+	  {
+	    value: z.string().describe("String to reverse"),
+	  },
+	  async ({ value }) => {
+	    return {
+	      content: [
+	        { type: "text", text: value.split("").reverse().join("") }
+	      ]
+	    };
+	  }
+	);
+	*/
 
-	switch (name) {
-${endpoints.map(endpoint => {
-	const toolName = this.generateToolName(endpoint)
-	return `		case "${toolName}":
-			return await ${toolName}(args || {});`
-}).join('\n')}
-		default:
-			throw new Error("Unknown tool: " + name);
-	}
-});
-
-async function main() {
-	const transport = new StdioServerTransport();
-	await server.connect(transport);
+	return server.server;
 }
 
-main().catch((error) => {
-	console.error("Server error:", error);
-	process.exit(1);
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
+const app = express();
+app.use(express.json());
+app.use(cors({ origin: "http://localhost:3001" }));
+
+app.post('/mcp', async (req, res) => {
+	const server = createStatelessServer({ config: {} });
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+	res.on('close', () => {
+		transport.close();
+		server.close();
+	});
+	await server.connect(transport);
+	await transport.handleRequest(req, res, req.body);
+});
+
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port);
 });
 `;
 
@@ -340,11 +371,15 @@ main().catch((error) => {
 			version: "1.0.0",
 			type: "module",
 			main: "server.js",
+			description: "Auto-generated MCP server from Express endpoints",
 			scripts: {
 				start: "node server.js"
 			},
 			dependencies: {
 				"@modelcontextprotocol/sdk": "^1.10.1",
+				"zod": "^3.22.0",
+				"express": "^4.18.2",
+				"cors": "^2.8.5"
 			}
 		};
 

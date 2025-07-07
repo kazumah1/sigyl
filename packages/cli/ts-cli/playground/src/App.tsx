@@ -224,31 +224,31 @@ function App() {
 
   // Layout
   return (
-    <div style={{ minHeight: '100vh', background: '#222', color: '#fff', fontFamily: 'sans-serif', display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
+    <div style={{ minHeight: '100vh', minWidth: '100vw', background: '#222', color: '#fff', fontFamily: 'sans-serif', display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
       {/* Left: Server URL and Tool List */}
-      <div style={{ width: 380, minWidth: 320, background: '#181818', borderRight: '1px solid #333', padding: '40px 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: 32, height: '100vh', boxSizing: 'border-box' }}>
-        <div>
-          <h2 style={{ textAlign: 'center', marginBottom: 24 }}>MCP Playground (Local)</h2>
-          <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ width: 380, minWidth: 320, background: '#181818', borderRight: '1px solid #333', padding: '32px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 24, height: '100vh', boxSizing: 'border-box', alignItems: 'flex-start', justifyContent: 'flex-start' }}>
+        <div style={{ width: '100%' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: 18 }}>MCP Playground (Local)</h2>
+          <div style={{ marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontWeight: 500 }}>MCP Server URL:</label>
             <input
               type="text"
               value={mcpUrl}
               onChange={e => setMcpUrl(e.target.value)}
-              style={{ width: '100%', fontSize: 15, padding: 8, borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff' }}
+              style={{ width: '100%', fontSize: 15, padding: 7, borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff' }}
             />
-            <button onClick={fetchTools} style={{ marginTop: 8, width: 140, alignSelf: 'flex-start', fontSize: 16, padding: '8px 0', borderRadius: 4, background: '#111', color: '#fff', border: '1px solid #444', cursor: 'pointer' }} disabled={loading}>
+            <button onClick={fetchTools} style={{ marginTop: 6, width: 110, alignSelf: 'flex-start', fontSize: 15, padding: '7px 0', borderRadius: 4, background: '#111', color: '#fff', border: '1px solid #444', cursor: 'pointer' }} disabled={loading}>
               {loading ? 'Loading...' : 'Fetch Tools'}
             </button>
           </div>
-          {error && <div style={{ color: 'red', marginBottom: 16, fontWeight: 500 }}>{error}</div>}
+          {error && <div style={{ color: 'red', marginBottom: 12, fontWeight: 500 }}>{error}</div>}
         </div>
         {/* Tool List as grid/cards */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', marginTop: 0, width: '100%' }}>
           {tools.length > 0 && (
             <div>
-              <div style={{ fontWeight: 500, marginBottom: 8 }}>Tools:</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+              <div style={{ fontWeight: 500, marginBottom: 6 }}>Tools:</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 0 }}>
                 {tools.map((tool: any) => (
                   <div
                     key={tool.name || tool}
@@ -257,87 +257,87 @@ function App() {
                       background: selectedTool === (tool.name || tool) ? '#0a5' : '#232323',
                       color: selectedTool === (tool.name || tool) ? '#fff' : '#eee',
                       borderRadius: 6,
-                      padding: '12px 14px',
+                      padding: '10px 12px',
                       cursor: 'pointer',
                       border: selectedTool === (tool.name || tool) ? '2px solid #0a5' : '1px solid #333',
                       boxShadow: selectedTool === (tool.name || tool) ? '0 2px 8px #0a54' : undefined,
                       transition: 'all 0.15s',
                       fontWeight: 500,
-                      fontSize: 16,
+                      fontSize: 15,
                       marginBottom: 0,
                     }}
                   >
                     <div>{tool.name || tool}</div>
-                    {tool.description && <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{tool.description}</div>}
+                    {tool.description && <div style={{ fontSize: 12, color: '#aaa', marginTop: 1 }}>{tool.description}</div>}
                   </div>
                 ))}
               </div>
             </div>
           )}
         </div>
-        <div style={{ marginTop: 32, fontSize: 13, color: '#888', textAlign: 'center' }}>
-          <div>• Start your MCP server on <b>http://localhost:8080/mcp</b> before using the playground.</div>
+        <div style={{ marginTop: 24, fontSize: 12, color: '#888', textAlign: 'center', width: '100%' }}>
+          <div>• Start your MCP server on <b>http://localhost:8080/mcp</b> if you didn't define a server path on startup.</div>
           <div>• This playground is for local dev testing only.</div>
         </div>
       </div>
       {/* Right: Tool Params and Response */}
-      <div style={{ flex: 1, minWidth: 0, padding: '40px 40px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
+      <div style={{ flex: 1, minWidth: 0, padding: '32px 0 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', background: '#232323', height: '100vh', boxSizing: 'border-box' }}>
         {selectedTool && (
-          <div style={{ width: '100%', maxWidth: 520, background: '#191919', borderRadius: 12, boxShadow: '0 2px 16px #0003', padding: 32, marginBottom: 32 }}>
-            <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 12 }}>{selectedTool}</div>
+          <div style={{ width: '100%', maxWidth: 480, background: '#191919', borderRadius: 14, boxShadow: '0 2px 16px #0003', padding: 22, marginBottom: 24, marginTop: 0, alignSelf: 'flex-start', border: '1.5px solid #232323' }}>
+            <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 6 }}>{selectedTool}</div>
             <form
               onSubmit={e => {
                 e.preventDefault();
                 sendTestRequest();
               }}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 6 }}
             >
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>Tool Params:</div>
+              <div style={{ marginBottom: 4, fontWeight: 500 }}>Tool Params:</div>
               {renderParamFields()}
-              <button type="submit" style={{ marginTop: 24, width: 180, fontSize: 16, padding: '10px 0', borderRadius: 4, background: '#0a5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }} disabled={loading}>
+              <button type="submit" style={{ marginTop: 12, width: 120, fontSize: 15, padding: '8px 0', borderRadius: 4, background: '#0a5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }} disabled={loading}>
                 {loading ? 'Calling...' : 'Call Tool'}
               </button>
             </form>
             {response && (
-              <div style={{ marginTop: 32 }}>
+              <div style={{ marginTop: 14 }}>
                 {/* Main result emphasized */}
                 {getMainTextResult(response) && (
                   <div style={{
                     background: '#232323',
                     color: '#0fa',
-                    fontSize: 28,
+                    fontSize: 22,
                     fontWeight: 700,
                     borderRadius: 8,
-                    padding: '24px 18px',
+                    padding: '12px 10px',
                     textAlign: 'center',
-                    marginBottom: 16,
+                    marginBottom: 8,
                     boxShadow: '0 2px 8px #0002',
                   }}>
                     {getMainTextResult(response)}
                   </div>
                 )}
                 {/* Accordion for raw JSON */}
-                <div style={{ background: '#222', borderRadius: 8, marginTop: 8, boxShadow: '0 1px 4px #0002' }}>
+                <div style={{ background: '#222', borderRadius: 8, marginTop: 4, boxShadow: '0 1px 4px #0002', border: '1px solid #333' }}>
                   <button
                     onClick={() => setShowRaw(v => !v)}
                     style={{
                       width: '100%',
                       background: 'none',
                       color: '#0af',
-                      border: 'none',
+                      border: '1.5px solid #39f',
                       fontWeight: 600,
-                      fontSize: 16,
-                      padding: '10px 0',
+                      fontSize: 15,
+                      padding: '7px 0',
                       cursor: 'pointer',
-                      borderBottom: showRaw ? '1px solid #0af' : '1px solid #333',
                       borderRadius: showRaw ? '8px 8px 0 0' : 8,
                       textAlign: 'left',
+                      marginBottom: 0,
                     }}
                   >
                     {showRaw ? '▼ Hide Raw JSON' : '▶ Show Raw JSON'}
                   </button>
                   {showRaw && (
-                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14, padding: 16, margin: 0, color: '#fff', background: 'none', borderRadius: '0 0 8px 8px' }}>
+                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, padding: 12, margin: 0, color: '#fff', background: 'none', borderRadius: '0 0 8px 8px' }}>
                       {typeof response === 'string' ? response : JSON.stringify(response, null, 2)}
                     </pre>
                   )}

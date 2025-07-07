@@ -36,7 +36,7 @@ export async function runWizard() {
       case "integrate": {
         const { directory, out, endpoint, language } = await inquirer.prompt([
           { type: "input", name: "directory", message: "Express app directory:", default: "." },
-          { type: "input", name: "out", message: "Output directory:", default: ".sigyl-mcp" },
+          { type: "input", name: "out", message: "Output directory:", default: "template-server" },
           { type: "input", name: "endpoint", message: "MCP endpoint path:", default: "/mcp" },
           { type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" }
         ]);
@@ -46,7 +46,7 @@ export async function runWizard() {
       }
       case "inspect": {
         const { serverPath } = await inquirer.prompt([
-          { type: "input", name: "serverPath", message: "Path or URL to MCP server:", default: ".sigyl-mcp/integration" }
+          { type: "input", name: "serverPath", message: "Path or URL to MCP server:", default: "template-server/server.js" }
         ]);
         await inspectCommand([], serverPath);
         exit = true;
