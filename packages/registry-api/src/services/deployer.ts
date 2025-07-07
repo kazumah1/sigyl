@@ -406,9 +406,9 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
       });
       console.log('[DEBUG] Current URL map service references:', JSON.stringify({
         defaultService: updatedMap.data.defaultService,
-        pathMatchers: updatedMap.data.pathMatchers?.map(pm => ({
+        pathMatchers: updatedMap.data.pathMatchers?.map((pm: any) => ({
           name: pm.name,
-          rules: pm.pathRules?.map(r => ({
+          rules: pm.pathRules?.map((r: any) => ({
             paths: r.paths,
             service: r.service
           }))
