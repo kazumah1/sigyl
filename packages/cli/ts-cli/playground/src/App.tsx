@@ -56,7 +56,23 @@ function App() {
           params: {}
         }),
       });
-      const data = await parseJsonOrText(res);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      // Try to parse as JSON, fallback to text
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text();
+        setError('Response was not valid JSON. Raw response:');
+        setResponse(text);
+        setLoading(false);
+        return;
+      }
+
       if (data.result && Array.isArray(data.result.tools)) {
         setTools(data.result.tools);
         // Build a map of toolName -> inputSchema
@@ -67,9 +83,6 @@ function App() {
           }
         });
         setToolSchemas(schemas);
-      } else if (data._raw) {
-        setError('Response was not valid JSON. Raw response:');
-        setResponse(data._raw);
       } else {
         setError('No tools found or invalid response.');
       }

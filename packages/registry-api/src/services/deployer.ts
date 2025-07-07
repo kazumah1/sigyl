@@ -56,7 +56,7 @@ export async function createBackendService(backendServiceName: string, project: 
     project,
     requestBody: {
       name: backendServiceName,
-      loadBalancingScheme: 'EXTERNAL',
+      loadBalancingScheme: 'EXTERNAL_MANAGED',
       protocol: 'HTTPS',
     },
     auth,
