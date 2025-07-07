@@ -147,6 +147,35 @@ export async function addNegToBackendService(backendServiceName: string, negName
   });
 }
 
+// Helper: Wait for NEG to be ready on Backend Service
+export async function waitForNegReadyOnBackendService(backendServiceName: string, negName: string, region: string, project: string, maxWaitMs = 30000) {
+  await initGoogleClients();
+  const groupUrl = `projects/${project}/regions/${region}/networkEndpointGroups/${negName}`;
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await compute.backendServices.get({
+        project,
+        backendService: backendServiceName,
+        auth,
+      });
+      if (
+        res &&
+        res.status === 200 &&
+        res.data &&
+        Array.isArray(res.data.backends) &&
+        res.data.backends.some((b: any) => b.group && b.group.endsWith(groupUrl))
+      ) {
+        return;
+      }
+    } catch (err) {
+      // Ignore errors and keep polling
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  throw new Error(`NEG ${negName} not ready on backend service ${backendServiceName} after ${maxWaitMs}ms`);
+}
+
 // Helper: Add Path Rule to URL Map
 export async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
   await initGoogleClients();
@@ -244,6 +273,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       await createBackendService(backendServiceName, project);
       await createNeg(negName, region, project, cloudRunResult.serviceName || '');
       await addNegToBackendService(backendServiceName, negName, region, project);
+      await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
       await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
     }
 

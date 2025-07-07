@@ -73,11 +73,19 @@ function App() {
         return;
       }
 
+      // Accept both { result: { tools: [...] } } and { tools: [...] }
+      let toolsList = null;
       if (data.result && Array.isArray(data.result.tools)) {
-        setTools(data.result.tools);
+        toolsList = data.result.tools;
+      } else if (Array.isArray(data.tools)) {
+        toolsList = data.tools;
+      }
+
+      if (toolsList) {
+        setTools(toolsList);
         // Build a map of toolName -> inputSchema
         const schemas: Record<string, any> = {};
-        data.result.tools.forEach((tool: any) => {
+        toolsList.forEach((tool: any) => {
           if (tool.name && tool.inputSchema) {
             schemas[tool.name] = tool.inputSchema;
           }
@@ -85,6 +93,7 @@ function App() {
         setToolSchemas(schemas);
       } else {
         setError('No tools found or invalid response.');
+        setResponse(JSON.stringify(data, null, 2));
       }
     } catch (e: any) {
       setError('Failed to fetch tools: ' + e.message);
