@@ -817,7 +817,7 @@ const MCPPackagePage = () => {
         {/* Back Navigation */}
         <Button
           variant="outline"
-          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/regsitry')}
+          onClick={() => navigate(effectiveIsOwner ? '/dashboard' : '/registry')}
           className="mb-6 border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
