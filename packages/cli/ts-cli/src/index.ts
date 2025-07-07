@@ -145,11 +145,26 @@ program
 	.command("inspect")
 	.description("Launch MCP Inspector to test your server or endpoint")
 	.argument("[server-path]", "Path or URL to MCP server (default: .sigyl-mcp/integration or .mcp-generated/server.js)", ".sigyl-mcp/integration")
-	.action(async (serverPath: string) => {
+	.option("--server-port <port>", "Port for MCP server (default: 8080)")
+	.option("--playground-port <port>", "Port for Inspector Playground UI (default: 3001)")
+	.option("--playground-dir <dir>", "Path to Inspector Playground directory (default: playground)")
+	.option("--auto-build-playground", "Auto-build playground UI if missing")
+	.option("--inspector-mode <mode>", "Inspector mode: local (default) or remote", "local")
+	.action(async (serverPath: string, options: any) => {
 		try {
 			console.log(chalk.blue("🕵️  Sigyl MCP Inspector"))
 			console.log(chalk.gray("Launching MCP Inspector UI...\n"))
-			await inspectCommand([], serverPath)
+			await inspectCommand(
+				[],
+				serverPath,
+				{
+					serverPort: options.serverPort ? parseInt(options.serverPort, 10) : undefined,
+					playgroundPort: options.playgroundPort ? parseInt(options.playgroundPort, 10) : undefined,
+					playgroundDir: options.playgroundDir,
+					autoBuildPlayground: !!options.autoBuildPlayground,
+					inspectorMode: options.inspectorMode,
+				}
+			)
 		} catch (error) {
 			console.error(chalk.red("❌ Inspector launch failed:"), error)
 			process.exit(1)

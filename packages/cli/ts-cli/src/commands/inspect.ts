@@ -1,15 +1,34 @@
-import { launchMCPInspector, getPlaygroundDir } from "../lib/inspector"
+import { launchMCPInspector, getPlaygroundDir, InspectorOptions } from "../lib/inspector"
 import path from "path"
 
-export default async function inspectCommand(args: string[] = [], serverPath?: string) {
+export default async function inspectCommand(
+  args: string[] = [],
+  serverPath?: string,
+  options?: Partial<InspectorOptions>
+) {
   // Use provided server path or default to generated server
   const serverEntry = serverPath || path.resolve(process.cwd(), ".mcp-generated/server.js")
 
-  // Ensure playground directory exists and is resolved correctly
-  getPlaygroundDir();
+  // Playground directory (default: sibling playground)
+  const playgroundDir = options?.playgroundDir || getPlaygroundDir();
 
-  // Optionally, you could build the server here if needed
-  // await buildServer()
+  // Ports (allow override via options)
+  const serverPort = options?.serverPort || 8080;
+  const playgroundPort = options?.playgroundPort || 3001;
+  const autoBuildPlayground = options?.autoBuildPlayground ?? false;
 
-  launchMCPInspector(serverEntry, args)
+  try {
+    await launchMCPInspector({
+      serverEntry,
+      serverArgs: args,
+      serverPort,
+      playgroundDir,
+      playgroundPort,
+      autoBuildPlayground,
+      inspectorMode: options?.inspectorMode,
+    });
+  } catch (e) {
+    console.error("[ERROR] Failed to launch MCP Inspector:", e);
+    process.exit(1);
+  }
 } 

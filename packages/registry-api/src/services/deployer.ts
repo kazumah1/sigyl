@@ -52,7 +52,7 @@ export interface DeploymentResult {
 // Helper: Create Backend Service
 export async function createBackendService(backendServiceName: string, project: string) {
   await initGoogleClients();
-  await compute.backendServices.insert({
+  const res = await compute.backendServices.insert({
     project,
     requestBody: {
       name: backendServiceName,
@@ -61,6 +61,23 @@ export async function createBackendService(backendServiceName: string, project: 
     },
     auth,
   });
+  // Wait for the global operation to complete
+  const operationName = res.data.name;
+  let opStatus = res.data.status;
+  const maxWaitMs = 30000;
+  const start = Date.now();
+  while (opStatus !== 'DONE' && Date.now() - start < maxWaitMs) {
+    await new Promise(r => setTimeout(r, 2000));
+    const opRes = await compute.globalOperations.get({
+      project,
+      operation: operationName,
+      auth,
+    });
+    opStatus = opRes.data.status;
+  }
+  if (opStatus !== 'DONE') {
+    throw new Error(`Backend service creation operation did not complete in time`);
+  }
 }
 
 // Helper: Create Serverless NEG
@@ -225,7 +242,6 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       const path = `/@${request.repoName}`;
 
       await createBackendService(backendServiceName, project);
-      await waitForBackendServiceReady(backendServiceName, project);
       await createNeg(negName, region, project, cloudRunResult.serviceName || '');
       await addNegToBackendService(backendServiceName, negName, region, project);
       await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
