@@ -283,16 +283,40 @@ export async function retryAddPathRuleToUrlMap(
   throw lastError;
 }
 
+// Helper: Wait for Backend Service to be detached from URL Map
+async function waitForBackendDetachedFromUrlMap(urlMapName: string, backendServiceName: string, project: string, maxWaitMs = 30000) {
+  await initGoogleClients();
+  const start = Date.now();
+  let attempt = 0;
+  const backendSuffix = `/backendServices/${backendServiceName}`;
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await compute.urlMaps.get({ project, urlMap: urlMapName, auth });
+      const urlMap = res.data;
+      const stillReferenced =
+        (urlMap.defaultService && urlMap.defaultService.endsWith(backendSuffix)) ||
+        (urlMap.pathMatchers || []).some(pm =>
+          (pm.pathRules || []).some(rule => rule.service && rule.service.endsWith(backendSuffix))
+        );
+      if (!stillReferenced) return;
+    } catch (err) {
+      console.warn('Error checking URL map during backend detach wait:', err);
+    }
+    await sleep(getDelay(attempt++));
+  }
+  throw new Error(`Backend service ${backendServiceName} still referenced in URL map after ${maxWaitMs}ms`);
+}
+
 // Helper: Delete Backend Service
 export async function deleteBackendService(backendServiceName: string, project: string) {
   await initGoogleClients();
   try {
+    await waitForBackendDetachedFromUrlMap('sigyl-load-balancer', backendServiceName, project);
     await compute.backendServices.delete({
       project,
       backendService: backendServiceName,
       auth,
     });
-    // Optionally wait for operation to complete
     return true;
   } catch (err) {
     console.error('Failed to delete backend service:', err);
@@ -305,7 +329,7 @@ export async function deleteNeg(negName: string, region: string, project: string
   await initGoogleClients();
   try {
     // Check if NEG exists and is SERVERLESS
-    const negRes = await compute.networkEndpointGroups.get({
+    const negRes = await compute.regionNetworkEndpointGroups.get({
       project,
       region,
       networkEndpointGroup: negName,
@@ -315,7 +339,7 @@ export async function deleteNeg(negName: string, region: string, project: string
       console.warn(`[NEG DELETE] NEG ${negName} not found or not SERVERLESS, skipping deletion.`);
       return false;
     }
-    await compute.networkEndpointGroups.delete({
+    await compute.regionNetworkEndpointGroups.delete({
       project,
       region,
       networkEndpointGroup: negName,
