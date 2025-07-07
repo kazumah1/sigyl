@@ -1,4 +1,4 @@
-# Sigyl Registry API
+# Sigyl API
 
 Express.js + TypeScript API server for the MCP (Model Context Protocol) package registry.
 
