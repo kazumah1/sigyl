@@ -295,8 +295,8 @@ async function waitForBackendDetachedFromUrlMap(urlMapName: string, backendServi
       const urlMap = res.data;
       const stillReferenced =
         (urlMap.defaultService && urlMap.defaultService.endsWith(backendSuffix)) ||
-        (urlMap.pathMatchers || []).some(pm =>
-          (pm.pathRules || []).some(rule => rule.service && rule.service.endsWith(backendSuffix))
+        (urlMap.pathMatchers || []).some((pm: any) =>
+          (pm.pathRules || []).some((rule: any) => rule.service && rule.service.endsWith(backendSuffix))
         );
       if (!stillReferenced) return;
     } catch (err) {
