@@ -380,6 +380,14 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
             changed = true;
           }
         }
+        // --- Insert logic to replace pathMatcher.defaultService if it matches the backend being deleted
+        const backendUrl = `https://www.googleapis.com/compute/v1/projects/${project}/global/backendServices/${backendServiceName}`;
+        const fallback = `https://www.googleapis.com/compute/v1/projects/${project}/global/backendServices/sigyl-mcp-dummy-backend-1nva0v9aasdk123o`;
+        if (pathMatcher.defaultService && pathMatcher.defaultService === backendUrl) {
+          pathMatcher.defaultService = fallback;
+          changed = true;
+          console.warn(`[URL MAP] pathMatcher.defaultService referenced backend being deleted. Set to fallback: ${fallback}`);
+        }
       }
     }
     // Remove as defaultService if present
