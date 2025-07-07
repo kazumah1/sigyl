@@ -312,30 +312,28 @@ export async function deleteBackendService(backendServiceName: string, project: 
   await initGoogleClients();
   try {
     await waitForBackendDetachedFromUrlMap('sigyl-load-balancer', backendServiceName, project);
-    // Patch out all NEGs and wait for the patch operation to complete
+    // Patch out all NEGs and wait for NEGs to detach by polling the backends array
     console.log(`[DETACH] Detaching all NEGs from backend service: ${backendServiceName}`);
-    const patchOp = await compute.backendServices.patch({
+    await compute.backendServices.patch({
       project,
       backendService: backendServiceName,
       requestBody: { backends: [] },
       auth,
     });
-    const patchOpName = patchOp.data.name;
-    let patchOpStatus = patchOp.data.status;
-    const patchStart = Date.now();
-    let patchAttempt = 0;
-    const patchMaxWaitMs = 30000;
-    while (patchOpStatus !== 'DONE' && Date.now() - patchStart < patchMaxWaitMs) {
-      await sleep(getDelay(patchAttempt++));
-      const opRes = await compute.globalOperations.get({
+    console.log(`[DETACH] Waiting for backend service to detach NEGs...`);
+    const detachStart = Date.now();
+    const detachTimeout = 60000; // wait up to 60s
+    while (Date.now() - detachStart < detachTimeout) {
+      const svcRes = await compute.backendServices.get({
         project,
-        operation: patchOpName,
+        backendService: backendServiceName,
         auth,
       });
-      patchOpStatus = opRes.data.status;
-    }
-    if (patchOpStatus !== 'DONE') {
-      console.warn(`[DETACH] Patch operation ${patchOpName} did not complete within ${patchMaxWaitMs}ms`);
+      if (!svcRes.data.backends || svcRes.data.backends.length === 0) {
+        console.log(`[DETACH] All NEGs detached from backend service.`);
+        break;
+      }
+      await sleep(1000);
     }
 
     console.log(`[DELETE] Deleting backend service: ${backendServiceName}`);
