@@ -234,6 +234,72 @@ export async function retryAddPathRuleToUrlMap(
   throw lastError;
 }
 
+// Helper: Delete Backend Service
+export async function deleteBackendService(backendServiceName: string, project: string) {
+  await initGoogleClients();
+  try {
+    await compute.backendServices.delete({
+      project,
+      backendService: backendServiceName,
+      auth,
+    });
+    // Optionally wait for operation to complete
+    return true;
+  } catch (err) {
+    console.error('Failed to delete backend service:', err);
+    return false;
+  }
+}
+
+// Helper: Delete Serverless NEG
+export async function deleteNeg(negName: string, region: string, project: string) {
+  await initGoogleClients();
+  try {
+    await compute.networkEndpointGroups.delete({
+      project,
+      region,
+      networkEndpointGroup: negName,
+      auth,
+    });
+    return true;
+  } catch (err) {
+    console.error('Failed to delete NEG:', err);
+    return false;
+  }
+}
+
+// Helper: Remove Path Rule from URL Map
+export async function removePathRuleFromUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
+  await initGoogleClients();
+  try {
+    // Get the current URL map
+    const urlMapRes = await compute.urlMaps.get({
+      project,
+      urlMap: urlMapName,
+      auth,
+    });
+    const urlMap = urlMapRes.data;
+    // Find the first path matcher and remove the path rule
+    const pathMatcher = urlMap.pathMatchers && urlMap.pathMatchers[0];
+    if (!pathMatcher || !Array.isArray(pathMatcher.pathRules)) throw new Error('No pathMatcher found in URL map');
+    // Remove the path rule for this path/backendService
+    pathMatcher.pathRules = pathMatcher.pathRules.filter(
+      (rule: any) => !(rule.paths && rule.paths.includes(path) && rule.service && rule.service.endsWith(backendServiceName))
+    );
+    // Patch the URL map
+    await compute.urlMaps.patch({
+      project,
+      urlMap: urlMapName,
+      requestBody: urlMap,
+      auth,
+    });
+    return true;
+  } catch (err) {
+    console.error('Failed to remove path rule from URL map:', err);
+    return false;
+  }
+}
+
 /**
  * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
