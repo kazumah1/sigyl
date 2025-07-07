@@ -137,6 +137,7 @@ export async function createNeg(negName: string, region: string, project: string
       params: {
         project,
         region,
+        zone: undefined,
         requestBody: {
           name: negName,
           networkEndpointType: 'SERVERLESS',
