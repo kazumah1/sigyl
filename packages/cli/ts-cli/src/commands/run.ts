@@ -41,10 +41,14 @@ async function runMCPProxy(packageSlug: string, options: RunOptions): Promise<vo
   }
 
   // Determine the MCP endpoint
-  const mcpEndpoint = options.endpoint || packageInfo.source_api_url;
+  let mcpEndpoint = options.endpoint || packageInfo.source_api_url;
   if (!mcpEndpoint) {
     console.error(chalk.red(`❌ No endpoint available for package '${packageSlug}'.`));
     process.exit(1);
+  }
+  // Always use /mcp endpoint unless overridden
+  if (!options.endpoint && !mcpEndpoint.endsWith('/mcp')) {
+    mcpEndpoint = mcpEndpoint.replace(/\/+$/, '') + '/mcp';
   }
 
   // Start the MCP proxy

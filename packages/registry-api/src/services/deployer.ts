@@ -251,31 +251,17 @@ export async function deleteBackendService(backendServiceName: string, project: 
   }
 }
 
-// Helper: Delete Serverless NEG (defensive: skip if not found or API asks for zone)
+// Helper: Delete Serverless NEG (check existence/type first)
 export async function deleteNeg(negName: string, region: string, project: string) {
   await initGoogleClients();
   try {
     // Check if NEG exists and is SERVERLESS
-    let negRes;
-    try {
-      negRes = await compute.networkEndpointGroups.get({
-        project,
-        region,
-        networkEndpointGroup: negName,
-        auth,
-      });
-    } catch (err: any) {
-      if (err && err.code === 404) {
-        console.warn(`[NEG DELETE] NEG ${negName} not found in region ${region}, skipping deletion.`);
-        return false;
-      }
-      // If the error is about missing zone, log and skip
-      if (err && err.message && err.message.includes('Missing required parameters: zone')) {
-        console.warn(`[NEG DELETE] API asked for zone for ${negName}, skipping deletion.`);
-        return false;
-      }
-      throw err;
-    }
+    const negRes = await compute.networkEndpointGroups.get({
+      project,
+      region,
+      networkEndpointGroup: negName,
+      auth,
+    });
     if (!negRes.data || negRes.data.networkEndpointType !== 'SERVERLESS') {
       console.warn(`[NEG DELETE] NEG ${negName} not found or not SERVERLESS, skipping deletion.`);
       return false;
@@ -289,9 +275,8 @@ export async function deleteNeg(negName: string, region: string, project: string
     console.log(`[NEG DELETE] Deleted NEG ${negName} in region ${region}`);
     return true;
   } catch (err: any) {
-    // If the error is about missing zone, log and skip
-    if (err && err.message && err.message.includes('Missing required parameters: zone')) {
-      console.warn(`[NEG DELETE] API asked for zone for ${negName}, skipping deletion.`);
+    if (err && err.code === 404) {
+      console.warn(`[NEG DELETE] NEG ${negName} not found, skipping deletion.`);
       return false;
     }
     console.error('Failed to delete NEG:', err);
@@ -299,7 +284,7 @@ export async function deleteNeg(negName: string, region: string, project: string
   }
 }
 
-// Helper: Remove Path Rule from URL Map (robust: all pathMatchers, defaultService)
+// Helper: Remove Path Rule from URL Map
 export async function removePathRuleFromUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
   await initGoogleClients();
   try {
@@ -311,10 +296,8 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
     });
     const urlMap = urlMapRes.data;
     let changed = false;
-    // Remove from all pathMatchers
     if (urlMap.pathMatchers && Array.isArray(urlMap.pathMatchers)) {
       for (const pathMatcher of urlMap.pathMatchers) {
-        // Remove pathRules referencing this backend service
         if (Array.isArray(pathMatcher.pathRules)) {
           const originalLength = pathMatcher.pathRules.length;
           pathMatcher.pathRules = pathMatcher.pathRules.filter(
@@ -324,17 +307,15 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
             changed = true;
           }
         }
-        // Remove defaultService if it references the backend service
-        if (pathMatcher.defaultService && pathMatcher.defaultService.endsWith(backendServiceName)) {
-          pathMatcher.defaultService = null;
-          changed = true;
-        }
       }
     }
-    // Remove from urlMap defaultService
+    // Remove as defaultService if present
     if (urlMap.defaultService && urlMap.defaultService.endsWith(backendServiceName)) {
-      urlMap.defaultService = null;
+      // Set to a safe fallback backend service (must exist!)
+      const fallback = `https://www.googleapis.com/compute/v1/projects/${project}/global/backendServices/sigyl-mcp-dummy-backend-1nva0v9aasdk123o`;
+      urlMap.defaultService = fallback;
       changed = true;
+      console.warn(`[URL MAP] defaultService referenced backend being deleted. Set to fallback: ${fallback}`);
     }
     if (changed) {
       await compute.urlMaps.patch({
@@ -343,48 +324,13 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
         requestBody: urlMap,
         auth,
       });
-      console.log(`[URL MAP] Removed all references to ${backendServiceName}`);
-      // Fetch and log the actual URL map after patch
-      const actualRes = await compute.urlMaps.get({
-        project,
-        urlMap: urlMapName,
-        auth,
-      });
-      console.log('[URL MAP] Actual after patch:', JSON.stringify(actualRes.data, null, 2));
+      console.log(`[URL MAP] Removed path rule(s) and/or defaultService for ${path} -> ${backendServiceName}`);
     } else {
-      console.log(`[URL MAP] No references found for ${backendServiceName}`);
-    }
-    // After patching, fetch again and check for any remaining references
-    const checkRes = await compute.urlMaps.get({
-      project,
-      urlMap: urlMapName,
-      auth,
-    });
-    const checkMap = checkRes.data;
-    let stillReferenced = false;
-    if (checkMap.pathMatchers && Array.isArray(checkMap.pathMatchers)) {
-      for (const pathMatcher of checkMap.pathMatchers) {
-        if (Array.isArray(pathMatcher.pathRules)) {
-          for (const rule of pathMatcher.pathRules) {
-            if (rule.service && rule.service.endsWith(backendServiceName)) {
-              stillReferenced = true;
-            }
-          }
-        }
-        if (pathMatcher.defaultService && pathMatcher.defaultService.endsWith(backendServiceName)) {
-          stillReferenced = true;
-        }
-      }
-    }
-    if (checkMap.defaultService && checkMap.defaultService.endsWith(backendServiceName)) {
-      stillReferenced = true;
-    }
-    if (stillReferenced) {
-      console.warn(`[URL MAP] WARNING: Backend service ${backendServiceName} is still referenced after patch!`);
+      console.log(`[URL MAP] No path rule or defaultService found for ${path} -> ${backendServiceName}`);
     }
     return true;
   } catch (err) {
-    console.error('Failed to robustly remove path rule from URL map:', err);
+    console.error('Failed to remove path rule from URL map:', err);
     return false;
   }
 }
