@@ -2,6 +2,7 @@ import { CloudRunService, CloudRunConfig, CloudRunDeploymentRequest, SigylConfig
 import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
 import { google } from 'googleapis';
+import { createAPIRequest } from 'googleapis-common';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -65,17 +66,28 @@ export async function createBackendService(backendServiceName: string, project: 
 // Helper: Create Serverless NEG
 export async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
   await initGoogleClients();
-  await compute.networkEndpointGroups.insert({
-    project,
-    region,
-    zone: '',
-    requestBody: {
-      name: negName,
-      networkEndpointType: 'SERVERLESS',
-      cloudRun: { service: cloudRunService },
+
+  const parameters = {
+    options: {
+      url: `https://compute.googleapis.com/compute/v1/projects/${project}/regions/${region}/networkEndpointGroups`,
+      method: 'POST',
     },
-    auth,
-  });
+    params: {
+      project,
+      region,
+      requestBody: {
+        name: negName,
+        networkEndpointType: 'SERVERLESS',
+        cloudRun: { service: cloudRunService },
+      },
+      auth,
+    },
+    requiredParams: ['project', 'region'],
+    pathParams: ['project', 'region'],
+    context: { _options: {}, google },
+  };
+
+  await createAPIRequest<any>(parameters);
 }
 
 // Helper: Add NEG to Backend Service
