@@ -251,18 +251,34 @@ export async function deleteBackendService(backendServiceName: string, project: 
   }
 }
 
-// Helper: Delete Serverless NEG
+// Helper: Delete Serverless NEG (check existence/type first)
 export async function deleteNeg(negName: string, region: string, project: string) {
   await initGoogleClients();
   try {
+    // Check if NEG exists and is SERVERLESS
+    const negRes = await compute.networkEndpointGroups.get({
+      project,
+      region,
+      networkEndpointGroup: negName,
+      auth,
+    });
+    if (!negRes.data || negRes.data.networkEndpointType !== 'SERVERLESS') {
+      console.warn(`[NEG DELETE] NEG ${negName} not found or not SERVERLESS, skipping deletion.`);
+      return false;
+    }
     await compute.networkEndpointGroups.delete({
       project,
       region,
       networkEndpointGroup: negName,
       auth,
     });
+    console.log(`[NEG DELETE] Deleted NEG ${negName} in region ${region}`);
     return true;
-  } catch (err) {
+  } catch (err: any) {
+    if (err && err.code === 404) {
+      console.warn(`[NEG DELETE] NEG ${negName} not found, skipping deletion.`);
+      return false;
+    }
     console.error('Failed to delete NEG:', err);
     return false;
   }
@@ -279,20 +295,31 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
       auth,
     });
     const urlMap = urlMapRes.data;
-    // Find the first path matcher and remove the path rule
-    const pathMatcher = urlMap.pathMatchers && urlMap.pathMatchers[0];
-    if (!pathMatcher || !Array.isArray(pathMatcher.pathRules)) throw new Error('No pathMatcher found in URL map');
-    // Remove the path rule for this path/backendService
-    pathMatcher.pathRules = pathMatcher.pathRules.filter(
-      (rule: any) => !(rule.paths && rule.paths.includes(path) && rule.service && rule.service.endsWith(backendServiceName))
-    );
-    // Patch the URL map
-    await compute.urlMaps.patch({
-      project,
-      urlMap: urlMapName,
-      requestBody: urlMap,
-      auth,
-    });
+    let changed = false;
+    if (urlMap.pathMatchers && Array.isArray(urlMap.pathMatchers)) {
+      for (const pathMatcher of urlMap.pathMatchers) {
+        if (Array.isArray(pathMatcher.pathRules)) {
+          const originalLength = pathMatcher.pathRules.length;
+          pathMatcher.pathRules = pathMatcher.pathRules.filter(
+            (rule: any) => !(rule.paths && rule.paths.includes(path) && rule.service && rule.service.endsWith(backendServiceName))
+          );
+          if (pathMatcher.pathRules.length !== originalLength) {
+            changed = true;
+          }
+        }
+      }
+    }
+    if (changed) {
+      await compute.urlMaps.patch({
+        project,
+        urlMap: urlMapName,
+        requestBody: urlMap,
+        auth,
+      });
+      console.log(`[URL MAP] Removed path rule for ${path} -> ${backendServiceName}`);
+    } else {
+      console.log(`[URL MAP] No path rule found for ${path} -> ${backendServiceName}`);
+    }
     return true;
   } catch (err) {
     console.error('Failed to remove path rule from URL map:', err);

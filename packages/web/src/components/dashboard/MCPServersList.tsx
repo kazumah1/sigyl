@@ -55,6 +55,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
   const [redeployingId, setRedeployingId] = useState<string | null>(null);
   const [deletingServer, setDeletingServer] = useState<MCPServer | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deletingLoading, setDeletingLoading] = useState(false);
 
   // Keep localServers in sync with prop
   React.useEffect(() => {
@@ -182,6 +183,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       toast.error('Server name does not match. Deletion cancelled.');
       return;
     }
+    setDeletingLoading(true);
     toast.info('Deleting server...');
     // Get Supabase JWT
     let supabaseToken = '';
@@ -196,6 +198,7 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
       supabaseUserId = '';
     }
     const result = await deploymentService.deletePackage(deletingServer.id, deleteConfirmName, supabaseToken);
+    setDeletingLoading(false);
     if (result.success) {
       toast.success('Server deleted and removed from Google Cloud!');
       setLocalServers((prev) => prev.filter((s) => s.id !== deletingServer.id));
@@ -425,11 +428,12 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                 className="w-full px-3 py-2 rounded bg-black/60 text-white border border-white/10 focus:outline-none mb-4"
                 placeholder="Enter server name to confirm"
                 autoFocus
+                disabled={deletingLoading}
               />
               <div className="flex justify-end gap-2">
-                <Button onClick={handleDeleteCancel} variant="ghost" className="text-gray-400">Cancel</Button>
-                <Button onClick={handleDeleteConfirm} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={deleteConfirmName !== deletingServer.name}>
-                  Delete
+                <Button onClick={handleDeleteCancel} variant="ghost" className="text-gray-400" disabled={deletingLoading}>Cancel</Button>
+                <Button onClick={handleDeleteConfirm} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={deleteConfirmName !== deletingServer.name || deletingLoading}>
+                  {deletingLoading ? 'Deleting...' : 'Delete'}
                 </Button>
               </div>
             </div>
