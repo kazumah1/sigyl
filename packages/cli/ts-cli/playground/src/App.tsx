@@ -11,25 +11,25 @@ function App() {
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
 
-  // Helper to parse JSON or fallback to text, and handle SSE
-  const parseJsonOrText = async (res: Response) => {
-    const text = await res.text();
-    // Handle SSE: look for 'data: ...' line
+  // Helper to parse SSE or JSON
+  const parseSSEorJSON = (text: string) => {
+    // If SSE, look for 'data:'
     if (text.startsWith('event: message')) {
       const match = text.match(/data: (.+)/);
       if (match) {
         try {
           return JSON.parse(match[1]);
         } catch {
-          return { _raw: text };
+          return null;
         }
       }
     }
     try {
       return JSON.parse(text);
     } catch {
-      return { _raw: text };
+      return null;
     }
   };
 
@@ -61,12 +61,9 @@ function App() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
 
-      // Try to parse as JSON, fallback to text
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text();
+      const text = await res.text();
+      const data = parseSSEorJSON(text);
+      if (!data) {
         setError('Response was not valid JSON. Raw response:');
         setResponse(text);
         setLoading(false);
@@ -112,6 +109,7 @@ function App() {
     setError(null);
     setLoading(true);
     setResponse(null);
+    setShowRaw(false);
     try {
       const res = await fetch(mcpUrl, {
         method: 'POST',
@@ -122,11 +120,26 @@ function App() {
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
-          method: selectedTool,
-          params: paramValues
+          method: 'tools/call',
+          params: {
+            name: selectedTool,
+            arguments: paramValues
+          }
         }),
       });
-      const data = await parseJsonOrText(res);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const text = await res.text();
+      const data = parseSSEorJSON(text);
+      if (!data) {
+        setError('Response was not valid JSON. Raw response:');
+        setResponse(text);
+        setLoading(false);
+        return;
+      }
       setResponse(data);
     } catch (e: any) {
       setError('Failed to send request: ' + e.message);
@@ -139,36 +152,46 @@ function App() {
   const renderParamFields = () => {
     const schema = toolSchemas[selectedTool];
     if (!schema || !schema.properties) return null;
-    return Object.entries(schema.properties).map(([key, prop]: [string, any]) => {
-      const type = prop.type;
-      const desc = prop.description || '';
-      let inputType = 'text';
-      if (type === 'number' || type === 'integer') inputType = 'number';
-      if (type === 'boolean') inputType = 'checkbox';
-      return (
-        <div key={key} style={{ marginBottom: 10 }}>
-          <label>
-            <b>{key}</b>{' '}
-            <span style={{ color: '#aaa', fontSize: 13 }}>{desc}</span>
-            {inputType === 'checkbox' ? (
-              <input
-                type="checkbox"
-                checked={!!paramValues[key]}
-                onChange={e => handleParamChange(key, e.target.checked)}
-                style={{ marginLeft: 8 }}
-              />
-            ) : (
-              <input
-                type={inputType}
-                value={paramValues[key] ?? ''}
-                onChange={e => handleParamChange(key, inputType === 'number' ? Number(e.target.value) : e.target.value)}
-                style={{ marginLeft: 8 }}
-              />
-            )}
-          </label>
-        </div>
-      );
-    });
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {Object.entries(schema.properties).map(([key, prop]: [string, any]) => {
+          const type = prop.type;
+          const desc = prop.description || '';
+          let inputType = 'text';
+          if (type === 'number' || type === 'integer') inputType = 'number';
+          if (type === 'boolean') inputType = 'checkbox';
+          if (type === 'string' && (desc.toLowerCase().includes('multiline') || desc.toLowerCase().includes('paragraph'))) inputType = 'textarea';
+          return (
+            <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <label style={{ fontWeight: 500, marginBottom: 4 }}>{key}
+                <span style={{ color: '#aaa', fontSize: 13, marginLeft: 8 }}>{desc}</span>
+              </label>
+              {inputType === 'checkbox' ? (
+                <input
+                  type="checkbox"
+                  checked={!!paramValues[key]}
+                  onChange={e => handleParamChange(key, e.target.checked)}
+                  style={{ marginLeft: 2 }}
+                />
+              ) : inputType === 'textarea' ? (
+                <textarea
+                  value={paramValues[key] ?? ''}
+                  onChange={e => handleParamChange(key, e.target.value)}
+                  style={{ width: 320, minHeight: 60, fontFamily: 'inherit', fontSize: 15, padding: 6, borderRadius: 4, border: '1px solid #444' }}
+                />
+              ) : (
+                <input
+                  type={inputType}
+                  value={paramValues[key] ?? ''}
+                  onChange={e => handleParamChange(key, inputType === 'number' ? Number(e.target.value) : e.target.value)}
+                  style={{ width: 320, fontFamily: 'inherit', fontSize: 15, padding: 6, borderRadius: 4, border: '1px solid #444' }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // Reset param values when tool changes
@@ -189,67 +212,140 @@ function App() {
     setParamValues(defaults);
   }, [selectedTool, toolSchemas]);
 
+  // Helper to extract main text result
+  const getMainTextResult = (resp: any) => {
+    if (!resp) return null;
+    if (resp.result && resp.result.content && Array.isArray(resp.result.content)) {
+      const textItem = resp.result.content.find((item: any) => item.type === 'text' && item.text);
+      if (textItem) return textItem.text;
+    }
+    return null;
+  };
+
+  // Layout
   return (
-    <div style={{ maxWidth: 600, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h2>MCP Playground (Local)</h2>
-      <div style={{ marginBottom: 16 }}>
-        <label>
-          MCP Server URL:{' '}
-          <input
-            type="text"
-            value={mcpUrl}
-            onChange={e => setMcpUrl(e.target.value)}
-            style={{ width: 350 }}
-          />
-        </label>
-        <button onClick={fetchTools} style={{ marginLeft: 8 }} disabled={loading}>
-          Fetch Tools
-        </button>
+    <div style={{ minHeight: '100vh', background: '#222', color: '#fff', fontFamily: 'sans-serif', display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
+      {/* Left: Server URL and Tool List */}
+      <div style={{ width: 380, minWidth: 320, background: '#181818', borderRight: '1px solid #333', padding: '40px 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: 32, height: '100vh', boxSizing: 'border-box' }}>
+        <div>
+          <h2 style={{ textAlign: 'center', marginBottom: 24 }}>MCP Playground (Local)</h2>
+          <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontWeight: 500 }}>MCP Server URL:</label>
+            <input
+              type="text"
+              value={mcpUrl}
+              onChange={e => setMcpUrl(e.target.value)}
+              style={{ width: '100%', fontSize: 15, padding: 8, borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff' }}
+            />
+            <button onClick={fetchTools} style={{ marginTop: 8, width: 140, alignSelf: 'flex-start', fontSize: 16, padding: '8px 0', borderRadius: 4, background: '#111', color: '#fff', border: '1px solid #444', cursor: 'pointer' }} disabled={loading}>
+              {loading ? 'Loading...' : 'Fetch Tools'}
+            </button>
+          </div>
+          {error && <div style={{ color: 'red', marginBottom: 16, fontWeight: 500 }}>{error}</div>}
+        </div>
+        {/* Tool List as grid/cards */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {tools.length > 0 && (
+            <div>
+              <div style={{ fontWeight: 500, marginBottom: 8 }}>Tools:</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+                {tools.map((tool: any) => (
+                  <div
+                    key={tool.name || tool}
+                    onClick={() => setSelectedTool(tool.name || tool)}
+                    style={{
+                      background: selectedTool === (tool.name || tool) ? '#0a5' : '#232323',
+                      color: selectedTool === (tool.name || tool) ? '#fff' : '#eee',
+                      borderRadius: 6,
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      border: selectedTool === (tool.name || tool) ? '2px solid #0a5' : '1px solid #333',
+                      boxShadow: selectedTool === (tool.name || tool) ? '0 2px 8px #0a54' : undefined,
+                      transition: 'all 0.15s',
+                      fontWeight: 500,
+                      fontSize: 16,
+                      marginBottom: 0,
+                    }}
+                  >
+                    <div>{tool.name || tool}</div>
+                    {tool.description && <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{tool.description}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{ marginTop: 32, fontSize: 13, color: '#888', textAlign: 'center' }}>
+          <div>• Start your MCP server on <b>http://localhost:8080/mcp</b> before using the playground.</div>
+          <div>• This playground is for local dev testing only.</div>
+        </div>
       </div>
-      {tools.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <label>
-            Select Tool:{' '}
-            <select
-              value={selectedTool}
-              onChange={e => setSelectedTool(e.target.value)}
+      {/* Right: Tool Params and Response */}
+      <div style={{ flex: 1, minWidth: 0, padding: '40px 40px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
+        {selectedTool && (
+          <div style={{ width: '100%', maxWidth: 520, background: '#191919', borderRadius: 12, boxShadow: '0 2px 16px #0003', padding: 32, marginBottom: 32 }}>
+            <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 12 }}>{selectedTool}</div>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                sendTestRequest();
+              }}
+              style={{ marginBottom: 16 }}
             >
-              <option value="">-- Select --</option>
-              {tools.map((tool: any) => (
-                <option key={tool.name || tool} value={tool.name || tool}>
-                  {tool.name || tool}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
-      {selectedTool && (
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            sendTestRequest();
-          }}
-          style={{ marginBottom: 16 }}
-        >
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>Tool Params:</div>
-          {renderParamFields()}
-          <button type="submit" style={{ marginTop: 8 }} disabled={loading}>
-            Send Test Request
-          </button>
-        </form>
-      )}
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
-      {response && (
-        <div style={{ background: '#222', color: '#fff', padding: 12, borderRadius: 6, marginTop: 16 }}>
-          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Response:</div>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>{typeof response === 'string' ? response : JSON.stringify(response, null, 2)}</pre>
-        </div>
-      )}
-      <div style={{ marginTop: 32, fontSize: 13, color: '#888' }}>
-        <div>• Start your MCP server on <b>http://localhost:8080/mcp</b> before using the playground.</div>
-        <div>• This playground is for local dev testing only.</div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>Tool Params:</div>
+              {renderParamFields()}
+              <button type="submit" style={{ marginTop: 24, width: 180, fontSize: 16, padding: '10px 0', borderRadius: 4, background: '#0a5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }} disabled={loading}>
+                {loading ? 'Calling...' : 'Call Tool'}
+              </button>
+            </form>
+            {response && (
+              <div style={{ marginTop: 32 }}>
+                {/* Main result emphasized */}
+                {getMainTextResult(response) && (
+                  <div style={{
+                    background: '#232323',
+                    color: '#0fa',
+                    fontSize: 28,
+                    fontWeight: 700,
+                    borderRadius: 8,
+                    padding: '24px 18px',
+                    textAlign: 'center',
+                    marginBottom: 16,
+                    boxShadow: '0 2px 8px #0002',
+                  }}>
+                    {getMainTextResult(response)}
+                  </div>
+                )}
+                {/* Accordion for raw JSON */}
+                <div style={{ background: '#222', borderRadius: 8, marginTop: 8, boxShadow: '0 1px 4px #0002' }}>
+                  <button
+                    onClick={() => setShowRaw(v => !v)}
+                    style={{
+                      width: '100%',
+                      background: 'none',
+                      color: '#0af',
+                      border: 'none',
+                      fontWeight: 600,
+                      fontSize: 16,
+                      padding: '10px 0',
+                      cursor: 'pointer',
+                      borderBottom: showRaw ? '1px solid #0af' : '1px solid #333',
+                      borderRadius: showRaw ? '8px 8px 0 0' : 8,
+                      textAlign: 'left',
+                    }}
+                  >
+                    {showRaw ? '▼ Hide Raw JSON' : '▶ Show Raw JSON'}
+                  </button>
+                  {showRaw && (
+                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14, padding: 16, margin: 0, color: '#fff', background: 'none', borderRadius: '0 0 8px 8px' }}>
+                      {typeof response === 'string' ? response : JSON.stringify(response, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

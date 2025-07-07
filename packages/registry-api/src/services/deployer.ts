@@ -203,6 +203,37 @@ export async function addPathRuletoUrlMap(urlMapName: string, path: string, back
   });
 }
 
+// Helper: Retry addPathRuletoUrlMap if backend service is not ready
+export async function retryAddPathRuleToUrlMap(
+  urlMapName: string,
+  path: string,
+  backendServiceName: string,
+  project: string,
+  maxAttempts = 10,
+  delayMs = 5000
+) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
+      return;
+    } catch (err: any) {
+      lastError = err;
+      if (
+        err &&
+        err.message &&
+        err.message.includes('is not ready')
+      ) {
+        // Wait and retry
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        throw err; // Some other error, don't retry
+      }
+    }
+  }
+  throw lastError;
+}
+
 /**
  * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
@@ -274,7 +305,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       await createNeg(negName, region, project, cloudRunResult.serviceName || '');
       await addNegToBackendService(backendServiceName, negName, region, project);
       await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
-      await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
+      await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
     }
 
     // === Insert/Upsert into mcp_packages ===
