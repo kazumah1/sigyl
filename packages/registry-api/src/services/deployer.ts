@@ -49,68 +49,115 @@ export interface DeploymentResult {
   proxyUrl?: string;
 }
 
+// Helper: sleep
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Helper: Delay
+function getDelay(attempt: number, baseDelayMs = 1000, maxDelayMs = 10000): number {
+  const expDelay = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
+  const jitter = Math.random() * expDelay;
+  return jitter;
+}
+
 // Helper: Create Backend Service
 export async function createBackendService(backendServiceName: string, project: string) {
   await initGoogleClients();
-  const res = await compute.backendServices.insert({
-    project,
-    requestBody: {
-      name: backendServiceName,
-      loadBalancingScheme: 'EXTERNAL_MANAGED',
-      protocol: 'HTTPS',
-    },
-    auth,
-  });
-  // Wait for the global operation to complete
-  const operationName = res.data.name;
-  let opStatus = res.data.status;
-  const maxWaitMs = 30000;
-  const start = Date.now();
-  while (opStatus !== 'DONE' && Date.now() - start < maxWaitMs) {
-    await new Promise(r => setTimeout(r, 2000));
-    const opRes = await compute.globalOperations.get({
+  try {
+    const res = await compute.backendServices.get({
       project,
-      operation: operationName,
+      backendService: backendServiceName,
       auth,
     });
-    opStatus = opRes.data.status;
-  }
-  if (opStatus !== 'DONE') {
-    throw new Error(`Backend service creation operation did not complete in time`);
+    if (res && res.status === 200 && res.data?.selfLink) {
+      console.log(`[SKIP] Backend service "${backendServiceName}" already exists.`)
+      return;
+    }
+  } catch (err: any) {
+    if (err?.code !== 404) {
+      throw err;
+    }
+    console.log(`[CREATE] Creating backend service "${backendServiceName}"...`);
+    const res = await compute.backendServices.insert({
+      project,
+      requestBody: {
+        name: backendServiceName,
+        loadBalancingScheme: 'EXTERNAL_MANAGED',
+        protocol: 'HTTPS',
+      },
+      auth,
+    });
+    // Wait for the global operation to complete
+    const operationName = res.data.name;
+    let opStatus = res.data.status;
+    const maxWaitMs = 30000;
+    const start = Date.now();
+    let attempt = 0;
+    while (opStatus !== 'DONE' && Date.now() - start < maxWaitMs) {
+      await sleep(getDelay(attempt));
+      attempt++;
+      const opRes = await compute.globalOperations.get({
+        project,
+        operation: operationName,
+        auth,
+      });
+      opStatus = opRes.data.status;
+    }
+    if (opStatus !== 'DONE') {
+      throw new Error(`Backend service creation operation did not complete in time`);
+    }
   }
 }
 
 // Helper: Create Serverless NEG
 export async function createNeg(negName: string, region: string, project: string, cloudRunService: string) {
   await initGoogleClients();
-
-  const parameters = {
-    options: {
-      url: `https://compute.googleapis.com/compute/v1/projects/${project}/regions/${region}/networkEndpointGroups`,
-      method: 'POST',
-    },
-    params: {
+  try {
+    const res = await compute.networkEndpointGroups.get({
       project,
       region,
-      requestBody: {
-        name: negName,
-        networkEndpointType: 'SERVERLESS',
-        cloudRun: { service: cloudRunService },
-      },
+      networkEndpointGroup: negName,
       auth,
-    },
-    requiredParams: ['project', 'region'],
-    pathParams: ['project', 'region'],
-    context: { _options: {}, google },
-  };
-
-  await createAPIRequest<any>(parameters);
+    });
+    if (res && res.status === 200 && res.data?.networkEndpointType === 'SERVERLESS') {
+      console.log(`[SKIP] NEG "${negName}" already exists.`);
+      return;
+    }
+  } catch (err: any) {
+    if (err?.code !== 404) {
+      throw err;
+    }
+    console.log(`[CREATE] Creating NEG "${negName}"...`);
+    const parameters = {
+      options: {
+        url: `https://compute.googleapis.com/compute/v1/projects/${project}/regions/${region}/networkEndpointGroups`,
+        method: 'POST',
+      },
+      params: {
+        project,
+        region,
+        requestBody: {
+          name: negName,
+          networkEndpointType: 'SERVERLESS',
+          cloudRun: { service: cloudRunService },
+        },
+        auth,
+      },
+      requiredParams: ['project', 'region'],
+      pathParams: ['project', 'region'],
+      context: { _options: {}, google },
+    };
+  
+    await createAPIRequest<any>(parameters);
+  }
 }
 
 // Helper: Wait for Backend Service to be ready
 export async function waitForBackendServiceReady(backendServiceName: string, project: string, maxWaitMs = 20000) {
   await initGoogleClients();
   const start = Date.now();
+  let attempt = 0;
   while (Date.now() - start < maxWaitMs) {
     try {
       const res = await compute.backendServices.get({
@@ -125,7 +172,8 @@ export async function waitForBackendServiceReady(backendServiceName: string, pro
     } catch (err) {
       // Ignore errors and keep polling
     }
-    await new Promise(r => setTimeout(r, 2000)); // Wait 2 seconds before retrying
+    await sleep(getDelay(attempt));
+    attempt++;
   }
   throw new Error(`Backend service ${backendServiceName} not ready after ${maxWaitMs}ms`);
 }
@@ -402,8 +450,10 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       const project = CLOUD_RUN_CONFIG.projectId;
       const path = `/@${request.repoName}`;
 
-      await createBackendService(backendServiceName, project);
-      await createNeg(negName, region, project, cloudRunResult.serviceName || '');
+      await Promise.all([
+        createBackendService(backendServiceName, project),
+        createNeg(negName, region, project, cloudRunResult.serviceName || ''),
+      ]);
       await addNegToBackendService(backendServiceName, negName, region, project);
       await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
       await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
