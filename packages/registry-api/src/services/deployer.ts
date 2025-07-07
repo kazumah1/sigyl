@@ -398,6 +398,22 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
         auth,
       });
       console.log(`[URL MAP] Removed path rule(s) and/or defaultService for ${path} -> ${backendServiceName}`);
+      // [DEBUG] After patch, log the current URL map service references
+      const updatedMap = await compute.urlMaps.get({
+        project,
+        urlMap: urlMapName,
+        auth
+      });
+      console.log('[DEBUG] Current URL map service references:', JSON.stringify({
+        defaultService: updatedMap.data.defaultService,
+        pathMatchers: updatedMap.data.pathMatchers?.map(pm => ({
+          name: pm.name,
+          rules: pm.pathRules?.map(r => ({
+            paths: r.paths,
+            service: r.service
+          }))
+        }))
+      }, null, 2));
     } else {
       console.log(`[URL MAP] No path rule or defaultService found for ${path} -> ${backendServiceName}`);
     }
