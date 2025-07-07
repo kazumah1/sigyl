@@ -117,6 +117,7 @@ export async function createNeg(negName: string, region: string, project: string
     const res = await compute.networkEndpointGroups.get({
       project,
       region,
+      zone: undefined,
       networkEndpointGroup: negName,
       auth,
     });
