@@ -391,14 +391,14 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
       console.warn(`[URL MAP] defaultService referenced backend being deleted. Set to fallback: ${fallback}`);
     }
     if (changed) {
-      await compute.urlMaps.patch({
+      await compute.urlMaps.update({
         project,
         urlMap: urlMapName,
         requestBody: urlMap,
         auth,
       });
       console.log(`[URL MAP] Removed path rule(s) and/or defaultService for ${path} -> ${backendServiceName}`);
-      // [DEBUG] After patch, log the current URL map service references
+      // [DEBUG] After update, log the current URL map service references
       const updatedMap = await compute.urlMaps.get({
         project,
         urlMap: urlMapName,
@@ -417,6 +417,18 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
       // [DEBUG] Also print the full pathMatchers and hostRules
       console.log('[DEBUG] Full pathMatchers:', JSON.stringify(updatedMap.data.pathMatchers, null, 2));
       console.log('[DEBUG] Full hostRules:', JSON.stringify(updatedMap.data.hostRules, null, 2));
+      // Verification logic: re-fetch and check for lingering references to backendServiceName
+      const verifyMap = await compute.urlMaps.get({
+        project,
+        urlMap: urlMapName,
+        auth
+      });
+      const json = JSON.stringify(verifyMap.data);
+      if (json.includes(backendServiceName)) {
+        console.warn(`[BLOCKED DELETE] Backend service "${backendServiceName}" still referenced somewhere in URL map`);
+      } else {
+        console.log(`[VERIFY] Backend service "${backendServiceName}" fully removed from URL map`);
+      }
     } else {
       console.log(`[URL MAP] No path rule or defaultService found for ${path} -> ${backendServiceName}`);
     }
