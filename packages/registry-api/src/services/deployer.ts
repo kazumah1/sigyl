@@ -344,6 +344,13 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
         auth,
       });
       console.log(`[URL MAP] Removed all references to ${backendServiceName}`);
+      // Fetch and log the actual URL map after patch
+      const actualRes = await compute.urlMaps.get({
+        project,
+        urlMap: urlMapName,
+        auth,
+      });
+      console.log('[URL MAP] Actual after patch:', JSON.stringify(actualRes.data, null, 2));
     } else {
       console.log(`[URL MAP] No references found for ${backendServiceName}`);
     }
