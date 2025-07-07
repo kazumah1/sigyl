@@ -312,6 +312,29 @@ export async function deleteBackendService(backendServiceName: string, project: 
   await initGoogleClients();
   try {
     await waitForBackendDetachedFromUrlMap('sigyl-load-balancer', backendServiceName, project);
+    // Detach all NEGs from the backend service before attempting deletion
+    console.log(`[DETACH] Detaching all NEGs from backend service: ${backendServiceName}`);
+    await compute.backendServices.patch({
+      project,
+      backendService: backendServiceName,
+      requestBody: { backends: [] },
+      auth,
+    });
+    // Optionally wait until backends array is empty
+    let detached = false;
+    const maxWaitMs = 20000;
+    const start = Date.now();
+    while (!detached && Date.now() - start < maxWaitMs) {
+      const res = await compute.backendServices.get({ project, backendService: backendServiceName, auth });
+      if (!res.data.backends || res.data.backends.length === 0) {
+        detached = true;
+        break;
+      }
+      await sleep(1000);
+    }
+    if (!detached) {
+      console.warn(`[DETACH] Backbone service ${backendServiceName} still has attached NEGs after ${maxWaitMs}ms`);
+    }
     await compute.backendServices.delete({
       project,
       backendService: backendServiceName,
