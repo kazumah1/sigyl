@@ -90,6 +90,29 @@ export async function createNeg(negName: string, region: string, project: string
   await createAPIRequest<any>(parameters);
 }
 
+// Helper: Wait for Backend Service to be ready
+export async function waitForBackendServiceReady(backendServiceName: string, project: string, maxWaitMs = 20000) {
+  await initGoogleClients();
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await compute.backendServices.get({
+        project,
+        backendService: backendServiceName,
+        auth,
+      });
+      // If the backend service exists and has a selfLink, consider it ready
+      if (res && res.status === 200 && res.data && res.data.selfLink) {
+        return;
+      }
+    } catch (err) {
+      // Ignore errors and keep polling
+    }
+    await new Promise(r => setTimeout(r, 2000)); // Wait 2 seconds before retrying
+  }
+  throw new Error(`Backend service ${backendServiceName} not ready after ${maxWaitMs}ms`);
+}
+
 // Helper: Add NEG to Backend Service
 export async function addNegToBackendService(backendServiceName: string, negName: string, region: string, project: string) {
   await initGoogleClients();
@@ -202,6 +225,7 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       const path = `/@${request.repoName}`;
 
       await createBackendService(backendServiceName, project);
+      await waitForBackendServiceReady(backendServiceName, project);
       await createNeg(negName, region, project, cloudRunResult.serviceName || '');
       await addNegToBackendService(backendServiceName, negName, region, project);
       await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);

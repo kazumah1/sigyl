@@ -1,6 +1,6 @@
 {
   "name": "@sigyl-dev/cli",
-  "version": "1.1.6",
+  "version": "1.2.4",
   "type": "commonjs",
   "private": false,
   "description": "Official Sigyl CLI for installing and managing MCP (Model Context Protocol) packages. Zero-config installation for public packages, secure API-based authentication.",
@@ -41,6 +41,7 @@
     "express": "^5.1.0",
     "inquirer": "^8.2.6",
     "ora": "^8.2.0",
+    "serve-handler": "^6.1.6",
     "ts-morph": "^21.0.1",
     "yaml": "^2.8.0"
   },
@@ -49,6 +50,7 @@
     "@types/express": "^5.0.2",
     "@types/inquirer": "^8.2.11",
     "@types/node": "^20.0.0",
+    "@types/serve-handler": "^6.1.4",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0"
   },
@@ -62,6 +64,8 @@
     "dist/commands",
     "dist/lib",
     "dist/types",
+    "playground",
+    "playground/dist",
     "README.md"
   ],
   "exports": {
