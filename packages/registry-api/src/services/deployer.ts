@@ -374,7 +374,7 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
         if (Array.isArray(pathMatcher.pathRules)) {
           const originalLength = pathMatcher.pathRules.length;
           pathMatcher.pathRules = pathMatcher.pathRules.filter(
-            (rule: any) => !(rule.paths && rule.paths.includes(path) && rule.service && rule.service.endsWith(backendServiceName))
+            (rule: any) => !(rule.service && rule.service.endsWith(backendServiceName))
           );
           if (pathMatcher.pathRules.length !== originalLength) {
             changed = true;
