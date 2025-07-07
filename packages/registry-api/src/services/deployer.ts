@@ -414,6 +414,9 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
           }))
         }))
       }, null, 2));
+      // [DEBUG] Also print the full pathMatchers and hostRules
+      console.log('[DEBUG] Full pathMatchers:', JSON.stringify(updatedMap.data.pathMatchers, null, 2));
+      console.log('[DEBUG] Full hostRules:', JSON.stringify(updatedMap.data.hostRules, null, 2));
     } else {
       console.log(`[URL MAP] No path rule or defaultService found for ${path} -> ${backendServiceName}`);
     }
