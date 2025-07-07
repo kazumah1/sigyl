@@ -337,12 +337,29 @@ export async function deleteBackendService(backendServiceName: string, project: 
     }
 
     console.log(`[DELETE] Deleting backend service: ${backendServiceName}`);
-    // Delete backend service and wait for deletion operation to complete
-    const deleteOp = await compute.backendServices.delete({
-      project,
-      backendService: backendServiceName,
-      auth,
-    });
+    let deleteOp;
+    const maxDeleteAttempts = 5;
+    for (let attempt = 1; attempt <= maxDeleteAttempts; attempt++) {
+      try {
+        deleteOp = await compute.backendServices.delete({
+          project,
+          backendService: backendServiceName,
+          auth,
+        });
+        break;
+      } catch (err: any) {
+        const msg = err?.cause?.message || err.message || '';
+        if (msg.includes('not ready') && attempt < maxDeleteAttempts) {
+          console.warn(`[DELETE] Attempt ${attempt} failed ("not ready"), retrying in ${attempt * 2000}ms...`);
+          await sleep(attempt * 2000);
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!deleteOp) {
+      throw new Error(`Failed to delete backend service ${backendServiceName} after ${maxDeleteAttempts} attempts`);
+    }
     const deleteOpName = deleteOp.data.name;
     let deleteOpStatus = deleteOp.data.status;
     const deleteStart = Date.now();
