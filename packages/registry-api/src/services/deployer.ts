@@ -417,15 +417,21 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
       // [DEBUG] Also print the full pathMatchers and hostRules
       console.log('[DEBUG] Full pathMatchers:', JSON.stringify(updatedMap.data.pathMatchers, null, 2));
       console.log('[DEBUG] Full hostRules:', JSON.stringify(updatedMap.data.hostRules, null, 2));
-      // Verification logic: re-fetch and check for lingering references to backendServiceName
+      // Verification logic: re-fetch and check for lingering references to backendServiceName (structure-aware)
       const verifyMap = await compute.urlMaps.get({
         project,
         urlMap: urlMapName,
         auth
       });
-      const json = JSON.stringify(verifyMap.data);
-      if (json.includes(backendServiceName)) {
-        console.warn(`[BLOCKED DELETE] Backend service "${backendServiceName}" still referenced somewhere in URL map`);
+      const backendUrl = `https://www.googleapis.com/compute/v1/projects/${project}/global/backendServices/${backendServiceName}`;
+      const stillReferenced =
+        verifyMap.data.defaultService === backendUrl ||
+        (verifyMap.data.pathMatchers || []).some((pm: any) =>
+          (pm.pathRules || []).some((rule: any) => rule.service === backendUrl)
+        );
+
+      if (stillReferenced) {
+        console.warn(`[BLOCKED DELETE] Backend service "${backendServiceName}" still referenced by URL map as "${backendUrl}"`);
       } else {
         console.log(`[VERIFY] Backend service "${backendServiceName}" fully removed from URL map`);
       }

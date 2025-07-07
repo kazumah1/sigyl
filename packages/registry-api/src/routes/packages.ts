@@ -650,4 +650,57 @@ router.post('/:id/logo', requireSupabaseAuth, async (req: Request, res: Response
   }
 });
 
+// --- SEMANTIC SEARCH ENDPOINT ---
+// POST /api/v1/packages/semantic-search - Semantic search for MCP servers
+router.post('/semantic-search', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { query, count = 1 } = req.body;
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing query', message: 'Query string is required' });
+    }
+    // Fetch all packages (could optimize for large datasets)
+    const allPackages = await packageService.getAllPackages();
+    // Simple semantic search: case-insensitive substring match on name, description, or tags
+    const q = query.toLowerCase();
+    const matches = allPackages.filter(pkg =>
+      (pkg.name && pkg.name.toLowerCase().includes(q)) ||
+      (pkg.description && pkg.description.toLowerCase().includes(q)) ||
+      (pkg.tags && pkg.tags.some(tag => tag.toLowerCase().includes(q)))
+    ).slice(0, count);
+    return res.json({ success: true, data: matches, message: `Found ${matches.length} matching packages` });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Semantic search failed', message: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// --- SEMANTIC SEARCH FOR TOOLS ENDPOINT ---
+// POST /api/v1/tools/semantic-search - Semantic search for tools across all MCP servers
+router.post('/../tools/semantic-search', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { query, count = 1 } = req.body;
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing query', message: 'Query string is required' });
+    }
+    // Fetch all packages (with tools)
+    const allPackages = await packageService.getAllPackages();
+    const q = query.toLowerCase();
+    // Flatten all tools with their parent package
+    const allTools = allPackages.flatMap(pkg => {
+      if (Array.isArray((pkg as any).tools)) {
+        return ((pkg as any).tools as any[]).map((tool: any) => ({ ...tool, mcp_server: pkg }));
+      }
+      return [];
+    });
+    // Simple semantic search: case-insensitive substring match on tool_name, description, or package tags
+    const matches = allTools.filter((tool: any) =>
+      (tool.tool_name && typeof tool.tool_name === 'string' && tool.tool_name.toLowerCase().includes(q)) ||
+      (tool.description && typeof tool.description === 'string' && tool.description.toLowerCase().includes(q)) ||
+      (tool.mcp_server.tags && Array.isArray(tool.mcp_server.tags) && tool.mcp_server.tags.some((tag: any) => typeof tag === 'string' && tag.toLowerCase().includes(q)))
+    ).slice(0, count);
+    return res.json({ success: true, data: matches, message: `Found ${matches.length} matching tools` });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Semantic search for tools failed', message: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 export default router;
