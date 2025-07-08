@@ -281,7 +281,7 @@ RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
     if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Copy in the Sigyl wrapper
-COPY /workspace/packages/registry-api/container-builder/wrapper/wrapper.js ./wrapper.js
+COPY ./wrapper/wrapper.js ./wrapper.js
 
 # Debug: Show contents after copying wrapper
 RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
