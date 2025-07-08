@@ -199,33 +199,31 @@ export class CloudRunService {
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.3: Diagnostics before copying wrapper.js
+          // Step 2.3: Diagnostics before downloading wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== PWD (before copy) ===" && pwd && echo "=== ROOT DIR (before copy) ===" && ls -l && echo "=== RECURSIVE LS (before copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+              'echo "=== PWD (before download) ===" && pwd && echo "=== ROOT DIR (before download) ===" && ls -l && echo "=== RECURSIVE LS (before download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
             dir: '.'
           },
-          // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build, with diagnostics
+          // Step 2.4: Download wrapper.js from GCS bucket
           {
-            name: 'gcr.io/cloud-builders/gcloud',
-            entrypoint: 'bash',
+            name: 'gcr.io/cloud-builders/curl',
             args: [
-              '-c',
-              'echo "=== PWD (in copy step) ===" && pwd && echo "=== ROOT DIR (in copy step, before copy) ===" && ls -l && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper'
-            ],
-            dir: '.'
+              '-o', 'wrapper/wrapper.js',
+              'https://storage.googleapis.com/sigyl-bucket-1/wrapper.js'
+            ]
           },
-          // Step 2.5: Diagnostics after copying wrapper.js
+          // Step 2.5: Diagnostics after downloading wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== PWD (after copy) ===" && pwd && echo "=== ROOT DIR (after copy) ===" && ls -l && echo "=== RECURSIVE LS (after copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+              'echo "=== PWD (after download) ===" && pwd && echo "=== ROOT DIR (after download) ===" && ls -l && echo "=== RECURSIVE LS (after download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
             dir: '.'
           },
