@@ -214,7 +214,7 @@ export class CloudRunService {
             name: 'gcr.io/cloud-builders/curl',
             args: [
               '-o', 'wrapper/wrapper.js',
-              'https://storage.googleapis.com/sigyl-bucket-1/wrapper.js'
+              'https://storage.googleapis.com/sigyl-artifacts/wrapper.js'
             ]
           },
           // Step 2.5: Diagnostics after downloading wrapper.js
