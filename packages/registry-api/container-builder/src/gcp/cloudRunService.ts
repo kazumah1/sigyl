@@ -209,13 +209,15 @@ export class CloudRunService {
             ],
             dir: '.'
           },
-          // Step 2.4: Download wrapper.js from GCS bucket
+          // Step 2.4: Create wrapper directory and download wrapper.js from GCS bucket (using bash)
           {
-            name: 'gcr.io/cloud-builders/curl',
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
             args: [
-              '-o', 'wrapper/wrapper.js',
-              'https://storage.googleapis.com/sigyl-artifacts/wrapper.js'
-            ]
+              '-c',
+              'mkdir -p wrapper && curl -o wrapper/wrapper.js https://storage.googleapis.com/sigyl-artifacts/wrapper.js'
+            ],
+            dir: '.'
           },
           // Step 2.5: Diagnostics after downloading wrapper.js
           {
