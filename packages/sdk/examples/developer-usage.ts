@@ -1,13 +1,13 @@
 // Example: How a developer would integrate the Sigyl MCP SDK into their application
 
-import { MCPConnectSDK, searchPackages, connect } from '../src/index';
+import { SigylSDK, searchMCP, getMCP, getAllServers, getMCPUrl, semanticMCP, semanticTools, connect } from '../src/index';
 
 class MyApplication {
-  private sdk: MCPConnectSDK;
+  private sdk: SigylSDK;
 
   constructor() {
     // Initialize the SDK with your registry URL
-    this.sdk = new MCPConnectSDK({
+    this.sdk = new SigylSDK({
       registryUrl: 'http://localhost:3000/api/v1', // or your production URL
       timeout: 15000
     });
@@ -18,7 +18,7 @@ class MyApplication {
     
     try {
       // Search for text processing tools
-      const results = await searchPackages('text', ['nlp'], 10);
+      const results = await searchMCP('text', ['nlp'], 10);
       
       console.log(`Found ${results.total} text processing tools:`);
       results.packages.forEach(pkg => {
@@ -60,17 +60,17 @@ class MyApplication {
     
     try {
       // Get all available packages
-      const allPackages = await this.sdk.getAllPackages();
+      const allServers = await this.sdk.getAllServers();
       
       const results: any[] = [];
       
       // Try to use tools from different packages
-      for (const pkg of allPackages.slice(0, 3)) { // Limit to first 3 packages
+      for (const pkg of allServers.slice(0, 3)) { // Limit to first 3 packages
         try {
           console.log(`Trying package: ${pkg.name}`);
           
           // Get package details
-          const details = await this.sdk.getPackage(pkg.name);
+          const details = await this.sdk.getMCP(pkg.name);
           
           if (details.tools.length > 0) {
             // Try to connect to the first tool
@@ -137,16 +137,5 @@ async function main() {
     integrated into our daily lives. Machine learning algorithms can now process 
     vast amounts of data to make predictions and decisions that were previously 
     impossible for humans to make quickly or accurately.
-  `;
-  
-  await app.useTextSummarizer(longText, 50);
-  
-  // Process with multiple tools
-  await app.processWithMultipleTools("Hello world");
-  
-  // Register a new tool
-  await app.registerMyTool();
+  `
 }
-
-// Run the example
-main().catch(console.error); 

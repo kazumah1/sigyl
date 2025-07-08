@@ -56,13 +56,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   // Use the installationId from the activeGitHubAccount prop if provided, else fallback to AuthContext
   const installationId = activeGitHubAccount?.installationId ?? authInstallationId;
 
-  console.log('🔍 DeployWizardWithGitHubApp state:', {
-    hasUser: !!user,
-    installationId,
-    hasInstallation,
-    installationCheckError
-  })
-
   // Load repositories when active account is available
   useEffect(() => {
     if (user && typeof installationId === 'number' && !isNaN(installationId)) {
@@ -569,7 +562,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 <Button
                   onClick={handleDeploy}
                   disabled={deploying}
-                  className="w-full btn-modern hover:bg-neutral-900 hover:text-white"
+                  className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
                 >
                   {deploying ? (
                     <>

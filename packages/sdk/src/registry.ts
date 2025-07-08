@@ -1,13 +1,12 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type {
-  MCPPackage,
-  PackageWithDetails,
-  PackageSearchQuery,
-  PackageSearchResult,
-  CreatePackageRequest,
+  MCPServer,
+  MCPSearchQuery,
+  MCPSearchResult,
   APIResponse,
   SDKConfig,
-  MCPTool
+  MCPTool,
+  ServerWithDetails
 } from './types';
 
 // Default configuration
@@ -71,18 +70,18 @@ function validateAdminAuth(config: SDKConfig, operation: string): void {
 }
 
 /**
- * Search for MCP packages in the registry
+ * Search for MCP servers in the registry
  * Note: Search is typically public, but can be restricted if requireAuth is true
  */
-export async function searchPackages(
+export async function searchMCP(
   query?: string,
   tags?: string[],
   limit: number = 20,
   offset: number = 0,
   config: SDKConfig = {}
-): Promise<PackageSearchResult> {
+): Promise<MCPSearchResult> {
   // Validate auth if required
-  validateAuth(config, 'searching packages');
+  validateAuth(config, 'searching servers');
   
   const client = createApiClient(config);
   
@@ -98,20 +97,20 @@ export async function searchPackages(
 }
 
 /**
- * Get detailed information about a specific package
- * Note: Package details are typically public, but can be restricted if requireAuth is true
+ * Get detailed information about a specific MCP server
+ * Note: Server details are typically public, but can be restricted if requireAuth is true
  */
-export async function getPackage(
+export async function getMCP(
   name: string,
   config: SDKConfig = {}
-): Promise<PackageWithDetails> {
+): Promise<ServerWithDetails> {
   // Validate auth if required
-  validateAuth(config, 'getting package details');
+  validateAuth(config, 'getting server details');
   
   const client = createApiClient(config);
   
   if (!name || name.trim().length === 0) {
-    throw new Error('Package name is required');
+    throw new Error('Server name is required');
   }
 
   // The interceptor returns the data directly
@@ -119,14 +118,14 @@ export async function getPackage(
 }
 
 /**
- * Get all packages (admin operation)
+ * Get all servers (admin operation)
  * Note: This requires admin API key with admin permissions
  */
-export async function getAllPackagesAdmin(
+export async function getAllServers(
   config: SDKConfig = {}
-): Promise<MCPPackage[]> {
+): Promise<MCPServer[]> {
   // Admin operations always require admin authentication
-  validateAdminAuth(config, 'getting all packages');
+  validateAdminAuth(config, 'getting all servers');
   
   const client = createApiClient(config);
   
@@ -135,18 +134,18 @@ export async function getAllPackagesAdmin(
 }
 
 /**
- * Retrieve MCP server URL and metadata by package name
+ * Retrieve MCP server URL and metadata by server name
  */
-export async function getMCPServerUrlByName(
+export async function getMCPUrl(
   name: string,
   config: SDKConfig = {}
-): Promise<{ url: string; package: MCPPackage } | null> {
+): Promise<{ url: string; server: MCPServer } | null> {
   const client = createApiClient(config);
   try {
     // TODO: Confirm endpoint on registry API
-    const pkg: MCPPackage = await client.get(`/packages/name/${encodeURIComponent(name)}`);
+    const pkg: MCPServer = await client.get(`/packages/name/${encodeURIComponent(name)}`);
     if (pkg && pkg.source_api_url) {
-      return { url: pkg.source_api_url, package: pkg };
+      return { url: pkg.source_api_url, server: pkg };
     }
     return null;
   } catch (err) {
@@ -155,15 +154,15 @@ export async function getMCPServerUrlByName(
 }
 
 /**
- * Semantic search for MCP servers (packages)
+ * Semantic search for MCP servers
  * @param query - user prompt or search string
  * @param count - number of results to return (default 1)
  */
-export async function semanticSearchMCPServers(
+export async function semanticMCP(
   query: string,
   count: number = 1,
   config: SDKConfig = {}
-): Promise<MCPPackage[]> {
+): Promise<MCPServer[]> {
   const client = createApiClient(config);
   // TODO: Confirm endpoint on registry API
   const resp = await client.post(`/packages/semantic-search`, { query, count });
@@ -175,11 +174,11 @@ export async function semanticSearchMCPServers(
  * @param query - user prompt or search string
  * @param count - number of results to return (default 1)
  */
-export async function semanticSearchTools(
+export async function semanticTools(
   query: string,
   count: number = 1,
   config: SDKConfig = {}
-): Promise<Array<MCPTool & { mcp_server: MCPPackage }>> {
+): Promise<Array<MCPTool & { mcp_server: MCPServer }>> {
   const client = createApiClient(config);
   // TODO: Confirm endpoint on registry API
   const resp = await client.post(`/tools/semantic-search`, { query, count });

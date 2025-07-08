@@ -23,7 +23,6 @@ const Deploy = () => {
   const navigate = useNavigate();
 
   const handleDeploy = (deployment: any) => {
-    console.log('Deployment initiated:', deployment);
     toast.success('Deployment started successfully!');
     
     // Optionally redirect to dashboard to see deployment status

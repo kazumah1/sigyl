@@ -3,6 +3,7 @@ import { supabase } from '../config/database';
 import { fetchSigylYaml } from './yaml';
 import { google } from 'googleapis';
 import { createAPIRequest } from 'googleapis-common';
+import type { LogCallback } from '../../container-builder/src/types/log';
 
 // Google Cloud Run configuration
 const CLOUD_RUN_CONFIG: CloudRunConfig = {
@@ -337,11 +338,16 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
 /**
  * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
-export async function deployRepo(request: DeploymentRequest): Promise<DeploymentResult> {
+export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback): Promise<DeploymentResult> {
+  function log(line: string) {
+    if (onLog) onLog(line);
+    console.log(line);
+  }
   try {
-    // console.log('🚀 Starting Google Cloud Run deployment for:', request.repoName);
+    log('🚀 Starting Google Cloud Run deployment for: ' + request.repoName);
 
     if (!CLOUD_RUN_CONFIG.projectId) {
+      log('❌ Google Cloud credentials not configured.');
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
     }
 
@@ -350,11 +356,11 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // Try to fetch sigyl.yaml configuration
     let sigylConfig;
     try {
-      // console.log('📋 Fetching sigyl.yaml configuration...');
+      log('📋 Fetching sigyl.yaml configuration...');
       sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
-      // console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+      log('✅ Found sigyl.yaml configuration: ' + (sigylConfig?.runtime || 'unknown'));
     } catch (error) {
-      console.error('⚠️ Could not fetch sigyl.yaml,', error);
+      log('⚠️ Could not fetch sigyl.yaml: ' + (error instanceof Error ? error.message : String(error)));
       throw new Error('sigyl.yaml could not be fetched or parsed. Deployment cannot continue.');
     }
 
@@ -380,19 +386,27 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       githubToken: request.githubToken
     };
 
-    // console.log('🔒 Deploying with security validation...');
+    log('🔒 Deploying with security validation...');
 
     // Deploy to Cloud Run with integrated security validation
-    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
+    const cloudRunResult = await cloudRunService.deployMCPServer({
+      repoUrl: request.repoUrl,
+      repoName: request.repoName,
+      branch: request.branch || 'main',
+      environmentVariables: deploymentEnv,
+      sigylConfig: sigylConfig as SigylConfigUnion,
+      githubToken: request.githubToken
+    }, log);
 
     if (!cloudRunResult.success) {
-      console.error('❌ Google Cloud Run deployment failed:', cloudRunResult.error);
+      log('❌ Google Cloud Run deployment failed: ' + (cloudRunResult.error || 'unknown error'));
       return {
         success: false,
         error: cloudRunResult.error || 'Google Cloud Run deployment failed',
         securityReport: cloudRunResult.securityReport
       };
     } else {
+      log('✅ Google Cloud Run deployment succeeded.');
       // === Creating NEG and backend service using Google Cloud Node.js SDK ===
       const negName = `neg-${cloudRunResult.serviceName}`;
       const backendServiceName = `sigyl-backend-${cloudRunResult.serviceName}`;
@@ -614,10 +628,12 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     };
 
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (onLog) onLog('❌ Deployment failed: ' + msg);
     console.error('❌ Deployment failed:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown deployment error'
+      error: msg
     };
   }
 }
@@ -662,10 +678,15 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
   env: Record<string, string>;
   serviceName: string;
   packageId: string;
-}): Promise<{ success: boolean; deploymentUrl?: string; logs?: string[]; error?: string }> {
+}, onLog?: LogCallback): Promise<{ success: boolean; deploymentUrl?: string; logs?: string[]; error?: string }> {
   const logs: string[] = [];
+  function log(line: string) {
+    logs.push(line);
+    if (onLog) onLog(line);
+    console.log(line);
+  }
   try {
-    logs.push(`🔄 Starting redeploy for service: ${serviceName}`);
+    log(`🔄 Starting redeploy for service: ${serviceName}`);
     // Check Cloud Run config
     if (!CLOUD_RUN_CONFIG.projectId) {
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
@@ -710,7 +731,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     };
     logs.push('🔒 Redeploying with security validation...');
     // Redeploy to Cloud Run (rebuild and update existing service)
-    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
+    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest, log);
     if (!cloudRunResult.success) {
       logs.push('❌ Google Cloud Run redeploy failed');
       return { success: false, error: cloudRunResult.error, logs };
@@ -845,7 +866,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
       logs
     };
   } catch (error) {
-    logs.push('❌ Redeploy failed');
+    log('❌ Redeploy failed: ' + (error instanceof Error ? error.message : String(error)));
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),

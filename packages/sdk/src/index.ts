@@ -1,23 +1,22 @@
 // Main SDK entry point
 export {
-  searchPackages,
-  getPackage,
-  getAllPackagesAdmin,
-  getMCPServerUrlByName,
-  semanticSearchMCPServers,
-  semanticSearchTools
+  searchMCP,
+  getMCP,
+  getAllServers,
+  getMCPUrl,
+  semanticMCP,
+  semanticTools
 } from './registry';
-export { MCPConnectSDK } from './sdk';
+export { SigylSDK } from './sdk';
 
 // Types
 export type {
-  MCPPackage,
+  MCPServer,
   MCPTool,
   MCPDeployment,
-  PackageSearchQuery,
-  PackageSearchResult,
+  MCPSearchQuery,
+  MCPSearchResult,
   APIResponse,
-  PackageWithDetails,
-  SDKConfig,
-  ConnectOptions
+  ServerWithDetails,
+  SDKConfig
 } from './types'; 

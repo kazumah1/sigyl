@@ -1,5 +1,5 @@
 // Types that mirror the registry API
-export interface MCPPackage {
+export interface MCPServer {
   id: string;
   name: string;
   version?: string;
@@ -31,25 +31,15 @@ export interface MCPTool {
   output_schema?: Record<string, any>;
 }
 
-export interface CreatePackageRequest {
-  name: string;
-  version?: string;
-  description?: string;
-  author_id?: string;
-  source_api_url?: string;
-  tags?: string[];
-  tools?: Omit<MCPTool, 'id' | 'package_id'>[];
-}
-
-export interface PackageSearchQuery {
+export interface MCPSearchQuery {
   q?: string;
   tags?: string[];
   limit?: number;
   offset?: number;
 }
 
-export interface PackageSearchResult {
-  packages: MCPPackage[];
+export interface MCPSearchResult {
+  servers: MCPServer[];
   total: number;
   limit: number;
   offset: number;
@@ -62,19 +52,12 @@ export interface APIResponse<T> {
   message?: string;
 }
 
-export interface PackageWithDetails extends MCPPackage {
+export interface ServerWithDetails extends MCPServer {
   deployments: MCPDeployment[];
   tools: MCPTool[];
 }
 
 // SDK-specific types
-export interface ConnectOptions {
-  registryUrl?: string;
-  timeout?: number;
-  apiKey?: string;
-  headers?: Record<string, string>;
-}
-
 export interface SDKConfig {
   registryUrl?: string;
   timeout?: number;

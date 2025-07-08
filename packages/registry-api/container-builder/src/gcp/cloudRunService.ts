@@ -541,62 +541,57 @@ EOF`
         }
       };
 
-      console.log('🚀 Creating Cloud Run service...');
+      console.log('🚀 Checking for existing Cloud Run service...');
       
-      const deployResponse = await fetch(
-        `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
+      const getResp = await fetch(
+        `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
         {
-          method: 'POST',
+          method: 'GET',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(serviceConfig)
+            'Authorization': `Bearer ${accessToken}`
+          }
         }
       );
-
-      // Handle 409 ALREADY_EXISTS error by deleting and retrying once
       let service: any;
-      if (!deployResponse.ok) {
-        const errorText = await deployResponse.text();
-        if (deployResponse.status === 409 && errorText.includes('ALREADY_EXISTS')) {
-          console.warn(`Service ${serviceName} already exists. Deleting and retrying...`);
-          const deleted = await this.deleteService(serviceName);
-          if (deleted) {
-            // Poll for deletion to complete (up to 2.5 minutes)
-            for (let i = 0; i < 30; i++) {
-              await new Promise(res => setTimeout(res, 5000));
-              const getResp = await fetch(
-                `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
-                { headers: { 'Authorization': `Bearer ${accessToken}` } }
-              );
-              if (getResp.status === 404) {
-                break; // Service is fully deleted
-              }
-            }
-          } // else, skip polling if already deleted
-          // Retry creation once
-          const retryResponse = await fetch(
-            `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(serviceConfig)
-            }
-          );
-          if (!retryResponse.ok) {
-            const retryError = await retryResponse.text();
-            throw new Error(`Cloud Run API error after retry: ${retryResponse.status} ${retryError}`);
+      if (getResp.status === 404) {
+        console.log('Service does not exist. Continuing with service creation')
+        const createResponse = await fetch(
+          `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(serviceConfig)
           }
-          service = await retryResponse.json();
-        } else {
-          throw new Error(`Cloud Run API error: ${deployResponse.status} ${errorText}`);
+        );
+        if (!createResponse.ok) {
+          const errorText = await createResponse.text();
+          throw new Error(`Cloud Run API error: ${createResponse.status} ${errorText}`);
         }
+        service = await createResponse.json();
+      } else if (getResp.ok) {
+        console.log('Service exists. Patching...');
+        const patchResp = await fetch(
+          `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/merge-patch+json'
+            },
+            body: JSON.stringify(serviceConfig)
+          }
+        )
+        if (!patchResp.ok) {
+          const err = await patchResp.text();
+          throw new Error(`Cloud Run service patch failed: ${patchResp.status} ${err}`);
+        }
+        service = await patchResp.json();
       } else {
-        service = await deployResponse.json();
+        const err = await getResp.text();
+        throw new Error(`Failed to check existing service ${getResp.status} ${err}`)
       }
       
       // Debug: Log the initial service response structure

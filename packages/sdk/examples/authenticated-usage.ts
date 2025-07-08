@@ -1,6 +1,6 @@
 // Example: How to use the Sigyl MCP SDK with authentication
 
-import { connect, searchPackages, getPackage, registerMCP, MCPConnectSDK } from '../src/index';
+import { connect, searchMCP, getMCP, getAllServers, getMCPUrl, semanticMCP, semanticTools, registerMCP, SigylSDK } from '../src/index';
 
 async function authenticatedExample() {
   console.log('🔐 Authenticated SDK Usage Example\n');
@@ -10,7 +10,7 @@ async function authenticatedExample() {
   
   console.log('1️⃣ Searching packages with API key...');
   try {
-    const results = await searchPackages('text', ['nlp'], 5, 0, {
+    const results = await searchMCP('text', ['nlp'], 5, 0, {
       registryUrl: 'http://localhost:3000/api/v1',
       apiKey,
       requireAuth: true // This will require authentication for all operations
@@ -24,15 +24,15 @@ async function authenticatedExample() {
   // Option 2: Using SDK class with authentication
   console.log('\n2️⃣ Using SDK class with authentication...');
   try {
-    const sdk = new MCPConnectSDK({
+    const sdk = new SigylSDK({
       registryUrl: 'http://localhost:3000/api/v1',
       apiKey,
       requireAuth: true,
       timeout: 15000
     });
 
-    const allPackages = await sdk.getAllPackages();
-    console.log(`✅ SDK found ${allPackages.length} packages (authenticated)`);
+    const allServers = await sdk.getAllServers();
+    console.log(`✅ SDK found ${allServers.length} packages (authenticated)`);
   } catch (error) {
     console.log('❌ SDK failed:', error instanceof Error ? error.message : 'Unknown error');
   }
@@ -82,7 +82,7 @@ async function authenticationScenarios() {
   // Scenario 1: Public access (no auth required)
   console.log('📖 Scenario 1: Public access');
   try {
-    const publicResults = await searchPackages('text', undefined, 3, 0, {
+    const publicResults = await searchMCP('text', undefined, 3, 0, {
       registryUrl: 'http://localhost:3000/api/v1',
       requireAuth: false // Explicitly allow public access
     });
@@ -94,7 +94,7 @@ async function authenticationScenarios() {
   // Scenario 2: Authenticated access
   console.log('\n🔐 Scenario 2: Authenticated access');
   try {
-    const authResults = await searchPackages('text', undefined, 3, 0, {
+    const authResults = await searchMCP('text', undefined, 3, 0, {
       registryUrl: 'http://localhost:3000/api/v1',
       apiKey: 'sk_your_api_key_here',
       requireAuth: true
@@ -107,7 +107,7 @@ async function authenticationScenarios() {
   // Scenario 3: Missing API key when required
   console.log('\n❌ Scenario 3: Missing API key when required');
   try {
-    await searchPackages('text', undefined, 3, 0, {
+    await searchMCP('text', undefined, 3, 0, {
       registryUrl: 'http://localhost:3000/api/v1',
       requireAuth: true // Requires auth but no API key provided
     });
