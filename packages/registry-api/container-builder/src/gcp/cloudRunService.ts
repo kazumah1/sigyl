@@ -376,13 +376,29 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.4: Ensure wrapper directory exists and copy wrapper.js into the extracted repo root before Docker build
+          // Step 2.3: Comprehensive debug - list all relevant directories before copying wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js'
+              'echo "=== PWD ===" && pwd && \
+               echo "=== /workspace ===" && ls -l /workspace && \
+               echo "=== /workspace/packages ===" && ls -l /workspace/packages && \
+               echo "=== /workspace/packages/registry-api ===" && ls -l /workspace/packages/registry-api && \
+               echo "=== /workspace/packages/registry-api/container-builder ===" && ls -l /workspace/packages/registry-api/container-builder && \
+               echo "=== /workspace/packages/registry-api/container-builder/wrapper ===" && ls -l /workspace/packages/registry-api/container-builder/wrapper && \
+               echo "=== ./wrapper (in build context) ===" && ls -l wrapper || echo "wrapper dir does not exist"'
+            ],
+            dir: '.'
+          },
+          // Step 2.4: Debug and copy wrapper.js into the extracted repo root before Docker build
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== MONOREPO WRAPPER DIR ===" && ls -l /workspace/packages/registry-api/container-builder/wrapper && echo "=== FIRST 10 LINES OF wrapper.js ===" && head -10 /workspace/packages/registry-api/container-builder/wrapper/wrapper.js && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR IN BUILD CONTEXT ===" && ls -l wrapper'
             ],
             dir: '.'
           },
