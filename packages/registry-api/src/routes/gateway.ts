@@ -79,58 +79,63 @@ router.all('/:sessionId/*', async (req, res) => {
     // Construct the target URL
     let targetUrl = `${session.mcpServerUrl}/${path}`;
 
-    // Prepare headers for the proxy request
+    // Prepare headers with injected environment variables
     const headers: Record<string, string> = {
+      ...req.headers as Record<string, string>,
       'Content-Type': req.headers['content-type'] || 'application/json',
-      'Accept': req.headers['accept'] || 'application/json',
-      'User-Agent': req.headers['user-agent'] || 'Sigyl-Gateway/1.0'
     };
 
-    // Inject user secrets as environment variables or headers
-    // This depends on how the MCP server expects to receive secrets
+    // Inject environment variables as headers (for servers that read headers)
     Object.entries(session.userSecrets).forEach(([key, value]) => {
-      // Option 1: Inject as headers (if MCP server supports it)
       headers[`X-Secret-${key}`] = value;
-      
-      // Option 2: Inject as query parameters (for GET requests)
-      if (req.method === 'GET') {
-        const url = new URL(targetUrl);
-        url.searchParams.set(key, value);
-        targetUrl = url.toString();
-      }
+      headers[`X-Env-${key}`] = value;
     });
 
-    // Add any additional configuration
-    if (session.additionalConfig) {
-      Object.entries(session.additionalConfig).forEach(([key, value]) => {
-        headers[`X-Config-${key}`] = JSON.stringify(value);
-      });
+    // For MCP protocol requests, also inject environment variables into the request body
+    let requestBody = req.body;
+    if (req.method === 'POST' && path.includes('mcp')) {
+      // Clone the request body
+      requestBody = { ...req.body };
+      
+      // Add environment variables to the request context
+      if (!requestBody.context) {
+        requestBody.context = {};
+      }
+      
+      // Add environment variables to context for MCP servers to access
+      requestBody.context.environment = session.userSecrets;
+      requestBody.context.gatewaySession = {
+        sessionId,
+        injectedAt: new Date().toISOString()
+      };
     }
 
-    // Make the proxy request
-    const response = await fetch(targetUrl, {
+    // Make the proxied request
+    const proxyResponse = await fetch(targetUrl, {
       method: req.method,
       headers,
-      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
     });
 
     // Forward the response
-    const responseData = await response.text();
+    const responseData = await proxyResponse.text();
     
-    // Set response headers
-    res.status(response.status);
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
+    res.status(proxyResponse.status);
+    
+    // Forward response headers
+    proxyResponse.headers.forEach((value, key) => {
+      if (key.toLowerCase() !== 'content-length') { // Skip content-length to avoid conflicts
+        res.setHeader(key, value);
+      }
     });
-
-    // Send the response
+    
     res.send(responseData);
 
   } catch (error) {
     console.error('Gateway proxy error:', error);
     res.status(500).json({
       success: false,
-      error: 'Gateway Error',
+      error: 'Gateway proxy failed',
       message: 'Failed to proxy request to MCP server'
     });
   }

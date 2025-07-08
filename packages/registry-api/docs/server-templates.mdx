@@ -114,28 +114,560 @@ startCommand:
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
+import cors from "cors"
 
-export default function createStatelessServer({ config }: { config: any }) {
-  const server = new McpServer({ name: "generated-mcp-server", version: "1.0.0" });
-  server.tool(
-    "reverseString",
-    "Reverse a string value",
-    { value: z.string().describe("String to reverse") },
-    async ({ value }) => ({ content: [{ type: "text", text: value.split("").reverse().join("") }] })
-  );
-  return server.server;
+// ============================================================================
+// ENVIRONMENT VARIABLE HANDLING
+// ============================================================================
+
+declare global {
+  namespace Express {
+    interface Request {
+      environment?: Record<string, string>;
+    }
+  }
 }
 
-const app = express();
-app.use(express.json());
-app.post('/mcp', async (req, res) => {
-  const server = createStatelessServer({ config: {} });
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  res.on('close', () => { transport.close(); server.close(); });
-  await server.connect(transport);
-  await transport.handleRequest(req, res, req.body);
+function extractEnvironmentVariables(req: express.Request): Record<string, string> {
+  const environment: Record<string, string> = {};
+  
+  // Method 1: Extract from Sigyl gateway headers
+  Object.keys(req.headers).forEach(key => {
+    if (key.startsWith('x-secret-')) {
+      const envKey = key.replace('x-secret-', '');
+      environment[envKey] = req.headers[key] as string;
+    } else if (key.startsWith('x-env-')) {
+      const envKey = key.replace('x-env-', '');
+      environment[envKey] = req.headers[key] as string;
+    }
+  });
+  
+  // Method 2: Extract from request context (for MCP protocol requests)
+  if (req.body && req.body.context && req.body.context.environment) {
+    Object.assign(environment, req.body.context.environment);
+  }
+  
+  // Method 3: Fallback to process.env (for traditional deployment)
+  if (Object.keys(environment).length === 0) {
+    return process.env as Record<string, string>;
+  }
+  
+  return environment;
+}
+
+// ============================================================================
+// SERVER CONFIGURATION
+// ============================================================================
+
+export default function createStatelessServer({
+	config,
+}: {
+	config: any;
+}) {
+	const server = new McpServer({
+		name: "example-mcp-server",
+		version: "1.0.0",
+	});
+
+	// Example tool that uses environment variables
+	server.tool(
+		"call_external_api",
+		"Call an external API using injected credentials",
+		{
+			endpoint: { type: 'string' },
+			data: { type: 'object' }
+		},
+		async (args, context) => {
+			// Get environment variables from context or fallback to process.env
+			let environment: Record<string, string> = {};
+			
+			// Try to get environment from context if available
+			if (context && typeof context === 'object' && 'environment' in context) {
+				environment = (context as any).environment || {};
+			}
+			
+			// Fallback to process.env if no gateway environment
+			if (Object.keys(environment).length === 0) {
+				environment = process.env as Record<string, string>;
+			}
+			
+			const apiKey = environment.API_KEY || environment.apiKey;
+			
+			if (!apiKey) {
+				throw new Error('API key not found in environment variables');
+			}
+			
+			// Use the API key to make the external call
+			const response = await fetch(args.endpoint, {
+				method: 'POST',
+				headers: {
+					'Authorization': \`Bearer \${apiKey}\`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(args.data)
+			});
+			
+			const result = await response.json();
+			
+			return {
+				content: [
+					{ type: 'text', text: \`API call successful: \${JSON.stringify(result)}\` }
+				]
+			};
+		}
+	);
+
+	return server.server;
+}
+
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
+const app = express()
+app.use(express.json())
+app.use(cors({ origin: "http://localhost:3001" }))
+
+// Add environment variable extraction middleware
+app.use((req, res, next) => {
+  req.environment = extractEnvironmentVariables(req);
+  next();
 });
-const port = process.env.PORT || 8080;
-app.listen(port, () => { console.log("MCP Server listening on port " + port); });`}
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  const environment = req.environment || {};
+  const hasApiKey = !!(environment.API_KEY || environment.apiKey);
+  
+  res.json({
+    status: 'healthy',
+    environment: {
+      hasApiKey,
+      keys: Object.keys(environment).filter(key => !key.includes('SECRET') && !key.includes('PASSWORD')),
+      gatewaySession: req.body?.context?.gatewaySession || null
+    },
+    message: hasApiKey ? 'Environment variables loaded successfully' : 'No API key found'
+  });
+});
+
+app.post('/mcp', async (req, res) => {
+	const server = createStatelessServer({ config: {} })
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+	res.on('close', () => {
+		transport.close()
+		server.close()
+	})
+	await server.connect(transport)
+	
+	// Pass the request environment to the MCP context
+	const mcpRequest = {
+		...req.body,
+		context: {
+			...req.body.context,
+			environment: req.environment
+		}
+	};
+	
+	await transport.handleRequest(req, res, mcpRequest)
+})
+
+const port = process.env.PORT || 8080
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port)
+	console.log("Environment variables will be injected via Sigyl gateway")
+	console.log("Check /health endpoint to see injected environment variables")
+})`}
   </CodeGroup.Tab>
-</CodeGroup> 
+</CodeGroup>
+
+# MCP Server Templates
+
+This document provides templates and examples for creating MCP servers that work with the Sigyl deployment platform.
+
+## Environment Variable Access
+
+When your MCP server is deployed through Sigyl, environment variables are injected dynamically via the gateway. Here's how to access them:
+
+### Hybrid Approach (Recommended)
+
+The recommended approach works with both Sigyl gateway and traditional deployment:
+
+```typescript
+// Middleware to extract environment variables from multiple sources
+function extractEnvironmentVariables(req: express.Request): Record<string, string> {
+  const environment: Record<string, string> = {};
+  
+  // Method 1: Extract from Sigyl gateway headers
+  Object.keys(req.headers).forEach(key => {
+    if (key.startsWith('x-secret-')) {
+      const envKey = key.replace('x-secret-', '');
+      environment[envKey] = req.headers[key] as string;
+    } else if (key.startsWith('x-env-')) {
+      const envKey = key.replace('x-env-', '');
+      environment[envKey] = req.headers[key] as string;
+    }
+  });
+  
+  // Method 2: Extract from request context (for MCP protocol requests)
+  if (req.body && req.body.context && req.body.context.environment) {
+    Object.assign(environment, req.body.context.environment);
+  }
+  
+  // Method 3: Fallback to process.env (for traditional deployment)
+  if (Object.keys(environment).length === 0) {
+    return process.env as Record<string, string>;
+  }
+  
+  return environment;
+}
+
+// Use in your Express app
+app.use((req, res, next) => {
+  req.environment = extractEnvironmentVariables(req);
+  next();
+});
+```
+
+### In MCP Tools
+
+```typescript
+server.tool(
+  "call_external_api",
+  "Call an external API using injected credentials",
+  {
+    endpoint: { type: 'string' },
+    data: { type: 'object' }
+  },
+  async (args, context) => {
+    // Get environment variables from context or fallback to process.env
+    let environment: Record<string, string> = {};
+    
+    // Try to get environment from context if available
+    if (context && typeof context === 'object' && 'environment' in context) {
+      environment = (context as any).environment || {};
+    }
+    
+    // Fallback to process.env if no gateway environment
+    if (Object.keys(environment).length === 0) {
+      environment = process.env as Record<string, string>;
+    }
+    
+    const apiKey = environment.API_KEY || environment.apiKey;
+    
+    if (!apiKey) {
+      throw new Error('API key not found in environment variables');
+    }
+    
+    // Use the API key to make the external call
+    const response = await fetch(args.endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': \`Bearer \${apiKey}\`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(args.data)
+    });
+    
+    const result = await response.json();
+    
+    return {
+      content: [
+        { type: 'text', text: \`API call successful: \${JSON.stringify(result)}\` }
+      ]
+    };
+  }
+);
+```
+
+### Health Check Endpoint
+
+Add a health check endpoint to verify environment variables:
+
+```typescript
+app.get('/health', (req, res) => {
+  const environment = req.environment || {};
+  const hasApiKey = !!(environment.API_KEY || environment.apiKey);
+  
+  res.json({
+    status: 'healthy',
+    environment: {
+      hasApiKey,
+      keys: Object.keys(environment).filter(key => !key.includes('SECRET') && !key.includes('PASSWORD')),
+      gatewaySession: req.body?.context?.gatewaySession || null
+    },
+    message: hasApiKey ? 'Environment variables loaded successfully' : 'No API key found'
+  });
+});
+```
+
+## Complete Server Template
+
+Here's a complete MCP server template that works with Sigyl:
+
+<CodeGroup>
+  <CodeGroup.Tab label="sigyl.yaml">
+    {`runtime: node
+language: typescript
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    required:
+      - apiKey
+      - environment
+    properties:
+      apiKey:
+        type: string
+        title: MCP API Key
+        description: Your MCP API key (required)
+      serviceName:
+        type: string
+        title: Service Name
+        default: my-mcp-service
+        description: Name of the MCP-compatible service
+      logLevel:
+        type: string
+        title: Log Level
+        default: info
+        enum:
+          - debug
+          - info
+          - warn
+          - error
+        description: Logging verbosity level
+      timeout:
+        type: number
+        title: Timeout
+        description: Request timeout in seconds
+        default: 30
+        minimum: 1
+        maximum: 300
+      enableMetrics:
+        type: boolean
+        title: Enable Metrics
+        description: Enable metrics collection
+        default: false
+      allowedClients:
+        type: array
+        title: Allowed Clients
+        description: List of client IDs allowed to access the server
+        items:
+          type: string
+        default: []
+      customSettings:
+        type: object
+        title: Custom Settings
+        description: Advanced custom settings for the server
+        properties:
+          maxConnections:
+            type: number
+            default: 100
+          useCache:
+            type: boolean
+            default: true
+        default: {}
+      environment:
+        type: string
+        title: Environment
+        description: Deployment environment
+        enum:
+          - development
+          - staging
+          - production
+        default: development`}
+  </CodeGroup.Tab>
+  <CodeGroup.Tab label="server.ts">
+    {`import express from "express";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
+import { z } from "zod"
+import cors from "cors"
+
+// ============================================================================
+// ENVIRONMENT VARIABLE HANDLING
+// ============================================================================
+
+declare global {
+  namespace Express {
+    interface Request {
+      environment?: Record<string, string>;
+    }
+  }
+}
+
+function extractEnvironmentVariables(req: express.Request): Record<string, string> {
+  const environment: Record<string, string> = {};
+  
+  // Method 1: Extract from Sigyl gateway headers
+  Object.keys(req.headers).forEach(key => {
+    if (key.startsWith('x-secret-')) {
+      const envKey = key.replace('x-secret-', '');
+      environment[envKey] = req.headers[key] as string;
+    } else if (key.startsWith('x-env-')) {
+      const envKey = key.replace('x-env-', '');
+      environment[envKey] = req.headers[key] as string;
+    }
+  });
+  
+  // Method 2: Extract from request context (for MCP protocol requests)
+  if (req.body && req.body.context && req.body.context.environment) {
+    Object.assign(environment, req.body.context.environment);
+  }
+  
+  // Method 3: Fallback to process.env (for traditional deployment)
+  if (Object.keys(environment).length === 0) {
+    return process.env as Record<string, string>;
+  }
+  
+  return environment;
+}
+
+// ============================================================================
+// SERVER CONFIGURATION
+// ============================================================================
+
+export default function createStatelessServer({
+	config,
+}: {
+	config: any;
+}) {
+	const server = new McpServer({
+		name: "example-mcp-server",
+		version: "1.0.0",
+	});
+
+	// Example tool that uses environment variables
+	server.tool(
+		"call_external_api",
+		"Call an external API using injected credentials",
+		{
+			endpoint: { type: 'string' },
+			data: { type: 'object' }
+		},
+		async (args, context) => {
+			// Get environment variables from context or fallback to process.env
+			let environment: Record<string, string> = {};
+			
+			// Try to get environment from context if available
+			if (context && typeof context === 'object' && 'environment' in context) {
+				environment = (context as any).environment || {};
+			}
+			
+			// Fallback to process.env if no gateway environment
+			if (Object.keys(environment).length === 0) {
+				environment = process.env as Record<string, string>;
+			}
+			
+			const apiKey = environment.API_KEY || environment.apiKey;
+			
+			if (!apiKey) {
+				throw new Error('API key not found in environment variables');
+			}
+			
+			// Use the API key to make the external call
+			const response = await fetch(args.endpoint, {
+				method: 'POST',
+				headers: {
+					'Authorization': \`Bearer \${apiKey}\`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(args.data)
+			});
+			
+			const result = await response.json();
+			
+			return {
+				content: [
+					{ type: 'text', text: \`API call successful: \${JSON.stringify(result)}\` }
+				]
+			};
+		}
+	);
+
+	return server.server;
+}
+
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
+const app = express()
+app.use(express.json())
+app.use(cors({ origin: "http://localhost:3001" }))
+
+// Add environment variable extraction middleware
+app.use((req, res, next) => {
+  req.environment = extractEnvironmentVariables(req);
+  next();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  const environment = req.environment || {};
+  const hasApiKey = !!(environment.API_KEY || environment.apiKey);
+  
+  res.json({
+    status: 'healthy',
+    environment: {
+      hasApiKey,
+      keys: Object.keys(environment).filter(key => !key.includes('SECRET') && !key.includes('PASSWORD')),
+      gatewaySession: req.body?.context?.gatewaySession || null
+    },
+    message: hasApiKey ? 'Environment variables loaded successfully' : 'No API key found'
+  });
+});
+
+app.post('/mcp', async (req, res) => {
+	const server = createStatelessServer({ config: {} })
+	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+	res.on('close', () => {
+		transport.close()
+		server.close()
+	})
+	await server.connect(transport)
+	
+	// Pass the request environment to the MCP context
+	const mcpRequest = {
+		...req.body,
+		context: {
+			...req.body.context,
+			environment: req.environment
+		}
+	};
+	
+	await transport.handleRequest(req, res, mcpRequest)
+})
+
+const port = process.env.PORT || 8080
+app.listen(port, () => {
+	console.log("MCP Server listening on port " + port)
+	console.log("Environment variables will be injected via Sigyl gateway")
+	console.log("Check /health endpoint to see injected environment variables")
+})`}
+  </CodeGroup.Tab>
+</CodeGroup>
+
+## Compatibility
+
+This approach is compatible with:
+
+1. **Sigyl Gateway**: Environment variables are injected via headers and request context
+2. **Traditional Deployment**: Falls back to `process.env` when gateway variables aren't available
+3. **@/ts-cli Generated Servers**: The CLI now generates servers with this hybrid approach
+4. **Manual MCP Servers**: Can be adapted to use this pattern
+
+## Testing
+
+You can test your server locally by:
+
+1. Setting environment variables: `API_KEY=your_key node server.js`
+2. Checking the health endpoint: `curl http://localhost:8080/health`
+3. Verifying the MCP endpoint works with injected variables
+
+## Best Practices
+
+1. **Always provide fallbacks**: Use `process.env` when gateway variables aren't available
+2. **Validate environment variables**: Check for required variables before making API calls
+3. **Use health checks**: Add a `/health` endpoint to verify environment variable injection
+4. **Log appropriately**: Don't log sensitive environment variables
+5. **Handle errors gracefully**: Provide clear error messages when environment variables are missing 

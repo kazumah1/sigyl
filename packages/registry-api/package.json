@@ -18,6 +18,8 @@
     "test:contact": "ts-node src/scripts/testContactEmail.ts",
     "debug:secrets": "ts-node src/scripts/debugSecrets.ts",
     "validate-env": "ts-node src/scripts/validate-env.ts",
+    "bulk-deploy": "ts-node src/scripts/runBulkDeploy.ts",
+    "bulk-deploy-local": "ts-node src/scripts/bulkDeployLocalMCPs.ts",
     "prestart": "npm run validate-env",
     "predeploy": "npm run validate-env",
     "postbuild": "ls -l dist"
@@ -39,6 +41,7 @@
     "googleapis": "^150.0.1",
     "helmet": "^7.1.0",
     "http-proxy-middleware": "^3.0.5",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "node-fetch": "2",

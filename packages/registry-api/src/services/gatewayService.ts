@@ -160,7 +160,7 @@ export class GatewayService {
   }
 
   /**
-   * Clean up expired gateway sessions
+   * Clean up expired sessions
    */
   static async cleanupExpiredSessions(): Promise<void> {
     const { error } = await supabase
@@ -171,5 +171,40 @@ export class GatewayService {
     if (error) {
       console.error('Failed to cleanup expired sessions:', error);
     }
+  }
+
+  /**
+   * Utility function for MCP servers to get environment variables
+   * This can be used by MCP servers to access injected environment variables
+   */
+  static getEnvironmentVariable(key: string, defaultValue?: string): string | undefined {
+    // Check for environment variables injected via headers
+    const headerKey = `X-Secret-${key}`;
+    const envKey = `X-Env-${key}`;
+    
+    // This would be called from within the MCP server context
+    // The actual implementation depends on how the MCP server receives the request
+    return process.env[key] || process.env[headerKey] || process.env[envKey] || defaultValue;
+  }
+
+  /**
+   * Get all environment variables for the current request context
+   * This is a helper for MCP servers to access all injected environment variables
+   */
+  static getAllEnvironmentVariables(): Record<string, string> {
+    const env: Record<string, string> = {};
+    
+    // Get all environment variables that start with X-Secret- or X-Env-
+    Object.keys(process.env).forEach(key => {
+      if (key.startsWith('X-Secret-')) {
+        const envKey = key.replace('X-Secret-', '');
+        env[envKey] = process.env[key] || '';
+      } else if (key.startsWith('X-Env-')) {
+        const envKey = key.replace('X-Env-', '');
+        env[envKey] = process.env[key] || '';
+      }
+    });
+    
+    return env;
   }
 } 

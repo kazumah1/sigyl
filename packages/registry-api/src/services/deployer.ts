@@ -351,9 +351,20 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // Try to fetch sigyl.yaml configuration
     let sigylConfig;
     try {
-      // console.log('📋 Fetching sigyl.yaml configuration...');
-      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
-      // console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+      // Check if we have a local config path (for local deployments)
+      const localConfigPath = process.env.LOCAL_SIGYL_CONFIG_PATH;
+      if (localConfigPath) {
+        console.log('📋 Using local sigyl.yaml configuration...');
+        const fs = await import('fs/promises');
+        const yaml = await import('js-yaml');
+        const configContent = await fs.readFile(localConfigPath, 'utf-8');
+        sigylConfig = yaml.load(configContent);
+        console.log('✅ Loaded local sigyl.yaml configuration');
+      } else {
+        // console.log('📋 Fetching sigyl.yaml configuration...');
+        sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
+        // console.log('✅ Found sigyl.yaml configuration:', sigylConfig.runtime);
+      }
     } catch (error) {
       console.error('⚠️ Could not fetch sigyl.yaml,', error);
       throw new Error('sigyl.yaml could not be fetched or parsed. Deployment cannot continue.');
@@ -381,7 +392,12 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
       githubToken: request.githubToken
     };
 
-    // console.log('🔒 Deploying with security validation...');
+    // Check if security validation should be skipped
+    if (process.env.SKIP_SECURITY_VALIDATION === 'true') {
+      console.log('⚠️ SKIP_SECURITY_VALIDATION is set, bypassing security checks for local development');
+    } else {
+      console.log('🔒 Deploying with security validation...');
+    }
 
     // Deploy to Cloud Run with integrated security validation
     const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
@@ -559,50 +575,71 @@ export async function deployRepo(request: DeploymentRequest): Promise<Deployment
     // 2. Poll /mcp endpoint for up to 2 minutes using POST and JSON-RPC body
     const startTime = Date.now();
     const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
+    let containerStarted = false;
+    
+    console.log('🔍 Waiting for container to start and respond...');
+    
     while (Date.now() - startTime < 120000) {
-      const mcpResp = await fetch(mcpUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream'
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list',
-          params: {}
-        })
-      });
-      if (mcpResp.ok) {
-        try {
-          const text = await mcpResp.text();
-          // Try to parse event-stream or JSON
-          let data: any = {};
-          const match = text.match(/data: (\{.*\})/);
-          if (match) {
-            data = JSON.parse(match[1]);
-          } else {
-            data = JSON.parse(text);
-          }
-          if (data && data.result) {
-            console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
-            // 3. If ready, update ready: true
-            const { error: pkgError } = await supabase
-              .from('mcp_packages')
-              .update({ ready: true })
-              .eq('id', packageId);
-            if (pkgError) {
-              console.error('❌ Failed to update mcp_packages:', pkgError);
+      try {
+        const mcpResp = await fetch(mcpUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream'
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/list',
+            params: {}
+          }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout per request
+        });
+        
+        if (mcpResp.ok) {
+          try {
+            const text = await mcpResp.text();
+            let data: any = {};
+            const match = text.match(/data: (\{.*\})/);
+            if (match) {
+              data = JSON.parse(match[1]);
             } else {
-              console.log('✅ Updated mcp_packages');
+              data = JSON.parse(text);
             }
-            break;
+            if (data && data.result) {
+              console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
+              containerStarted = true;
+              // 3. If ready, update ready: true
+              const { error: pkgError } = await supabase
+                .from('mcp_packages')
+                .update({ ready: true })
+                .eq('id', packageId);
+              if (pkgError) {
+                console.error('❌ Failed to update mcp_packages:', pkgError);
+              } else {
+                console.log('✅ Updated mcp_packages');
+              }
+              break;
+            }
+          } catch (err) {
+            // Ignore parse errors, keep polling
           }
-        } catch (err) {
-          // Ignore parse errors, keep polling
+        } else {
+          console.log(`⚠️ Container not ready yet (HTTP ${mcpResp.status}), continuing to poll...`);
         }
+      } catch (err) {
+        console.log('⚠️ Container not responding yet, continuing to poll...');
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Poll every 2 seconds
+    }
+
+    if (!containerStarted) {
+      console.error('❌ Container failed to start within timeout period');
+      return {
+        success: false,
+        error: 'Container failed to start and respond to health checks within 2 minutes',
+        deploymentUrl: cloudRunResult.deploymentUrl
+      };
     }
 
     return {
@@ -792,50 +829,71 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     // 2. Poll /mcp endpoint for up to 2 minutes using POST and JSON-RPC body
     const startTime = Date.now();
     const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
+    let containerStarted = false;
+    
+    console.log('🔍 Waiting for container to start and respond...');
+    
     while (Date.now() - startTime < 120000) {
-      const mcpResp = await fetch(mcpUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream'
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list',
-          params: {}
-        })
-      });
-      if (mcpResp.ok) {
-        try {
-          const text = await mcpResp.text();
-          // Try to parse event-stream or JSON
-          let data: any = {};
-          const match = text.match(/data: (\{.*\})/);
-          if (match) {
-            data = JSON.parse(match[1]);
-          } else {
-            data = JSON.parse(text);
-          }
-          if (data && data.result) {
-            console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
-            // 3. If ready, update ready: true
-            const { error: pkgError } = await supabase
-              .from('mcp_packages')
-              .update({ ready: true })
-              .eq('id', packageId);
-            if (pkgError) {
-              console.error('❌ Failed to update mcp_packages:', pkgError);
+      try {
+        const mcpResp = await fetch(mcpUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream'
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/list',
+            params: {}
+          }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout per request
+        });
+        
+        if (mcpResp.ok) {
+          try {
+            const text = await mcpResp.text();
+            let data: any = {};
+            const match = text.match(/data: (\{.*\})/);
+            if (match) {
+              data = JSON.parse(match[1]);
             } else {
-              console.log('✅ Updated mcp_packages');
+              data = JSON.parse(text);
             }
-            break;
+            if (data && data.result) {
+              console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
+              containerStarted = true;
+              // 3. If ready, update ready: true
+              const { error: pkgError } = await supabase
+                .from('mcp_packages')
+                .update({ ready: true })
+                .eq('id', packageId);
+              if (pkgError) {
+                console.error('❌ Failed to update mcp_packages:', pkgError);
+              } else {
+                console.log('✅ Updated mcp_packages');
+              }
+              break;
+            }
+          } catch (err) {
+            // Ignore parse errors, keep polling
           }
-        } catch (err) {
-          // Ignore parse errors, keep polling
+        } else {
+          console.log(`⚠️ Container not ready yet (HTTP ${mcpResp.status}), continuing to poll...`);
         }
+      } catch (err) {
+        console.log('⚠️ Container not responding yet, continuing to poll...');
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Poll every 2 seconds
+    }
+
+    if (!containerStarted) {
+      console.error('❌ Container failed to start within timeout period');
+      return {
+        success: false,
+        error: 'Container failed to start and respond to health checks within 2 minutes',
+        deploymentUrl: cloudRunResult.deploymentUrl
+      };
     }
 
     return {

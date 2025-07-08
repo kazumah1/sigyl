@@ -1,0 +1,929 @@
+{
+  "discovered": [
+    {
+      "name": "Brave-Search",
+      "full_name": "sigyl-dev/Brave-Search",
+      "description": "MCP server for Brave-Search",
+      "html_url": "https://github.com/sigyl-dev/Brave-Search",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "build": {
+          "dockerBuildPath": "../../"
+        },
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "braveApiKey"
+            ],
+            "properties": {
+              "braveApiKey": {
+                "type": "string",
+                "description": "The API key for the BRAVE Search server."
+              }
+            }
+          },
+          "commandFunction": "config=>({command:'node',args:['dist/index.js'],env:{BRAVE_API_KEY:config.braveApiKey}})"
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Brave-Search",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "Desktop-Commander",
+      "full_name": "sigyl-dev/Desktop-Commander",
+      "description": "MCP server for Desktop-Commander",
+      "html_url": "https://github.com/sigyl-dev/Desktop-Commander",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {}
+          },
+          "commandFunction": "(config) => ({ command: 'node', args: ['dist/index.js'] })",
+          "exampleConfig": {}
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Desktop-Commander",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "DuckDuckGo",
+      "full_name": "sigyl-dev/DuckDuckGo",
+      "description": "MCP server for DuckDuckGo",
+      "html_url": "https://github.com/sigyl-dev/DuckDuckGo",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "javascript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {},
+          "commandFunction": "(config) => ({ command: 'python', args: ['-m', 'duckduckgo_mcp_server.server'] })",
+          "exampleConfig": {}
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/DuckDuckGo",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "Exa-Search",
+      "full_name": "sigyl-dev/Exa-Search",
+      "description": "MCP server for Exa-Search",
+      "html_url": "https://github.com/sigyl-dev/Exa-Search",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "debug": {
+                "type": "boolean",
+                "title": "Debug",
+                "description": "Enable debug logging",
+                "default": false
+              },
+              "exaApiKey": {
+                "type": "string",
+                "title": "Exa API Key",
+                "description": "Exa AI API key for search operations"
+              },
+              "enabledTools": {
+                "type": "array",
+                "title": "Enabled Tools",
+                "description": "List of tools to enable (if not specified, all tools are enabled)",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Exa-Search",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "Office-Word",
+      "full_name": "sigyl-dev/Office-Word",
+      "description": "MCP server for Office-Word",
+      "html_url": "https://github.com/sigyl-dev/Office-Word",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "javascript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "description": "No configuration options required"
+          },
+          "commandFunction": "(config) => ({command:'word_mcp_server', args:[]})",
+          "exampleConfig": {}
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Office-Word",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "Sequential-Thinking",
+      "full_name": "sigyl-dev/Sequential-Thinking",
+      "description": "MCP server for Sequential-Thinking",
+      "html_url": "https://github.com/sigyl-dev/Sequential-Thinking",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript"
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Sequential-Thinking",
+      "validation_result": {
+        "isValid": true,
+        "issues": [
+          {
+            "type": "warning",
+            "field": "startCommand",
+            "message": "No startCommand configuration found",
+            "suggestion": "Consider adding startCommand with configSchema for secrets management"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Todoist",
+      "full_name": "sigyl-dev/Todoist",
+      "description": "MCP server for Todoist",
+      "html_url": "https://github.com/sigyl-dev/Todoist",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "todoistApiKey"
+            ],
+            "properties": {
+              "todoistApiKey": {
+                "type": "string",
+                "title": "todoistApiKey",
+                "description": "The API key for the Todoist server.",
+                "secret": true
+              },
+              "serviceName": {
+                "type": "string",
+                "title": "Service Name",
+                "default": "todoist-mcp",
+                "description": "Name of the Todoist MCP-compatible service"
+              },
+              "logLevel": {
+                "type": "string",
+                "title": "Log Level",
+                "default": "info",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "description": "Logging verbosity level"
+              },
+              "timeout": {
+                "type": "number",
+                "title": "Timeout",
+                "description": "Request timeout in seconds",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 300
+              },
+              "enableMetrics": {
+                "type": "boolean",
+                "title": "Enable Metrics",
+                "description": "Enable metrics collection",
+                "default": false
+              },
+              "allowedClients": {
+                "type": "array",
+                "title": "Allowed Clients",
+                "description": "List of client IDs allowed to access the server",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "customSettings": {
+                "type": "object",
+                "title": "Custom Settings",
+                "description": "Advanced custom settings for the server",
+                "properties": {
+                  "maxConnections": {
+                    "type": "number",
+                    "default": 100
+                  },
+                  "useCache": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "default": {}
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          },
+          "commandFunction": "config => ({command: 'node', args: ['build/index.js'], env: { TODOIST_API_KEY: config.todoistApiKey }})"
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/Todoist",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "context7",
+      "full_name": "sigyl-dev/context7",
+      "description": "MCP server for context7",
+      "html_url": "https://github.com/sigyl-dev/context7",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "description": "No configuration required"
+          },
+          "exampleConfig": {}
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/context7",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "github",
+      "full_name": "sigyl-dev/github",
+      "description": "MCP server for github",
+      "html_url": "https://github.com/sigyl-dev/github",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "githubPersonalAccessToken"
+            ],
+            "properties": {
+              "githubPersonalAccessToken": {
+                "type": "string",
+                "title": "GitHub Personal Access Token",
+                "description": "Personal access token for authenticating with the GitHub API (required)"
+              },
+              "profile": {
+                "type": "string",
+                "title": "Profile",
+                "description": "The profile to use for this connection",
+                "default": "Personal",
+                "enum": [
+                  "Personal",
+                  "Work"
+                ]
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/github",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "google-maps",
+      "full_name": "sigyl-dev/google-maps",
+      "description": "MCP server for google-maps",
+      "html_url": "https://github.com/sigyl-dev/google-maps",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "apiKey"
+            ],
+            "properties": {
+              "apiKey": {
+                "type": "string",
+                "title": "Google Maps API Key",
+                "description": "Google Maps API key. Get one from https://mapsplatform.google.com (required)"
+              },
+              "debug": {
+                "type": "boolean",
+                "title": "Enable Debug Logging",
+                "description": "Enable debug logging",
+                "default": false
+              }
+            }
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/google-maps",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "hubspot",
+      "full_name": "sigyl-dev/hubspot",
+      "description": "MCP server for hubspot",
+      "html_url": "https://github.com/sigyl-dev/hubspot",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "apiKey",
+              "HUBSPOT_ACCESS_TOKEN",
+              "environment"
+            ],
+            "properties": {
+              "apiKey": {
+                "type": "string",
+                "title": "MCP API Key",
+                "description": "Your MCP API key (required)"
+              },
+              "HUBSPOT_ACCESS_TOKEN": {
+                "type": "string",
+                "title": "HUBSPOT_ACCESS_TOKEN",
+                "description": "Your HubSpot API access token (required)"
+              },
+              "serviceName": {
+                "type": "string",
+                "title": "Service Name",
+                "default": "my-mcp-service",
+                "description": "Name of the MCP-compatible service"
+              },
+              "logLevel": {
+                "type": "string",
+                "title": "Log Level",
+                "default": "info",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "description": "Logging verbosity level"
+              },
+              "timeout": {
+                "type": "number",
+                "title": "Timeout",
+                "description": "Request timeout in seconds",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 300
+              },
+              "enableMetrics": {
+                "type": "boolean",
+                "title": "Enable Metrics",
+                "description": "Enable metrics collection",
+                "default": false
+              },
+              "allowedClients": {
+                "type": "array",
+                "title": "Allowed Clients",
+                "description": "List of client IDs allowed to access the server",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "customSettings": {
+                "type": "object",
+                "title": "Custom Settings",
+                "description": "Advanced custom settings for the server",
+                "properties": {
+                  "maxConnections": {
+                    "type": "number",
+                    "default": 100
+                  },
+                  "useCache": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "default": {}
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          },
+          "exampleConfig": {
+            "apiKey": "your-mcp-api-key-here",
+            "HUBSPOT_ACCESS_TOKEN": "your-hubspot-token-here",
+            "serviceName": "my-mcp-service",
+            "logLevel": "info",
+            "timeout": 30,
+            "enableMetrics": false,
+            "allowedClients": [],
+            "customSettings": {
+              "maxConnections": 100,
+              "useCache": true
+            },
+            "environment": "development"
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/hubspot",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "notion",
+      "full_name": "sigyl-dev/notion",
+      "description": "MCP server for notion",
+      "html_url": "https://github.com/sigyl-dev/notion",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "notionApiKey",
+              "environment"
+            ],
+            "properties": {
+              "notionApiKey": {
+                "type": "string",
+                "title": "Notion API Key",
+                "description": "Notion API key, obtained from https://www.notion.so/profile/integrations/ (required)"
+              },
+              "serviceName": {
+                "type": "string",
+                "title": "Service Name",
+                "default": "my-mcp-notion-service",
+                "description": "Name of the MCP-compatible Notion service"
+              },
+              "logLevel": {
+                "type": "string",
+                "title": "Log Level",
+                "default": "info",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "description": "Logging verbosity level"
+              },
+              "timeout": {
+                "type": "number",
+                "title": "Timeout",
+                "description": "Request timeout in seconds",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 300
+              },
+              "enableMetrics": {
+                "type": "boolean",
+                "title": "Enable Metrics",
+                "description": "Enable metrics collection",
+                "default": false
+              },
+              "allowedClients": {
+                "type": "array",
+                "title": "Allowed Clients",
+                "description": "List of client IDs allowed to access the server",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "customSettings": {
+                "type": "object",
+                "title": "Custom Settings",
+                "description": "Advanced custom settings for the server",
+                "properties": {
+                  "maxConnections": {
+                    "type": "number",
+                    "default": 100
+                  },
+                  "useCache": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "default": {}
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/notion",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "perplexity",
+      "full_name": "sigyl-dev/perplexity",
+      "description": "MCP server for perplexity",
+      "html_url": "https://github.com/sigyl-dev/perplexity",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "perplexityApiKey",
+              "environment"
+            ],
+            "properties": {
+              "perplexityApiKey": {
+                "type": "string",
+                "title": "Perplexity API Key",
+                "description": "Your Perplexity API key (required)"
+              },
+              "serviceName": {
+                "type": "string",
+                "title": "Service Name",
+                "default": "my-mcp-service",
+                "description": "Name of the MCP-compatible service"
+              },
+              "logLevel": {
+                "type": "string",
+                "title": "Log Level",
+                "default": "info",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "description": "Logging verbosity level"
+              },
+              "timeout": {
+                "type": "number",
+                "title": "Timeout",
+                "description": "Request timeout in seconds",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 300
+              },
+              "enableMetrics": {
+                "type": "boolean",
+                "title": "Enable Metrics",
+                "description": "Enable metrics collection",
+                "default": false
+              },
+              "allowedClients": {
+                "type": "array",
+                "title": "Allowed Clients",
+                "description": "List of client IDs allowed to access the server",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "customSettings": {
+                "type": "object",
+                "title": "Custom Settings",
+                "description": "Advanced custom settings for the server",
+                "properties": {
+                  "maxConnections": {
+                    "type": "number",
+                    "default": 100
+                  },
+                  "useCache": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "default": {}
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          },
+          "commandFunction": "(config) => ({\n  command: 'node',\n  args: ['dist/index.js'],\n  env: {\n    PERPLEXITY_API_KEY: config.perplexityApiKey,\n    SERVICE_NAME: config.serviceName,\n    LOG_LEVEL: config.logLevel,\n    TIMEOUT: config.timeout,\n    ENABLE_METRICS: config.enableMetrics,\n    ALLOWED_CLIENTS: Array.isArray(config.allowedClients) ? config.allowedClients.join(',') : undefined,\n    CUSTOM_SETTINGS: config.customSettings ? JSON.stringify(config.customSettings) : undefined,\n    ENVIRONMENT: config.environment\n  }\n})",
+          "exampleConfig": {
+            "perplexityApiKey": "dummy_key_here",
+            "serviceName": "my-mcp-service",
+            "logLevel": "info",
+            "timeout": 30,
+            "enableMetrics": false,
+            "allowedClients": [],
+            "customSettings": {},
+            "environment": "development"
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/perplexity",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "slack",
+      "full_name": "sigyl-dev/slack",
+      "description": "MCP server for slack",
+      "html_url": "https://github.com/sigyl-dev/slack",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "token"
+            ],
+            "properties": {
+              "token": {
+                "type": "string",
+                "title": "Slack Token",
+                "description": "Secret Slack token for authentication (required)"
+              }
+            }
+          }
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/slack",
+      "validation_result": {
+        "isValid": true,
+        "issues": []
+      }
+    },
+    {
+      "name": "weather",
+      "full_name": "sigyl-dev/weather",
+      "description": "MCP server for weather",
+      "html_url": "https://github.com/sigyl-dev/weather",
+      "has_sigyl": true,
+      "has_smithery": false,
+      "config_file": "sigyl.yaml",
+      "config_content": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http"
+        }
+      },
+      "local_path": "/Users/charliemartin/sigyl-mcp-local/weather",
+      "validation_result": {
+        "isValid": true,
+        "issues": [
+          {
+            "type": "warning",
+            "field": "startCommand.configSchema",
+            "message": "No configSchema found in startCommand",
+            "suggestion": "Add configSchema to define required API keys and configuration"
+          }
+        ]
+      }
+    }
+  ],
+  "deployments": [
+    {
+      "repo": "sigyl-dev/Brave-Search",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/9d4247bc-192e-465b-a6e4-afa215028964?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/Desktop-Commander",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/ac9f6eae-37b5-4b37-b691-9972739127bb?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/DuckDuckGo",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/1d85d25a-fc8b-44c8-8d79-15c1fd7277ac?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/Exa-Search",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/6f95de6e-379c-4196-bce4-ef489f7ce4ef?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/Office-Word",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/41c51644-fce9-4f44-89a2-81544aaba36a?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/Sequential-Thinking",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/35918add-eb7b-4bca-958b-83989ba374b8?project=946398050699",
+      "validationIssues": [
+        {
+          "type": "warning",
+          "field": "startCommand",
+          "message": "No startCommand configuration found",
+          "suggestion": "Consider adding startCommand with configSchema for secrets management"
+        }
+      ]
+    },
+    {
+      "repo": "sigyl-dev/Todoist",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/e3c09021-daa2-4523-af5c-5e42f579efee?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/context7",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/95d9cb62-8b88-4cb6-ad5c-43a8c7dbde84?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/github",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/cd11d3e7-1731-49de-a735-9ddae4d8a6fc?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/google-maps",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/d51e4e1a-e6c2-4425-8b46-682560a05375?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/hubspot",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/5b20ec5e-e5fd-44e6-a577-2d5af65a5d33?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/notion",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/76e966f8-c81a-4360-a8d9-e56c3af9759f?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/perplexity",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/e59684bd-2b68-45b7-bcb9-86df61d08573?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/slack",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/f7c1d971-e07c-4805-97cc-93009bf7f35c?project=946398050699",
+      "validationIssues": []
+    },
+    {
+      "repo": "sigyl-dev/weather",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/a7854c98-d31b-4e96-8d05-667d17c09eb2?project=946398050699",
+      "validationIssues": [
+        {
+          "type": "warning",
+          "field": "startCommand.configSchema",
+          "message": "No configSchema found in startCommand",
+          "suggestion": "Add configSchema to define required API keys and configuration"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "successful": 0,
+    "failed": 15,
+    "configErrors": 0,
+    "autoFixed": 0
+  }
+}
