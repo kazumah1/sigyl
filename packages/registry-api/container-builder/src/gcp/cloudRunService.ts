@@ -386,13 +386,13 @@ EOF`
             ],
             dir: '.'
           },
-          // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build
+          // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build, with diagnostics
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js'
+              'echo "=== PWD (in copy step) ===" && pwd && echo "=== ROOT DIR (in copy step, before copy) ===" && ls -l && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper'
             ],
             dir: '.'
           },

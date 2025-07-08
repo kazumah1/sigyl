@@ -289,22 +289,20 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
                 </div>
                 
                 <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                  
-                  {detailed && server.status === 'active' && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); handleServerAction('redeploy', server.id); }}
-                        className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
-                        title="Redeploy server"
-                        disabled={redeployingId === server.id}
-                      >
-                        {redeployingId === server.id ? 'Redeploying...' : 'Redeploy'}
-                      </Button>
-                    </>
+                  {/* Redeploy button: always show for active servers */}
+                  {server.status === 'active' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleServerAction('redeploy', server.id); }}
+                      className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
+                      title="Redeploy server"
+                      disabled={redeployingId === server.id}
+                    >
+                      {redeployingId === server.id ? 'Redeploying...' : 'Redeploy'}
+                    </Button>
                   )}
-                  
+                  {/* Start button for inactive servers (still only in detailed mode) */}
                   {detailed && server.status === 'inactive' && (
                     <Button
                       variant="ghost"

@@ -1035,16 +1035,6 @@ const MCPPackagePage = () => {
                     >
                       {saving ? 'Saving...' : 'Apply'}
                     </Button>
-                    {/* Redeploy button: only show if there is an active deployment */}
-                    {pkg && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
-                      <Button
-                        onClick={handleRedeploy}
-                        className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                        disabled={isRedeploying || saving}
-                      >
-                        {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-                      </Button>
-                    )}
                     <Button
                       onClick={() => setEditMode(false)}
                       variant="ghost"
