@@ -992,7 +992,7 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
-            {effectiveIsOwner && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
+            {effectiveIsOwner && (
               <Button
                 onClick={handleRedeploy}
                 variant="outline"

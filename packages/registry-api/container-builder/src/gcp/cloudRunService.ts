@@ -199,6 +199,36 @@ export class CloudRunService {
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
+          // Step 2.3: Diagnostics before copying wrapper.js
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (before copy) ===" && pwd && echo "=== ROOT DIR (before copy) ===" && ls -l && echo "=== RECURSIVE LS (before copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+            ],
+            dir: '.'
+          },
+          // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build, with diagnostics
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (in copy step) ===" && pwd && echo "=== ROOT DIR (in copy step, before copy) ===" && ls -l && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper'
+            ],
+            dir: '.'
+          },
+          // Step 2.5: Diagnostics after copying wrapper.js
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (after copy) ===" && pwd && echo "=== ROOT DIR (after copy) ===" && ls -l && echo "=== RECURSIVE LS (after copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+            ],
+            dir: '.'
+          },
           // Step 3: Create a Dockerfile for the MCP server
           {
             name: 'gcr.io/cloud-builders/docker',
@@ -251,7 +281,7 @@ RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
     if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Copy in the Sigyl wrapper
-COPY ./wrapper/wrapper.js ./wrapper.js
+COPY /workspace/packages/registry-api/container-builder/wrapper/wrapper.js ./wrapper.js
 
 # Debug: Show contents after copying wrapper
 RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
