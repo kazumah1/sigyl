@@ -376,6 +376,16 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
+          // Step 2.3: Diagnostics before copying wrapper.js
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (before copy) ===" && pwd && echo "=== ROOT DIR (before copy) ===" && ls -l && echo "=== RECURSIVE LS (before copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+            ],
+            dir: '.'
+          },
           // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build
           {
             name: 'gcr.io/cloud-builders/gcloud',
@@ -383,6 +393,16 @@ EOF`
             args: [
               '-c',
               'mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js'
+            ],
+            dir: '.'
+          },
+          // Step 2.5: Diagnostics after copying wrapper.js
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (after copy) ===" && pwd && echo "=== ROOT DIR (after copy) ===" && ls -l && echo "=== RECURSIVE LS (after copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
             dir: '.'
           },
