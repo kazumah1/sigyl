@@ -244,6 +244,12 @@ COPY sigyl.yaml ./
 # Copy any remaining files (in case there are other assets)
 COPY . .
 
+# Copy in the Sigyl wrapper
+COPY ./wrapper/wrapper.js ./wrapper.js
+
+# Install wrapper dependencies
+RUN npm install express http-proxy-middleware
+
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production
 
@@ -260,8 +266,8 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
-# Start server - the compiled server.js should be in the root directory
-CMD ["node", "server.js"]
+# Start both the user server (on 8081) and the wrapper (on 8080)
+CMD ["sh", "-c", "node server.js --port=8081 & node wrapper.js"]
 EOF`
             ]
           },
@@ -359,6 +365,15 @@ EOF`
             args: [
               '-c',
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
+            ]
+          },
+          // Step 2.5: Copy wrapper.js into the build workspace before Docker build
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'cp -f ./container-builder/wrapper/wrapper.js ./wrapper.js'
             ]
           },
           // Step 3: Build using existing Dockerfile
