@@ -406,6 +406,16 @@ EOF`
             ],
             dir: '.'
           },
+          // Step 2.6: Diagnostics before Docker build to confirm build context and files
+          {
+            name: 'gcr.io/cloud-builders/gcloud',
+            entrypoint: 'bash',
+            args: [
+              '-c',
+              'echo "=== PWD (before docker build) ===" && pwd && echo "=== ROOT DIR (before docker build) ===" && ls -l && echo "=== RECURSIVE LS (before docker build) ===" && ls -lR .'
+            ],
+            dir: '.'
+          },
           // Step 3: Build using existing Dockerfile
           {
             name: 'gcr.io/cloud-builders/docker',

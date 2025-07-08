@@ -407,6 +407,33 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <Button onClick={handleEditCancel} variant="ghost" className="text-gray-400">Cancel</Button>
+                {/* Redeploy button: only show if editingServer is active */}
+                {editingServer && editingServer.status === 'active' && (
+                  <Button
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        setRedeployingId(editingServer.id);
+                        toast.info('Redeploying server...');
+                        const result = await deploymentService.redeployDeployment(editingServer.id);
+                        setRedeployingId(null);
+                        if (result.success) {
+                          toast.success('Server redeployed successfully!');
+                          setEditingServer(null);
+                          setRefreshKey((k) => k + 1);
+                        } else {
+                          toast.error('Failed to redeploy server.');
+                        }
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    className="btn-modern-inverted hover:bg-transparent hover:text-white"
+                    disabled={saving || redeployingId === editingServer.id}
+                  >
+                    {redeployingId === editingServer?.id ? 'Redeploying...' : 'Redeploy'}
+                  </Button>
+                )}
                 <Button onClick={handleEditSave} className="btn-modern-inverted hover:bg-transparent hover:text-white" disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
