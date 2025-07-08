@@ -367,13 +367,13 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.5: Copy wrapper.js into the build workspace before Docker build
+          // Step 2.4: Ensure wrapper directory exists and copy wrapper.js into it before Docker build
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'cp -f ./container-builder/wrapper/wrapper.js ./wrapper.js'
+              'mkdir -p wrapper && cp container-builder/wrapper/wrapper.js wrapper/wrapper.js'
             ]
           },
           // Step 3: Build using existing Dockerfile
