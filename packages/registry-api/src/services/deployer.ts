@@ -376,16 +376,6 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     // console.log("cloud run config", CLOUD_RUN_CONFIG);
     const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
 
-    // Prepare Cloud Run deployment request with Sigyl configuration
-    const cloudRunRequest: CloudRunDeploymentRequest = {
-      repoUrl: request.repoUrl,
-      repoName: request.repoName,
-      branch: request.branch || 'main',
-      environmentVariables: deploymentEnv,
-      sigylConfig: sigylConfig as SigylConfigUnion,
-      githubToken: request.githubToken
-    };
-
     log('🔒 Deploying with security validation...');
 
     // Deploy to Cloud Run with integrated security validation
