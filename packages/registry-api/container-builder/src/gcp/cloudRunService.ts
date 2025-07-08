@@ -367,13 +367,13 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.4: Ensure wrapper directory exists and copy wrapper.js into it before Docker build (use absolute paths)
+          // Step 2.4: Ensure wrapper directory exists and copy wrapper.js into the extracted repo root before Docker build
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p /workspace/packages/registry-api/wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js /workspace/packages/registry-api/wrapper/wrapper.js'
+              'mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js'
             ]
           },
           // Step 2.45: Debug - list files before Docker build
