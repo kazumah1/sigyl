@@ -374,16 +374,18 @@ EOF`
             args: [
               '-c',
               'mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js'
-            ]
+            ],
+            dir: '.'
           },
-          // Step 2.45: Debug - list files before Docker build
+          // Step 2.45: Debug - list files in wrapper dir before Docker build
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== ROOT DIR ===" && ls -l && echo "=== WRAPPER DIR ===" && ls -l wrapper && echo "=== CONTAINER-BUILDER/WRAPPER DIR ===" && ls -l container-builder/wrapper'
-            ]
+              'echo "=== WRAPPER DIR ===" && ls -l wrapper'
+            ],
+            dir: '.'
           },
           // Step 3: Build using existing Dockerfile
           {
