@@ -283,6 +283,57 @@ export async function retryAddPathRuleToUrlMap(
   throw lastError;
 }
 
+// Helper: Remove Path Rule from URL Map
+export async function removePathRuleFromUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
+  await initGoogleClients();
+  try {
+    // Get the current URL map
+    const urlMapRes = await compute.urlMaps.get({
+      project,
+      urlMap: urlMapName,
+      auth,
+    });
+    const urlMap = urlMapRes.data;
+    let changed = false;
+    if (urlMap.pathMatchers && Array.isArray(urlMap.pathMatchers)) {
+      for (const pathMatcher of urlMap.pathMatchers) {
+        if (Array.isArray(pathMatcher.pathRules)) {
+          const originalLength = pathMatcher.pathRules.length;
+          pathMatcher.pathRules = pathMatcher.pathRules.filter(
+            (rule: any) => !(rule.paths && rule.paths.includes(path) && rule.service && rule.service.endsWith(backendServiceName))
+          );
+          if (pathMatcher.pathRules.length !== originalLength) {
+            changed = true;
+          }
+        }
+      }
+    }
+    // Remove as defaultService if present
+    if (urlMap.defaultService && urlMap.defaultService.endsWith(backendServiceName)) {
+      // Set to a safe fallback backend service (must exist!)
+      const fallback = `https://www.googleapis.com/compute/v1/projects/${project}/global/backendServices/sigyl-mcp-dummy-backend-1nva0v9aasdk123o`;
+      urlMap.defaultService = fallback;
+      changed = true;
+      console.warn(`[URL MAP] defaultService referenced backend being deleted. Set to fallback: ${fallback}`);
+    }
+    if (changed) {
+      await compute.urlMaps.patch({
+        project,
+        urlMap: urlMapName,
+        requestBody: urlMap,
+        auth,
+      });
+      console.log(`[URL MAP] Removed path rule(s) and/or defaultService for ${path} -> ${backendServiceName}`);
+    } else {
+      console.log(`[URL MAP] No path rule or defaultService found for ${path} -> ${backendServiceName}`);
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to remove path rule from URL map:', err);
+    return false;
+  }
+}
+
 /**
  * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
