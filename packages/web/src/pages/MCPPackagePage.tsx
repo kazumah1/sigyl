@@ -992,6 +992,7 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
+            {/* Redeploy button: show for owners in owner mode (not in public view), regardless of deployments */}
             {effectiveIsOwner && (
               <Button
                 onClick={handleRedeploy}
@@ -1003,7 +1004,7 @@ const MCPPackagePage = () => {
                 {isRedeploying ? 'Redeploying...' : 'Redeploy'}
               </Button>
             )}
-            {/* Existing Edit and Delete buttons remain unchanged */}
+            {/* Edit and Delete buttons: only show for owners in edit mode or owner mode */}
             {effectiveIsOwner && !editMode && (
               <div className="flex justify-end mb-4">
                 <Button
@@ -1033,14 +1034,29 @@ const MCPPackagePage = () => {
                 </Button>
               </div>
             )}
-            <Button
-              onClick={handleDeleteService}
-              variant="outline"
-              className="btn-modern hover:bg-neutral-900 hover:text-white"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Service
-            </Button>
+            {/* Delete Service: only show for owners in edit mode or owner mode */}
+            {effectiveIsOwner && (editMode || ownerViewMode === 'owner') && (
+              <Button
+                onClick={handleDeleteService}
+                variant="outline"
+                className="btn-modern hover:bg-neutral-900 hover:text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Service
+              </Button>
+            )}
+            {/* Connect button: show for everyone when not in edit mode, including owners */}
+            {(!effectiveIsOwner || !editMode) && (
+              <Button
+                onClick={handleInstallClick}
+                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                disabled={loading}
+                variant="secondary"
+                size="lg"
+              >
+                Connect
+              </Button>
+            )}
           </div>
           </div>
           <div className="flex items-center gap-4 text-gray-400 mb-4">

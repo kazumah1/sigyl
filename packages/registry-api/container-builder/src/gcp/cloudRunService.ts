@@ -209,13 +209,13 @@ export class CloudRunService {
             ],
             dir: '.'
           },
-          // Step 2.4: Create wrapper directory and download wrapper.js from GCS bucket (using bash)
+          // Step 2.4: Create wrapper directory and download wrapper.cjs from GCS bucket (using bash)
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.js https://storage.googleapis.com/sigyl-artifacts/wrapper.js'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrapper.cjs'
             ],
             dir: '.'
           },
@@ -281,7 +281,7 @@ RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
     if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Copy in the Sigyl wrapper
-COPY ./wrapper/wrapper.js ./wrapper.js
+COPY ./wrapper/wrapper.cjs ./wrapper.cjs
 
 # Debug: Show contents after copying wrapper
 RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
@@ -309,7 +309,7 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Start both the user server (on 8081) and the wrapper (on 8080)
-CMD ["sh", "-c", "node server.js --port=8081 & node wrapper.js"]
+CMD ["sh", "-c", "node server.js --port=8081 & node wrapper.cjs"]
 EOF`
             ]
           },
@@ -671,12 +671,33 @@ EOF`
             },
             body: JSON.stringify(serviceConfig)
           }
-        )
+        );
         if (!patchResp.ok) {
-          const err = await patchResp.text();
-          throw new Error(`Cloud Run service patch failed: ${patchResp.status} ${err}`);
+          if (patchResp.status === 404) {
+            console.warn('PATCH failed with 404, attempting to create service instead...');
+            const createResponse = await fetch(
+              `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serviceConfig)
+              }
+            );
+            if (!createResponse.ok) {
+              const errorText = await createResponse.text();
+              throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
+            }
+            service = await createResponse.json();
+          } else {
+            const err = await patchResp.text();
+            throw new Error(`Cloud Run service patch failed: ${patchResp.status} ${err}`);
+          }
+        } else {
+          service = await patchResp.json();
         }
-        service = await patchResp.json();
       } else {
         const err = await getResp.text();
         throw new Error(`Failed to check existing service ${getResp.status} ${err}`)
