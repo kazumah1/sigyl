@@ -655,10 +655,32 @@ EOF`
           }
         );
         if (!createResponse.ok) {
-          const errorText = await createResponse.text();
-          throw new Error(`Cloud Run API error: ${createResponse.status} ${errorText}`);
+          if (createResponse.status === 409) {
+            // Service already exists, try PATCH again
+            console.warn('POST failed with 409 (already exists), retrying PATCH...');
+            const retryPatchResp = await fetch(
+              `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/merge-patch+json'
+                },
+                body: JSON.stringify(serviceConfig)
+              }
+            );
+            if (!retryPatchResp.ok) {
+              const retryErr = await retryPatchResp.text();
+              throw new Error(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
+            }
+            service = await retryPatchResp.json();
+          } else {
+            const errorText = await createResponse.text();
+            throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
+          }
+        } else {
+          service = await createResponse.json();
         }
-        service = await createResponse.json();
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
         const patchResp = await fetch(
@@ -687,10 +709,32 @@ EOF`
               }
             );
             if (!createResponse.ok) {
-              const errorText = await createResponse.text();
-              throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
+              if (createResponse.status === 409) {
+                // Service already exists, try PATCH again
+                console.warn('POST failed with 409 (already exists), retrying PATCH...');
+                const retryPatchResp = await fetch(
+                  `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+                  {
+                    method: 'PATCH',
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Content-Type': 'application/merge-patch+json'
+                    },
+                    body: JSON.stringify(serviceConfig)
+                  }
+                );
+                if (!retryPatchResp.ok) {
+                  const retryErr = await retryPatchResp.text();
+                  throw new Error(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
+                }
+                service = await retryPatchResp.json();
+              } else {
+                const errorText = await createResponse.text();
+                throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
+              }
+            } else {
+              service = await createResponse.json();
             }
-            service = await createResponse.json();
           } else {
             const err = await patchResp.text();
             throw new Error(`Cloud Run service patch failed: ${patchResp.status} ${err}`);
