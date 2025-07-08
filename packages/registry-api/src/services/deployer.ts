@@ -396,7 +396,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       environmentVariables: deploymentEnv,
       sigylConfig: sigylConfig as SigylConfigUnion,
       githubToken: request.githubToken
-    }, log);
+    });
 
     if (!cloudRunResult.success) {
       log('❌ Google Cloud Run deployment failed: ' + (cloudRunResult.error || 'unknown error'));
@@ -731,7 +731,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     };
     logs.push('🔒 Redeploying with security validation...');
     // Redeploy to Cloud Run (rebuild and update existing service)
-    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest, log);
+    const cloudRunResult = await cloudRunService.deployMCPServer(cloudRunRequest);
     if (!cloudRunResult.success) {
       logs.push('❌ Google Cloud Run redeploy failed');
       return { success: false, error: cloudRunResult.error, logs };
