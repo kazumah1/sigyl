@@ -244,8 +244,17 @@ COPY sigyl.yaml ./
 # Copy any remaining files (in case there are other assets)
 COPY . .
 
+# Debug: Show working directory and contents before copying wrapper
+RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
+    echo "=== ROOT DIR ===" && ls -l && \
+    echo "=== WRAPPER DIR (before copy) ===" && ls -l wrapper || echo "wrapper dir does not exist"
+
 # Copy in the Sigyl wrapper
 COPY ./wrapper/wrapper.js ./wrapper.js
+
+# Debug: Show contents after copying wrapper
+RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
+    echo "=== ROOT DIR (after wrapper copy) ===" && ls -l
 
 # Install wrapper dependencies
 RUN npm install express http-proxy-middleware
