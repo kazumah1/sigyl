@@ -296,11 +296,10 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
 
     // First delete from Google Cloud Run if there are active deployments
     const serviceName = packageData.service_name;
-    const repoName = (packageData as any).slug || packageData.name;
+    // const repoName = (packageData as any).slug || packageData.name;
     if (serviceName) {
       try {
         const { CloudRunService } = await import('../../container-builder/src/gcp/cloudRunService');
-        const { deleteBackendService, deleteNeg, removePathRuleFromUrlMap } = await import('../services/deployer');
         const CLOUD_RUN_CONFIG = {
           projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
           region: process.env.GOOGLE_CLOUD_REGION || 'us-central1'
@@ -311,30 +310,7 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
           if (!deleted) {
             console.warn(`⚠️ Failed to delete Cloud Run service: ${serviceName}`);
           }
-          // === Full GCP cleanup (correct order) ===
-          const backendServiceName = `sigyl-backend-${serviceName}`;
-          const negName = `neg-${serviceName}`;
-          const urlMapName = 'sigyl-load-balancer';
-          const path = `/@${repoName}`;
-          // 1. Remove URL Map Path Rule
-          try {
-            await removePathRuleFromUrlMap(urlMapName, path, backendServiceName, CLOUD_RUN_CONFIG.projectId);
-          } catch (err) {
-            console.warn('⚠️ Failed to remove path rule from URL map:', err);
-          }
-          // 2. Delete Backend Service
-          try {
-            await deleteBackendService(backendServiceName, CLOUD_RUN_CONFIG.projectId);
-          } catch (err) {
-            console.warn('⚠️ Failed to delete backend service:', err);
-          }
-          // 3. Delete NEG (log region)
-          try {
-            console.log('[NEG DELETE] region param:', CLOUD_RUN_CONFIG.region);
-            await deleteNeg(negName, CLOUD_RUN_CONFIG.region, CLOUD_RUN_CONFIG.projectId);
-          } catch (err) {
-            console.warn('⚠️ Failed to delete NEG:', err);
-          }
+
         } else {
           console.warn('⚠️ Google Cloud Run not configured, skipping service deletion');
         }
