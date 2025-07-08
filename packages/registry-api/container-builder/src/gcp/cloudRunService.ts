@@ -247,14 +247,17 @@ COPY . .
 # Debug: Show working directory and contents before copying wrapper
 RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
     echo "=== ROOT DIR ===" && ls -l && \
-    echo "=== WRAPPER DIR (before copy) ===" && ls -l wrapper || echo "wrapper dir does not exist"
+    echo "=== RECURSIVE LS (before wrapper copy) ===" && ls -lR . && \
+    if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Copy in the Sigyl wrapper
 COPY ./wrapper/wrapper.js ./wrapper.js
 
 # Debug: Show contents after copying wrapper
 RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
-    echo "=== ROOT DIR (after wrapper copy) ===" && ls -l
+    echo "=== ROOT DIR (after wrapper copy) ===" && ls -l && \
+    echo "=== RECURSIVE LS (after wrapper copy) ===" && ls -lR . && \
+    if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Install wrapper dependencies
 RUN npm install express http-proxy-middleware

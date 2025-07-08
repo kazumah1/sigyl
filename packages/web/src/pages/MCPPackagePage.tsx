@@ -992,91 +992,55 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
-            {effectiveIsOwner ? (
-              <>
-                {pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
-                  <>
-                    <Button
-                      onClick={handleCopyServiceUrl}
-                      variant="outline"
-                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Service URL
-                    </Button>
-                    <Button
-                      onClick={handleRedeploy}
-                      variant="outline"
-                      disabled={isRedeploying}
-                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
-                      {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-                    </Button>
-                  </>
-                )}
-                {/* Edit Button (Owner Only) */}
-                {effectiveIsOwner && !editMode && (
-                  <div className="flex justify-end mb-4">
-                    <Button
-                      onClick={() => setEditMode(true)}
-                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                )}
-                {effectiveIsOwner && editMode && (
-                  <div className="flex justify-end mb-4 gap-2">
-                    <Button
-                      onClick={handleApplyEdit}
-                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                      disabled={saving || isRedeploying}
-                    >
-                      {saving ? 'Saving...' : 'Apply'}
-                    </Button>
-                    <Button
-                      onClick={() => setEditMode(false)}
-                      variant="ghost"
-                      className="text-gray-400 hover:text-white hover:bg-[#23232a]"
-                      disabled={saving || isRedeploying}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-                <Button
-                  onClick={handleDeleteService}
-                  variant="outline"
-                  className="btn-modern hover:bg-neutral-900 hover:text-white"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Service
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={handleInstallClick}
-                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                  disabled={loading}
-                  variant="secondary"
-                  size="lg"
-                >
-                  Connect
-                </Button>
-                {/* {pkg.source_api_url && (
-                  <Button
-                    onClick={() => window.open(pkg.source_api_url, '_blank')}
-                    size="lg"
-                    className="btn-modern hover:bg-neutral-900 hover:text-white"
-                  >
-                    <Github className="w-4 h-4 mr-2" />
-                    View on GitHub
-                  </Button>
-                )} */}
-              </>
+            {effectiveIsOwner && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
+              <Button
+                onClick={handleRedeploy}
+                variant="outline"
+                disabled={isRedeploying}
+                className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
+                {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+              </Button>
             )}
+            {/* Existing Edit and Delete buttons remain unchanged */}
+            {effectiveIsOwner && !editMode && (
+              <div className="flex justify-end mb-4">
+                <Button
+                  onClick={() => setEditMode(true)}
+                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                >
+                  Edit
+                </Button>
+              </div>
+            )}
+            {effectiveIsOwner && editMode && (
+              <div className="flex justify-end mb-4 gap-2">
+                <Button
+                  onClick={handleApplyEdit}
+                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                  disabled={saving || isRedeploying}
+                >
+                  {saving ? 'Saving...' : 'Apply'}
+                </Button>
+                <Button
+                  onClick={() => setEditMode(false)}
+                  variant="ghost"
+                  className="text-gray-400 hover:text-white hover:bg-[#23232a]"
+                  disabled={saving || isRedeploying}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+            <Button
+              onClick={handleDeleteService}
+              variant="outline"
+              className="btn-modern hover:bg-neutral-900 hover:text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Service
+            </Button>
           </div>
           </div>
           <div className="flex items-center gap-4 text-gray-400 mb-4">
