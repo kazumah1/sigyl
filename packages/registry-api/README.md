@@ -1,6 +1,6 @@
 # Sigyl API
 
-Express.js + TypeScript API server for the MCP (Model Context Protocol) package registry.
+Express.js + TS API server for the MCP (Model Context Protocol) package registry.
 
 ## 🚀 Quick Start
 
