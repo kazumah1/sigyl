@@ -290,7 +290,7 @@ RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper di
     if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Install wrapper dependencies
-RUN npm install express http-proxy-middleware
+RUN npm install express http-proxy-middleware node-fetch
 
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production
@@ -656,24 +656,48 @@ EOF`
         );
         if (!createResponse.ok) {
           if (createResponse.status === 409) {
-            // Service already exists, try PATCH again
-            console.warn('POST failed with 409 (already exists), retrying PATCH...');
-            const retryPatchResp = await fetch(
-              `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
-              {
-                method: 'PATCH',
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/merge-patch+json'
-                },
-                body: JSON.stringify(serviceConfig)
+            // Service already exists, wait and retry GET/PATCH a few times
+            let retrySuccess = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              console.warn(`POST failed with 409 (already exists), retrying GET/PATCH (attempt ${attempt})...`);
+              await new Promise(res => setTimeout(res, 2000)); // wait 2 seconds
+              const retryGetResp = await fetch(
+                `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                  }
+                }
+              );
+              if (retryGetResp.ok) {
+                const retryPatchResp = await fetch(
+                  `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/${this.projectId}/services/${serviceName}`,
+                  {
+                    method: 'PATCH',
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Content-Type': 'application/merge-patch+json'
+                    },
+                    body: JSON.stringify(serviceConfig)
+                  }
+                );
+                if (retryPatchResp.ok) {
+                  service = await retryPatchResp.json();
+                  retrySuccess = true;
+                  break;
+                } else {
+                  const retryErr = await retryPatchResp.text();
+                  console.warn(`Cloud Run service patch failed after 409 (attempt ${attempt}): ${retryPatchResp.status} ${retryErr}`);
+                }
+              } else {
+                const retryGetErr = await retryGetResp.text();
+                console.warn(`Cloud Run service GET failed after 409 (attempt ${attempt}): ${retryGetResp.status} ${retryGetErr}`);
               }
-            );
-            if (!retryPatchResp.ok) {
-              const retryErr = await retryPatchResp.text();
-              throw new Error(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
             }
-            service = await retryPatchResp.json();
+            if (!retrySuccess) {
+              throw new Error('Cloud Run service patch failed after 409: Service not found after multiple retries.');
+            }
           } else {
             const errorText = await createResponse.text();
             throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
