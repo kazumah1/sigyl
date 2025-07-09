@@ -594,8 +594,8 @@ echo "✅ Source code extracted successfully"`
                   env: [
                     { name: 'NODE_ENV', value: 'production' },
                     { name: 'MCP_TRANSPORT', value: 'http' },
-                    { name: 'MCP_ENDPOINT', value: '/mcp' },
-                    { name: 'PORT', value: '8080' }
+                    { name: 'MCP_ENDPOINT', value: '/mcp' }
+                    // PORT is automatically set by Cloud Run and cannot be overridden
                     // Environment variables are now injected dynamically via the gateway
                     // No need to inject user-specific environment variables here
                   ],

@@ -1,0 +1,334 @@
+{
+  "total": 8,
+  "successful": 0,
+  "failed": 8,
+  "results": [
+    {
+      "mcpName": "perplexity",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/01894c75-217e-4e02-a3fc-bff4c86fa214?project=946398050699",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "entryPoint": "server.js",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "PERPLEXITY_API_KEY": {
+                "type": "string",
+                "title": "Perplexity API Key",
+                "description": "API key for Perplexity AI search service"
+              },
+              "LOG_LEVEL": {
+                "type": "string",
+                "title": "Log Level",
+                "description": "Logging verbosity level",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "default": "info"
+              }
+            },
+            "required": [
+              "PERPLEXITY_API_KEY"
+            ]
+          },
+          "exampleConfig": {
+            "PERPLEXITY_API_KEY": "pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "LOG_LEVEL": "info"
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "Brave-Search",
+      "success": false,
+      "error": "The resource 'projects/sigyl-464212/global/backendServices/sigyl-backend-sigyl-mcp-sigyl-dev-brave-search' already exists",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "build": {
+          "dockerBuildPath": "../../"
+        },
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "braveApiKey"
+            ],
+            "properties": {
+              "braveApiKey": {
+                "type": "string",
+                "description": "The API key for the BRAVE Search server."
+              }
+            }
+          },
+          "commandFunction": "config=>({command:'node',args:['dist/index.js'],env:{BRAVE_API_KEY:config.braveApiKey}})"
+        }
+      }
+    },
+    {
+      "mcpName": "Exa-Search",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/2db6643d-e851-4662-ae26-7b41aff85fc7?project=946398050699",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "debug": {
+                "type": "boolean",
+                "title": "Debug",
+                "description": "Enable debug logging",
+                "default": false
+              },
+              "exaApiKey": {
+                "type": "string",
+                "title": "Exa API Key",
+                "description": "Exa AI API key for search operations"
+              },
+              "enabledTools": {
+                "type": "array",
+                "title": "Enabled Tools",
+                "description": "List of tools to enable (if not specified, all tools are enabled)",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "slack",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/43e5b937-f10d-41a9-9813-6eb2699ced43?project=946398050699",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "entryPoint": "server.js",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "token"
+            ],
+            "properties": {
+              "token": {
+                "type": "string",
+                "title": "Slack Token",
+                "description": "Secret Slack token for authentication (required)"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "notion",
+      "success": false,
+      "error": "Failed to build Node.js runtime: Build failed with status: FAILURE. Log: https://console.cloud.google.com/cloud-build/builds/e9e0433f-7dff-4c71-8a62-137649f2bac6?project=946398050699",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "entryPoint": "server.js",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "required": [
+              "notionApiKey",
+              "environment"
+            ],
+            "properties": {
+              "notionApiKey": {
+                "type": "string",
+                "title": "Notion API Key",
+                "description": "Notion API key, obtained from https://www.notion.so/profile/integrations/ (required)"
+              },
+              "serviceName": {
+                "type": "string",
+                "title": "Service Name",
+                "default": "my-mcp-notion-service",
+                "description": "Name of the MCP-compatible Notion service"
+              },
+              "logLevel": {
+                "type": "string",
+                "title": "Log Level",
+                "default": "info",
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ],
+                "description": "Logging verbosity level"
+              },
+              "timeout": {
+                "type": "number",
+                "title": "Timeout",
+                "description": "Request timeout in seconds",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 300
+              },
+              "enableMetrics": {
+                "type": "boolean",
+                "title": "Enable Metrics",
+                "description": "Enable metrics collection",
+                "default": false
+              },
+              "allowedClients": {
+                "type": "array",
+                "title": "Allowed Clients",
+                "description": "List of client IDs allowed to access the server",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "customSettings": {
+                "type": "object",
+                "title": "Custom Settings",
+                "description": "Advanced custom settings for the server",
+                "properties": {
+                  "maxConnections": {
+                    "type": "number",
+                    "default": 100
+                  },
+                  "useCache": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "default": {}
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "github-mcp",
+      "success": false,
+      "error": "Security validation failed: Repository analysis failed: Not Found - https://docs.github.com/rest/git/trees#get-a-tree",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "githubPersonalAccessToken": {
+                "type": "string",
+                "title": "GitHub Personal Access Token",
+                "description": "GitHub Personal Access Token for API authentication"
+              },
+              "profile": {
+                "type": "string",
+                "title": "Profile",
+                "description": "GitHub profile type",
+                "enum": [
+                  "Personal",
+                  "Work"
+                ],
+                "default": "Personal"
+              },
+              "environment": {
+                "type": "string",
+                "title": "Environment",
+                "description": "Deployment environment",
+                "enum": [
+                  "development",
+                  "staging",
+                  "production"
+                ],
+                "default": "development"
+              }
+            },
+            "required": [
+              "githubPersonalAccessToken"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "google-maps",
+      "success": false,
+      "error": "The resource 'projects/sigyl-464212/global/backendServices/sigyl-backend-sigyl-mcp-sigyl-dev-google-maps' already exists",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string",
+                "title": "Google Maps API Key",
+                "description": "Google Maps API key. Get one from https://mapsplatform.google.com"
+              },
+              "debug": {
+                "type": "boolean",
+                "title": "Debug",
+                "description": "Enable debug logging",
+                "default": false
+              }
+            },
+            "required": [
+              "apiKey"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "mcpName": "Sequential-Thinking",
+      "success": false,
+      "error": "The resource 'projects/sigyl-464212/global/backendServices/sigyl-backend-sigyl-mcp-sigyl-dev-sequential-thinking' already exists",
+      "sigylConfig": {
+        "runtime": "node",
+        "language": "typescript",
+        "startCommand": {
+          "type": "http",
+          "configSchema": {
+            "type": "object",
+            "properties": {
+              "debug": {
+                "type": "boolean",
+                "title": "Debug",
+                "description": "Enable debug logging",
+                "default": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

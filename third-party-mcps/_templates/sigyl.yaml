@@ -1,0 +1,43 @@
+runtime: node
+language: typescript
+entryPoint: server.js
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    required:
+      - API_KEY
+    properties:
+      API_KEY:
+        type: string
+        title: API Key
+        description: API key for the third-party service (required)
+      # Add additional configuration properties as needed
+      # Example optional configurations:
+      # LOG_LEVEL:
+      #   type: string
+      #   title: Log Level
+      #   description: Logging verbosity level
+      #   enum:
+      #     - debug
+      #     - info
+      #     - warn
+      #     - error
+      #   default: info
+      # MAX_REQUESTS_PER_MINUTE:
+      #   type: number
+      #   title: Rate Limit
+      #   description: Maximum requests per minute
+      #   minimum: 1
+      #   maximum: 1000
+      #   default: 60
+      # ENABLE_CACHE:
+      #   type: boolean
+      #   title: Enable Caching
+      #   description: Enable response caching
+      #   default: true
+  exampleConfig:
+    API_KEY: "your-api-key-here"
+    # LOG_LEVEL: "info"
+    # MAX_REQUESTS_PER_MINUTE: 60
+    # ENABLE_CACHE: true 
