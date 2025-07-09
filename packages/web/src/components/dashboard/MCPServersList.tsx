@@ -99,9 +99,25 @@ const MCPServersList: React.FC<MCPServersListProps> = ({ servers, detailed = fal
     } else if (action === 'stop') {
       toast.info('Stopping server is not yet implemented.');
     } else if (action === 'redeploy') {
+      const server = localServers.find((s) => s.id === serverId);
+      if (!server || !(server as any).deployments || (server as any).deployments.length === 0) {
+        toast.error('No deployment found to redeploy.');
+        return;
+      }
+      // Find active deployment, or fallback to latest
+      const deployments = (server as any).deployments;
+      let deployment = deployments.find((d: any) => d.status === 'active');
+      if (!deployment) {
+        // Sort by created_at descending and pick the latest
+        deployment = deployments.slice().sort((a: any, b: any) => new Date(b.created_at) - new Date(a.created_at))[0];
+      }
+      if (!deployment) {
+        toast.error('No deployment found to redeploy.');
+        return;
+      }
       setRedeployingId(serverId);
       toast.info('Redeploying server...');
-      const result = await deploymentService.redeployDeployment(serverId);
+      const result = await deploymentService.redeployDeployment(deployment.id);
       setRedeployingId(null);
       if (result.success) {
         toast.success('Server redeployed successfully!');

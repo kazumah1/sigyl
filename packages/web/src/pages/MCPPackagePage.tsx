@@ -656,29 +656,31 @@ const MCPPackagePage = () => {
   const handleRedeploy = async () => {
     if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
       toast.error('No deployment found to redeploy');
+      console.log('No deployments found in pkg:', pkg);
       return;
     }
-
-    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
-    if (!activeDeployment) {
-      toast.error('No active deployment found to redeploy');
+    let deployment = pkg.deployments.find(d => d.status === 'active');
+    if (!deployment) {
+      // Fallback to latest deployment by created_at
+      deployment = pkg.deployments.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    }
+    if (!deployment) {
+      toast.error('No deployment found to redeploy');
+      console.log('No deployment found after fallback:', pkg.deployments);
       return;
     }
-
     setIsRedeploying(true);
     try {
-      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
+      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${deployment.id}/redeploy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         }
       });
-
       const data = await response.json();
       if (data.success) {
         toast.success('Redeployment started successfully');
-        // Refresh package data to get updated deployment status
         loadPackageData();
       } else {
         toast.error(data.error || 'Failed to redeploy');
