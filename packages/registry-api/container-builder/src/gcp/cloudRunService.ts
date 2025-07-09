@@ -290,7 +290,7 @@ RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper di
     if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Install wrapper dependencies
-RUN npm install express http-proxy-middleware node-fetch
+RUN npm install express http-proxy-middleware node-fetch@2
 
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production
