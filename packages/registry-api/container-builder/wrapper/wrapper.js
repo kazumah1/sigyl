@@ -33,12 +33,9 @@ const fetch = require("node-fetch");
     console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
     console.log('[MCP] apiKey from query:', req.query.apiKey);
     console.log('[MCP] Using apiKey:', apiKey);
-    // === TEMPORARY: Disable API key validation for testing ===
-    // REMOVE THIS BLOCK AND RESTORE isValidSigylApiKey check after testing!
-    const valid = true;
-    // === END TEMPORARY ===
-    // const valid = await isValidSigylApiKey(apiKey);
-    console.log('[MCP] isValidSigylApiKey result (TEMPORARY OVERRIDE):', valid);
+    // === RESTORE: Use actual API key validation ===
+    const valid = await isValidSigylApiKey(apiKey);
+    console.log('[MCP] isValidSigylApiKey result:', valid);
     if (!valid) {
       console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
       return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });

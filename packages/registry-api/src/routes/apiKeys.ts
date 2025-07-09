@@ -332,4 +332,22 @@ router.get('/profile/me', requireHybridAuth, async (req: Request, res: Response)
   }
 });
 
+router.post('/validate', async (req: Request, res: Response) => {
+  const { apiKey } = req.body;
+  if (!apiKey) {
+    return res.status(400).json({ valid: false, error: 'Missing API Key'});
+  }
+  try {
+    const user = await APIKeyService.validateAPIKey(apiKey);
+    if (user) {
+      return res.json({ valid: true, user_id: user.user_id });
+    } else {
+      return res.json({ valid: false, error: 'Invalid API Key' });
+    }
+  } catch (error) {
+    console.error('Error validating API key:', error);
+    return res.status(500).json({ valid: false, error: 'Failed to validate API key' });
+  }
+})
+
 export default router; 
