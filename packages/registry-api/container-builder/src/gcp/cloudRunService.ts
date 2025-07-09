@@ -779,7 +779,23 @@ EOF`
       }, null, 2));
       
       let serviceUrl = service.status?.url || service.status?.address?.url;
-      console.log(`🔍 Initial service URL: ${serviceUrl}`);
+
+      // Prefer project-number-based URL if available in annotations
+      const urlsAnnotation = service.metadata?.annotations?.['run.googleapis.com/urls'];
+      if (urlsAnnotation) {
+        try {
+          const urls = JSON.parse(urlsAnnotation) as string[];
+          // Find a URL that matches the project number pattern
+          const projectNumber = this.projectId.match(/\d+/)?.[0];
+          const projectNumberUrl = urls.find((u: string) => projectNumber && u.includes(`-${projectNumber}.us-central1.run.app`));
+          if (projectNumberUrl) {
+            serviceUrl = projectNumberUrl;
+            console.log('[CloudRunService] Overriding serviceUrl to project-number-based URL:', serviceUrl);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
       
       if (!serviceUrl) {
         console.log(`⏳ Service URL not immediately available, polling for up to 5 minutes...`);
