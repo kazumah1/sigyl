@@ -656,31 +656,29 @@ const MCPPackagePage = () => {
   const handleRedeploy = async () => {
     if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
       toast.error('No deployment found to redeploy');
-      console.log('No deployments found in pkg:', pkg);
       return;
     }
-    let deployment = pkg.deployments.find(d => d.status === 'active');
-    if (!deployment) {
-      // Fallback to latest deployment by created_at
-      deployment = pkg.deployments.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-    }
-    if (!deployment) {
-      toast.error('No deployment found to redeploy');
-      console.log('No deployment found after fallback:', pkg.deployments);
+
+    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
+    if (!activeDeployment) {
+      toast.error('No active deployment found to redeploy');
       return;
     }
+
     setIsRedeploying(true);
     try {
-      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${deployment.id}/redeploy`, {
+      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         }
       });
+
       const data = await response.json();
       if (data.success) {
         toast.success('Redeployment started successfully');
+        // Refresh package data to get updated deployment status
         loadPackageData();
       } else {
         toast.error(data.error || 'Failed to redeploy');
@@ -994,70 +992,100 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
-            {/* Redeploy button: show for owners in owner mode (not in public view), regardless of deployments */}
-            {effectiveIsOwner && (
-              <Button
-                onClick={handleRedeploy}
-                variant="outline"
-                disabled={isRedeploying}
-                className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
-                {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-              </Button>
-            )}
-            {/* Edit and Delete buttons: only show for owners in edit mode or owner mode */}
-            {effectiveIsOwner && !editMode && (
-              <div className="flex justify-end mb-4">
+            {effectiveIsOwner ? (
+              <>
+                {effectiveIsOwner && !editMode && (
+                  <>
+                    <Button
+                      onClick={handleCopyServiceUrl}
+                      variant="outline"
+                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Service URL
+                    </Button>
+                    <Button
+                      onClick={handleRedeploy}
+                      variant="outline"
+                      disabled={isRedeploying}
+                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
+                      {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                    </Button>
+                  </>
+                )}
+                {/* Edit Button (Owner Only) */}
+                {effectiveIsOwner && !editMode && (
+                  <div className="flex justify-end mb-4">
+                    <Button
+                      onClick={() => setEditMode(true)}
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                )}
+                {effectiveIsOwner && editMode && (
+                  <div className="flex justify-end mb-4 gap-2">
+                    <Button
+                      onClick={handleApplyEdit}
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                      disabled={saving || isRedeploying}
+                    >
+                      {saving ? 'Saving...' : 'Apply'}
+                    </Button>
+                    {/* Redeploy button: only show if there is an active deployment */}
+                    {pkg && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
+                      <Button
+                        onClick={handleRedeploy}
+                        className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                        disabled={isRedeploying || saving}
+                      >
+                        {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setEditMode(false)}
+                      variant="ghost"
+                      className="text-gray-400 hover:text-white hover:bg-[#23232a]"
+                      disabled={saving || isRedeploying}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <Button
-                  onClick={() => setEditMode(true)}
+                  onClick={handleDeleteService}
+                  variant="outline"
+                  className="btn-modern hover:bg-neutral-900 hover:text-white"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Service
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={handleInstallClick}
                   className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                  disabled={loading}
+                  variant="secondary"
+                  size="lg"
                 >
-                  Edit
+                  Connect
                 </Button>
-              </div>
-            )}
-            {effectiveIsOwner && editMode && (
-              <div className="flex justify-end mb-4 gap-2">
-                <Button
-                  onClick={handleApplyEdit}
-                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                  disabled={saving || isRedeploying}
-                >
-                  {saving ? 'Saving...' : 'Apply'}
-                </Button>
-                <Button
-                  onClick={() => setEditMode(false)}
-                  variant="ghost"
-                  className="text-gray-400 hover:text-white hover:bg-[#23232a]"
-                  disabled={saving || isRedeploying}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-            {/* Delete Service: only show for owners in edit mode or owner mode */}
-            {effectiveIsOwner && (editMode || ownerViewMode === 'owner') && (
-              <Button
-                onClick={handleDeleteService}
-                variant="outline"
-                className="btn-modern hover:bg-neutral-900 hover:text-white"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Service
-              </Button>
-            )}
-            {/* Connect button: show for everyone when not in edit mode, including owners */}
-            {!effectiveIsOwner && !(editMode || ownerViewMode === 'owner') && (
-              <Button
-                onClick={handleInstallClick}
-                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                disabled={loading}
-                variant="secondary"
-                size="lg"
-              >
-                Connect
-              </Button>
+                {/* {pkg.source_api_url && (
+                  <Button
+                    onClick={() => window.open(pkg.source_api_url, '_blank')}
+                    size="lg"
+                    className="btn-modern hover:bg-neutral-900 hover:text-white"
+                  >
+                    <Github className="w-4 h-4 mr-2" />
+                    View on GitHub
+                  </Button>
+                )} */}
+              </>
             )}
           </div>
           </div>
