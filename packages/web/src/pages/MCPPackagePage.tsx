@@ -557,8 +557,10 @@ const MCPPackagePage = () => {
         }
       }
     } else {
-      // fallback for old hardcoded fields
-      if (!secretFields.WEATHER_API_KEY) errors.WEATHER_API_KEY = 'Required';
+      // Validate common API key fields for packages without predefined secrets
+      if (!secretFields.API_KEY && !secretFields.BRAVE_API_KEY && !secretFields.OPENAI_API_KEY && !secretFields.ANTHROPIC_API_KEY) {
+        errors.API_KEY = 'At least one API key is required';
+      }
     }
     setSecretErrors(errors);
     return Object.keys(errors).length === 0;
@@ -587,6 +589,11 @@ const MCPPackagePage = () => {
           if (matchingSecret) {
             updatedFields[secret.key] = secret.value;
           }
+        } else {
+          // For packages without predefined secrets, pre-fill common API key fields
+          if (['API_KEY', 'BRAVE_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'].includes(secret.key)) {
+            updatedFields[secret.key] = secret.value;
+          }
         }
       });
       
@@ -607,13 +614,22 @@ const MCPPackagePage = () => {
         return;
       }
 
+      // DEBUG: Log what we're working with
+      console.log('=== SAVE PACKAGE SECRETS DEBUG ===');
+      console.log('Package name:', pkg.name);
+      console.log('Package secrets:', pkg.secrets);
+      console.log('Secret fields:', secretFields);
+      console.log('User:', user);
+
       // Prepare secrets array from the form fields
       const secretsToSave: Array<{ key: string; value: string; description?: string }> = [];
       
       if (pkg.secrets && Array.isArray(pkg.secrets)) {
         // Handle dynamic secrets from package definition
+        console.log('Processing dynamic secrets from package definition');
         pkg.secrets.forEach(secret => {
           const value = secretFields[secret.name];
+          console.log(`Secret ${secret.name}:`, { value, hasValue: !!value, trimmedValue: value?.trim() });
           if (value && value.trim()) {
             secretsToSave.push({
               key: secret.name,
@@ -624,6 +640,7 @@ const MCPPackagePage = () => {
         });
       } else {
         // Fallback for old hardcoded fields
+        console.log('Processing hardcoded secret fields');
         if (secretFields.WEATHER_API_KEY) {
           secretsToSave.push({
             key: 'WEATHER_API_KEY',
@@ -640,9 +657,33 @@ const MCPPackagePage = () => {
         }
       }
 
+      // NEW: Also capture any other non-empty fields that might have been entered
+      // This handles cases where packages don't have predefined secrets but users enter API keys
+      console.log('Processing any other non-empty secret fields');
+      Object.entries(secretFields).forEach(([key, value]) => {
+        // Skip fields we already processed above
+        const alreadyProcessed = pkg.secrets?.some(s => s.name === key) || 
+                                ['WEATHER_API_KEY', 'DEBUG'].includes(key);
+        
+        if (!alreadyProcessed && value && value.trim()) {
+          console.log(`Found additional secret field ${key}:`, { value, trimmedValue: value.trim() });
+          secretsToSave.push({
+            key: key,
+            value: value.trim(),
+            description: `API key for ${pkg.name}`
+          });
+        }
+      });
+
+      console.log('Secrets to save:', secretsToSave);
+
       if (secretsToSave.length > 0) {
-        await SecretsService.savePackageSecrets(token, pkg.name, secretsToSave);
+        const result = await SecretsService.savePackageSecrets(token, pkg.name, secretsToSave);
+        console.log('Save result:', result);
         toast.success(`Saved ${secretsToSave.length} secret${secretsToSave.length > 1 ? 's' : ''} for ${pkg.name}`);
+      } else {
+        console.log('No secrets to save - this is the problem!');
+        toast.error('No secrets found to save. Please check your input.');
       }
     } catch (error) {
       console.error('Failed to save package secrets:', error);
@@ -652,22 +693,31 @@ const MCPPackagePage = () => {
 
   const handleInstallClick = () => {
     setShowInstallModal(true);
-    // Check if there are any secrets to configure
-    const hasSecrets = pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0;
-    if (hasSecrets) {
-      setInstallStep(1);
-      // Initialize secret fields for all secrets
-      const initialFields: { [key: string]: string } = {};
+    // Always show secrets configuration step when user clicks Connect
+    // This allows users to enter custom API keys even if package doesn't have predefined secrets
+    setInstallStep(1);
+    
+    // Initialize secret fields
+    const initialFields: { [key: string]: string } = {};
+    
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0) {
+      // Initialize fields for predefined secrets
       for (const secret of pkg.secrets) {
         initialFields[secret.name] = '';
       }
-      setSecretFields(initialFields);
       // Load existing secrets for this package
       loadExistingSecrets();
     } else {
-      setInstallStep(2);
-      setSecretFields({});
+      // For packages without predefined secrets, initialize common API key fields
+      initialFields['API_KEY'] = '';
+      initialFields['BRAVE_API_KEY'] = '';
+      initialFields['OPENAI_API_KEY'] = '';
+      initialFields['ANTHROPIC_API_KEY'] = '';
+      // Load any existing secrets for this package
+      loadExistingSecrets();
     }
+    
+    setSecretFields(initialFields);
     setSecretErrors({});
   };
 
@@ -1525,45 +1575,69 @@ const MCPPackagePage = () => {
                     )}
                   </>
                 ) : (
-                  // fallback for old hardcoded fields
+                  // Common API key fields for packages without predefined secrets
                   <>
                     <div>
-                      <Label htmlFor="WEATHER_API_KEY">WEATHER_API_KEY <span className="text-red-400">*</span></Label>
+                      <Label htmlFor="API_KEY">API Key <span className="text-red-400">*</span></Label>
                       <Input
-                        id="WEATHER_API_KEY"
-                        name="WEATHER_API_KEY"
-                        value={secretFields.WEATHER_API_KEY || ''}
+                        id="API_KEY"
+                        name="API_KEY"
+                        value={secretFields.API_KEY || ''}
                         onChange={handleSecretChange}
-                        placeholder="Enter your weather API key"
-                        className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                        placeholder="Enter your API key"
+                        className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
                       />
-                      {secretErrors.WEATHER_API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.WEATHER_API_KEY}</div>}
+                      {secretErrors.API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.API_KEY}</div>}
                     </div>
                     <div>
                       <button
                         type="button"
-                        className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm mt-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition focus:outline-none`}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md border border-white/20 bg-white/10 text-white text-sm mt-2 hover:bg-white/10 hover:text-white transition focus:outline-none`}
                         onClick={() => setShowOptionalSecrets((v) => !v)}
                         aria-expanded={showOptionalSecrets}
                       >
                         {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        {showOptionalSecrets ? 'Hide optional secrets' : 'Show optional secrets'}
+                        {showOptionalSecrets ? 'Hide additional API keys' : 'Show additional API keys'}
                       </button>
                       <div
                         className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'mt-4' : 'max-h-0'}`}
                         style={showOptionalSecrets ? {} : { maxHeight: 0 }}
                       >
                         {showOptionalSecrets && (
-                          <div>
-                            <Label htmlFor="DEBUG">DEBUG (optional)</Label>
-                            <Input
-                              id="DEBUG"
-                              name="DEBUG"
-                              value={secretFields.DEBUG || ''}
-                              onChange={handleSecretChange}
-                              placeholder="true or false"
-                              className="mt-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                            />
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="BRAVE_API_KEY">Brave API Key (optional)</Label>
+                              <Input
+                                id="BRAVE_API_KEY"
+                                name="BRAVE_API_KEY"
+                                value={secretFields.BRAVE_API_KEY || ''}
+                                onChange={handleSecretChange}
+                                placeholder="Enter your Brave Search API key"
+                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="OPENAI_API_KEY">OpenAI API Key (optional)</Label>
+                              <Input
+                                id="OPENAI_API_KEY"
+                                name="OPENAI_API_KEY"
+                                value={secretFields.OPENAI_API_KEY || ''}
+                                onChange={handleSecretChange}
+                                placeholder="Enter your OpenAI API key"
+                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="ANTHROPIC_API_KEY">Anthropic API Key (optional)</Label>
+                              <Input
+                                id="ANTHROPIC_API_KEY"
+                                name="ANTHROPIC_API_KEY"
+                                value={secretFields.ANTHROPIC_API_KEY || ''}
+                                onChange={handleSecretChange}
+                                placeholder="Enter your Anthropic API key"
+                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
