@@ -12,7 +12,7 @@ const fetch = require("node-fetch");
   async function isValidSigylApiKey(key) {
     if (!key) return false;
     try {
-      const resp = await fetch('https://api.sigyl.dev/api/v1/apikeys/validate', {
+      const resp = await fetch('https://api.sigyl.dev/api/v1/keys/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: key })
@@ -57,4 +57,4 @@ const fetch = require("node-fetch");
   app.listen(8080, () => {
     console.log("Wrapper listening on port 8080");
   });
-})(); 
+})();

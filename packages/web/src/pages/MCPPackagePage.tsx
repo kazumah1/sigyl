@@ -1728,7 +1728,7 @@ const MCPPackagePage = () => {
                           if (!/^https?:\/\//.test(fullUrl)) {
                             fullUrl = 'https://' + fullUrl.replace(/^\/*/, '');
                           }
-                          url = `${fullUrl}?api_key=${encodeURIComponent(apiKey)}&profile=${encodeURIComponent(profileId)}`;
+                          url = `${fullUrl}?apiKey=${encodeURIComponent(apiKey)}`;
                         }
                         setHttpApiUrl(url);
                         setShowHttpApiInline(true);
