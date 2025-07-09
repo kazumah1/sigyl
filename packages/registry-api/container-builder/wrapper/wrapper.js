@@ -27,7 +27,14 @@ async function isValidSigylApiKey(key) {
 // /mcp endpoint with API key validation and MCP logic
 app.post('/mcp', async (req, res) => {
   const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
-  if (!await isValidSigylApiKey(apiKey)) {
+  console.log('[MCP] Received /mcp POST');
+  console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
+  console.log('[MCP] apiKey from query:', req.query.apiKey);
+  console.log('[MCP] Using apiKey:', apiKey);
+  const valid = await isValidSigylApiKey(apiKey);
+  console.log('[MCP] isValidSigylApiKey result:', valid);
+  if (!valid) {
+    console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
     return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
   }
 
