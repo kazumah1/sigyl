@@ -308,8 +308,8 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
-# Start both the user server (on 8081) and the wrapper (on 8080)
-CMD ["sh", "-c", "node server.js --port=8081 & node wrapper.cjs"]
+# Start command optimized for Cloud Run
+CMD ["node", "wrapper.cjs"]
 EOF`
             ]
           },
