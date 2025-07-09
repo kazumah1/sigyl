@@ -243,6 +243,11 @@ export async function addPathRuletoUrlMap(urlMapName: string, path: string, back
   pathMatcher.pathRules.push({
     paths: [path],
     service: `projects/${project}/global/backendServices/${backendServiceName}`,
+    routeAction: {
+      urlRewrite: {
+        pathPrefixRewrite: '/mcp'
+      }
+    }
   });
   // Patch the URL map
   await compute.urlMaps.patch({
@@ -403,7 +408,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       const urlMapName = `sigyl-load-balancer`;
       const region = CLOUD_RUN_CONFIG.region;
       const project = CLOUD_RUN_CONFIG.projectId;
-      const path = `/@${request.repoName}/*`;
+      const path = `/@${request.repoName}/mcp`;
 
       await Promise.all([
         createBackendService(backendServiceName, project),
