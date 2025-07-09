@@ -671,13 +671,6 @@ EOF`
                 }
               );
               if (retryGetResp.ok) {
-                // Extract resourceVersion before PATCH
-                const retryGetJson = await retryGetResp.json();
-                const resourceVersion = retryGetJson?.metadata?.resourceVersion;
-                if (resourceVersion) {
-                  if (!serviceConfig.metadata) serviceConfig.metadata = {};
-                  serviceConfig.metadata.resourceVersion = resourceVersion;
-                }
                 const retryPatchResp = await fetch(
                   `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                   {
@@ -714,13 +707,6 @@ EOF`
         }
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
-        // Extract resourceVersion before PATCH
-        const getJson = await getResp.json();
-        const resourceVersion = getJson?.metadata?.resourceVersion;
-        if (resourceVersion) {
-          if (!serviceConfig.metadata) serviceConfig.metadata = {};
-          serviceConfig.metadata.resourceVersion = resourceVersion;
-        }
         const patchResp = await fetch(
           `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
           {
@@ -750,24 +736,6 @@ EOF`
               if (createResponse.status === 409) {
                 // Service already exists, try PATCH again
                 console.warn('POST failed with 409 (already exists), retrying PATCH...');
-                // Get resourceVersion before PATCH
-                const retryGetResp = await fetch(
-                  `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
-                  {
-                    method: 'GET',
-                    headers: {
-                      'Authorization': `Bearer ${accessToken}`
-                    }
-                  }
-                );
-                if (retryGetResp.ok) {
-                  const retryGetJson = await retryGetResp.json();
-                  const resourceVersion = retryGetJson?.metadata?.resourceVersion;
-                  if (resourceVersion) {
-                    if (!serviceConfig.metadata) serviceConfig.metadata = {};
-                    serviceConfig.metadata.resourceVersion = resourceVersion;
-                  }
-                }
                 const retryPatchResp = await fetch(
                   `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                   {
