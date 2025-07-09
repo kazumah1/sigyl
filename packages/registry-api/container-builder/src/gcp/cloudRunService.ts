@@ -632,7 +632,7 @@ EOF`
       console.log('🚀 Checking for existing Cloud Run service...');
       
       const getResp = await fetch(
-        `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+        `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
         {
           method: 'GET',
           headers: {
@@ -644,7 +644,7 @@ EOF`
       if (getResp.status === 404) {
         console.log('Service does not exist. Continuing with service creation')
         const createResponse = await fetch(
-          `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services`,
+          `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services`,
           {
             method: 'POST',
             headers: {
@@ -662,7 +662,7 @@ EOF`
               console.warn(`POST failed with 409 (already exists), retrying GET/PATCH (attempt ${attempt})...`);
               await new Promise(res => setTimeout(res, 2000)); // wait 2 seconds
               const retryGetResp = await fetch(
-                `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+                `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                 {
                   method: 'GET',
                   headers: {
@@ -672,7 +672,7 @@ EOF`
               );
               if (retryGetResp.ok) {
                 const retryPatchResp = await fetch(
-                  `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+                  `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                   {
                     method: 'PATCH',
                     headers: {
@@ -708,7 +708,7 @@ EOF`
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
         const patchResp = await fetch(
-          `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+          `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
           {
             method: 'PATCH',
             headers: {
@@ -722,7 +722,7 @@ EOF`
           if (patchResp.status === 404) {
             console.warn('PATCH failed with 404, attempting to create service instead...');
             const createResponse = await fetch(
-              `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services`,
+              `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services`,
               {
                 method: 'POST',
                 headers: {
@@ -737,7 +737,7 @@ EOF`
                 // Service already exists, try PATCH again
                 console.warn('POST failed with 409 (already exists), retrying PATCH...');
                 const retryPatchResp = await fetch(
-                  `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+                  `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                   {
                     method: 'PATCH',
                     headers: {
@@ -789,7 +789,7 @@ EOF`
           console.log(`📊 Polling attempt ${i + 1}/30 for service URL...`);
           
           const statusResp = await fetch(
-            `https://${this.region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/946398050699/services/${serviceName}`,
+            `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
             {
               headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -978,7 +978,7 @@ EOF`
       console.log(`🔄 Restarting Cloud Run service: ${serviceName}`);
       
       // Get current service configuration
-      const getResponse = await this.cloudRunRequest('GET', `/v1/namespaces/946398050699/services/${serviceName}`);
+      const getResponse = await this.cloudRunRequest('GET', `/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`);
       
       if (!getResponse.ok) {
         throw new Error(`Failed to get service: ${getResponse.status}`);
@@ -992,7 +992,7 @@ EOF`
         'run.googleapis.com/restart-timestamp': new Date().toISOString()
       };
       
-      const updateResponse = await this.cloudRunRequest('PUT', `/v1/namespaces/946398050699/services/${serviceName}`, service);
+      const updateResponse = await this.cloudRunRequest('PUT', `/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`, service);
       
       if (!updateResponse.ok) {
         throw new Error(`Failed to restart service: ${updateResponse.status}`);
@@ -1011,10 +1011,16 @@ EOF`
    * Helper methods for Google Cloud API calls
    */
   private async cloudRunRequest(method: string, path: string, body?: any): Promise<Response> {
-    // Replace any /namespaces/${this.projectId}/ with /namespaces/946398050699/ in path
-    const fixedPath = path.replace(/\/namespaces\/[^/]+\//g, '/namespaces/946398050699/');
-    const url = `https://${this.region}-run.googleapis.com${fixedPath}`;
-    
+    // Construct the correct Cloud Run API URL
+    // If path starts with /v1/projects/... use as is, else treat as relative to /v1
+    let url: string;
+    if (path.startsWith('/v1/projects/')) {
+      url = `https://run.googleapis.com${path}`;
+    } else if (path.startsWith('/v1/')) {
+      url = `https://run.googleapis.com${path}`;
+    } else {
+      url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}${path.startsWith('/') ? path : '/' + path}`;
+    }
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${await this.getAccessToken()}`
