@@ -831,7 +831,7 @@ EOF`
         
         if (!serviceUrl) {
           // As a fallback, construct the URL manually
-          const constructedUrl = `https://${serviceName}-${process.env.GOOGLE_CLOUD_PROJECT_HASH || '946398050699'}-${this.region}.a.run.app`;
+          const constructedUrl = `https://${serviceName}-${process.env.GOOGLE_CLOUD_PROJECT_HASH || 'lrzo3avokq'}-${this.region}.a.run.app`;
           console.log(`🔧 Attempting fallback URL construction: ${constructedUrl}`);
           
           // Test if the constructed URL is accessible

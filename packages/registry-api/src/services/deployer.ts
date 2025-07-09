@@ -489,7 +489,8 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream'
+          'Accept': 'application/json, text/event-stream',
+          'x-sigyl-api-key': process.env.SIGYL_MASTER_KEY || ''
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -745,7 +746,8 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream'
+          'Accept': 'application/json, text/event-stream',
+          'x-sigyl-api-key': process.env.SIGYL_MASTER_KEY || ''
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
