@@ -604,6 +604,11 @@ const MCPPackagePage = () => {
     }
   };
 
+  // Helper to convert camelCase or any key to ALL_CAPS_WITH_UNDERSCORES
+  function toEnvVarFormat(key: string): string {
+    return key.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/([A-Z])([A-Z][a-z])/g, '$1_$2').toUpperCase();
+  }
+
   const savePackageSecrets = async () => {
     if (!pkg?.name || !user) return;
     
@@ -629,10 +634,11 @@ const MCPPackagePage = () => {
         console.log('Processing dynamic secrets from package definition');
         pkg.secrets.forEach(secret => {
           const value = secretFields[secret.name];
-          console.log(`Secret ${secret.name}:`, { value, hasValue: !!value, trimmedValue: value?.trim() });
+          const envKey = toEnvVarFormat(secret.name);
+          console.log(`Secret ${secret.name} (envKey: ${envKey}):`, { value, hasValue: !!value, trimmedValue: value?.trim() });
           if (value && value.trim()) {
             secretsToSave.push({
-              key: secret.name,
+              key: envKey,
               value: value.trim(),
               description: secret.description || `API key for ${pkg.name}`
             });
@@ -666,9 +672,10 @@ const MCPPackagePage = () => {
                                 ['WEATHER_API_KEY', 'DEBUG'].includes(key);
         
         if (!alreadyProcessed && value && value.trim()) {
-          console.log(`Found additional secret field ${key}:`, { value, trimmedValue: value.trim() });
+          const envKey = toEnvVarFormat(key);
+          console.log(`Found additional secret field ${key} (envKey: ${envKey}):`, { value, trimmedValue: value.trim() });
           secretsToSave.push({
-            key: key,
+            key: envKey,
             value: value.trim(),
             description: `API key for ${pkg.name}`
           });
