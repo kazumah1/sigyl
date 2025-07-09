@@ -572,54 +572,54 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     }
 
     // (leave the polling logic for /mcp endpoint here, after unauthenticated is set)
-    const startTime = Date.now();
-    const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
-    while (Date.now() - startTime < 120000) {
-      const mcpResp = await fetch(mcpUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream',
-          'x-sigyl-api-key': process.env.SIGYL_MASTER_KEY || ''
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list',
-          params: {}
-        })
-      });
-      if (mcpResp.ok) {
-        try {
-          const text = await mcpResp.text();
-          // Try to parse event-stream or JSON
-          let data: any = {};
-          const match = text.match(/data: (\{.*\})/);
-          if (match) {
-            data = JSON.parse(match[1]);
-          } else {
-            data = JSON.parse(text);
-          }
-          if (data && data.result) {
-            console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
-            // 3. If ready, update ready: true
-            const { error: pkgError } = await supabase
-              .from('mcp_packages')
-              .update({ ready: true })
-              .eq('id', packageId);
-            if (pkgError) {
-              console.error('❌ Failed to update mcp_packages:', pkgError);
-            } else {
-              console.log('✅ Updated mcp_packages');
-            }
-            break;
-          }
-        } catch (err) {
-          // Ignore parse errors, keep polling
-        }
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    // const startTime = Date.now();
+    // const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
+    // while (Date.now() - startTime < 120000) {
+    //   const mcpResp = await fetch(mcpUrl, {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'Accept': 'application/json, text/event-stream',
+    //       'x-sigyl-api-key': process.env.SIGYL_MASTER_KEY || ''
+    //     },
+    //     body: JSON.stringify({
+    //       jsonrpc: '2.0',
+    //       id: 1,
+    //       method: 'tools/list',
+    //       params: {}
+    //     })
+    //   });
+    //   if (mcpResp.ok) {
+    //     try {
+    //       const text = await mcpResp.text();
+    //       // Try to parse event-stream or JSON
+    //       let data: any = {};
+    //       const match = text.match(/data: (\{.*\})/);
+    //       if (match) {
+    //         data = JSON.parse(match[1]);
+    //       } else {
+    //         data = JSON.parse(text);
+    //       }
+    //       if (data && data.result) {
+    //         console.log('✅ MCP server is ready (responded to /mcp POST with tools/list)');
+    //         // 3. If ready, update ready: true
+    //         const { error: pkgError } = await supabase
+    //           .from('mcp_packages')
+    //           .update({ ready: true })
+    //           .eq('id', packageId);
+    //         if (pkgError) {
+    //           console.error('❌ Failed to update mcp_packages:', pkgError);
+    //         } else {
+    //           console.log('✅ Updated mcp_packages');
+    //         }
+    //         break;
+    //       }
+    //     } catch (err) {
+    //       // Ignore parse errors, keep polling
+    //     }
+    //   }
+    //   await new Promise(resolve => setTimeout(resolve, 1000));
+    // }
 
     return {
       success: true,
