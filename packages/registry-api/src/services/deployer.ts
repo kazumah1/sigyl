@@ -412,6 +412,15 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       await addNegToBackendService(backendServiceName, negName, region, project);
       await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
       await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
+
+      // === Ensure unauthenticated invocations are allowed BEFORE polling ===
+      try {
+        const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
+        await cloudRunService.allowUnauthenticated(cloudRunResult.serviceName!);
+        log('✅ Allowed unauthenticated invocations for Cloud Run service.');
+      } catch (err) {
+        log('⚠️ Failed to set unauthenticated invoker policy: ' + (err instanceof Error ? err.message : String(err)));
+      }
     }
 
     // === Insert/Upsert into mcp_packages ===
@@ -561,7 +570,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       }
     }
 
-    // 2. Poll /mcp endpoint for up to 2 minutes using POST and JSON-RPC body
+    // (leave the polling logic for /mcp endpoint here, after unauthenticated is set)
     const startTime = Date.now();
     const mcpUrl = `${cloudRunResult.deploymentUrl}/mcp`;
     while (Date.now() - startTime < 120000) {

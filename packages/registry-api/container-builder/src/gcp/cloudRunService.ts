@@ -878,7 +878,7 @@ EOF`
   /**
    * Set IAM policy to allow unauthenticated invocations (allUsers as run.invoker)
    */
-  private async allowUnauthenticated(serviceName: string): Promise<void> {
+  async allowUnauthenticated(serviceName: string): Promise<void> {
     const url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}:setIamPolicy`;
     const accessToken = await this.getAccessToken();
     const body = {
