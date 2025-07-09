@@ -1046,7 +1046,7 @@ const MCPPackagePage = () => {
               </Button>
             )}
             {/* Connect button: show for everyone when not in edit mode, including owners */}
-            {(!effectiveIsOwner || !editMode) && (
+            {!effectiveIsOwner && !(editMode || ownerViewMode === 'owner') && (
               <Button
                 onClick={handleInstallClick}
                 className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
