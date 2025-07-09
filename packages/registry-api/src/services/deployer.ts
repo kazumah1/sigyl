@@ -92,7 +92,7 @@ export async function createBackendService(backendServiceName: string, project: 
     // Wait for the global operation to complete
     const operationName = res.data.name;
     let opStatus = res.data.status;
-    const maxWaitMs = 30000;
+    const maxWaitMs = 120000; // Increased from 30000 (30s) to 120000 (2 minutes)
     const start = Date.now();
     let attempt = 0;
     while (opStatus !== 'DONE' && Date.now() - start < maxWaitMs) {
@@ -156,7 +156,7 @@ export async function createNeg(negName: string, region: string, project: string
 }
 
 // Helper: Wait for Backend Service to be ready
-export async function waitForBackendServiceReady(backendServiceName: string, project: string, maxWaitMs = 20000) {
+export async function waitForBackendServiceReady(backendServiceName: string, project: string, maxWaitMs = 120000) { // Increased default from 20000 to 120000
   await initGoogleClients();
   const start = Date.now();
   let attempt = 0;
@@ -198,7 +198,7 @@ export async function addNegToBackendService(backendServiceName: string, negName
 }
 
 // Helper: Wait for NEG to be ready on Backend Service
-export async function waitForNegReadyOnBackendService(backendServiceName: string, negName: string, region: string, project: string, maxWaitMs = 30000) {
+export async function waitForNegReadyOnBackendService(backendServiceName: string, negName: string, region: string, project: string, maxWaitMs = 120000) { // Increased default from 30000 to 120000
   await initGoogleClients();
   const groupUrl = `projects/${project}/regions/${region}/networkEndpointGroups/${negName}`;
   const start = Date.now();
