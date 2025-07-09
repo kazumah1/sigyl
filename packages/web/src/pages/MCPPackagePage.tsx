@@ -997,14 +997,6 @@ const MCPPackagePage = () => {
                 {effectiveIsOwner && !editMode && (
                   <>
                     <Button
-                      onClick={handleCopyServiceUrl}
-                      variant="outline"
-                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Service URL
-                    </Button>
-                    <Button
                       onClick={handleRedeploy}
                       variant="outline"
                       disabled={isRedeploying}

@@ -403,7 +403,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       const urlMapName = `sigyl-load-balancer`;
       const region = CLOUD_RUN_CONFIG.region;
       const project = CLOUD_RUN_CONFIG.projectId;
-      const path = `/@${request.repoName}`;
+      const path = `/@${request.repoName}/*`;
 
       await Promise.all([
         createBackendService(backendServiceName, project),
