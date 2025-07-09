@@ -700,14 +700,19 @@ const MCPPackagePage = () => {
 
   const handleInstallClick = () => {
     setShowInstallModal(true);
-    // Always show secrets configuration step when user clicks Connect
-    // This allows users to enter custom API keys even if package doesn't have predefined secrets
-    setInstallStep(1);
-    
+    // If the package has no secrets (no required and no optional secrets), skip to installStep 2
+    let hasSecrets = false;
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0) {
+      hasSecrets = pkg.secrets.some(s => s.required) || pkg.secrets.some(s => !s.required);
+    }
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0 && hasSecrets) {
+      setInstallStep(1);
+    } else {
+      setInstallStep(2);
+    }
     // Initialize secret fields
     const initialFields: { [key: string]: string } = {};
-    
-    if (pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0) {
+    if (pkg && pkg.secrets && Array.isArray(pkg.secrets) && pkg.secrets.length > 0 && hasSecrets) {
       // Initialize fields for predefined secrets
       for (const secret of pkg.secrets) {
         initialFields[secret.name] = '';
@@ -723,7 +728,6 @@ const MCPPackagePage = () => {
       // Load any existing secrets for this package
       loadExistingSecrets();
     }
-    
     setSecretFields(initialFields);
     setSecretErrors({});
   };
