@@ -360,4 +360,123 @@ router.get('/deployment/:userId', async (req, res) => {
   }
 });
 
+// Get secrets for MCP package (for pre-filling Connect form)
+router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
+  try {
+    const userId = req.user!.user_id;
+    const packageName = req.params.packageName;
+
+    // Get secrets that match the package name pattern
+    // We'll look for secrets that have the package name in their key or description
+    const { data, error } = await supabase
+      .from('mcp_secrets')
+      .select('key, value, description')
+      .eq('user_id', userId)
+      .or(`key.ilike.%${packageName}%,description.ilike.%${packageName}%`);
+
+    if (error) throw error;
+
+    // Decrypt values and return them for pre-filling
+    const secrets = data.map(secret => ({
+      key: secret.key,
+      value: decrypt(secret.value),
+      description: secret.description
+    }));
+
+    const response: APIResponse<Array<{ key: string; value: string; description?: string }>> = {
+      success: true,
+      data: secrets,
+      message: 'Package secrets retrieved successfully'
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting package secrets:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Failed to retrieve package secrets'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// Save secrets for MCP package (from Connect popup)
+router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
+  try {
+    const userId = req.user!.user_id;
+    const packageName = req.params.packageName;
+    const { secrets } = req.body; // Array of { key, value, description }
+
+    if (!secrets || !Array.isArray(secrets)) {
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Validation Error',
+        message: 'Secrets array is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    const savedSecrets = [];
+
+    for (const secret of secrets) {
+      const { key, value, description } = secret;
+
+      if (!key || !value) {
+        continue; // Skip invalid secrets
+      }
+
+      // Validate key format
+      if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
+        continue; // Skip invalid keys
+      }
+
+      const encryptedValue = encrypt(value);
+
+      // Use upsert to avoid duplicates
+      const { data, error } = await supabase
+        .from('mcp_secrets')
+        .upsert({ 
+          user_id: userId, 
+          key, 
+          value: encryptedValue,
+          description: description || `Auto-saved for ${packageName}`,
+          mcp_server_id: packageName // Use package name as mcp_server_id for organization
+        }, {
+          onConflict: 'user_id,key'
+        })
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error saving secret:', error);
+        continue; // Skip failed secrets
+      }
+
+      savedSecrets.push({
+        id: data.id,
+        key: data.key,
+        description: data.description,
+        created_at: data.created_at
+      });
+    }
+
+    const response: APIResponse<{ secrets: any[] }> = {
+      success: true,
+      data: { secrets: savedSecrets },
+      message: `Saved ${savedSecrets.length} secrets for ${packageName}`
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    console.error('Error saving package secrets:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Failed to save package secrets'
+    };
+    res.status(500).json(response);
+  }
+});
+
 export default router; 

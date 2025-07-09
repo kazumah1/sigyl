@@ -250,3 +250,5 @@ python-sdk/
 images/
 Test_5.png
 *.csv
+
+/third-party-mcps/

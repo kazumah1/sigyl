@@ -190,4 +190,46 @@ export class SecretsService {
       { key: 'TWITTER_ACCESS_SECRET', description: 'Twitter access secret', placeholder: 'your-twitter-access-secret' },
     ];
   }
+
+  /**
+   * Get secrets for a specific MCP package (for pre-filling Connect form)
+   */
+  static async getPackageSecrets(token: string, packageName: string): Promise<Array<{ key: string; value: string; description?: string }>> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/secrets/package/${encodeURIComponent(packageName)}`, {
+        headers: this.getAuthHeaders(token),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to fetch package secrets: ${response.status}`);
+      }
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Failed to fetch package secrets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save secrets for a specific MCP package (from Connect popup)
+   */
+  static async savePackageSecrets(token: string, packageName: string, secrets: Array<{ key: string; value: string; description?: string }>): Promise<Array<{ id: string; key: string; description?: string; created_at: string }>> {
+    try {
+      const response = await fetch(`${REGISTRY_API_BASE}/secrets/package/${encodeURIComponent(packageName)}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(token),
+        body: JSON.stringify({ secrets }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to save package secrets: ${response.status}`);
+      }
+      const result = await response.json();
+      return result.data.secrets;
+    } catch (error) {
+      console.error('Failed to save package secrets:', error);
+      throw error;
+    }
+  }
 }

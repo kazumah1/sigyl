@@ -56,6 +56,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { APIKeyService, APIKey } from '@/services/apiKeyService';
+import { SecretsService } from '@/services/secretsService';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -568,6 +569,87 @@ const MCPPackagePage = () => {
     setSecretFields((prev) => ({ ...prev, [name]: value }));
   };
 
+  const loadExistingSecrets = async () => {
+    if (!pkg?.name || !user) return;
+    
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const existingSecrets = await SecretsService.getPackageSecrets(token, pkg.name);
+      
+      // Pre-fill the form with existing secrets
+      const updatedFields = { ...secretFields };
+      existingSecrets.forEach(secret => {
+        // Check if this secret matches any of the required secrets for this package
+        if (pkg.secrets && Array.isArray(pkg.secrets)) {
+          const matchingSecret = pkg.secrets.find(s => s.name === secret.key);
+          if (matchingSecret) {
+            updatedFields[secret.key] = secret.value;
+          }
+        }
+      });
+      
+      setSecretFields(updatedFields);
+    } catch (error) {
+      console.error('Failed to load existing secrets:', error);
+      // Don't show error to user, just continue with empty form
+    }
+  };
+
+  const savePackageSecrets = async () => {
+    if (!pkg?.name || !user) return;
+    
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        toast.error('Authentication required to save secrets');
+        return;
+      }
+
+      // Prepare secrets array from the form fields
+      const secretsToSave: Array<{ key: string; value: string; description?: string }> = [];
+      
+      if (pkg.secrets && Array.isArray(pkg.secrets)) {
+        // Handle dynamic secrets from package definition
+        pkg.secrets.forEach(secret => {
+          const value = secretFields[secret.name];
+          if (value && value.trim()) {
+            secretsToSave.push({
+              key: secret.name,
+              value: value.trim(),
+              description: secret.description || `API key for ${pkg.name}`
+            });
+          }
+        });
+      } else {
+        // Fallback for old hardcoded fields
+        if (secretFields.WEATHER_API_KEY) {
+          secretsToSave.push({
+            key: 'WEATHER_API_KEY',
+            value: secretFields.WEATHER_API_KEY,
+            description: `Weather API key for ${pkg.name}`
+          });
+        }
+        if (secretFields.DEBUG) {
+          secretsToSave.push({
+            key: 'DEBUG',
+            value: secretFields.DEBUG,
+            description: `Debug setting for ${pkg.name}`
+          });
+        }
+      }
+
+      if (secretsToSave.length > 0) {
+        await SecretsService.savePackageSecrets(token, pkg.name, secretsToSave);
+        toast.success(`Saved ${secretsToSave.length} secret${secretsToSave.length > 1 ? 's' : ''} for ${pkg.name}`);
+      }
+    } catch (error) {
+      console.error('Failed to save package secrets:', error);
+      toast.error('Failed to save secrets. Please try again.');
+    }
+  };
+
   const handleInstallClick = () => {
     setShowInstallModal(true);
     // Check if there are any secrets to configure
@@ -580,6 +662,8 @@ const MCPPackagePage = () => {
         initialFields[secret.name] = '';
       }
       setSecretFields(initialFields);
+      // Load existing secrets for this package
+      loadExistingSecrets();
     } else {
       setInstallStep(2);
       setSecretFields({});
@@ -1488,8 +1572,12 @@ const MCPPackagePage = () => {
                 )}
                 <DialogFooter>
                   <Button
-                    onClick={() => {
-                      if (validateSecrets()) setInstallStep(2);
+                    onClick={async () => {
+                      if (validateSecrets()) {
+                        // Save the secrets for this package
+                        await savePackageSecrets();
+                        setInstallStep(2);
+                      }
                     }}
                     className="bg-white text-black hover:bg-gray-200 transition-all duration-200"
                   >
