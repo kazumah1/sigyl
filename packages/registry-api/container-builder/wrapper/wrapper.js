@@ -8,26 +8,58 @@ const fetch = require("node-fetch");
   const app = express();
   app.use(express.json());
 
-  // API key validation function
+  // Cache for API validation and secrets to reduce API calls
+  const validationCache = new Map();
+  const secretsCache = new Map();
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Cached API key validation function
   async function isValidSigylApiKey(key) {
     if (!key) return false;
+    
+    // Check cache first
+    const cacheKey = `valid_${key}`;
+    const cached = validationCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.valid;
+    }
+    
     try {
       const resp = await fetch('https://api.sigyl.dev/api/v1/keys/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: key })
       });
-      if (!resp.ok) return false;
+      
+      if (!resp.ok) {
+        validationCache.set(cacheKey, { valid: false, timestamp: Date.now() });
+        return false;
+      }
+      
       const data = await resp.json();
-      return data && data.valid === true;
+      const isValid = data && data.valid === true;
+      
+      // Cache the result
+      validationCache.set(cacheKey, { valid: isValid, timestamp: Date.now() });
+      
+      return isValid;
     } catch (err) {
       console.error('API key validation error:', err);
+      validationCache.set(cacheKey, { valid: false, timestamp: Date.now() });
       return false;
     }
   }
 
-  // Fetch user secrets from Sigyl API
+  // Fetch user secrets from Sigyl API with caching
   async function fetchUserSecrets(apiKey, packageName) {
+    // Check cache first
+    const cacheKey = `secrets_${apiKey}_${packageName}`;
+    const cached = secretsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log(`[SECRETS] Using cached secrets (${Object.keys(cached.data).length} secrets)`);
+      return cached.data;
+    }
+
     try {
       const resp = await fetch(`https://api.sigyl.dev/api/v1/secrets/package/${packageName}`, {
         method: 'GET',
@@ -39,7 +71,9 @@ const fetch = require("node-fetch");
       
       if (!resp.ok) {
         console.log(`[SECRETS] Failed to fetch secrets for ${packageName}: ${resp.status}`);
-        return {};
+        const emptySecrets = {};
+        secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
+        return emptySecrets;
       }
       
       const data = await resp.json();
@@ -49,22 +83,30 @@ const fetch = require("node-fetch");
           secrets[secret.key] = secret.value;
         });
         console.log(`[SECRETS] Loaded ${Object.keys(secrets).length} secrets for ${packageName}`);
+        
+        // Cache the secrets
+        secretsCache.set(cacheKey, { data: secrets, timestamp: Date.now() });
+        
         return secrets;
       }
       
-      return {};
+      const emptySecrets = {};
+      secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
+      return emptySecrets;
     } catch (err) {
       console.error('[SECRETS] Error fetching user secrets:', err);
-      return {};
+      const emptySecrets = {};
+      secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
+      return emptySecrets;
     }
   }
 
-  // Function to send metrics to Sigyl API
+  // Function to send metrics to Sigyl API (non-blocking)
   async function sendMetrics(apiKey, metricsData) {
     try {
       // Don't send metrics in development
       if (process.env.NODE_ENV === 'development') {
-        console.log('[METRICS] Development mode - skipping metrics:', metricsData);
+        console.log('[METRICS] Development mode - skipping metrics');
         return;
       }
 
@@ -93,16 +135,6 @@ const fetch = require("node-fetch");
   function extractLLMUsage(responseBody) {
     try {
       // Look for common patterns that indicate LLM usage
-      const patterns = [
-        // OpenAI API response format
-        /usage.*?"prompt_tokens":\s*(\d+).*?"completion_tokens":\s*(\d+)/i,
-        // Anthropic API response format  
-        /input_tokens.*?(\d+).*?output_tokens.*?(\d+)/i,
-        // Generic token usage patterns
-        /tokens_used.*?(\d+)/i,
-        /token_count.*?(\d+)/i
-      ];
-
       let tokens_in = 0;
       let tokens_out = 0;
       let model = null;
@@ -132,16 +164,12 @@ const fetch = require("node-fetch");
       // Estimate cost based on model and tokens (rough estimates)
       if (tokens_in > 0 || tokens_out > 0) {
         if (model && model.includes('gpt-4')) {
-          // GPT-4 pricing (approximate)
           cost_usd = (tokens_in * 0.00003) + (tokens_out * 0.00006);
         } else if (model && model.includes('gpt-3.5')) {
-          // GPT-3.5 pricing (approximate)
           cost_usd = (tokens_in * 0.0000015) + (tokens_out * 0.000002);
         } else if (model && model.includes('claude')) {
-          // Claude pricing (approximate)
           cost_usd = (tokens_in * 0.000008) + (tokens_out * 0.000024);
         } else {
-          // Generic estimate
           cost_usd = (tokens_in * 0.00001) + (tokens_out * 0.00002);
         }
       }
@@ -151,7 +179,7 @@ const fetch = require("node-fetch");
           model: model || 'unknown',
           tokens_in,
           tokens_out,
-          cost_usd: Math.round(cost_usd * 100000) / 100000 // Round to 5 decimal places
+          cost_usd: Math.round(cost_usd * 100000) / 100000
         };
       }
 
@@ -174,11 +202,24 @@ const fetch = require("node-fetch");
     return serviceName.replace(/^sigyl-/, '').replace(/-[a-f0-9]{8}$/, '');
   }
 
-  // Create a single MCP server instance and transport that we'll reuse
-  const server = createStatelessServer({ config: {} });
-  let transport = null;
+  // Handle GET requests for health checks (Claude Desktop sends these)
+  app.get('/mcp', async (req, res) => {
+    try {
+      res.json({
+        status: 'ready',
+        transport: 'http',
+        endpoint: '/mcp',
+        package: getPackageName(),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('[MCP] GET health check failed:', error);
+      res.status(500).json({ error: 'Health check failed' });
+    }
+  });
 
   // /mcp endpoint with API key validation, secret injection, and metrics collection
+  // RESTORED: Using the original working StreamableHTTPServerTransport approach
   app.post('/mcp', async (req, res) => {
     const startTime = Date.now();
     const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
@@ -197,29 +238,30 @@ const fetch = require("node-fetch");
     if (!valid) {
       console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
       
-      // Send failure metrics
-      await sendMetrics(apiKey || 'anonymous', {
-        event_type: 'mcp_request',
-        package_name: packageName,
-        success: false,
-        error_type: 'auth_failure',
-        response_time_ms: Date.now() - startTime,
-        timestamp: new Date().toISOString(),
-        client_ip: clientIP,
-        user_agent: userAgent
+      // Send failure metrics (non-blocking)
+      setImmediate(() => {
+        sendMetrics(apiKey || 'anonymous', {
+          event_type: 'mcp_request',
+          package_name: packageName,
+          success: false,
+          error_type: 'auth_failure',
+          response_time_ms: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          client_ip: clientIP,
+          user_agent: userAgent
+        });
       });
       
       return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
     }
 
-    // Fetch user secrets for this specific user
+    // Fetch user secrets for this specific user (with caching)
     const userSecrets = await fetchUserSecrets(apiKey, packageName);
 
     let mcpRequestType = 'unknown';
     let toolName = null;
     let success = true;
     let errorType = null;
-    let responseBody = null;
 
     try {
       // Analyze the MCP request to extract metrics
@@ -231,35 +273,66 @@ const fetch = require("node-fetch");
         }
       }
 
-      // Create transport if it doesn't exist or if secrets changed
-      if (!transport) {
-        console.log('[MCP] Creating new transport');
-        transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-        await server.connect(transport);
-        console.log('[MCP] Server connected to transport');
-      }
-
       // Inject secrets as environment variables for this request
-      const originalEnv = process.env;
+      const originalEnv = { ...process.env };
       Object.entries(userSecrets).forEach(([key, value]) => {
         process.env[key] = value;
       });
 
       console.log(`[SECRETS] Injected ${Object.keys(userSecrets).length} secrets as environment variables`);
       
-      // Handle the request
+      // RESTORED: Use the original working StreamableHTTPServerTransport approach
+      // Create the MCP server instance
+      const server = createStatelessServer({ config: {} });
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+
+      // Set up cleanup handlers
+      res.on('close', () => {
+        transport.close();
+        server.close();
+        
+        // Restore original environment on connection close
+        Object.keys(process.env).forEach(key => {
+          if (!(key in originalEnv)) {
+            delete process.env[key];
+          }
+        });
+        Object.entries(originalEnv).forEach(([key, value]) => {
+          process.env[key] = value;
+        });
+      });
+
+      // Connect server to transport
+      await server.connect(transport);
+      
+      // Handle the request using the original working method
       await transport.handleRequest(req, res, req.body);
       
-      // Restore original environment
-      process.env = originalEnv;
-      
+      // Restore original environment after request
+      Object.keys(process.env).forEach(key => {
+        if (!(key in originalEnv)) {
+          delete process.env[key];
+        }
+      });
+      Object.entries(originalEnv).forEach(([key, value]) => {
+        process.env[key] = value;
+      });
+
     } catch (error) {
       success = false;
       errorType = error.name || 'unknown_error';
       console.error('[MCP] Request failed:', error);
       
       // Restore original environment on error
-      process.env = originalEnv;
+      const originalEnv = { ...process.env };
+      Object.keys(process.env).forEach(key => {
+        if (!(key in originalEnv)) {
+          delete process.env[key];
+        }
+      });
+      Object.entries(originalEnv).forEach(([key, value]) => {
+        process.env[key] = value;
+      });
       
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal MCP server error' });
@@ -268,112 +341,42 @@ const fetch = require("node-fetch");
 
     const responseTime = Date.now() - startTime;
 
-    // Extract LLM usage data from response if available
-    let llmUsage = null;
-    if (responseBody && success) {
-      llmUsage = extractLLMUsage(responseBody);
-      if (llmUsage) {
-        console.log('[LLM] Detected LLM usage:', llmUsage);
-      }
-    }
-
-    // Collect comprehensive metrics for algorithm
-    const metrics = {
-      // Basic request info
-      event_type: 'mcp_request',
-      package_name: packageName,
-      mcp_method: mcpRequestType,
-      tool_name: toolName,
-      success: success,
-      error_type: errorType,
-      response_time_ms: responseTime,
-      timestamp: new Date().toISOString(),
-      
-      // User context
-      client_ip: clientIP,
-      user_agent: userAgent,
-      has_secrets: Object.keys(userSecrets).length > 0,
-      secret_count: Object.keys(userSecrets).length,
-      
-      // Performance metrics for algorithm
-      performance_tier: responseTime < 100 ? 'fast' : responseTime < 500 ? 'medium' : 'slow',
-      
-      // Request pattern analysis
-      hour_of_day: new Date().getUTCHours(),
-      day_of_week: new Date().getUTCDay(),
-      
-      // Technical context
-      request_size_bytes: JSON.stringify(req.body).length,
-      
-      // Future algorithm signals
-      user_satisfaction_signal: success ? 'positive' : 'negative', // Simple for now
-      complexity_score: toolName ? 'tool_usage' : 'basic_request', // Can be enhanced
-      
-      // A/B testing context (for future use)
-      experiment_variant: process.env.SIGYL_EXPERIMENT_VARIANT || 'default',
-      
-      // Resource usage (for cost optimization)
-      memory_usage_mb: process.memoryUsage().heapUsed / 1024 / 1024,
-      cpu_time_ms: process.cpuUsage().user / 1000, // Convert microseconds to ms
-      
-      // LLM usage data (if detected)
-      ...(llmUsage && { llm_usage: llmUsage })
-    };
-
-    // Send metrics asynchronously (don't block response)
+    // Send metrics (non-blocking)
     setImmediate(() => {
-      sendMetrics(apiKey, metrics);
+      const metricsData = {
+        event_type: 'mcp_request',
+        package_name: packageName,
+        mcp_method: mcpRequestType,
+        tool_name: toolName,
+        success: success,
+        error_type: errorType,
+        response_time_ms: responseTime,
+        timestamp: new Date().toISOString(),
+        client_ip: clientIP,
+        user_agent: userAgent,
+        has_secrets: Object.keys(userSecrets).length > 0,
+        secret_count: Object.keys(userSecrets).length,
+        
+        // Performance metrics for algorithm improvement
+        performance_tier: responseTime < 1000 ? 'fast' : responseTime < 5000 ? 'medium' : 'slow',
+        hour_of_day: new Date().getHours(),
+        day_of_week: new Date().getDay(),
+        request_size_bytes: JSON.stringify(req.body).length,
+        memory_usage_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100,
+        
+        // Additional metadata
+        wrapper_version: '2.0.0'
+      };
+
+      sendMetrics(apiKey, metricsData);
     });
-
-    console.log(`[MCP] Request completed in ${responseTime}ms - ${success ? 'SUCCESS' : 'FAILED'}${llmUsage ? ' (LLM usage detected)' : ''}`);
-  });
-
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({ 
-      status: 'healthy', 
-      package: getPackageName(),
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
-  });
-
-  // Info endpoint for debugging
-  app.get('/info', (req, res) => {
-    const packageName = getPackageName();
-    res.json({
-      package_name: packageName,
-      environment: process.env.NODE_ENV || 'production',
-      service_name: process.env.K_SERVICE,
-      revision: process.env.K_REVISION,
-      secrets_injection: 'environment-variables',
-      timestamp: new Date().toISOString()
-    });
-  });
-
-  // Cleanup on exit
-  process.on('SIGINT', () => {
-    console.log('[CLEANUP] Received SIGINT, cleaning up...');
-    if (transport) {
-      transport.close();
-    }
-    server.close();
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', () => {
-    console.log('[CLEANUP] Received SIGTERM, cleaning up...');
-    if (transport) {
-      transport.close();
-    }
-    server.close();
-    process.exit(0);
   });
 
   app.listen(8080, () => {
-    console.log("Wrapper listening on port 8080");
-    console.log(`Package: ${getPackageName()}`);
-    console.log("Features: Secret injection, Metrics collection, API validation");
-    console.log("Secret method: Environment variables (injected per request)");
+    console.log("✅ Sigyl MCP Wrapper listening on port 8080");
+    console.log("📦 Package:", getPackageName());
+    console.log("🔒 Secret injection: enabled");
+    console.log("📊 Metrics collection: enabled");
+    console.log("⚡ API caching: enabled (5min TTL)");
   });
 })();
