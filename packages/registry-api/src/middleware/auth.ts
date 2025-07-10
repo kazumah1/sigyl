@@ -201,30 +201,47 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
 
       let authenticatedUser: AuthenticatedUser | null = null;
 
-      // Try GitHub App token authentication first
-      try {
-        console.log('🔍 Trying GitHub token validation...');
-        const githubUser = await validateGitHubToken(token);
-        if (githubUser) {
-          console.log('✅ GitHub token valid:', { id: githubUser.id, login: githubUser.login });
-          // Create or get the user in our database
-          const user = await APIKeyService.createOrGetGitHubUser(
-            githubUser.id.toString(),
-            githubUser.email || `${githubUser.login}@users.noreply.github.com`,
-            githubUser.name || githubUser.login
-          );
-
-          authenticatedUser = {
-            key_id: `github_${githubUser.id}`,
-            user_id: user.id,
-            permissions: ['read', 'write', 'admin'], // GitHub App users get full permissions
-            is_active: true
-          };
-        } else {
-          console.log('❌ GitHub token validation returned null');
+      // Try API key authentication first (for sk_ prefixed tokens)
+      if (token.startsWith('sk_')) {
+        try {
+          console.log('🔍 Trying API key validation...');
+          authenticatedUser = await APIKeyService.validateAPIKey(token);
+          if (authenticatedUser) {
+            console.log('✅ API key valid:', { key_id: authenticatedUser.key_id, user_id: authenticatedUser.user_id });
+          } else {
+            console.log('❌ API key validation returned null');
+          }
+        } catch (apiKeyError) {
+          console.log('❌ API key validation failed:', apiKeyError instanceof Error ? apiKeyError.message : String(apiKeyError));
         }
-      } catch (githubError) {
-        console.log('❌ GitHub token validation failed:', githubError instanceof Error ? githubError.message : String(githubError));
+      }
+
+      // Try GitHub App token authentication if API key failed
+      if (!authenticatedUser) {
+        try {
+          console.log('🔍 Trying GitHub token validation...');
+          const githubUser = await validateGitHubToken(token);
+          if (githubUser) {
+            console.log('✅ GitHub token valid:', { id: githubUser.id, login: githubUser.login });
+            // Create or get the user in our database
+            const user = await APIKeyService.createOrGetGitHubUser(
+              githubUser.id.toString(),
+              githubUser.email || `${githubUser.login}@users.noreply.github.com`,
+              githubUser.name || githubUser.login
+            );
+
+            authenticatedUser = {
+              key_id: `github_${githubUser.id}`,
+              user_id: user.id,
+              permissions: ['read', 'write', 'admin'], // GitHub App users get full permissions
+              is_active: true
+            };
+          } else {
+            console.log('❌ GitHub token validation returned null');
+          }
+        } catch (githubError) {
+          console.log('❌ GitHub token validation failed:', githubError instanceof Error ? githubError.message : String(githubError));
+        }
       }
 
       // If GitHub auth failed, try Supabase JWT authentication
@@ -268,7 +285,7 @@ export const authenticateHybrid = (options: AuthOptions = {}) => {
       console.log('DEBUG: Decoded user ID:', authenticatedUser?.user_id);
 
       if (!authenticatedUser) {
-        console.log('❌ Both authentication methods failed');
+        console.log('❌ All authentication methods failed');
         if (options.required) {
           return res.status(401).json({
             success: false,

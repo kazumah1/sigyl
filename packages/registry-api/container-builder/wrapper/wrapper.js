@@ -174,42 +174,9 @@ const fetch = require("node-fetch");
     return serviceName.replace(/^sigyl-/, '').replace(/-[a-f0-9]{8}$/, '');
   }
 
-  // Custom transport that injects secrets as headers for each request
-  class SecretInjectingTransport extends StreamableHTTPServerTransport {
-    constructor(userSecrets, options) {
-      super(options);
-      this.userSecrets = userSecrets;
-    }
-
-    async handleRequest(req, res, requestBody) {
-      // Create a modified request object with injected secret headers
-      const modifiedReq = {
-        ...req,
-        headers: {
-          ...req.headers,
-          // Inject user secrets as headers that the MCP server can read
-          ...Object.fromEntries(
-            Object.entries(this.userSecrets).map(([key, value]) => [
-              key.toLowerCase(), // Express normalizes header names to lowercase
-              value
-            ])
-          ),
-          // Also inject as X-Env- prefixed headers for compatibility
-          ...Object.fromEntries(
-            Object.entries(this.userSecrets).map(([key, value]) => [
-              `x-env-${key.toLowerCase()}`,
-              value
-            ])
-          )
-        }
-      };
-
-      console.log(`[SECRETS] Injected ${Object.keys(this.userSecrets).length} secrets as headers`);
-      
-      // Call the parent handleRequest with the modified request
-      return super.handleRequest(modifiedReq, res, requestBody);
-    }
-  }
+  // Create a single MCP server instance and transport that we'll reuse
+  const server = createStatelessServer({ config: {} });
+  let transport = null;
 
   // /mcp endpoint with API key validation, secret injection, and metrics collection
   app.post('/mcp', async (req, res) => {
@@ -264,36 +231,35 @@ const fetch = require("node-fetch");
         }
       }
 
-      // Create the MCP server instance (no secrets passed here - they'll be in headers)
-      const server = createStatelessServer({ 
-        config: {}
-      });
-      
-      // Use our custom transport that injects secrets as headers per request
-      const transport = new SecretInjectingTransport(userSecrets, { 
-        sessionIdGenerator: undefined 
+      // Create transport if it doesn't exist or if secrets changed
+      if (!transport) {
+        console.log('[MCP] Creating new transport');
+        transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+        await server.connect(transport);
+        console.log('[MCP] Server connected to transport');
+      }
+
+      // Inject secrets as environment variables for this request
+      const originalEnv = process.env;
+      Object.entries(userSecrets).forEach(([key, value]) => {
+        process.env[key] = value;
       });
 
-      res.on('close', () => {
-        transport.close();
-        server.close();
-      });
-
-      await server.connect(transport);
+      console.log(`[SECRETS] Injected ${Object.keys(userSecrets).length} secrets as environment variables`);
       
-      // Capture response to analyze for LLM usage
-      const originalSend = res.send;
-      res.send = function(data) {
-        responseBody = data;
-        return originalSend.call(this, data);
-      };
-      
+      // Handle the request
       await transport.handleRequest(req, res, req.body);
+      
+      // Restore original environment
+      process.env = originalEnv;
       
     } catch (error) {
       success = false;
       errorType = error.name || 'unknown_error';
       console.error('[MCP] Request failed:', error);
+      
+      // Restore original environment on error
+      process.env = originalEnv;
       
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal MCP server error' });
@@ -380,15 +346,34 @@ const fetch = require("node-fetch");
       environment: process.env.NODE_ENV || 'production',
       service_name: process.env.K_SERVICE,
       revision: process.env.K_REVISION,
-      secrets_injection: 'per-request-headers',
+      secrets_injection: 'environment-variables',
       timestamp: new Date().toISOString()
     });
+  });
+
+  // Cleanup on exit
+  process.on('SIGINT', () => {
+    console.log('[CLEANUP] Received SIGINT, cleaning up...');
+    if (transport) {
+      transport.close();
+    }
+    server.close();
+    process.exit(0);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('[CLEANUP] Received SIGTERM, cleaning up...');
+    if (transport) {
+      transport.close();
+    }
+    server.close();
+    process.exit(0);
   });
 
   app.listen(8080, () => {
     console.log("Wrapper listening on port 8080");
     console.log(`Package: ${getPackageName()}`);
-    console.log("Features: Per-request secret injection, Metrics collection, API validation");
-    console.log("Secret method: HTTP headers (not environment variables)");
+    console.log("Features: Secret injection, Metrics collection, API validation");
+    console.log("Secret method: Environment variables (injected per request)");
   });
 })();
