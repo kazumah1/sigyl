@@ -152,6 +152,9 @@ const MCPPackagePage = () => {
     if (id) {
       loadPackageData();
     }
+    if (pkg) {
+      console.log('🔍 pkg:', pkg);
+    }
   }, [id, user]);
 
   useEffect(() => {
