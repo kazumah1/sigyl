@@ -476,7 +476,7 @@ export class PackageService {
         packageId
       });
       if (result.success) {
-        return { success: true, message: 'Redeployment started', ...result };
+        return { ...result, message: 'Redeployment started' };
       } else {
         return { success: false, error: result.error || 'Redeploy failed', logs: result.logs };
       }
