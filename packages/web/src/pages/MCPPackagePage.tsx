@@ -743,55 +743,62 @@ const MCPPackagePage = () => {
     }
   };
 
-  // Before the return statement, define the cursorButton variable
-  const cursorButton = (() => {
-    // Use the full MCP endpoint URL for config
-    const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
-    // Extract repo name from URL (second-to-last part of the path)
-    let repoName = mcpUrl;
-    try {
-      const urlObj = new URL(mcpUrl);
-      const pathParts = urlObj.pathname.split('/').filter(Boolean);
-      if (pathParts.length >= 2) {
-        repoName = pathParts[pathParts.length - 2];
-      } else {
-        repoName = pathParts[pathParts.length - 1] || mcpUrl;
-      }
-    } catch { repoName = mcpUrl; }
-    // Cursor config: { url: <mcpUrl> }
-    let config = mcpUrl ? { url: mcpUrl } : {};
-    let configBase64 = '';
-    try {
-      configBase64 = btoa(JSON.stringify(config));
-    } catch {}
-    // Use repoName for the name param
-    const deepLink = mcpUrl && configBase64
-      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(repoName)}&config=${encodeURIComponent(configBase64)}`
-      : '';
-    return (
-      <a
-        href={deepLink || '#'}
-        style={{ display: 'inline-block', width: '100%' }}
-        onClick={e => {
-          if (!mcpUrl) {
-            e.preventDefault();
-            toast.error('No deployed server URL found for this server.');
-          } else {
-            incrementDownloadCount();
-          }
-        }}
-      >
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
-          style={cellStyle}
-          type="button"
+  // Cursor install button (CLI proxy only, no deep link)
+  const [showCursorInline, setShowCursorInline] = useState(false);
+  const [cursorCopied, setCursorCopied] = useState(false);
+  const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
+  let cursorApiKey = '';
+  if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
+    cursorApiKey = fullApiKeys[apiKeys[0].id];
+  } else {
+    cursorApiKey = apiKeys[0]?.key_prefix || '';
+  }
+  const cursorInstallCommand = `npx -y @sigyl-dev/cli@latest install ${mcpUrl} --client cursor --key ${cursorApiKey}`;
+  const cursorButton = showCursorInline ? (
+    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg" style={cellStyle}>
+      <img src="/favicon.png" alt="Cursor" className="w-5 h-5" />
+      {cursorCopied ? (
+        <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
+      ) : (
+        <code
+          className="text-white select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+          style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+          title={cursorInstallCommand}
         >
-          <img src="/favicon.png" alt="Cursor" className="w-5 h-5" /> Cursor
-        </Button>
-      </a>
-    );
-  })();
+          {cursorInstallCommand}
+        </code>
+      )}
+      <button
+        className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
+        onClick={() => {
+          copyToClipboard(cursorInstallCommand, 'Command copied!');
+          setCursorCopied(true);
+          setTimeout(() => {
+            setCursorCopied(false);
+            setShowCursorInline(false);
+          }, 1000);
+          incrementDownloadCount();
+        }}
+        aria-label="Copy command"
+        disabled={cursorCopied}
+      >
+        <CopyIcon className="w-5 h-5" />
+      </button>
+    </div>
+  ) : (
+    <Button
+      variant="outline"
+      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
+      style={cellStyle}
+      onClick={() => {
+        setShowCursorInline(true);
+        incrementDownloadCount();
+      }}
+      disabled={apiKeys.length === 0}
+    >
+      <img src="/favicon.png" alt="Cursor" className="w-5 h-5" /> Cursor
+    </Button>
+  );
 
   useEffect(() => {
     const anyModalOpen = showDeleteModal || showInstallModal || showJsonConfig;
