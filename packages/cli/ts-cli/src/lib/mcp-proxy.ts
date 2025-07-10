@@ -43,7 +43,7 @@ export class createMCPStdioProxy {
       const url = new URL(endpoint);
       
       // Add API key as query parameter
-      url.searchParams.set("api_key", this.apiKey);
+      url.searchParams.set("apiKey", this.apiKey);
       
       // Add profile if provided
       if (this.profile) {
