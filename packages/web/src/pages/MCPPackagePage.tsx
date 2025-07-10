@@ -1789,8 +1789,8 @@ const MCPPackagePage = () => {
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --key ${vscodeApiKey}`;
-                        setVSCodeCommand(command);
+                        const vsCodeInstallCommand = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --key ${vscodeApiKey}`;
+                        setVSCodeCommand(vsCodeInstallCommand);
                         setShowVSCodeInline(true);
                         incrementDownloadCount();
                       }}
@@ -1838,15 +1838,15 @@ const MCPPackagePage = () => {
                       className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
-                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                        const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
                         let claudeApiKey = '';
                         if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
                           claudeApiKey = fullApiKeys[apiKeys[0].id];
                         } else {
                           claudeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const command = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client claude --key ${claudeApiKey}`;
-                        setClaudeCommand(command);
+                        const claudeInstallCommand = `npx -y @sigyl-dev/cli@latest install ${mcpUrl} --client claude --key ${claudeApiKey}`;
+                        setClaudeCommand(claudeInstallCommand);
                         setShowClaudeInline(true);
                         incrementDownloadCount();
                       }}
@@ -1868,16 +1868,16 @@ const MCPPackagePage = () => {
                     className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                     style={cellStyle}
                     onClick={() => {
-                      const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                      const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
                       const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
                       const configObj = {
-                        [pkgName]: {
+                        [mcpUrl]: {
                           command: "npx",
                           args: [
                             "-y",
                             "@sigyl-dev/cli@latest",
                             "run",
-                            pkgName,
+                            mcpUrl,
                             "--key",
                             apiKey
                           ]

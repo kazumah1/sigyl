@@ -96,9 +96,9 @@ type SupportedClient = typeof SUPPORTED_CLIENTS[number];
 export function createInstallCommand(): Command {
 	return new Command("install")
 		.description(
-			"Install a remote MCP server in a desktop client (claude, cursor, vscode). Default: claude. Accepts a package name or identifier."
+			"Install a remote MCP server in a desktop client (claude, cursor, vscode). Default: claude. Accepts a package name or a full MCP endpoint URL."
 		)
-		.argument("<package>", "MCP server package name or identifier (e.g. kazumah1/mcp-test)")
+		.argument("<target>", "MCP server package name (e.g. kazumah1/mcp-test) or full MCP endpoint URL")
 		.option("-n, --name <name>", "Custom name for the server in the client")
 		.option("-l, --list", "List currently installed MCP servers")
 		.option("-r, --remove <name>", "Remove an MCP server from the client")
@@ -106,13 +106,13 @@ export function createInstallCommand(): Command {
 		.option("--env <key=value>", "Environment variables (can be used multiple times)", [])
 		.option("--cwd <path>", "Working directory for the server")
 		.option("--key <key>", "API key for the MCP server")
-		.action(async (pkgName: string, options: InstallOptions) => {
+		.action(async (target: string, options: InstallOptions) => {
 			try {
 				const client = (options.client || "claude").toLowerCase() as SupportedClient;
 				if (!SUPPORTED_CLIENTS.includes(client)) {
 					console.error(
 						chalk.red(
-							`❌ Unsupported client: ${client}. Supported clients: ${SUPPORTED_CLIENTS.join(", ")}`
+							`\u274c Unsupported client: ${client}. Supported clients: ${SUPPORTED_CLIENTS.join(", ")}`
 						)
 					)
 					process.exit(1)
@@ -139,11 +139,24 @@ export function createInstallCommand(): Command {
 					}
 				}
 
-				// Resolve remote MCP server details from the registry API
-				const remote = await resolveRemoteMCPServer(pkgName, options.key /*, options.profile*/);
+				let remote: any;
+				if (target.startsWith('http://') || target.startsWith('https://')) {
+					// Use the URL directly
+					remote = {
+						url: target,
+						api_key: options.key || 'demo-key',
+						profile: options.profile || 'default',
+						name: options.name || target,
+						slug: target,
+						packageInfo: { source_api_url: target }
+					};
+				} else {
+					// Resolve remote MCP server details from the registry API
+					remote = await resolveRemoteMCPServer(target, options.key /*, options.profile*/);
+				}
 				await installRemoteServer(remote, options, client);
 			} catch (error) {
-				console.error(chalk.red("❌ Install command failed:"), error)
+				console.error(chalk.red("\u274c Install command failed:"), error)
 				process.exit(1)
 			}
 		})
@@ -168,11 +181,10 @@ async function installRemoteServer(
 		const configApiKey = getRegistryConfig().apiKey;
 		const apiKeyToUse = options.key || configApiKey;
 		if (!apiKeyToUse) {
-			console.error(chalk.red("❌ No API key found. Please run 'sigyl config' or provide --key."));
+			console.error(chalk.red("\u274c No API key found. Please run 'sigyl config' or provide --key."));
 			process.exit(1);
 		}
 
-		// Write config file for Claude Desktop (mcpServers field) using HTTP/gateway style
 		const configPath = path.join(
 			os.homedir(),
 			"Library/Application Support/Claude/claude_desktop_config.json"
@@ -184,14 +196,15 @@ async function installRemoteServer(
 			} catch {}
 		}
 		let mcpServers: Record<string, any> = config.mcpServers || {};
-		// Use package name as key, but slug for run command
+		// Use package name or URL as key
+		const runTarget = remote.url || remote.slug;
 		mcpServers[serverName] = {
 			command: "npx",
 			args: [
 				"-y",
 				"@sigyl-dev/cli@latest",
 				"run",
-				remote.slug,
+				runTarget,
 				"--key",
 				apiKeyToUse
 			]
@@ -199,8 +212,7 @@ async function installRemoteServer(
 		config.mcpServers = mcpServers;
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Claude Desktop!`));
-		console.log(chalk.yellow("\n🔄 Please restart Claude Desktop to load the new server."));
+		console.log(chalk.green(`\u2705 Installed '${serverName}' for Claude Desktop.`));
 		return;
 	}
 	if (client === "vscode") {
