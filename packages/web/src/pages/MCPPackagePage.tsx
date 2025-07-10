@@ -57,12 +57,13 @@ import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { APIKeyService, APIKey } from '@/services/apiKeyService';
 import { SecretsService } from '@/services/secretsService';
+import { deployMCPWithApp } from '@/lib/githubApp';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, session, activeGitHubAccount } = useAuth();
+  const { user, session, activeGitHubAccount, installationId } = useAuth();
   
   const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -181,6 +182,53 @@ const MCPPackagePage = () => {
       toast.error('Failed to copy to clipboard');
     }
   };
+  const handleRedeploy = async () => {
+    if (!pkg || !user || !installationId) return;
+
+    setIsRedeploying(true);
+    setRedeployError(null);
+
+    try {
+      const [owner, repo] = pkg.slug.split('/');
+      const response = await fetch(
+        `https://api.sigyl.dev/api/v1/github/installations/${installationId}/redeploy`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            repoUrl: pkg.source_api_url,
+            owner,
+            repo,
+            branch: selectedBranch,
+            userId: user.id
+            // Add any secrets/env if needed
+          })
+        }
+      );
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Redeploy started successfully!');
+        // Optionally reload package data or show progress
+        await loadPackageData();
+        // Optionally redirect to the new MCP package page using the actual package ID
+        if (result.packageId) {
+          navigate(`/mcp/${result.packageId}?new=true&deploying=true`);
+        }
+      } else {
+        setRedeployError(result.error || 'Redeploy failed');
+        toast.error(result.error || 'Redeploy failed');
+      }
+    } catch (err) {
+      setRedeployError(err instanceof Error ? err.message : 'Redeploy failed');
+      toast.error(err instanceof Error ? err.message : 'Redeploy failed');
+    } finally {
+      setIsRedeploying(false);
+    }
+  }
 
   // Get the correct token for API authentication
   // Priority: GitHub App token > Supabase JWT token
@@ -1141,38 +1189,7 @@ const MCPPackagePage = () => {
                       <div className="text-red-400 text-sm mb-2">{redeployError}</div>
                     )}
                     <Button
-                      onClick={async () => {
-                        setIsRedeploying(true);
-                        setRedeployError(null);
-                        try {
-                          const response = await fetch(`https://api.sigyl.dev/api/v1/packages/${pkg.id}/redeploy`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${session?.access_token}`
-                            },
-                            body: JSON.stringify({
-                              // Use access_token as githubToken (update if your session shape changes)
-                              githubToken: session?.access_token,
-                              branch: selectedBranch
-                            })
-                          });
-                          const data = await response.json();
-                          console.log('Redeploy response:', data);
-                          if (data.success) {
-                            toast.success('Redeployment started!');
-                            loadPackageData();
-                          } else {
-                            setRedeployError(data.error || 'Failed to redeploy');
-                            toast.error(data.error || 'Failed to redeploy');
-                          }
-                        } catch (err) {
-                          setRedeployError('Network error');
-                          toast.error('Network error');
-                        } finally {
-                          setIsRedeploying(false);
-                        }
-                      }}
+                      onClick={handleRedeploy}
                       disabled={isRedeploying}
                       className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
                     >
