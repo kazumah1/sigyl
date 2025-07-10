@@ -8,6 +8,7 @@ import {
   PackageWithDetails 
 } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { redeployRepo } from './deployer';
 
 export class PackageService {
   
@@ -454,7 +455,34 @@ export class PackageService {
   // Add a placeholder redeployPackageById method
   async redeployPackageById(pkg: any, userId: string) {
     console.log('[PackageService] Redeploy called for package:', pkg.id, 'by user:', userId);
-    // TODO: Implement actual redeploy logic (call deployer, etc)
-    return { success: true };
+    // Validate required fields
+    if (!pkg || !pkg.name || !pkg.source_api_url || !pkg.service_name) {
+      return { success: false, error: 'Missing required package info for redeploy' };
+    }
+    // Extract repo info from name (assume name is owner/repo)
+    const repoName = pkg.name;
+    const repoUrl = `https://github.com/${repoName}`;
+    const branch = 'main'; // TODO: support custom branch if needed
+    const env = {};
+    const serviceName = pkg.service_name;
+    const packageId = pkg.id;
+    try {
+      const result = await redeployRepo({
+        repoUrl,
+        repoName,
+        branch,
+        env,
+        serviceName,
+        packageId
+      });
+      if (result.success) {
+        return { success: true, message: 'Redeployment started', ...result };
+      } else {
+        return { success: false, error: result.error || 'Redeploy failed', logs: result.logs };
+      }
+    } catch (err) {
+      console.error('[PackageService] Redeploy error:', err);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
   }
 } 
