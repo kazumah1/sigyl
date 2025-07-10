@@ -8,6 +8,9 @@ import { supabase } from '../config/database';
 const router = Router();
 const packageService = new PackageService();
 
+// All routes in this file are mounted at /api/v1/packages
+// For example: POST /api/v1/packages/:id/redeploy
+
 // Validation schemas
 const createPackageSchema = z.object({
   name: z.string().min(1).max(100),
@@ -693,7 +696,7 @@ router.post('/../tools/semantic-search', optionalAuth, async (req: Request, res:
 router.post('/:id/redeploy', requireSupabaseAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.user_id;
+    const userId: string = req.user?.user_id || '';
     if (!id || id.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
     }
@@ -703,7 +706,7 @@ router.post('/:id/redeploy', requireSupabaseAuth, async (req: Request, res: Resp
       return res.status(404).json({ success: false, error: 'Package not found', message: 'No package found with the given ID' });
     }
     // Call redeploy logic (to be implemented)
-    const result = await packageService.redeployPackageById(packageData, userId);
+    const result: { success: boolean; error?: string; message?: string } = await packageService.redeployPackageById(packageData, userId);
     if (result.success) {
       return res.json({ success: true, message: 'Redeployment started' });
     } else {
