@@ -705,8 +705,23 @@ router.post('/:id/redeploy', requireSupabaseAuth, async (req: Request, res: Resp
     if (!packageData) {
       return res.status(404).json({ success: false, error: 'Package not found', message: 'No package found with the given ID' });
     }
-    // Call redeploy logic (to be implemented)
-    const result: { success: boolean; error?: string; message?: string } = await packageService.redeployPackageById(packageData, userId);
+    // Look up the author's profile for installationId
+    const { data: authorProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('github_installation_id')
+      .eq('id', packageData.author_id)
+      .single();
+    if (profileError || !authorProfile || !authorProfile.github_installation_id) {
+      return res.status(400).json({ success: false, error: 'No GitHub App installation found for this package/author', message: 'Connect the GitHub App to enable redeploy.' });
+    }
+    const installationId = authorProfile.github_installation_id;
+    // Generate a GitHub installation token (mirroring deploy wizard)
+    const { signGitHubAppJWT } = await import('../services/githubAppAuth');
+    const { getInstallationAccessToken } = await import('../services/githubAppAuth');
+    const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID!, process.env.GITHUB_PRIVATE_KEY!);
+    const githubToken = await getInstallationAccessToken(jwt, Number(installationId));
+    // Call redeploy logic, passing the githubToken
+    const result: { success: boolean; error?: string; message?: string } = await packageService.redeployPackageById(packageData, userId, githubToken);
     if (result.success) {
       return res.json({ success: true, message: 'Redeployment started' });
     } else {

@@ -452,9 +452,14 @@ export class PackageService {
     };
   }
 
-  // Add a placeholder redeployPackageById method
-  async redeployPackageById(pkg: any, userId: string) {
-    console.log('[PackageService] Redeploy called for package:', pkg.id, 'by user:', userId);
+  /**
+   * Redeploy a package using the GitHub App installation token.
+   * @param pkg The MCP package object
+   * @param userId The user ID requesting redeploy
+   * @param githubToken The GitHub App installation access token
+   */
+  async redeployPackageById(pkg: any, userId: string, githubToken: string) {
+    console.log('[PackageService] Redeploy called for package:', pkg.id, 'by user:', userId, 'with GitHub App token');
     // Validate required fields
     if (!pkg || !pkg.name || !pkg.source_api_url || !pkg.service_name) {
       return { success: false, error: 'Missing required package info for redeploy' };
@@ -473,7 +478,8 @@ export class PackageService {
         branch,
         env,
         serviceName,
-        packageId
+        packageId,
+        githubToken
       });
       if (result.success) {
         return { ...result, message: 'Redeployment started' };
