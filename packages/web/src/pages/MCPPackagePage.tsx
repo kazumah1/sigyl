@@ -144,6 +144,8 @@ const MCPPackagePage = () => {
   const effectiveIsPublic = isOwner && ownerViewMode === 'public';
 
   const [isRedeploying, setIsRedeploying] = useState(false);
+  const [redeployError, setRedeployError] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState('main');
 
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
@@ -1123,41 +1125,70 @@ const MCPPackagePage = () => {
             {effectiveIsOwner ? (
               <>
                 {effectiveIsOwner && !editMode && (
-                  <>
+                  <div className="flex flex-col gap-2 w-full max-w-xs">
+                    <label htmlFor="branch-select" className="text-white mb-1">Branch</label>
+                    <select
+                      id="branch-select"
+                      value={selectedBranch}
+                      onChange={e => setSelectedBranch(e.target.value)}
+                      className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
+                    >
+                      <option value="main">main</option>
+                      <option value="master">master</option>
+                      <option value="develop">develop</option>
+                    </select>
+                    {redeployError && (
+                      <div className="text-red-400 text-sm mb-2">{redeployError}</div>
+                    )}
                     <Button
                       onClick={async () => {
                         setIsRedeploying(true);
+                        setRedeployError(null);
                         try {
                           const response = await fetch(`https://api.sigyl.dev/api/v1/packages/${pkg.id}/redeploy`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
                               'Authorization': `Bearer ${session?.access_token}`
-                            }
+                            },
+                            body: JSON.stringify({
+                              // Use access_token as githubToken (update if your session shape changes)
+                              githubToken: session?.access_token,
+                              branch: selectedBranch
+                            })
                           });
                           const data = await response.json();
                           console.log('Redeploy response:', data);
                           if (data.success) {
-                            toast.success('Redeployment started successfully');
+                            toast.success('Redeployment started!');
                             loadPackageData();
                           } else {
+                            setRedeployError(data.error || 'Failed to redeploy');
                             toast.error(data.error || 'Failed to redeploy');
                           }
-                        } catch (error) {
-                          console.error('Redeploy error:', error);
-                          toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                        } catch (err) {
+                          setRedeployError('Network error');
+                          toast.error('Network error');
                         } finally {
                           setIsRedeploying(false);
                         }
                       }}
-                      variant="outline"
                       disabled={isRedeploying}
-                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                      className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
-                      {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                      {isRedeploying ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Redeploying...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Redeploy MCP Server
+                        </>
+                      )}
                     </Button>
-                  </>
+                  </div>
                 )}
                 {/* Edit Button (Owner Only) */}
                 {effectiveIsOwner && !editMode && (
