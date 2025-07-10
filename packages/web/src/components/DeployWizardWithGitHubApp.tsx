@@ -17,7 +17,6 @@ import {
   GitHubAppRepository,
   MCPMetadata 
 } from "@/lib/githubApp"
-import GitHubAppInstall from "./GitHubAppInstall"
 
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
 const GITHUB_APP_NAME = import.meta.env.VITE_GITHUB_APP_NAME || 'sigyl-dev'
