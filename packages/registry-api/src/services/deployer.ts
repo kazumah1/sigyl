@@ -53,6 +53,19 @@ export interface RedeploymentRequest {
   packageId?: string;
 }
 
+export interface RedeploymentRequest {
+  repoUrl: string;
+  repoName: string;
+  branch?: string;
+  env: Record<string, string>;
+  userId?: string;
+  username?: string;
+  selectedSecrets?: string[];
+  githubToken?: string;
+  serviceName?: string;
+  packageId?: string;
+}
+
 export interface DeploymentResult {
   success: boolean;
   deploymentUrl?: string;
@@ -662,17 +675,24 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
  * @param githubToken Optional GitHub App installation token for private repo access
  */
 export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCallback): Promise<RedeploymentResult> {
+export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCallback): Promise<RedeploymentResult> {
   function log(line: string) {
     if (onLog) onLog(line);
     console.log(line);
   }
   try {
     log(`🔄 Starting redeploy for service: ${request.serviceName}`);
+    log(`🔄 Starting redeploy for service: ${request.serviceName}`);
     if (!CLOUD_RUN_CONFIG.projectId) {
       throw new Error('Google Cloud credentials not configured. Set GOOGLE_CLOUD_PROJECT_ID environment variable.');
     }
     const [owner, repo] = request.repoName.split('/');
+    const [owner, repo] = request.repoName.split('/');
     let sigylConfig;
+    try {
+      log('📋 Fetching sigyl.yaml configuration...');
+      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
+      log('✅ Found sigyl.yaml configuration');
     try {
       log('📋 Fetching sigyl.yaml configuration...');
       sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
@@ -696,14 +716,38 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       repoName: request.repoName,
       branch: request.branch || 'main',
       environmentVariables: deploymentEnv,
+      log('⚠️ Could not fetch sigyl.yaml: ' + (error instanceof Error ? error.message : String(error)));
+      throw new Error('sigyl.yaml could not be fetched or parsed. Redeploy cannot continue.');
+    }
+    // Prepare environment variables
+    const deploymentEnv = {
+      ...request.env,
+      NODE_ENV: 'production',
+      MCP_TRANSPORT: 'http',
+      MCP_ENDPOINT: '/mcp',
+      PORT: '8080'
+    };
+    const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
+    log('🔒 Redeploying with security validation...');
+    const cloudRunResult = await cloudRunService.deployMCPServer({
+      repoUrl: request.repoUrl,
+      repoName: request.repoName,
+      branch: request.branch || 'main',
+      environmentVariables: deploymentEnv,
       sigylConfig: sigylConfig as SigylConfigUnion,
+      serviceName: request.serviceName, // Use the existing service name
+      githubToken: request.githubToken
+    });
       serviceName: request.serviceName, // Use the existing service name
       githubToken: request.githubToken
     });
     if (!cloudRunResult.success) {
       log('❌ Google Cloud Run redeploy failed: ' + (cloudRunResult.error || 'unknown error'));
       return { success: false, error: cloudRunResult.error || 'Google Cloud Run redeploy failed' };
+      log('❌ Google Cloud Run redeploy failed: ' + (cloudRunResult.error || 'unknown error'));
+      return { success: false, error: cloudRunResult.error || 'Google Cloud Run redeploy failed' };
     }
+    log('✅ Successfully redeployed to Google Cloud Run');
     log('✅ Successfully redeployed to Google Cloud Run');
     // Fetch tools from the deployed server
     let tools: any[] = [];
@@ -734,11 +778,17 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
         tools = toolsData.result.tools;
       }
       log('✅ Tools fetched from MCP server');
+      log('✅ Tools fetched from MCP server');
     } catch (err) {
+      log('❌ Error fetching tools from MCP server');
       log('❌ Error fetching tools from MCP server');
     }
     // Update mcp_packages
     const mcpPackagesPayload = {
+      name: request.repoName,
+      slug: request.repoName,
+      version: null,
+      description: null,
       name: request.repoName,
       slug: request.repoName,
       version: null,
@@ -748,7 +798,11 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       tags: null,
       logo_url: null,
       screenshots: null,
+      tags: null,
+      logo_url: null,
+      screenshots: null,
       tools: tools as any[],
+      category: 'general',
       category: 'general',
       verified: false,
       updated_at: new Date().toISOString(),
@@ -758,21 +812,31 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       log('❌ No packageId provided for redeploy.');
       return { success: false, error: 'No packageId provided for redeploy.' };
     }
+    if (!request.packageId) {
+      log('❌ No packageId provided for redeploy.');
+      return { success: false, error: 'No packageId provided for redeploy.' };
+    }
     const { error: pkgError } = await supabase
       .from('mcp_packages')
       .update(mcpPackagesPayload)
       .eq('id', request.packageId);
+      .eq('id', request.packageId);
     if (pkgError) {
       log('❌ Failed to update mcp_packages: ' + pkgError.message);
+      log('❌ Failed to update mcp_packages: ' + pkgError.message);
     } else {
+      log('✅ Updated mcp_packages');
       log('✅ Updated mcp_packages');
     }
     // Update mcp_tools
     if (tools.length > 0) {
+    if (tools.length > 0) {
       // Remove old tools for this package
+      await supabase.from('mcp_tools').delete().eq('package_id', request.packageId);
       await supabase.from('mcp_tools').delete().eq('package_id', request.packageId);
       for (const tool of tools) {
         await supabase.from('mcp_tools').upsert({
+          package_id: request.packageId,
           package_id: request.packageId,
           tool_name: tool.name,
           description: tool.description || null,
@@ -781,18 +845,24 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
         });
       }
       log('✅ Updated mcp_tools');
+      log('✅ Updated mcp_tools');
     }
     return {
       success: true,
       deploymentUrl: cloudRunResult.deploymentUrl,
       serviceName: cloudRunResult.serviceName,
       securityReport: cloudRunResult.securityReport
+      serviceName: cloudRunResult.serviceName,
+      securityReport: cloudRunResult.securityReport
     };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     if (onLog) onLog('❌ Redeploy failed: ' + msg);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (onLog) onLog('❌ Redeploy failed: ' + msg);
     return {
       success: false,
+      error: msg
       error: msg
     };
   }
