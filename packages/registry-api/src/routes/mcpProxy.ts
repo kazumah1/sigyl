@@ -2,48 +2,12 @@ import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { supabase } from '../config/database';
 import { APIResponse } from '../types';
-import { requireHybridAuth } from '../middleware/auth';
-import { decrypt } from '../utils/encryption';
 
 const router = express.Router();
 
 // Cache for package info with 5-minute TTL
 const urlCache = new Map<string, string>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-/**
- * Get user secrets for a package
- */
-async function getUserSecretsForPackage(userId: string, packageName: string): Promise<Record<string, string>> {
-  try {
-    const { data, error } = await supabase
-      .from('mcp_secrets')
-      .select('key, value, description')
-      .eq('user_id', userId)
-      .or(`mcp_server_id.eq.${packageName},key.ilike.%${packageName.toUpperCase()}%,description.ilike.%${packageName}%`);
-
-    if (error) {
-      console.error('Error fetching user secrets:', error);
-      return {};
-    }
-
-    // Decrypt values and return them as key-value pairs for header injection
-    const secrets: Record<string, string> = {};
-    (data || []).forEach(secret => {
-      try {
-        const decryptedValue = decrypt(secret.value);
-        secrets[secret.key] = decryptedValue;
-      } catch (error) {
-        console.error(`Error decrypting secret ${secret.key}:`, error);
-      }
-    });
-
-    return secrets;
-  } catch (error) {
-    console.error('Error getting user secrets for package:', error);
-    return {};
-  }
-}
 
 /**
  * Get the deployment URL for a package
@@ -123,13 +87,6 @@ const createDynamicProxy = () => {
       return res.status(404).json(response);
     }
 
-    // Get user secrets if authenticated
-    let userSecrets: Record<string, string> = {};
-    if (req.user?.user_id) {
-      userSecrets = await getUserSecretsForPackage(req.user.user_id, packageName);
-      console.log(`🔑 Injecting ${Object.keys(userSecrets).length} secrets for user ${req.user.user_id} and package ${packageName}`);
-    }
-
     // Create proxy middleware for this specific target
     const proxyMiddleware = createProxyMiddleware({
       target: deploymentUrl,
@@ -143,21 +100,14 @@ const createDynamicProxy = () => {
           proxyReq.setHeader('X-Forwarded-By', 'sigyl-mcp-proxy');
           proxyReq.setHeader('X-Package-Name', packageName);
           
-          // Inject user secrets as headers
-          Object.entries(userSecrets).forEach(([key, value]) => {
-            // Use environment variable format for headers
-            proxyReq.setHeader(`X-Env-${key}`, value);
-            // Also set as regular environment variable names that MCP servers expect
-            proxyReq.setHeader(key, value);
-          });
-          
-          // Log the proxy request (without exposing secrets)
-          const headerCount = Object.keys(userSecrets).length;
-          if (headerCount > 0) {
-            console.log(`Proxying ${(req as any).method} ${(req as any).url} -> ${deploymentUrl}${proxyReq.path} (with ${headerCount} secret headers)`);
-          } else {
-            console.log(`Proxying ${(req as any).method} ${(req as any).url} -> ${deploymentUrl}${proxyReq.path}`);
+          // Forward the user's API key to the wrapper for secret fetching
+          const authHeader = (req as any).headers.authorization;
+          if (authHeader) {
+            const apiKey = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+            proxyReq.setHeader('X-Sigyl-Api-Key', apiKey);
           }
+          
+          console.log(`Proxying ${(req as any).method} ${(req as any).url} -> ${deploymentUrl}${proxyReq.path}`);
         },
         proxyRes: (proxyRes) => {
           // Add CORS headers
@@ -219,9 +169,9 @@ router.get('/', async (_req, res) => {
 /**
  * Proxy all requests to MCP packages
  * Route: /api/v1/mcp/:packageName/*
- * Requires authentication to inject user secrets
+ * Now simplified to just proxy with API key forwarding - secrets handled by wrapper
  */
-router.use('/:packageName/*', requireHybridAuth, createDynamicProxy());
-router.use('/:packageName', requireHybridAuth, createDynamicProxy());
+router.use('/:packageName/*', createDynamicProxy());
+router.use('/:packageName', createDynamicProxy());
 
 export default router; 
