@@ -152,13 +152,11 @@ const MCPPackagePage = () => {
     if (id) {
       loadPackageData();
     }
-    if (pkg) {
-      console.log('🔍 pkg:', pkg);
-    }
   }, [id, user]);
 
   useEffect(() => {
     if (pkg && isOwner) {
+      console.log('🔍 pkg:', pkg);
       setEditFields({
         name: pkg.name,
         version: pkg.version || '',
