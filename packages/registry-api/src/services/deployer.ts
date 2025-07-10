@@ -685,14 +685,16 @@ export async function deployRepoLegacy({ repoUrl, env }: { repoUrl: string, env:
  * Redeploy an existing MCP server (rebuild and update existing Cloud Run service)
  * - Does NOT create a new Cloud Run service or new mcp_packages/mcp_tools rows
  * - Only updates the existing service and DB rows
+ * @param githubToken Optional GitHub App installation token for private repo access
  */
-export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName, packageId }: {
+export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName, packageId, githubToken }: {
   repoUrl: string;
   repoName: string;
   branch: string;
   env: Record<string, string>;
   serviceName: string;
   packageId: string;
+  githubToken?: string;
 }, onLog?: LogCallback): Promise<{ success: boolean; deploymentUrl?: string; logs?: string[]; error?: string }> {
   const logs: string[] = [];
   function log(line: string) {
@@ -712,7 +714,7 @@ export async function redeployRepo({ repoUrl, repoName, branch, env, serviceName
     let mcpYaml: any = null; // Properly declare mcpYaml
     try {
       logs.push('📋 Fetching sigyl.yaml configuration...');
-      sigylConfig = await fetchSigylYaml(owner, repo, branch, undefined);
+      sigylConfig = await fetchSigylYaml(owner, repo, branch, githubToken);
       logs.push('✅ Found sigyl.yaml configuration');
       logs.push('✅ Found sigyl.yaml configuration:', JSON.stringify(sigylConfig));
     } catch (error) {
