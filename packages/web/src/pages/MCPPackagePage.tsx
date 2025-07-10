@@ -818,44 +818,6 @@ const MCPPackagePage = () => {
     };
   }, [showDeleteModal, showInstallModal, showJsonConfig]);
 
-  const handleRedeploy = async () => {
-    if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
-      toast.error('No deployment found to redeploy');
-      return;
-    }
-
-    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
-    if (!activeDeployment) {
-      toast.error('No active deployment found to redeploy');
-      return;
-    }
-
-    setIsRedeploying(true);
-    try {
-      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Redeployment started successfully');
-        // Refresh package data to get updated deployment status
-        loadPackageData();
-      } else {
-        toast.error(data.error || 'Failed to redeploy');
-      }
-    } catch (error) {
-      console.error('Redeploy error:', error);
-      toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsRedeploying(false);
-    }
-  };
-
   // Logo upload handler
   const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1157,100 +1119,128 @@ const MCPPackagePage = () => {
             </div>
             {/* Action Buttons */}
           <div className="flex gap-4 flex-wrap">
-            {effectiveIsOwner && !editMode && (
-              <Button
-                onClick={async () => {
-                  if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
-                    toast.error('No deployment found to redeploy');
-                    console.log('No deployments found in pkg:', pkg);
-                    return;
-                  }
-                  const activeDeployment = pkg.deployments.find(d => d.status === 'active') || pkg.deployments[0];
-                  if (!activeDeployment) {
-                    toast.error('No active deployment found to redeploy');
-                    console.log('No active deployment:', pkg.deployments);
-                    return;
-                  }
-                  setIsRedeploying(true);
-                  console.log('Redeploying deployment ID:', activeDeployment.id);
-                  try {
-                    const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`
-                      }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      toast.success('Redeployment started successfully');
-                      loadPackageData();
-                    } else {
-                      toast.error(data.error || 'Failed to redeploy');
-                    }
-                  } catch (error) {
-                    console.error('Redeploy error:', error);
-                    toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
-                  } finally {
-                    setIsRedeploying(false);
-                  }
-                }}
-                variant="outline"
-                disabled={isRedeploying}
-                className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
-                {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-              </Button>
-            )}
-            {/* Edit Button (Owner Only) */}
-            {effectiveIsOwner && !editMode && (
-              <div className="flex justify-end mb-4">
-                <Button
-                  onClick={() => setEditMode(true)}
-                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                >
-                  Edit
-                </Button>
-              </div>
-            )}
-            {effectiveIsOwner && editMode && (
-              <div className="flex justify-end mb-4 gap-2">
-                <Button
-                  onClick={handleApplyEdit}
-                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                  disabled={saving || isRedeploying}
-                >
-                  {saving ? 'Saving...' : 'Apply'}
-                </Button>
-                {/* Redeploy button: only show if there is an active deployment */}
-                {pkg && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
-                  <Button
-                    onClick={handleRedeploy}
-                    className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                    disabled={isRedeploying || saving}
-                  >
-                    {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-                  </Button>
+            {effectiveIsOwner ? (
+              <>
+                {effectiveIsOwner && !editMode && (
+                  <>
+                    <Button
+                      onClick={async () => {
+                        if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
+                          toast.error('No deployment found to redeploy');
+                          console.log('No deployments found in pkg:', pkg);
+                          return;
+                        }
+                        const activeDeployment = pkg.deployments.find(d => d.status === 'active') || pkg.deployments[0];
+                        if (!activeDeployment) {
+                          toast.error('No active deployment found to redeploy');
+                          console.log('No active deployment:', pkg.deployments);
+                          return;
+                        }
+                        setIsRedeploying(true);
+                        console.log('Redeploying deployment ID:', activeDeployment.id);
+                        try {
+                          const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${session?.access_token}`
+                            }
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            toast.success('Redeployment started successfully');
+                            loadPackageData();
+                          } else {
+                            toast.error(data.error || 'Failed to redeploy');
+                          }
+                        } catch (error) {
+                          console.error('Redeploy error:', error);
+                          toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                        } finally {
+                          setIsRedeploying(false);
+                        }
+                      }}
+                      variant="outline"
+                      disabled={isRedeploying}
+                      className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isRedeploying ? 'animate-spin' : ''}`} />
+                      {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                    </Button>
+                  </>
+                )}
+                {/* Edit Button (Owner Only) */}
+                {effectiveIsOwner && !editMode && (
+                  <div className="flex justify-end mb-4">
+                    <Button
+                      onClick={() => setEditMode(true)}
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                )}
+                {effectiveIsOwner && editMode && (
+                  <div className="flex justify-end mb-4 gap-2">
+                    <Button
+                      onClick={handleApplyEdit}
+                      className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                      disabled={saving || isRedeploying}
+                    >
+                      {saving ? 'Saving...' : 'Apply'}
+                    </Button>
+                    {/* Redeploy button: only show if there is an active deployment */}
+                    {pkg && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
+                      <Button
+                        onClick={handleRedeploy}
+                        className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                        disabled={isRedeploying || saving}
+                      >
+                        {isRedeploying ? 'Redeploying...' : 'Redeploy'}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setEditMode(false)}
+                      variant="ghost"
+                      className="text-gray-400 hover:text-white hover:bg-[#23232a]"
+                      disabled={saving || isRedeploying}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 )}
                 <Button
-                  onClick={() => setEditMode(false)}
-                  variant="ghost"
-                  className="text-gray-400 hover:text-white hover:bg-[#23232a]"
-                  disabled={saving || isRedeploying}
+                  onClick={handleDeleteService}
+                  variant="outline"
+                  className="btn-modern hover:bg-neutral-900 hover:text-white"
                 >
-                  Cancel
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Service
                 </Button>
-              </div>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={handleInstallClick}
+                  className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
+                  disabled={loading}
+                  variant="secondary"
+                  size="lg"
+                >
+                  Connect
+                </Button>
+                {/* {pkg.source_api_url && (
+                  <Button
+                    onClick={() => window.open(pkg.source_api_url, '_blank')}
+                    size="lg"
+                    className="btn-modern hover:bg-neutral-900 hover:text-white"
+                  >
+                    <Github className="w-4 h-4 mr-2" />
+                    View on GitHub
+                  </Button>
+                )} */}
+              </>
             )}
-            <Button
-              onClick={handleDeleteService}
-              variant="outline"
-              className="btn-modern hover:bg-neutral-900 hover:text-white"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Service
-            </Button>
           </div>
           </div>
           <div className="flex items-center gap-4 text-gray-400 mb-4">
