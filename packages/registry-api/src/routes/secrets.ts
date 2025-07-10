@@ -366,27 +366,66 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
     const userId = req.user!.user_id;
     const packageName = req.params.packageName;
 
-    // Get secrets that match the package name pattern
-    // We'll look for secrets that have the package name in their key or description
-    const { data, error } = await supabase
+    console.log(`[SECRETS] Fetching secrets for user ${userId}, package: ${packageName}`);
+
+    // Extract keywords from package name to find relevant secrets
+    // Examples: 
+    // - "brave-search" -> look for secrets with "BRAVE" in key
+    // - "openai-gpt" -> look for secrets with "OPENAI" in key
+    // - "github-repo" -> look for secrets with "GITHUB" in key
+    const packageKeywords = packageName
+      .toLowerCase()
+      .split(/[-_\s]+/)
+      .filter(word => word.length > 2)
+      .map(word => word.toUpperCase());
+
+    console.log(`[SECRETS] Extracted keywords from "${packageName}": [${packageKeywords.join(', ')}]`);
+
+    // Build dynamic query to find secrets that match any of the keywords
+    let query = supabase
       .from('mcp_secrets')
       .select('key, value, description')
-      .eq('user_id', userId)
-      .or(`key.ilike.%${packageName}%,description.ilike.%${packageName}%`);
+      .eq('user_id', userId);
 
-    if (error) throw error;
+    // Create OR conditions for each keyword
+    if (packageKeywords.length > 0) {
+      const orConditions = packageKeywords
+        .map(keyword => `key.ilike.%${keyword}%`)
+        .concat(packageKeywords.map(keyword => `description.ilike.%${keyword}%`))
+        .join(',');
+      
+      console.log(`[SECRETS] Using OR conditions: ${orConditions}`);
+      query = query.or(orConditions);
+    } else {
+      // Fallback: exact package name match
+      query = query.or(`key.ilike.%${packageName}%,description.ilike.%${packageName}%`);
+    }
 
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`[SECRETS] Database error for package ${packageName}:`, error);
+      throw error;
+    }
+
+    console.log(`[SECRETS] Found ${data?.length || 0} matching secrets for package ${packageName}`);
+    
     // Decrypt values and return them for pre-filling
-    const secrets = data.map(secret => ({
-      key: secret.key,
-      value: decrypt(secret.value),
-      description: secret.description
-    }));
+    const secrets = (data || []).map(secret => {
+      console.log(`[SECRETS] Decrypting secret: ${secret.key}`);
+      return {
+        key: secret.key,
+        value: decrypt(secret.value),
+        description: secret.description
+      };
+    });
+
+    console.log(`[SECRETS] Returning ${secrets.length} secrets: [${secrets.map(s => s.key).join(', ')}]`);
 
     const response: APIResponse<Array<{ key: string; value: string; description?: string }>> = {
       success: true,
       data: secrets,
-      message: 'Package secrets retrieved successfully'
+      message: `Package secrets retrieved successfully - found ${secrets.length} secrets`
     };
 
     res.json(response);

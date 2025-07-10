@@ -50,15 +50,19 @@ const fetch = require("node-fetch");
     }
   }
 
-  // Fetch user secrets from Sigyl API with caching
+  // Cached function to fetch user secrets
   async function fetchUserSecrets(apiKey, packageName) {
-    // Check cache first
-    const cacheKey = `secrets_${apiKey}_${packageName}`;
+    const cacheKey = `${apiKey}_${packageName}`;
     const cached = secretsCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log(`[SECRETS] Using cached secrets (${Object.keys(cached.data).length} secrets)`);
+    
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log(`[SECRETS] Using cached secrets for package: ${packageName}`);
       return cached.data;
     }
+
+    console.log(`[SECRETS] Fetching secrets for package: "${packageName}"`);
+    console.log(`[SECRETS] API Key prefix: ${apiKey ? apiKey.substring(0, 10) + '...' : 'none'}`);
+    console.log(`[SECRETS] Request URL: https://api.sigyl.dev/api/v1/secrets/package/${packageName}`);
 
     try {
       const resp = await fetch(`https://api.sigyl.dev/api/v1/secrets/package/${packageName}`, {
@@ -69,7 +73,11 @@ const fetch = require("node-fetch");
         }
       });
       
+      console.log(`[SECRETS] Response status: ${resp.status} ${resp.statusText}`);
+      
       if (!resp.ok) {
+        const errorText = await resp.text();
+        console.log(`[SECRETS] Error response body: ${errorText}`);
         console.log(`[SECRETS] Failed to fetch secrets for ${packageName}: ${resp.status}`);
         const emptySecrets = {};
         secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
@@ -77,12 +85,16 @@ const fetch = require("node-fetch");
       }
       
       const data = await resp.json();
+      console.log(`[SECRETS] Response data structure:`, JSON.stringify(data, null, 2));
+      
       if (data.success && data.data) {
         const secrets = {};
-        data.data.forEach(secret => {
+        console.log(`[SECRETS] Raw secrets from API: ${data.data.length} items`);
+        data.data.forEach((secret, index) => {
+          console.log(`[SECRETS] Secret ${index + 1}: key="${secret.key}", value="${secret.value ? secret.value.substring(0, 5) + '...' : '(empty)'}", description="${secret.description || 'none'}"`);
           secrets[secret.key] = secret.value;
         });
-        console.log(`[SECRETS] Loaded ${Object.keys(secrets).length} secrets for ${packageName}`);
+        console.log(`[SECRETS] Processed secrets keys: [${Object.keys(secrets).join(', ')}]`);
         
         // Cache the secrets
         secretsCache.set(cacheKey, { data: secrets, timestamp: Date.now() });
@@ -90,11 +102,13 @@ const fetch = require("node-fetch");
         return secrets;
       }
       
+      console.log(`[SECRETS] No valid secrets data in response for ${packageName}`);
       const emptySecrets = {};
       secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
       return emptySecrets;
     } catch (err) {
-      console.error('[SECRETS] Error fetching user secrets:', err);
+      console.error('[SECRETS] Error fetching user secrets:', err.message);
+      console.error('[SECRETS] Full error:', err);
       const emptySecrets = {};
       secretsCache.set(cacheKey, { data: emptySecrets, timestamp: Date.now() });
       return emptySecrets;
@@ -192,14 +206,28 @@ const fetch = require("node-fetch");
 
   // Extract package name from environment or URL
   function getPackageName() {
+    console.log('[PACKAGE] Determining package name...');
+    console.log('[PACKAGE] SIGYL_PACKAGE_NAME env var:', process.env.SIGYL_PACKAGE_NAME);
+    console.log('[PACKAGE] K_SERVICE env var:', process.env.K_SERVICE);
+    
     // Try to get from environment variable set during deployment
     if (process.env.SIGYL_PACKAGE_NAME) {
+      console.log(`[PACKAGE] Using SIGYL_PACKAGE_NAME: "${process.env.SIGYL_PACKAGE_NAME}"`);
       return process.env.SIGYL_PACKAGE_NAME;
     }
     
     // Fallback: extract from Cloud Run service name or use default
     const serviceName = process.env.K_SERVICE || 'unknown-package';
-    return serviceName.replace(/^sigyl-/, '').replace(/-[a-f0-9]{8}$/, '');
+    const extractedName = serviceName.replace(/^sigyl-/, '').replace(/-[a-f0-9]{8}$/, '');
+    console.log(`[PACKAGE] Extracted from service name "${serviceName}": "${extractedName}"`);
+    
+    // Additional debugging: show all environment variables that might be relevant
+    const relevantEnvVars = Object.keys(process.env).filter(key => 
+      key.includes('PACKAGE') || key.includes('SERVICE') || key.includes('SIGYL') || key.includes('BRAVE')
+    );
+    console.log('[PACKAGE] Relevant env vars:', relevantEnvVars.map(key => `${key}=${process.env[key]}`).join(', '));
+    
+    return extractedName;
   }
 
   // Handle GET requests for health checks (Claude Desktop sends these)
