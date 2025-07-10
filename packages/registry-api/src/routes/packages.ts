@@ -689,4 +689,29 @@ router.post('/../tools/semantic-search', optionalAuth, async (req: Request, res:
   }
 });
 
+// POST /api/v1/packages/:id/redeploy - Redeploy a package by ID (owner only)
+router.post('/:id/redeploy', requireSupabaseAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.user_id;
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Invalid package ID', message: 'Package ID is required' });
+    }
+    // Look up the package
+    const packageData = await packageService.getPackageById(id);
+    if (!packageData) {
+      return res.status(404).json({ success: false, error: 'Package not found', message: 'No package found with the given ID' });
+    }
+    // Call redeploy logic (to be implemented)
+    const result = await packageService.redeployPackageById(packageData, userId);
+    if (result.success) {
+      return res.json({ success: true, message: 'Redeployment started' });
+    } else {
+      return res.status(500).json({ success: false, error: result.error || 'Failed to redeploy', message: result.message || 'Unknown error' });
+    }
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to redeploy package', message: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 export default router;

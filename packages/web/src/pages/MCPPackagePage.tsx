@@ -1126,21 +1126,9 @@ const MCPPackagePage = () => {
                   <>
                     <Button
                       onClick={async () => {
-                        if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
-                          toast.error('No deployment found to redeploy');
-                          console.log('No deployments found in pkg:', pkg);
-                          return;
-                        }
-                        const activeDeployment = pkg.deployments.find(d => d.status === 'active') || pkg.deployments[0];
-                        if (!activeDeployment) {
-                          toast.error('No active deployment found to redeploy');
-                          console.log('No active deployment:', pkg.deployments);
-                          return;
-                        }
                         setIsRedeploying(true);
-                        console.log('Redeploying deployment ID:', activeDeployment.id);
                         try {
-                          const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
+                          const response = await fetch(`https://api.sigyl.dev/api/v1/packages/${pkg.id}/redeploy`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
@@ -1148,6 +1136,7 @@ const MCPPackagePage = () => {
                             }
                           });
                           const data = await response.json();
+                          console.log('Redeploy response:', data);
                           if (data.success) {
                             toast.success('Redeployment started successfully');
                             loadPackageData();
@@ -1190,16 +1179,6 @@ const MCPPackagePage = () => {
                     >
                       {saving ? 'Saving...' : 'Apply'}
                     </Button>
-                    {/* Redeploy button: only show if there is an active deployment */}
-                    {pkg && pkg.deployments && pkg.deployments.some(d => d.status === 'active') && (
-                      <Button
-                        onClick={handleRedeploy}
-                        className="btn-modern-inverted hover:bg-neutral-900 hover:text-white"
-                        disabled={isRedeploying || saving}
-                      >
-                        {isRedeploying ? 'Redeploying...' : 'Redeploy'}
-                      </Button>
-                    )}
                     <Button
                       onClick={() => setEditMode(false)}
                       variant="ghost"

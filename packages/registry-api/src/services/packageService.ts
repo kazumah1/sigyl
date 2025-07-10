@@ -450,4 +450,11 @@ export class PackageService {
       tools: tools || []
     };
   }
+
+  // Add a placeholder redeployPackageById method
+  async redeployPackageById(pkg: any, userId: string) {
+    console.log('[PackageService] Redeploy called for package:', pkg.id, 'by user:', userId);
+    // TODO: Implement actual redeploy logic (call deployer, etc)
+    return { success: true };
+  }
 } 
