@@ -276,10 +276,14 @@ const fetch = require("node-fetch");
       // Inject secrets as environment variables for this request
       const originalEnv = { ...process.env };
       Object.entries(userSecrets).forEach(([key, value]) => {
+        console.log(`[SECRETS] Injecting: ${key} = ${value ? value.substring(0, 10) + '...' : '(empty)'}`);
         process.env[key] = value;
       });
 
       console.log(`[SECRETS] Injected ${Object.keys(userSecrets).length} secrets as environment variables`);
+      console.log(`[ENV] BRAVE_API_KEY exists: ${!!process.env.BRAVE_API_KEY}`);
+      console.log(`[ENV] BRAVEAPIKEY exists: ${!!process.env.BRAVEAPIKEY}`);
+      console.log(`[ENV] All env keys containing 'BRAVE': ${Object.keys(process.env).filter(k => k.includes('BRAVE')).join(', ')}`);
       
       // RESTORED: Use the original working StreamableHTTPServerTransport approach
       // Create the MCP server instance
