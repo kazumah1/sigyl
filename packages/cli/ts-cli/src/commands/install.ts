@@ -273,31 +273,26 @@ async function installRemoteServer(
 			process.exit(1);
 		}
 
-		// Write config file for Cursor (mcpServers field) using 'command' and 'args' (smithery style)
-		const configPath = path.join(os.homedir(), ".cursor", "mcp_servers.json");
-		let config = { mcpServers: {} };
+		// Write config file for Cursor (mcp.json, flat object)
+		const configPath = path.join(os.homedir(), ".cursor", "mcp.json");
+		let config: Record<string, string> = {};
 		if (fs.existsSync(configPath)) {
 			try {
 				config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 			} catch {}
 		}
-		let mcpServers: Record<string, any> = config.mcpServers || {};
-		// Use package name as key, but slug for run command
-		mcpServers[serverName] = {
-			command: "npx",
-			args: [
-				"-y",
-				"@sigyl-dev/cli@latest",
-				"run",
-				remote.slug,
-				"--key",
-				apiKeyToUse
-			]
-		};
-		config.mcpServers = mcpServers;
+		// Use package name as key, value is the MCP endpoint URL with apiKey param
+		let mcpUrl = remote.url || remote.slug;
+		// Add apiKey as query param
+		try {
+			const urlObj = new URL(mcpUrl);
+			urlObj.searchParams.set("apiKey", apiKeyToUse);
+			mcpUrl = urlObj.toString();
+		} catch {}
+		config[serverName] = mcpUrl;
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Cursor!`));
+		console.log(chalk.green(`\n🎉 Installed remote MCP server '${serverName}' for Cursor (mcp.json)!`));
 		console.log(chalk.yellow("\n🔄 Please restart Cursor to load the new server."));
 		return;
 	}

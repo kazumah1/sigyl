@@ -818,44 +818,6 @@ const MCPPackagePage = () => {
     };
   }, [showDeleteModal, showInstallModal, showJsonConfig]);
 
-  const handleRedeploy = async () => {
-    if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
-      toast.error('No deployment found to redeploy');
-      return;
-    }
-
-    const activeDeployment = pkg.deployments.find(d => d.status === 'active');
-    if (!activeDeployment) {
-      toast.error('No active deployment found to redeploy');
-      return;
-    }
-
-    setIsRedeploying(true);
-    try {
-      const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Redeployment started successfully');
-        // Refresh package data to get updated deployment status
-        loadPackageData();
-      } else {
-        toast.error(data.error || 'Failed to redeploy');
-      }
-    } catch (error) {
-      console.error('Redeploy error:', error);
-      toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsRedeploying(false);
-    }
-  };
-
   // Logo upload handler
   const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1162,7 +1124,42 @@ const MCPPackagePage = () => {
                 {effectiveIsOwner && !editMode && (
                   <>
                     <Button
-                      onClick={handleRedeploy}
+                      onClick={async () => {
+                        if (!pkg || !pkg.deployments || pkg.deployments.length === 0) {
+                          toast.error('No deployment found to redeploy');
+                          console.log('No deployments found in pkg:', pkg);
+                          return;
+                        }
+                        const activeDeployment = pkg.deployments.find(d => d.status === 'active') || pkg.deployments[0];
+                        if (!activeDeployment) {
+                          toast.error('No active deployment found to redeploy');
+                          console.log('No active deployment:', pkg.deployments);
+                          return;
+                        }
+                        setIsRedeploying(true);
+                        console.log('Redeploying deployment ID:', activeDeployment.id);
+                        try {
+                          const response = await fetch(`https://api.sigyl.dev/api/v1/deployments/${activeDeployment.id}/redeploy`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${session?.access_token}`
+                            }
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            toast.success('Redeployment started successfully');
+                            loadPackageData();
+                          } else {
+                            toast.error(data.error || 'Failed to redeploy');
+                          }
+                        } catch (error) {
+                          console.error('Redeploy error:', error);
+                          toast.error('Failed to redeploy: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                        } finally {
+                          setIsRedeploying(false);
+                        }
+                      }}
                       variant="outline"
                       disabled={isRedeploying}
                       className="border-white text-white bg-transparent hover:bg-[#23232a] hover:text-white transition-all duration-200"

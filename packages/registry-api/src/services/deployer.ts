@@ -240,22 +240,31 @@ export async function addPathRuletoUrlMap(urlMapName: string, path: string, back
   const pathMatcher = urlMap.pathMatchers && urlMap.pathMatchers[0];
   if (!pathMatcher) throw new Error('No pathMatcher found in URL map');
   pathMatcher.pathRules = pathMatcher.pathRules || [];
-  pathMatcher.pathRules.push({
-    paths: [path],
-    service: `projects/${project}/global/backendServices/${backendServiceName}`,
-    routeAction: {
-      urlRewrite: {
-        pathPrefixRewrite: '/mcp'
+  // Deduplicate: Only add if not already present
+  const backendServiceUrl = `projects/${project}/global/backendServices/${backendServiceName}`;
+  const alreadyExists = pathMatcher.pathRules.some((rule: any) =>
+    rule.paths && rule.paths.includes(path) && rule.service === backendServiceUrl
+  );
+  if (!alreadyExists) {
+    pathMatcher.pathRules.push({
+      paths: [path],
+      service: backendServiceUrl,
+      routeAction: {
+        urlRewrite: {
+          pathPrefixRewrite: '/mcp'
+        }
       }
-    }
-  });
-  // Patch the URL map
-  await compute.urlMaps.patch({
-    project,
-    urlMap: urlMapName,
-    requestBody: urlMap,
-    auth,
-  });
+    });
+    // Patch the URL map only if we added a rule
+    await compute.urlMaps.patch({
+      project,
+      urlMap: urlMapName,
+      requestBody: urlMap,
+      auth,
+    });
+  } else {
+    console.log(`[URL MAP] Path rule for ${path} -> ${backendServiceName} already exists, skipping.`);
+  }
 }
 
 // Helper: Retry addPathRuletoUrlMap if backend service is not ready
