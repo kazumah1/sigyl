@@ -743,42 +743,62 @@ const MCPPackagePage = () => {
     }
   };
 
-  // Before the return statement, define the cursorButton variable
-  const cursorButton = (() => {
-    const name = pkg?.name;
-    const sourceApiUrl = pkg?.source_api_url;
-    let config = sourceApiUrl ? { url: sourceApiUrl.replace(/\/$/, '') + '/mcp' } : {};
-    let configBase64 = '';
-    try {
-      configBase64 = btoa(JSON.stringify(config));
-    } catch {}
-    const deepLink = name && sourceApiUrl && configBase64
-      ? `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(configBase64)}`
-      : '';
-    return (
-      <a
-        href={deepLink || '#'}
-        style={{ display: 'inline-block', width: '100%' }}
-        onClick={e => {
-          if (!name || !sourceApiUrl) {
-            e.preventDefault();
-            toast.error('No MCP package name or deployed server URL found for this server.');
-          } else {
-            incrementDownloadCount();
-          }
-        }}
-      >
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
-          style={cellStyle}
-          type="button"
+  // Cursor install button (CLI proxy only, no deep link)
+  const [showCursorInline, setShowCursorInline] = useState(false);
+  const [cursorCopied, setCursorCopied] = useState(false);
+  const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
+  let cursorApiKey = '';
+  if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
+    cursorApiKey = fullApiKeys[apiKeys[0].id];
+  } else {
+    cursorApiKey = apiKeys[0]?.key_prefix || '';
+  }
+  const cursorInstallCommand = `npx -y @sigyl-dev/cli@latest install ${mcpUrl} --client cursor --key ${cursorApiKey}`;
+  const cursorButton = showCursorInline ? (
+    <div className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg" style={cellStyle}>
+      <img src="/favicon.png" alt="Cursor" className="w-5 h-5" />
+      {cursorCopied ? (
+        <span className="text-white text-sm flex-1 truncate text-center">Copied!</span>
+      ) : (
+        <code
+          className="text-white select-all text-sm flex-1 bg-transparent border-0 p-0 m-0"
+          style={{ background: 'none', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+          title={cursorInstallCommand}
         >
-          <img src="/favicon.png" alt="Cursor" className="w-5 h-5" /> Cursor
-        </Button>
-      </a>
-    );
-  })();
+          {cursorInstallCommand}
+        </code>
+      )}
+      <button
+        className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
+        onClick={() => {
+          copyToClipboard(cursorInstallCommand, 'Command copied!');
+          setCursorCopied(true);
+          setTimeout(() => {
+            setCursorCopied(false);
+            setShowCursorInline(false);
+          }, 1000);
+          incrementDownloadCount();
+        }}
+        aria-label="Copy command"
+        disabled={cursorCopied}
+      >
+        <CopyIcon className="w-5 h-5" />
+      </button>
+    </div>
+  ) : (
+    <Button
+      variant="outline"
+      className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
+      style={cellStyle}
+      onClick={() => {
+        setShowCursorInline(true);
+        incrementDownloadCount();
+      }}
+      disabled={apiKeys.length === 0}
+    >
+      <img src="/favicon.png" alt="Cursor" className="w-5 h-5" /> Cursor
+    </Button>
+  );
 
   useEffect(() => {
     const anyModalOpen = showDeleteModal || showInstallModal || showJsonConfig;
@@ -1701,6 +1721,7 @@ const MCPPackagePage = () => {
                       <button
                         className="p-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white"
                         onClick={() => {
+                          console.log('Copying HTTP API URL:', httpApiUrl);
                           copyToClipboard(httpApiUrl, 'URL copied!');
                           setHttpApiCopied(true);
                           setTimeout(() => {
@@ -1732,6 +1753,7 @@ const MCPPackagePage = () => {
                           if (!/^https?:\/\//.test(fullUrl)) {
                             fullUrl = 'https://' + fullUrl.replace(/^\/*/, '');
                           }
+                          // Use a clean template literal, no backslashes
                           url = `${fullUrl}?apiKey=${encodeURIComponent(apiKey)}`;
                         }
                         setHttpApiUrl(url);
@@ -1782,14 +1804,15 @@ const MCPPackagePage = () => {
                       className="flex items-center gap-2 justify-start pl-4 bg-white/10 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all duration-200"
                       style={cellStyle}
                       onClick={() => {
-                        const pkgName = pkg?.slug || pkg?.name || 'my-mcp-server';
+                        // Use the full MCP endpoint URL for VS Code install
+                        const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
                         let vscodeApiKey = '';
                         if (apiKeys[0] && fullApiKeys[apiKeys[0].id]) {
                           vscodeApiKey = fullApiKeys[apiKeys[0].id];
                         } else {
                           vscodeApiKey = apiKeys[0]?.key_prefix || '';
                         }
-                        const vsCodeInstallCommand = `npx -y @sigyl-dev/cli@latest install ${pkgName} --client vscode --key ${vscodeApiKey}`;
+                        const vsCodeInstallCommand = `npx -y @sigyl-dev/cli@latest install ${mcpUrl} --client vscode --key ${vscodeApiKey}`;
                         setVSCodeCommand(vsCodeInstallCommand);
                         setShowVSCodeInline(true);
                         incrementDownloadCount();
@@ -1870,8 +1893,19 @@ const MCPPackagePage = () => {
                     onClick={() => {
                       const mcpUrl = pkg?.source_api_url ? pkg.source_api_url.replace(/\/$/, '') + '/mcp' : '';
                       const apiKey = apiKeys[0] && fullApiKeys[apiKeys[0].id] ? fullApiKeys[apiKeys[0].id] : apiKeys[0]?.key_prefix || '';
+                      // Extract repo name from URL (second-to-last part of the path)
+                      let repoName = mcpUrl;
+                      try {
+                        const urlObj = new URL(mcpUrl);
+                        const pathParts = urlObj.pathname.split('/').filter(Boolean);
+                        if (pathParts.length >= 2) {
+                          repoName = pathParts[pathParts.length - 2];
+                        } else {
+                          repoName = pathParts[pathParts.length - 1] || mcpUrl;
+                        }
+                      } catch { repoName = mcpUrl; }
                       const configObj = {
-                        [mcpUrl]: {
+                        [repoName]: {
                           command: "npx",
                           args: [
                             "-y",

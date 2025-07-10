@@ -44,7 +44,7 @@ async function resolveRemoteMCPServer(pkgName: string, apiKey?: string, profile?
 		if (!response.ok) {
 			if (response.status === 404) {
 				console.error(chalk.red(`❌ Package '${pkgName}' not found in the registry.`));
-				console.log(chalk.yellow(`💡 Check available packages at https://sigyl.dev/marketplace`));
+				console.log(chalk.yellow(`💡 Check available packages at https://sigyl.dev/registry`));
 			} else if (response.status === 401) {
 				console.error(chalk.red(`❌ Authentication failed. Invalid API key.`));
 				console.log(chalk.yellow(`💡 Get your API key from https://sigyl.dev/dashboard`));
@@ -142,11 +142,23 @@ export function createInstallCommand(): Command {
 				let remote: any;
 				if (target.startsWith('http://') || target.startsWith('https://')) {
 					// Use the URL directly
+					// Extract repo name from URL (last part after '/')
+					let repoName = target;
+					try {
+						const urlObj = new URL(target);
+						const pathParts = urlObj.pathname.split('/').filter(Boolean);
+						// If path is /@user/repo/mcp, get the second-to-last part (repo)
+						if (pathParts.length >= 2) {
+							repoName = pathParts[pathParts.length - 2];
+						} else {
+							repoName = pathParts[pathParts.length - 1] || target;
+						}
+					} catch { repoName = target; }
 					remote = {
 						url: target,
 						api_key: options.key || 'demo-key',
 						profile: options.profile || 'default',
-						name: options.name || target,
+						name: options.name || repoName,
 						slug: target,
 						packageInfo: { source_api_url: target }
 					};
