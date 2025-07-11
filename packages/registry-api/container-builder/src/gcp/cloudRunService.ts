@@ -662,6 +662,10 @@ EOF`
         // Remove name for POST (Cloud Run v2 requires name to be omitted on create)
         const createConfig = { ...serviceConfig };
         delete (createConfig as any).name;
+        const postBody = {
+          service: createConfig,
+          serviceId: serviceName
+        };
         const createResponse = await fetch(
           `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services`,
           {
@@ -670,7 +674,7 @@ EOF`
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(createConfig)
+            body: JSON.stringify(postBody)
           }
         );
         if (!createResponse.ok) {
