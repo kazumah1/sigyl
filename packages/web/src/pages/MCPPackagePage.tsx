@@ -186,8 +186,7 @@ const MCPPackagePage = () => {
     if (!pkg || !user) return;
 
     // Find the correct installation for the package's owner/org
-    const [owner] = pkg.slug.split('/');
-    // Try to match by accountLogin (owner) or profileId (author_id)
+    const [owner, repo] = pkg.slug.split('/');
     const matchingAccount = githubAccounts.find(
       acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
     );
@@ -195,7 +194,6 @@ const MCPPackagePage = () => {
 
     if (!selectedInstallationId) {
       toast.error('No GitHub App installation found for this repo owner/org. Please install the GitHub App for this account to enable redeploy.');
-      setRedeployError('No GitHub App installation found for this repo owner/org.');
       return;
     }
 
@@ -203,7 +201,8 @@ const MCPPackagePage = () => {
     setRedeployError(null);
 
     try {
-      const [, repo] = pkg.slug.split('/');
+      // Always use the real GitHub repo URL
+      const repoUrl = `https://github.com/${owner}/${repo}`;
       const response = await fetch(
         `https://api.sigyl.dev/api/v1/github/installations/${selectedInstallationId}/redeploy`,
         {
@@ -213,25 +212,20 @@ const MCPPackagePage = () => {
             'Authorization': `Bearer ${session?.access_token || ''}`
           },
           body: JSON.stringify({
-            repoUrl: pkg.source_api_url,
+            repoUrl, // <-- correct GitHub repo URL
             owner,
             repo,
-            branch: selectedBranch,
-            userId: user.id
-            // Add any secrets/env if needed
+            branch: selectedBranch || 'main',
+            userId: user.id,
+            // ...other fields as needed
           })
         }
       );
       const result = await response.json();
-
       if (result.success) {
-        toast.success('Redeploy started successfully!');
-        // Optionally reload package data or show progress
-        await loadPackageData();
-        // Optionally redirect to the new MCP package page using the actual package ID
-        if (result.packageId) {
-          navigate(`/mcp/${result.packageId}?new=true&deploying=true`);
-        }
+        toast.success('Redeploy started!');
+        // Optionally reload or redirect
+        window.location.reload();
       } else {
         setRedeployError(result.error || 'Redeploy failed');
         toast.error(result.error || 'Redeploy failed');
@@ -239,10 +233,11 @@ const MCPPackagePage = () => {
     } catch (err) {
       setRedeployError(err instanceof Error ? err.message : 'Redeploy failed');
       toast.error(err instanceof Error ? err.message : 'Redeploy failed');
+      console.error('Redeploy failed:', err);
     } finally {
       setIsRedeploying(false);
     }
-  }
+  };
 
   // Get the correct token for API authentication
   // Priority: GitHub App token > Supabase JWT token
