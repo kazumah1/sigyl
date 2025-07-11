@@ -16,6 +16,8 @@ export interface CloudRunDeploymentRequest {
   sigylConfig?: SigylConfigUnion;
   /** GitHub token for repository access */
   githubToken?: string;
+  /** Optional subdirectory within the repo to use as project root */
+  subdirectory?: string;
 }
 
 export interface CloudRunDeploymentResult {
@@ -216,6 +218,18 @@ export class CloudRunService {
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
+          // Step 2.1: Change directory to subdirectory if provided
+          ...(request.subdirectory ? [
+            {
+              name: 'gcr.io/cloud-builders/gcloud',
+              entrypoint: 'bash',
+              args: [
+                '-c',
+                `cd ${request.subdirectory}`
+              ],
+              dir: request.subdirectory
+            }
+          ] : []),
           // Step 2.3: Diagnostics before downloading wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
@@ -224,7 +238,7 @@ export class CloudRunService {
               '-c',
               'echo "=== PWD (before download) ===" && pwd && echo "=== ROOT DIR (before download) ===" && ls -l && echo "=== RECURSIVE LS (before download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 2.4: Create wrapper directory and download wrapper.cjs from GCS bucket (using bash)
           {
@@ -234,7 +248,7 @@ export class CloudRunService {
               '-c',
               'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrapper.cjs'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 2.5: Diagnostics after downloading wrapper.js
           {
@@ -244,7 +258,7 @@ export class CloudRunService {
               '-c',
               'echo "=== PWD (after download) ===" && pwd && echo "=== ROOT DIR (after download) ===" && ls -l && echo "=== RECURSIVE LS (after download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 3: Create a Dockerfile for the MCP server
           {
@@ -291,20 +305,8 @@ COPY sigyl.yaml ./
 # Copy any remaining files (in case there are other assets)
 COPY . .
 
-# Debug: Show working directory and contents before copying wrapper
-RUN echo "=== PWD (before wrapper copy) ===" && pwd && \
-    echo "=== ROOT DIR ===" && ls -l && \
-    echo "=== RECURSIVE LS (before wrapper copy) ===" && ls -lR . && \
-    if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
-
 # Copy in the Sigyl wrapper
 COPY ./wrapper/wrapper.cjs ./wrapper.cjs
-
-# Debug: Show contents after copying wrapper
-RUN echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper || echo "wrapper dir does not exist" && \
-    echo "=== ROOT DIR (after wrapper copy) ===" && ls -l && \
-    echo "=== RECURSIVE LS (after wrapper copy) ===" && ls -lR . && \
-    if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi
 
 # Install wrapper dependencies
 RUN npm install express http-proxy-middleware node-fetch@2
@@ -328,7 +330,8 @@ EXPOSE 8080
 # Start command optimized for Cloud Run
 CMD ["node", "wrapper.cjs"]
 EOF`
-            ]
+            ],
+            dir: request.subdirectory || '.'
           },
           // Step 4: Build the Docker image
           {
@@ -337,7 +340,8 @@ EOF`
               'build',
               '-t', imageUri,
               '.'
-            ]
+            ],
+            dir: request.subdirectory || '.'
           }
         ],
         images: [imageUri],
@@ -426,6 +430,18 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
+          // Step 2.1: Change directory to subdirectory if provided
+          ...(request.subdirectory ? [
+            {
+              name: 'gcr.io/cloud-builders/gcloud',
+              entrypoint: 'bash',
+              args: [
+                '-c',
+                `cd ${request.subdirectory}`
+              ],
+              dir: request.subdirectory
+            }
+          ] : []),
           // Step 2.3: Diagnostics before copying wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
@@ -434,7 +450,7 @@ EOF`
               '-c',
               'echo "=== PWD (before copy) ===" && pwd && echo "=== ROOT DIR (before copy) ===" && ls -l && echo "=== RECURSIVE LS (before copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build, with diagnostics
           {
@@ -444,7 +460,7 @@ EOF`
               '-c',
               'echo "=== PWD (in copy step) ===" && pwd && echo "=== ROOT DIR (in copy step, before copy) ===" && ls -l && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 2.5: Diagnostics after copying wrapper.js
           {
@@ -454,7 +470,7 @@ EOF`
               '-c',
               'echo "=== PWD (after copy) ===" && pwd && echo "=== ROOT DIR (after copy) ===" && ls -l && echo "=== RECURSIVE LS (after copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 2.6: Diagnostics before Docker build to confirm build context and files
           {
@@ -464,7 +480,7 @@ EOF`
               '-c',
               'echo "=== PWD (before docker build) ===" && pwd && echo "=== ROOT DIR (before docker build) ===" && ls -l && echo "=== RECURSIVE LS (before docker build) ===" && ls -lR .'
             ],
-            dir: '.'
+            dir: request.subdirectory || '.'
           },
           // Step 3: Build using existing Dockerfile
           {
@@ -474,7 +490,8 @@ EOF`
               '-t', imageUri,
               '-f', dockerfilePath,
               '.'
-            ]
+            ],
+            dir: request.subdirectory || '.'
           }
         ],
         images: [imageUri],

@@ -51,6 +51,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [loadingMetadata, setLoadingMetadata] = useState(false)
   const [installationError, setInstallationError] = useState<boolean>(false)
   const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
+  const [subdirectory, setSubdirectory] = useState('')
 
   // Use the installationId from the activeGitHubAccount prop if provided, else fallback to AuthContext
   const installationId = activeGitHubAccount?.installationId ?? authInstallationId;
@@ -132,7 +133,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       const [owner, repo] = selectedRepo.full_name.split('/')
       
       // Start deployment and immediately redirect to package page
-      const result = await deployMCPWithApp(installationId, owner, repo, selectedBranch, user.id)
+      const result = await deployMCPWithApp(installationId, owner, repo, selectedBranch, user.id, subdirectory)
       
       // Call the onDeploy callback
       onDeploy?.(result)
@@ -502,6 +503,18 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                       <SelectItem value="develop">develop</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                {/* Project Subdirectory Input */}
+                <div>
+                  <Label htmlFor="subdirectory" className="text-white">Project Subdirectory (optional)</Label>
+                  <Input
+                    id="subdirectory"
+                    placeholder="e.g. apps/api or leave blank for repo root"
+                    value={subdirectory}
+                    onChange={e => setSubdirectory(e.target.value)}
+                    className="bg-black border-white/10 text-white placeholder-white placeholder:text-white/50 rounded-lg min-h-[44px]"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">If your MCP project is in a subdirectory, specify the path here. Otherwise, leave blank.</p>
                 </div>
 
                 {/* MCP Metadata Display */}

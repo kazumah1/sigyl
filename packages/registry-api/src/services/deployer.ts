@@ -38,6 +38,7 @@ export interface DeploymentRequest {
   username?: string;
   selectedSecrets?: string[];
   githubToken?: string;
+  subdirectory?: string;
 }
 
 export interface RedeploymentRequest {
@@ -51,6 +52,7 @@ export interface RedeploymentRequest {
   githubToken?: string;
   serviceName?: string;
   packageId?: string;
+  subdirectory?: string;
 }
 
 export interface DeploymentResult {
@@ -423,7 +425,8 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       branch: request.branch || 'main',
       environmentVariables: deploymentEnv,
       sigylConfig: sigylConfig as SigylConfigUnion,
-      githubToken: request.githubToken
+      githubToken: request.githubToken,
+      ...(request.subdirectory ? { subdirectory: request.subdirectory } : {})
     });
 
     if (!cloudRunResult.success) {
@@ -701,7 +704,8 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       environmentVariables: deploymentEnv,
       sigylConfig: sigylConfig as SigylConfigUnion,
       serviceName: request.serviceName, // Use the existing service name
-      githubToken: request.githubToken
+      githubToken: request.githubToken,
+      ...(request.subdirectory ? { subdirectory: request.subdirectory } : {})
     });
     if (!cloudRunResult.success) {
       log('❌ Google Cloud Run redeploy failed: ' + (cloudRunResult.error || 'unknown error'));

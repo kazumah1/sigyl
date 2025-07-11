@@ -516,7 +516,7 @@ router.get('/installations/:installationId', async (req: Request, res: Response)
 router.post('/installations/:installationId/deploy', async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
-    const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
+    const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {}, subdirectory } = req.body;
     
     if (!installationId || !repoUrl || !owner || !repo) {
       
@@ -541,7 +541,8 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
       env: environmentVariables,
       userId,
       selectedSecrets,
-      githubToken: installToken
+      githubToken: installToken,
+      ...(subdirectory ? { subdirectory } : {})
     };
 
     // Deploy to Google Cloud Run
