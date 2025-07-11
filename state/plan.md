@@ -656,3 +656,5 @@ The frontend is now **100% API-driven** with no direct database dependencies. Al
 ## .mdx Support
 - Docs files can be `.mdx` (markdown with JSX), but are returned as raw markdown (not rendered HTML).
 - This is compatible with LLM and downstream consumers that expect markdown.
+
+update
