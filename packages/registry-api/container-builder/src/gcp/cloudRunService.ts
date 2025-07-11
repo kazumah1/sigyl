@@ -586,9 +586,7 @@ EOF`
           app: 'sigyl-mcp',
           repository: request.repoName.replace('/', '-').toLowerCase()
         },
-        annotations: {
-          'run.googleapis.com/ingress': 'all'
-        },
+        // No system annotations allowed in v2
 
         // Revision template
         template: {
