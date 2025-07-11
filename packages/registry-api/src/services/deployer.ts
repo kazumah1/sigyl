@@ -537,8 +537,9 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
           params: {}
         })
       });
-      // Parse event-stream response
+      // Debug: Log the full response before parsing
       const text = await toolsResp.text();
+      console.log('[DEPLOY] /mcp response:', text);
       const match = text.match(/data: (\{.*\})/);
       let toolsData: any = {};
       if (match) {
@@ -722,7 +723,9 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
           params: {}
         })
       });
+      // Debug: Log the full response before parsing
       const text = await toolsResp.text();
+      console.log('[REDEPLOY] /mcp response:', text);
       const match = text.match(/data: (\{.*\})/);
       let toolsData: any = {};
       if (match) {
