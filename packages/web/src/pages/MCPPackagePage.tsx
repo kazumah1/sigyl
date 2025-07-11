@@ -63,7 +63,7 @@ const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, session, activeGitHubAccount, installationId } = useAuth();
+  const { user, session, activeGitHubAccount, installationId, githubAccounts } = useAuth();
   
   const [pkg, setPackage] = useState<PackageWithDetails | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -186,15 +186,14 @@ const MCPPackagePage = () => {
     if (!pkg || !user) return;
 
     // Find the correct installation for the package's owner/org
-    const { githubAccounts } = useAuth();
     const [owner] = pkg.slug.split('/');
     // Try to match by accountLogin (owner) or profileId (author_id)
     const matchingAccount = githubAccounts.find(
       acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
     );
-    const installationId = matchingAccount?.installationId;
+    const selectedInstallationId = matchingAccount?.installationId;
 
-    if (!installationId) {
+    if (!selectedInstallationId) {
       toast.error('No GitHub App installation found for this repo owner/org. Please install the GitHub App for this account to enable redeploy.');
       setRedeployError('No GitHub App installation found for this repo owner/org.');
       return;
@@ -206,7 +205,7 @@ const MCPPackagePage = () => {
     try {
       const [, repo] = pkg.slug.split('/');
       const response = await fetch(
-        `https://api.sigyl.dev/api/v1/github/installations/${installationId}/redeploy`,
+        `https://api.sigyl.dev/api/v1/github/installations/${selectedInstallationId}/redeploy`,
         {
           method: 'POST',
           headers: {
