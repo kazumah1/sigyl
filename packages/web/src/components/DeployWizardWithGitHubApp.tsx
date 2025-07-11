@@ -14,6 +14,7 @@ import {
   fetchRepositoriesWithApp, 
   getMCPConfigWithApp, 
   deployMCPWithApp,
+  fetchBranchesWithApp, // <-- Add this import
   GitHubAppRepository,
   MCPMetadata 
 } from "@/lib/githubApp"
@@ -52,6 +53,8 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [installationError, setInstallationError] = useState<boolean>(false)
   const lastCheckRef = useRef<{ username: string | null, timestamp: number }>({ username: null, timestamp: 0 })
   const [subdirectory, setSubdirectory] = useState('')
+  const [branches, setBranches] = useState<string[]>([])
+  const [loadingBranches, setLoadingBranches] = useState(false)
 
   // Use the installationId from the activeGitHubAccount prop if provided, else fallback to AuthContext
   const installationId = activeGitHubAccount?.installationId ?? authInstallationId;
@@ -74,6 +77,35 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       setMcpMetadata(null)
     }
   }, [selectedRepo, user])
+
+  // Load branches when repo is selected
+  useEffect(() => {
+    const fetchBranches = async () => {
+      if (!selectedRepo) {
+        setBranches([])
+        setSelectedBranch('main')
+        return
+      }
+      setLoadingBranches(true)
+      try {
+        const [owner, repo] = selectedRepo.full_name.split('/')
+        const branchList = await fetchBranchesWithApp(installationId, owner, repo)
+        setBranches(branchList)
+        // Default to 'main' if present, else first branch
+        if (branchList.includes('main')) {
+          setSelectedBranch('main')
+        } else if (branchList.length > 0) {
+          setSelectedBranch(branchList[0])
+        }
+      } catch (err) {
+        setBranches([])
+      } finally {
+        setLoadingBranches(false)
+      }
+    }
+    fetchBranches()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRepo])
 
   const loadMCPMetadata = async () => {
     if (!selectedRepo || !user) return
@@ -140,6 +172,8 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       
       console.log('Deployment initiated:', result)
       
+      // Add a short delay before redirecting
+      await new Promise(resolve => setTimeout(resolve, 2000));
       // Redirect to the new MCP package page using the actual package ID
       if (result.packageId) {
         navigate(`/mcp/${result.packageId}?new=true&deploying=true`)
@@ -494,16 +528,23 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 {/* Branch Selection */}
                 <div>
                   <Label htmlFor="branch" className="text-white">Branch</Label>
-                  <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                    <SelectTrigger className="bg-black border-white/10 text-white">
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black border-white/10">
-                      <SelectItem value="main">main</SelectItem>
-                      <SelectItem value="master">master</SelectItem>
-                      <SelectItem value="develop">develop</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {loadingBranches ? (
+                    <div className="flex items-center gap-2 text-gray-300">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading branches...</span>
+                    </div>
+                  ) : (
+                    <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                      <SelectTrigger className="bg-black border-white/10 text-white">
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black border-white/10 text-white">
+                        {branches.map(branch => (
+                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 {/* Project Subdirectory Input */}
                 <div>

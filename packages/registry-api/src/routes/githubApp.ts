@@ -798,4 +798,31 @@ router.get('/check-installation/by-profile/:profileId', async (req: Request, res
   }
 });
 
+// List branches for a repository (GitHub App installation)
+router.get('/installations/:installationId/repositories/:owner/:repo/branches', async (req, res) => {
+  try {
+    const { installationId, owner, repo } = req.params;
+    if (!installationId || !owner || !repo) {
+      return res.status(400).json({ error: 'Installation ID, owner, and repo are required' });
+    }
+    if (!process.env.GITHUB_APP_ID || !process.env.GITHUB_PRIVATE_KEY) {
+      return res.status(500).json({ error: 'GitHub App credentials not configured' });
+    }
+    const jwt = signGitHubAppJWT(process.env.GITHUB_APP_ID, process.env.GITHUB_PRIVATE_KEY);
+    const installToken = await getInstallationAccessToken(jwt, Number(installationId));
+    // Fetch branches from GitHub
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, {
+      headers: { 'Authorization': `token ${installToken}` }
+    });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch branches', details: await response.text() });
+    }
+    const branches = await response.json() as any[];
+    // Return just the branch names
+    res.json({ success: true, branches: branches.map((b: any) => b.name) });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch branches', details: error instanceof Error ? error.message : error });
+  }
+});
+
 export default router;

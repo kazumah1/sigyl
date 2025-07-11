@@ -362,3 +362,28 @@ export async function getOAuthUrlForExistingInstallation(
     throw error;
   }
 } 
+
+/**
+ * Fetch branches for a repository using GitHub App installation
+ */
+export async function fetchBranchesWithApp(
+  installationId: number,
+  owner: string,
+  repo: string
+): Promise<string[]> {
+  try {
+    const response = await fetch(`${GITHUB_APP_CONFIG.registryApiUrl}/github/installations/${installationId}/repositories/${owner}/${repo}/branches`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to fetch branches: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data.branches || []
+  } catch (error) {
+    console.error('Error fetching branches with GitHub App:', error)
+    throw error
+  }
+} 

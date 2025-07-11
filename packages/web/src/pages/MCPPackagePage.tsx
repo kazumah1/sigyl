@@ -57,7 +57,7 @@ import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { APIKeyService, APIKey } from '@/services/apiKeyService';
 import { SecretsService } from '@/services/secretsService';
-import { deployMCPWithApp } from '@/lib/githubApp';
+import { deployMCPWithApp, fetchBranchesWithApp } from '@/lib/githubApp';
 
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -128,6 +128,8 @@ const MCPPackagePage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [redeploySubdirectory, setRedeploySubdirectory] = useState('');
   const [showRedeployModal, setShowRedeployModal] = useState(false);
+  const [branches, setBranches] = useState<string[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -997,6 +999,42 @@ const MCPPackagePage = () => {
       </div>
     );
   }
+
+  // Fetch branches when the redeploy modal opens and pkg is loaded
+  useEffect(() => {
+    const fetchBranches = async () => {
+      if (!showRedeployModal || !pkg) return;
+      setLoadingBranches(true);
+      try {
+        const [owner, repo] = pkg.slug.split('/');
+        // Find the correct installation for the package's owner/org
+        const matchingAccount = githubAccounts.find(
+          acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
+        );
+        const selectedInstallationId = matchingAccount?.installationId;
+        if (!selectedInstallationId) {
+          setBranches(['main']);
+          setSelectedBranch('main');
+          setLoadingBranches(false);
+          return;
+        }
+        const branchList = await fetchBranchesWithApp(selectedInstallationId, owner, repo);
+        setBranches(branchList);
+        if (branchList.includes('main')) {
+          setSelectedBranch('main');
+        } else if (branchList.length > 0) {
+          setSelectedBranch(branchList[0]);
+        }
+      } catch (err) {
+        setBranches(['main']);
+        setSelectedBranch('main');
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+    fetchBranches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRedeployModal, pkg]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -2041,16 +2079,23 @@ const MCPPackagePage = () => {
           </DialogHeader>
           <div className="flex flex-col gap-4 mt-4">
             <label htmlFor="branch-select" className="text-white mb-1">Branch</label>
-            <select
-              id="branch-select"
-              value={selectedBranch}
-              onChange={e => setSelectedBranch(e.target.value)}
-              className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
-            >
-              <option value="main">main</option>
-              <option value="master">master</option>
-              <option value="develop">develop</option>
-            </select>
+            {loadingBranches ? (
+              <div className="flex items-center gap-2 text-gray-300 mb-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading branches...</span>
+              </div>
+            ) : (
+              <select
+                id="branch-select"
+                value={selectedBranch}
+                onChange={e => setSelectedBranch(e.target.value)}
+                className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
+              >
+                {branches.map(branch => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+            )}
             <label htmlFor="subdirectory-input" className="text-white mb-1">Project Subdirectory (optional)</label>
             <input
               id="subdirectory-input"
