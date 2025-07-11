@@ -126,6 +126,7 @@ const MCPPackagePage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [redeploySubdirectory, setRedeploySubdirectory] = useState('');
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -217,6 +218,7 @@ const MCPPackagePage = () => {
             repo,
             branch: selectedBranch || 'main',
             userId: user.id,
+            subdirectory: redeploySubdirectory || undefined,
             // ...other fields as needed
           })
         }
@@ -1194,6 +1196,15 @@ const MCPPackagePage = () => {
                       <option value="master">master</option>
                       <option value="develop">develop</option>
                     </select>
+                    <label htmlFor="subdirectory-input" className="text-white mb-1">Project Subdirectory (optional)</label>
+                    <input
+                      id="subdirectory-input"
+                      type="text"
+                      value={redeploySubdirectory}
+                      onChange={e => setRedeploySubdirectory(e.target.value)}
+                      placeholder="e.g. apps/api or leave blank for root"
+                      className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
+                    />
                     {redeployError && (
                       <div className="text-red-400 text-sm mb-2">{redeployError}</div>
                     )}

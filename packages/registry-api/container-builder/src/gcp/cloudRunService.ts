@@ -787,23 +787,14 @@ EOF`
           }
           
           const statusJson = await statusResp.json() as any;
-          console.log(`📋 Status response ${i + 1}:`, JSON.stringify({
-            status: statusJson.status,
-            readyCondition: statusJson.status?.conditions?.find((c: any) => c.type === 'Ready'),
-            url: statusJson.status?.url,
-            addressUrl: statusJson.status?.address?.url
-          }, null, 2));
-          
-          // Check multiple possible URL locations
+          const readyCondition = statusJson.status?.conditions?.find((c: any) => c.type === 'Ready');
+          const isReady = readyCondition?.status === 'True';
           serviceUrl = statusJson.status?.url || 
                       statusJson.status?.address?.url ||
                       statusJson.status?.traffic?.[0]?.url;
-          
-          // Also check if service is ready
-          const readyCondition = statusJson.status?.conditions?.find((c: any) => c.type === 'Ready');
-          const isReady = readyCondition?.status === 'True';
-          
-          console.log(`🔍 Found URL: ${serviceUrl}, Ready: ${isReady}`);
+          console.log(`🔍 [Poll ${i + 1}] serviceUrl:`, serviceUrl);
+          console.log(`🔍 [Poll ${i + 1}] status.conditions:`, JSON.stringify(statusJson.status?.conditions, null, 2));
+          console.log(`🔍 [Poll ${i + 1}] isReady:`, isReady);
           
           if (serviceUrl && isReady) {
             console.log(`✅ Service ready with URL: ${serviceUrl}`);
