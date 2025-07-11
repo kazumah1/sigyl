@@ -81,13 +81,17 @@ export async function fetchSigylYaml(
   owner: string,
   repo: string,
   branch = 'main',
-  token?: string
+  token?: string,
+  subdirectory?: string
 ): Promise<SigylConfig> {
   const octokit = new Octokit({ auth: token })
+  const path = subdirectory
+    ? `${subdirectory.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')}/sigyl.yaml`
+    : 'sigyl.yaml';
   const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
     owner,
     repo,
-    path: 'sigyl.yaml',
+    path,
     ref: branch,
   })
 

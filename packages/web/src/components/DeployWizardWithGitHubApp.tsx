@@ -252,7 +252,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                   placeholder="Filter by name or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="min-h-[44px] bg-black border-white/10 border-2text-white placeholder-white placeholder:text-white/50 rounded-lg w-full"
+                  className="min-h-[44px] text-white bg-black border-white/10 border-2text-white placeholder-white placeholder:text-white/50 rounded-lg w-full"
                 />
               </div>
               <Button
