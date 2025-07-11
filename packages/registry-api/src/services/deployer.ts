@@ -708,7 +708,24 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       return { success: false, error: cloudRunResult.error || 'Google Cloud Run redeploy failed' };
     }
     log('✅ Successfully redeployed to Google Cloud Run');
-    // Fetch tools from the deployed server
+
+    // === Ensure backend service, NEG, and URL map are set up before fetching tools ===
+    // (Assume these helper functions exist and are similar to deployRepo)
+    const negName = `neg-${cloudRunResult.serviceName}`;
+    const backendServiceName = `sigyl-backend-${cloudRunResult.serviceName}`;
+    const urlMapName = `sigyl-load-balancer`;
+    const region = CLOUD_RUN_CONFIG.region;
+    const project = CLOUD_RUN_CONFIG.projectId;
+    const path = `/@${request.repoName}/mcp`;
+    await Promise.all([
+      createBackendService(backendServiceName, project),
+      createNeg(negName, region, project, cloudRunResult.serviceName || ''),
+    ]);
+    await addNegToBackendService(backendServiceName, negName, region, project);
+    await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
+    await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
+
+    // === Now fetch tools from the deployed server ===
     let tools: any[] = [];
     try {
       // Use the canonical MCP server URL for tool fetching
@@ -740,6 +757,9 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       }
       if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools)) {
         tools = toolsData.result.tools;
+      }
+      if (!tools || tools.length === 0) {
+        log('[REDEPLOY] Warning: No tools detected in MCP server response.');
       }
       log('✅ Tools fetched from MCP server');
     } catch (err) {
