@@ -573,7 +573,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
         verified: false,
         required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
         optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
-        ready: false
+        ready: true // Set to true after successful deployment
       };
       // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
       const { data: pkgRows, error: pkgError } = await supabase
@@ -778,7 +778,7 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       tools: tools as any[],
       verified: false,
       updated_at: new Date().toISOString(),
-      ready: false
+      ready: true // Set to true after successful redeploy
     };
     if (!request.packageId) {
       log('❌ No packageId provided for redeploy.');
