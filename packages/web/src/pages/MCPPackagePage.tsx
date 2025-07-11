@@ -183,13 +183,28 @@ const MCPPackagePage = () => {
     }
   };
   const handleRedeploy = async () => {
-    if (!pkg || !user || !installationId) return;
+    if (!pkg || !user) return;
+
+    // Find the correct installation for the package's owner/org
+    const { githubAccounts } = useAuth();
+    const [owner] = pkg.slug.split('/');
+    // Try to match by accountLogin (owner) or profileId (author_id)
+    const matchingAccount = githubAccounts.find(
+      acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
+    );
+    const installationId = matchingAccount?.installationId;
+
+    if (!installationId) {
+      toast.error('No GitHub App installation found for this repo owner/org. Please install the GitHub App for this account to enable redeploy.');
+      setRedeployError('No GitHub App installation found for this repo owner/org.');
+      return;
+    }
 
     setIsRedeploying(true);
     setRedeployError(null);
 
     try {
-      const [owner, repo] = pkg.slug.split('/');
+      const [, repo] = pkg.slug.split('/');
       const response = await fetch(
         `https://api.sigyl.dev/api/v1/github/installations/${installationId}/redeploy`,
         {
