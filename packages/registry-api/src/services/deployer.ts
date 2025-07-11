@@ -397,7 +397,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     let sigylConfig;
     try {
       log('📋 Fetching sigyl.yaml configuration...');
-      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
+      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken, request.subdirectory);
       log('✅ Found sigyl.yaml configuration: ' + (sigylConfig?.runtime || 'unknown'));
     } catch (error) {
       log('⚠️ Could not fetch sigyl.yaml: ' + (error instanceof Error ? error.message : String(error)));
@@ -681,7 +681,7 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
     let sigylConfig;
     try {
       log('📋 Fetching sigyl.yaml configuration...');
-      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken);
+      sigylConfig = await fetchSigylYaml(owner, repo, request.branch || 'main', request.githubToken, request.subdirectory);
       log('✅ Found sigyl.yaml configuration');
     } catch (error) {
       log('⚠️ Could not fetch sigyl.yaml: ' + (error instanceof Error ? error.message : String(error)));
