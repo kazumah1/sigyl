@@ -143,10 +143,6 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
       // Redirect to the new MCP package page using the actual package ID
       if (result.packageId) {
         navigate(`/mcp/${result.packageId}?new=true&deploying=true`)
-      } else {
-        // Fallback if no package ID (shouldn't happen with proper backend)
-        const fallbackId = `${owner}-${repo}-${Date.now()}`
-        navigate(`/mcp/${fallbackId}?new=true&deploying=true`)
       }
     } catch (err) {
       setDeployError(err instanceof Error ? err.message : 'Deployment failed')
@@ -566,7 +562,7 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                 {deployError && (
                   <Alert className="border-red-500 bg-red-500/10">
                     <AlertCircle className="h-4 w-4 text-red-500" />
-                    <AlertDescription className="text-gray-300">{deployError}</AlertDescription>
+                    <AlertDescription className="text-gray-300">{deployError === "sigyl.yaml could not be fetched or parsed. Deployment cannot continue." ? "sigyl.yaml could not be found. Please ensure the file exists and the subdirectory path is correct." : deployError}</AlertDescription>
                   </Alert>
                 )}
 

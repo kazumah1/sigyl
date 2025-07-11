@@ -619,7 +619,8 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       success: true,
       ...(cloudRunResult.deploymentUrl && { deploymentUrl: cloudRunResult.deploymentUrl }),
       ...(cloudRunResult.serviceName && { serviceName: cloudRunResult.serviceName }),
-      ...(cloudRunResult.securityReport && { securityReport: cloudRunResult.securityReport })
+      ...(cloudRunResult.securityReport && { securityReport: cloudRunResult.securityReport }),
+      ...(packageId && { packageId })
     };
 
   } catch (error) {
