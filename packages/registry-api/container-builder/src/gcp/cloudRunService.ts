@@ -792,6 +792,7 @@ EOF`
           serviceUrl = statusJson.status?.url || 
                       statusJson.status?.address?.url ||
                       statusJson.status?.traffic?.[0]?.url;
+          console.log(`🔍 [Poll ${i + 1}] statusJson:`, JSON.stringify(statusJson, null, 2));
           console.log(`🔍 [Poll ${i + 1}] serviceUrl:`, serviceUrl);
           console.log(`🔍 [Poll ${i + 1}] status.conditions:`, JSON.stringify(statusJson.status?.conditions, null, 2));
           console.log(`🔍 [Poll ${i + 1}] isReady:`, isReady);
