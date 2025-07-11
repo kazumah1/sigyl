@@ -1,9 +1,118 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../config/database';
 import { requireHybridAuth } from '../middleware/auth';
+import { APIKeyService } from '../services/apiKeyService';
 import { APIResponse } from '../types';
 
 const router = Router();
+
+// Cache for metrics API key validation to avoid rate limits
+const metricsAuthCache = new Map<string, { profile_id: string; timestamp: number }>();
+const METRICS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Lightweight authentication specifically for metrics endpoint
+async function authenticateMetrics(req: Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  
+  const apiKey = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+  if (!apiKey.startsWith('sk_')) return null;
+  
+  // Check cache first
+  const cached = metricsAuthCache.get(apiKey);
+  if (cached && Date.now() - cached.timestamp < METRICS_CACHE_TTL) {
+    return cached.profile_id;
+  }
+  
+  // Validate API key without going through full hybrid auth
+  const authenticatedUser = await APIKeyService.validateAPIKey(apiKey);
+  if (!authenticatedUser) return null;
+  
+  // Resolve API user to profile - API keys point to api_users table, but metrics need profiles table
+  let profileId: string | null = null;
+  
+  try {
+    // First, get the API user details to check if they have a github_id
+    const { data: apiUser, error: apiUserError } = await supabase
+      .from('api_users')
+      .select('github_id, email, name')
+      .eq('id', authenticatedUser.user_id)
+      .single();
+    
+    if (!apiUserError && apiUser) {
+      if (apiUser.github_id) {
+        // Look up or create profile by github_id
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('github_id', apiUser.github_id)
+          .single();
+        
+        if (!profileError && existingProfile) {
+          profileId = existingProfile.id;
+        } else {
+          // Create profile for this user
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              email: apiUser.email,
+              full_name: apiUser.name,
+              github_id: apiUser.github_id,
+              auth_user_id: `api_user_${authenticatedUser.user_id}`
+            })
+            .select('id')
+            .single();
+          
+          if (!createError && newProfile) {
+            profileId = newProfile.id;
+          }
+        }
+      } else {
+        // Look up or create profile by email
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', apiUser.email)
+          .single();
+        
+        if (!profileError && existingProfile) {
+          profileId = existingProfile.id;
+        } else {
+          // Create profile for this user
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              email: apiUser.email,
+              full_name: apiUser.name,
+              auth_user_id: `api_user_${authenticatedUser.user_id}`
+            })
+            .select('id')
+            .single();
+          
+          if (!createError && newProfile) {
+            profileId = newProfile.id;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[METRICS] Error resolving user to profile:', error);
+    return null;
+  }
+  
+  if (!profileId) {
+    console.error('[METRICS] Could not resolve API user to profile for user_id:', authenticatedUser.user_id);
+    return null;
+  }
+  
+  // Cache the result
+  metricsAuthCache.set(apiKey, {
+    profile_id: profileId,
+    timestamp: Date.now()
+  });
+  
+  return profileId;
+}
 
 interface MetricData {
   date: string;
@@ -353,12 +462,32 @@ router.get('/llm-costs/:userId', requireHybridAuth, async (req: Request, res: Re
 });
 
 // POST /api/v1/analytics/mcp-metrics - Receive metrics from deployed MCP wrappers
-router.post('/mcp-metrics', requireHybridAuth, async (req: Request, res: Response) => {
+router.post('/mcp-metrics', async (req: Request, res: Response) => {
   try {
     const metricsData = req.body;
     
+    // Lightweight authentication to avoid rate limiting
+    const profileId = await authenticateMetrics(req);
+    if (!profileId) {
+      console.warn('[METRICS] Authentication failed');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Valid API key required'
+      });
+    }
+    
+    console.log(`[METRICS] Received metrics for profile: ${profileId}`);
+    console.log(`[METRICS] Package: ${metricsData.package_name}`);
+    console.log(`[METRICS] Event: ${metricsData.event_type}`);
+    
     // Validate required fields
     if (!metricsData.event_type || !metricsData.package_name || !metricsData.timestamp) {
+      console.warn('[METRICS] Missing required fields:', {
+        event_type: !!metricsData.event_type,
+        package_name: !!metricsData.package_name,
+        timestamp: !!metricsData.timestamp
+      });
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -370,7 +499,7 @@ router.post('/mcp-metrics', requireHybridAuth, async (req: Request, res: Respons
     const { data, error } = await supabase
       .from('mcp_metrics')
       .insert({
-        user_id: req.user!.user_id,
+        user_id: profileId,
         package_name: metricsData.package_name,
         event_type: metricsData.event_type,
         mcp_method: metricsData.mcp_method,
@@ -405,13 +534,16 @@ router.post('/mcp-metrics', requireHybridAuth, async (req: Request, res: Respons
       .single();
 
     if (error) {
-      console.error('Error storing MCP metrics:', error);
+      console.error('[METRICS] Error storing MCP metrics:', error);
+      console.error('[METRICS] Failed metrics data:', JSON.stringify(metricsData, null, 2));
       // Don't fail the request - metrics are not critical for MCP operation
       return res.status(200).json({
         success: true,
         message: 'Metrics received (storage failed but acknowledged)'
       });
     }
+
+    console.log(`[METRICS] Successfully stored metric with ID: ${data.id}`);
 
     const response: APIResponse<{ metric_id: string }> = {
       success: true,
@@ -421,7 +553,7 @@ router.post('/mcp-metrics', requireHybridAuth, async (req: Request, res: Respons
 
     return res.json(response);
   } catch (error) {
-    console.error('Error processing MCP metrics:', error);
+    console.error('[METRICS] Error processing MCP metrics:', error);
     // Don't fail the request - metrics are not critical for MCP operation
     return res.status(200).json({
       success: true,
