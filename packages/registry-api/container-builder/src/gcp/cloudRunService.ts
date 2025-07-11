@@ -38,6 +38,23 @@ export interface CloudRunConfig {
  * Google Cloud Run service for deploying MCP servers with security validation
  * Provides 60-75% cost savings compared to Railway while maintaining security
  */
+function sanitizeServiceName(name: string): string {
+  // Replace invalid chars with hyphen, collapse multiple hyphens, trim
+  let sanitized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')         // Only allow a-z, 0-9, hyphen
+    .replace(/^-+/, '')                  // Remove leading hyphens
+    .replace(/-+$/, '')                  // Remove trailing hyphens
+    .replace(/--+/g, '-');               // Collapse multiple hyphens
+  // Must start with a letter
+  if (!/^[a-z]/.test(sanitized)) sanitized = 'a' + sanitized;
+  // Max 49 chars (leave room for null terminator)
+  if (sanitized.length > 49) sanitized = sanitized.slice(0, 49);
+  // Remove trailing hyphen again if truncation caused it
+  sanitized = sanitized.replace(/-+$/, '');
+  return sanitized;
+}
+
 export class CloudRunService {
   private region: string;
   private projectId: string;
@@ -550,8 +567,9 @@ EOF`
    * Deploy service to Google Cloud Run using REST API
    */
   private async deployToCloudRun(request: CloudRunDeploymentRequest, imageUri: string): Promise<{serviceUrl: string, serviceName: string}> {
-    const serviceName = request.serviceName || 
+    const rawServiceName = request.serviceName || 
       `sigyl-mcp-${request.repoName.replace('/', '-').toLowerCase()}`;
+    const serviceName = sanitizeServiceName(rawServiceName);
     
     console.log(`🏗️ Deploying to Cloud Run: ${serviceName}`);
     
