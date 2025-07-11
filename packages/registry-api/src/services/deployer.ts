@@ -746,18 +746,11 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       log('❌ Error fetching tools from MCP server');
     }
     // Update mcp_packages
+    // Only update mutable fields on redeploy
     const mcpPackagesPayload = {
-      name: request.repoName,
-      slug: request.repoName,
-      version: null,
-      description: null,
-      source_api_url: cloudRunResult.deploymentUrl || null,
-      service_name: cloudRunResult.serviceName || null,
-      tags: null,
-      logo_url: null,
-      screenshots: null,
+      // Do NOT update: source_api_url, author_id, service_name, slug
+      // Only update: tools, updated_at, verified, ready, etc.
       tools: tools as any[],
-      category: 'general',
       verified: false,
       updated_at: new Date().toISOString(),
       ready: false
