@@ -53,6 +53,7 @@ export const corsOptions = {
       'http://localhost:4173',
       'https://zcudhsyvfrlfgqqhjrqv.supabase.co',
       'https://www.sigyl.dev',
+      `https://server.sigyl.dev`,
       // Add your production domains here
     ].filter(Boolean);
 
