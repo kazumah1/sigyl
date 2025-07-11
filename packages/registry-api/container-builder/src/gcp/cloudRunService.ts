@@ -586,7 +586,10 @@ EOF`
             'run.googleapis.com/cpu': '250m',
             'run.googleapis.com/execution-environment': 'gen2'
           },
-          // Revision spec
+          // v2: scaling block for concurrency
+          scaling: {
+            maxInstanceRequestConcurrency: 100
+          },
           containers: [
             {
               image: imageUri,
@@ -609,17 +612,12 @@ EOF`
                 limits: {
                   cpu: '1',
                   memory: '512Mi'
-                },
-                requests: {
-                  cpu: '100m',
-                  memory: '256Mi'
                 }
-              }
+              },
+              // v2: timeout is set here (in seconds)
+              timeout: 300
             }
-          ],
-          // Optional: containerConcurrency, timeoutSeconds, etc.
-          containerConcurrency: 100,
-          timeoutSeconds: 300
+          ]
         },
 
         // Traffic config (optional, but usually included)
