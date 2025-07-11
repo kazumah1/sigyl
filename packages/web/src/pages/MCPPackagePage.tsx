@@ -127,6 +127,7 @@ const MCPPackagePage = () => {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [redeploySubdirectory, setRedeploySubdirectory] = useState('');
+  const [showRedeployModal, setShowRedeployModal] = useState(false);
 
   // Check if this is a new deployment (from deploy flow)
   const isNewDeployment = searchParams.get('new') === 'true';
@@ -1184,48 +1185,13 @@ const MCPPackagePage = () => {
             {effectiveIsOwner ? (
               <>
                 {effectiveIsOwner && !editMode && (
-                  <div className="flex flex-col gap-2 w-full max-w-xs">
-                    <label htmlFor="branch-select" className="text-white mb-1">Branch</label>
-                    <select
-                      id="branch-select"
-                      value={selectedBranch}
-                      onChange={e => setSelectedBranch(e.target.value)}
-                      className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
-                    >
-                      <option value="main">main</option>
-                      <option value="master">master</option>
-                      <option value="develop">develop</option>
-                    </select>
-                    <label htmlFor="subdirectory-input" className="text-white mb-1">Project Subdirectory (optional)</label>
-                    <input
-                      id="subdirectory-input"
-                      type="text"
-                      value={redeploySubdirectory}
-                      onChange={e => setRedeploySubdirectory(e.target.value)}
-                      placeholder="e.g. apps/api or leave blank for root"
-                      className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
-                    />
-                    {redeployError && (
-                      <div className="text-red-400 text-sm mb-2">{redeployError}</div>
-                    )}
-                    <Button
-                      onClick={handleRedeploy}
-                      disabled={isRedeploying}
-                      className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
-                    >
-                      {isRedeploying ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Redeploying...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Redeploy MCP Server
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setShowRedeployModal(true)}
+                    className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Redeploy MCP Server
+                  </Button>
                 )}
                 {/* Edit Button (Owner Only) */}
                 {effectiveIsOwner && !editMode && (
@@ -2059,6 +2025,67 @@ const MCPPackagePage = () => {
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
             <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Redeploy Modal */}
+      <Dialog open={showRedeployModal} onOpenChange={setShowRedeployModal}>
+        <DialogContent className="max-w-md transition-all duration-300 bg-black border-white/10 text-white" style={{ minHeight: 200, maxHeight: '80vh', overflowY: 'auto' }}>
+          <DialogHeader>
+            <DialogTitle className="text-white">Redeploy MCP Server</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Select the branch and (optionally) subdirectory to redeploy your MCP server.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-4">
+            <label htmlFor="branch-select" className="text-white mb-1">Branch</label>
+            <select
+              id="branch-select"
+              value={selectedBranch}
+              onChange={e => setSelectedBranch(e.target.value)}
+              className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
+            >
+              <option value="main">main</option>
+              <option value="master">master</option>
+              <option value="develop">develop</option>
+            </select>
+            <label htmlFor="subdirectory-input" className="text-white mb-1">Project Subdirectory (optional)</label>
+            <input
+              id="subdirectory-input"
+              type="text"
+              value={redeploySubdirectory}
+              onChange={e => setRedeploySubdirectory(e.target.value)}
+              placeholder="e.g. apps/api or leave blank for root"
+              className="bg-black border-white/10 text-white rounded px-3 py-2 mb-2"
+            />
+            {redeployError && (
+              <div className="text-red-400 text-sm mb-2">{redeployError}</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                await handleRedeploy();
+                setShowRedeployModal(false);
+              }}
+              disabled={isRedeploying}
+              className="w-full btn-modern-inverted hover:bg-transparent hover:text-white"
+            >
+              {isRedeploying ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Redeploying...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Redeploy MCP Server
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowRedeployModal(false)}>
               Cancel
             </Button>
           </DialogFooter>

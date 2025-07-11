@@ -172,6 +172,11 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const mcpRepos = filteredRepos.filter(repo => repo.has_mcp && !repo.has_sigyl) // MCP-only repos
   const regularRepos = filteredRepos.filter(repo => !repo.has_mcp && !repo.has_sigyl)
 
+  // Sort each group by pushed_at (descending)
+  sigylRepos.sort((a, b) => new Date(b.pushed_at || 0).getTime() - new Date(a.pushed_at || 0).getTime())
+  mcpRepos.sort((a, b) => new Date(b.pushed_at || 0).getTime() - new Date(a.pushed_at || 0).getTime())
+  regularRepos.sort((a, b) => new Date(b.pushed_at || 0).getTime() - new Date(a.pushed_at || 0).getTime())
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">

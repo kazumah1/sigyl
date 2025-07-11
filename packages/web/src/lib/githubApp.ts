@@ -16,6 +16,7 @@ export interface GitHubAppRepository {
   private: boolean
   description: string | null
   html_url: string
+  pushed_at: string | null
   has_mcp: boolean
   has_sigyl: boolean
   mcp_files: string[]
