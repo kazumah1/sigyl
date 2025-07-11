@@ -641,6 +641,9 @@ EOF`
       let service: any;
       if (getResp.status === 404) {
         console.log('Service does not exist. Continuing with service creation')
+        // Remove name for POST (Cloud Run v2 requires name to be omitted on create)
+        const createConfig = { ...serviceConfig };
+        delete (createConfig as any).name;
         const createResponse = await fetch(
           `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services`,
           {
@@ -649,7 +652,7 @@ EOF`
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(serviceConfig)
+            body: JSON.stringify(createConfig)
           }
         );
         if (!createResponse.ok) {
