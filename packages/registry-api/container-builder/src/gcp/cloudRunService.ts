@@ -658,26 +658,27 @@ EOF`
         );
         if (!createResponse.ok) {
           if (createResponse.status === 409) {
-            // Service already exists, wait and retry GET/PATCH a few times
-              console.warn(`POST failed with 409 (already exists), retrying PATCH...`);
-              await new Promise(res => setTimeout(res, 2000)); // wait 2 seconds
-              const retryPatchResp = await fetch(
-                `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
-                {
-                  method: 'PATCH',
-                  headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/merge-patch+json'
-                  },
-                  body: JSON.stringify(serviceConfig)
-                }
-              );
-              if (retryPatchResp.ok) {
-                service = await retryPatchResp.json();
-              } else {
-                const retryErr = await retryPatchResp.text();
-                console.warn(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
+            // Service already exists, wait and retry PATCH a few times
+            console.warn(`POST failed with 409 (already exists), retrying PATCH...`);
+            await new Promise(res => setTimeout(res, 2000)); // wait 2 seconds
+            const retryPatchResp = await fetch(
+              `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}?updateMask=template`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serviceConfig)
               }
+            );
+            const retryPatchText = await retryPatchResp.text();
+            console.log(`[CloudRunService] PATCH after 409 response:`, retryPatchText);
+            if (retryPatchResp.ok) {
+              service = JSON.parse(retryPatchText);
+            } else {
+              console.warn(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryPatchText}`);
+            }
           } else {
             const errorText = await createResponse.text();
             throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
@@ -688,17 +689,19 @@ EOF`
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
         const patchResp = await fetch(
-          `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+          `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}?updateMask=template`,
           {
             method: 'PATCH',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/merge-patch+json'
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify(serviceConfig)
           }
         );
-        service = await patchResp.json();
+        const patchText = await patchResp.text();
+        console.log(`[CloudRunService] PATCH response:`, patchText);
+        service = JSON.parse(patchText);
       } else {
         const err = await getResp.text();
         throw new Error(`Failed to check existing service ${getResp.status} ${err}`)
