@@ -176,6 +176,42 @@ const MCPPackagePage = () => {
     }
   }, [pkg, isOwner]);
 
+  // Fetch branches when the redeploy modal opens and pkg is loaded
+  useEffect(() => {
+    const fetchBranches = async () => {
+      if (!showRedeployModal || !pkg) return;
+      setLoadingBranches(true);
+      try {
+        const [owner, repo] = pkg.slug.split('/');
+        // Find the correct installation for the package's owner/org
+        const matchingAccount = githubAccounts.find(
+          acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
+        );
+        const selectedInstallationId = matchingAccount?.installationId;
+        if (!selectedInstallationId) {
+          setBranches(['main']);
+          setSelectedBranch('main');
+          setLoadingBranches(false);
+          return;
+        }
+        const branchList = await fetchBranchesWithApp(selectedInstallationId, owner, repo);
+        setBranches(branchList);
+        if (branchList.includes('main')) {
+          setSelectedBranch('main');
+        } else if (branchList.length > 0) {
+          setSelectedBranch(branchList[0]);
+        }
+      } catch (err) {
+        setBranches(['main']);
+        setSelectedBranch('main');
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+    fetchBranches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRedeployModal, pkg]);
+
   // Copy to clipboard helper function
   const copyToClipboard = async (text: string, successMessage: string) => {
     try {
@@ -999,42 +1035,6 @@ const MCPPackagePage = () => {
       </div>
     );
   }
-
-  // Fetch branches when the redeploy modal opens and pkg is loaded
-  useEffect(() => {
-    const fetchBranches = async () => {
-      if (!showRedeployModal || !pkg) return;
-      setLoadingBranches(true);
-      try {
-        const [owner, repo] = pkg.slug.split('/');
-        // Find the correct installation for the package's owner/org
-        const matchingAccount = githubAccounts.find(
-          acc => acc.accountLogin === owner || acc.profileId === pkg.author_id
-        );
-        const selectedInstallationId = matchingAccount?.installationId;
-        if (!selectedInstallationId) {
-          setBranches(['main']);
-          setSelectedBranch('main');
-          setLoadingBranches(false);
-          return;
-        }
-        const branchList = await fetchBranchesWithApp(selectedInstallationId, owner, repo);
-        setBranches(branchList);
-        if (branchList.includes('main')) {
-          setSelectedBranch('main');
-        } else if (branchList.length > 0) {
-          setSelectedBranch(branchList[0]);
-        }
-      } catch (err) {
-        setBranches(['main']);
-        setSelectedBranch('main');
-      } finally {
-        setLoadingBranches(false);
-      }
-    };
-    fetchBranches();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showRedeployModal, pkg]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
