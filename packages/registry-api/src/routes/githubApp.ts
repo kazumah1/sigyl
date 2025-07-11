@@ -630,7 +630,8 @@ router.post('/installations/:installationId/redeploy', async (req: Request, res:
       serviceName,
       packageId,
       selectedSecrets,
-      githubToken: installToken
+      githubToken: installToken,
+      ...(req.body.subdirectory ? { subdirectory: req.body.subdirectory } : {})
     };
 
     // Deploy to Google Cloud Run
