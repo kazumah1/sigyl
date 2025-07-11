@@ -218,18 +218,6 @@ export class CloudRunService {
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.1: Change directory to subdirectory if provided
-          ...(request.subdirectory ? [
-            {
-              name: 'gcr.io/cloud-builders/gcloud',
-              entrypoint: 'bash',
-              args: [
-                '-c',
-                `cd ${request.subdirectory}`
-              ],
-              dir: request.subdirectory
-            }
-          ] : []),
           // Step 2.3: Diagnostics before downloading wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
@@ -430,18 +418,6 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.1: Change directory to subdirectory if provided
-          ...(request.subdirectory ? [
-            {
-              name: 'gcr.io/cloud-builders/gcloud',
-              entrypoint: 'bash',
-              args: [
-                '-c',
-                `cd ${request.subdirectory}`
-              ],
-              dir: request.subdirectory
-            }
-          ] : []),
           // Step 2.3: Diagnostics before copying wrapper.js
           {
             name: 'gcr.io/cloud-builders/gcloud',
