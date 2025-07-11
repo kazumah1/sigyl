@@ -740,6 +740,7 @@ EOF`
           const statusResp = await fetch(
             `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
             {
+              method: 'GET',
               headers: {
                 'Authorization': `Bearer ${accessToken}`
               }
