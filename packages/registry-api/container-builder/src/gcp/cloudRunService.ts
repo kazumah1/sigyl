@@ -662,10 +662,12 @@ EOF`
         // Remove name for POST (Cloud Run v2 requires name to be omitted on create)
         const createConfig = { ...serviceConfig };
         delete (createConfig as any).name;
-        const postBody = {
+        // POST body must have top-level 'service' and 'serviceId' fields
+        const postBody: any = {
           service: createConfig,
           serviceId: serviceName
         };
+        console.log('[CloudRunService] POST body for create:', JSON.stringify(postBody, null, 2));
         const createResponse = await fetch(
           `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services`,
           {
