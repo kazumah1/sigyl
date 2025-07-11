@@ -522,8 +522,10 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     // console.log('[DEPLOY] Computed requiredSecrets:', JSON.stringify(requiredSecrets, null, 2));
     // console.log('[DEPLOY] Computed optionalSecrets:', JSON.stringify(optionalSecrets, null, 2));
     try {
-      // Fetch tools from the deployed server (handle event-stream)
-      const toolsResp = await fetch(`${cloudRunResult.deploymentUrl}/mcp`, {
+      // Use the canonical MCP server URL for tool fetching
+      const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
+      console.log('[DEPLOY] Fetching tools from:', `${mcpBaseUrl}/mcp`);
+      const toolsResp = await fetch(`${mcpBaseUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -709,7 +711,10 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
     // Fetch tools from the deployed server
     let tools: any[] = [];
     try {
-      const toolsResp = await fetch(`${cloudRunResult.deploymentUrl}/mcp`, {
+      // Use the canonical MCP server URL for tool fetching
+      const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
+      console.log('[REDEPLOY] Fetching tools from:', `${mcpBaseUrl}/mcp`);
+      const toolsResp = await fetch(`${mcpBaseUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
