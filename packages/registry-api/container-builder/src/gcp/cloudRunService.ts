@@ -787,16 +787,24 @@ EOF`
           }
           
           const statusJson = await statusResp.json() as any;
-          const readyCondition = statusJson.status?.conditions?.find((c: any) => c.type === 'Ready');
-          const isReady = readyCondition?.status === 'True';
-          serviceUrl = statusJson.status?.url || 
-                      statusJson.status?.address?.url ||
-                      statusJson.status?.traffic?.[0]?.url;
+          // Support both v1 and v2 API response shapes
+          const conditions = statusJson.conditions || [];
+          const terminalCondition = statusJson.terminalCondition;
+          let isReady = true;
+          for (const condition of conditions) {
+            if (condition.type.slice(-5) === 'Ready') {
+              if (condition.state !== 'CONDITION_SUCCEEDED') {
+                isReady = false;
+                break;
+              }
+            }
+          }
+          const serviceUrl = statusJson.uri || (Array.isArray(statusJson.urls) ? statusJson.urls[0] : undefined);
           console.log(`🔍 [Poll ${i + 1}] statusJson:`, JSON.stringify(statusJson, null, 2));
           console.log(`🔍 [Poll ${i + 1}] serviceUrl:`, serviceUrl);
-          console.log(`🔍 [Poll ${i + 1}] status.conditions:`, JSON.stringify(statusJson.status?.conditions, null, 2));
+          console.log(`🔍 [Poll ${i + 1}] conditions:`, JSON.stringify(conditions, null, 2));
+          console.log(`🔍 [Poll ${i + 1}] terminalCondition:`, JSON.stringify(terminalCondition, null, 2));
           console.log(`🔍 [Poll ${i + 1}] isReady:`, isReady);
-          
           if (serviceUrl && isReady) {
             console.log(`✅ Service ready with URL: ${serviceUrl}`);
             break;
