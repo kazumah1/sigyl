@@ -675,7 +675,12 @@ EOF`
             const retryPatchText = await retryPatchResp.text();
             console.log(`[CloudRunService] PATCH after 409 response:`, retryPatchText);
             if (retryPatchResp.ok) {
-              service = JSON.parse(retryPatchText);
+              const patchResult: any = JSON.parse(retryPatchText);
+              if (patchResult.name) {
+                service = await this.pollOperation(patchResult.name, accessToken);
+              } else {
+                service = patchResult;
+              }
             } else {
               console.warn(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryPatchText}`);
             }
@@ -684,7 +689,12 @@ EOF`
             throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
           }
         } else {
-          service = await createResponse.json();
+          const createResult: any = await createResponse.json();
+          if (createResult.name) {
+            service = await this.pollOperation(createResult.name, accessToken);
+          } else {
+            service = createResult;
+          }
         }
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
@@ -701,7 +711,16 @@ EOF`
         );
         const patchText = await patchResp.text();
         console.log(`[CloudRunService] PATCH response:`, patchText);
-        service = JSON.parse(patchText);
+        if (patchResp.ok) {
+          const patchResult: any = JSON.parse(patchText);
+          if (patchResult.name) {
+            service = await this.pollOperation(patchResult.name, accessToken);
+          } else {
+            service = patchResult;
+          }
+        } else {
+          throw new Error(`Cloud Run PATCH failed: ${patchResp.status} ${patchText}`);
+        }
       } else {
         const err = await getResp.text();
         throw new Error(`Failed to check existing service ${getResp.status} ${err}`)
@@ -826,6 +845,28 @@ EOF`
       console.error('❌ Cloud Run deployment failed:', error);
       throw new Error(`Failed to deploy to Cloud Run: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  /**
+   * Poll a Cloud Run operation until it is done, then return the final Service resource
+   */
+  private async pollOperation(operationName: string, accessToken: string, timeoutMs = 300000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const opResp = await fetch(
+        `https://run.googleapis.com/v2/${operationName}`,
+        {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }
+      );
+      const opData: any = await opResp.json();
+      if (opData.done) {
+        if (opData.error) throw new Error(`Cloud Run operation failed: ${JSON.stringify(opData.error)}`);
+        return opData.response; // This is the updated Service resource
+      }
+      await new Promise(res => setTimeout(res, 5000));
+    }
+    throw new Error('Cloud Run operation timed out');
   }
 
   /**
