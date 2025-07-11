@@ -560,79 +560,81 @@ EOF`
       
       // Create Cloud Run service using REST API
       const serviceConfig = {
-        apiVersion: 'serving.knative.dev/v1',
-        kind: 'Service',
-        metadata: {
-          name: serviceName,
-          annotations: {
-            'run.googleapis.com/ingress': 'all'
-          },
-          labels: {
-            'app': 'sigyl-mcp',
-            'repository': request.repoName.replace('/', '-').toLowerCase()
-          }
+        // The full resource name (required for PATCH, optional for CREATE)
+        name: `projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+
+        // Top-level labels and annotations (optional)
+        labels: {
+          app: 'sigyl-mcp',
+          repository: request.repoName.replace('/', '-').toLowerCase()
         },
-        spec: {
-          template: {
-            metadata: {
-              annotations: {
-                'autoscaling.knative.dev/maxScale': '10',
-                'autoscaling.knative.dev/minScale': '0',
-                'run.googleapis.com/cpu-throttling': 'false',
-                'run.googleapis.com/memory': '512Mi',
-                'run.googleapis.com/cpu': '250m',
-                'run.googleapis.com/execution-environment': 'gen2'
-              }
-            },
-            spec: {
-              containerConcurrency: 100,
-              timeoutSeconds: 300,
-              containers: [
-                {
-                  image: imageUri,
-                  ports: [
-                    {
-                      name: 'http1',
-                      containerPort: 8080
-                    }
-                  ],
-                  // Use the built container image directly
-                  env: [
-                    { name: 'NODE_ENV', value: 'production' },
-                    { name: 'MCP_TRANSPORT', value: 'http' },
-                    { name: 'MCP_ENDPOINT', value: '/mcp' },
-                    // Do NOT set PORT here, and filter it from user envs
-                    ...Object.entries(request.environmentVariables)
-                      .filter(([name]) => name !== 'PORT')
-                      .map(([name, value]) => ({ name, value }))
-                  ],
-                  resources: {
-                    limits: {
-                      cpu: '1',
-                      memory: '512Mi'
-                    },
-                    requests: {
-                      cpu: '100m',
-                      memory: '256Mi'
-                    }
-                  }
-                }
-              ]
-            }
+        annotations: {
+          'run.googleapis.com/ingress': 'all'
+        },
+
+        // Revision template
+        template: {
+          // Optional: labels/annotations for the revision
+          labels: {
+            app: 'sigyl-mcp'
           },
-          traffic: [
+          annotations: {
+            'autoscaling.knative.dev/maxScale': '10',
+            'autoscaling.knative.dev/minScale': '0',
+            'run.googleapis.com/cpu-throttling': 'false',
+            'run.googleapis.com/memory': '512Mi',
+            'run.googleapis.com/cpu': '250m',
+            'run.googleapis.com/execution-environment': 'gen2'
+          },
+          // Revision spec
+          containers: [
             {
-              percent: 100,
-              latestRevision: true
+              image: imageUri,
+              ports: [
+                {
+                  name: 'http1',
+                  containerPort: 8080
+                }
+              ],
+              env: [
+                { name: 'NODE_ENV', value: 'production' },
+                { name: 'MCP_TRANSPORT', value: 'http' },
+                { name: 'MCP_ENDPOINT', value: '/mcp' },
+                // Do NOT set PORT here, and filter it from user envs
+                ...Object.entries(request.environmentVariables)
+                  .filter(([name]) => name !== 'PORT')
+                  .map(([name, value]) => ({ name, value }))
+              ],
+              resources: {
+                limits: {
+                  cpu: '1',
+                  memory: '512Mi'
+                },
+                requests: {
+                  cpu: '100m',
+                  memory: '256Mi'
+                }
+              }
             }
-          ]
-        }
+          ],
+          // Optional: containerConcurrency, timeoutSeconds, etc.
+          containerConcurrency: 100,
+          timeoutSeconds: 300
+        },
+
+        // Traffic config (optional, but usually included)
+        traffic: [
+          {
+            type: 'TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST',
+            percent: 100
+          }
+        ]
       };
 
       console.log('🚀 Checking for existing Cloud Run service...');
       
       const getResp = await fetch(
-        `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+        `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
         {
           method: 'GET',
           headers: {
@@ -644,7 +646,7 @@ EOF`
       if (getResp.status === 404) {
         console.log('Service does not exist. Continuing with service creation')
         const createResponse = await fetch(
-          `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services`,
+          `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services`,
           {
             method: 'POST',
             headers: {
@@ -657,47 +659,25 @@ EOF`
         if (!createResponse.ok) {
           if (createResponse.status === 409) {
             // Service already exists, wait and retry GET/PATCH a few times
-            let retrySuccess = false;
-            for (let attempt = 1; attempt <= 3; attempt++) {
-              console.warn(`POST failed with 409 (already exists), retrying GET/PATCH (attempt ${attempt})...`);
+              console.warn(`POST failed with 409 (already exists), retrying PATCH...`);
               await new Promise(res => setTimeout(res, 2000)); // wait 2 seconds
-              const retryGetResp = await fetch(
-                `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+              const retryPatchResp = await fetch(
+                `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
                 {
-                  method: 'GET',
+                  method: 'PATCH',
                   headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                  }
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/merge-patch+json'
+                  },
+                  body: JSON.stringify(serviceConfig)
                 }
               );
-              if (retryGetResp.ok) {
-                const retryPatchResp = await fetch(
-                  `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
-                  {
-                    method: 'PATCH',
-                    headers: {
-                      'Authorization': `Bearer ${accessToken}`,
-                      'Content-Type': 'application/merge-patch+json'
-                    },
-                    body: JSON.stringify(serviceConfig)
-                  }
-                );
-                if (retryPatchResp.ok) {
-                  service = await retryPatchResp.json();
-                  retrySuccess = true;
-                  break;
-                } else {
-                  const retryErr = await retryPatchResp.text();
-                  console.warn(`Cloud Run service patch failed after 409 (attempt ${attempt}): ${retryPatchResp.status} ${retryErr}`);
-                }
+              if (retryPatchResp.ok) {
+                service = await retryPatchResp.json();
               } else {
-                const retryGetErr = await retryGetResp.text();
-                console.warn(`Cloud Run service GET failed after 409 (attempt ${attempt}): ${retryGetResp.status} ${retryGetErr}`);
+                const retryErr = await retryPatchResp.text();
+                console.warn(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
               }
-            }
-            if (!retrySuccess) {
-              throw new Error('Cloud Run service patch failed after 409: Service not found after multiple retries.');
-            }
           } else {
             const errorText = await createResponse.text();
             throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
@@ -708,7 +688,7 @@ EOF`
       } else if (getResp.ok) {
         console.log('Service exists. Patching...');
         const patchResp = await fetch(
-          `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+          `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
           {
             method: 'PATCH',
             headers: {
@@ -718,54 +698,7 @@ EOF`
             body: JSON.stringify(serviceConfig)
           }
         );
-        if (!patchResp.ok) {
-          if (patchResp.status === 404) {
-            console.warn('PATCH failed with 404, attempting to create service instead...');
-            const createResponse = await fetch(
-              `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(serviceConfig)
-              }
-            );
-            if (!createResponse.ok) {
-              if (createResponse.status === 409) {
-                // Service already exists, try PATCH again
-                console.warn('POST failed with 409 (already exists), retrying PATCH...');
-                const retryPatchResp = await fetch(
-                  `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
-                  {
-                    method: 'PATCH',
-                    headers: {
-                      'Authorization': `Bearer ${accessToken}`,
-                      'Content-Type': 'application/merge-patch+json'
-                    },
-                    body: JSON.stringify(serviceConfig)
-                  }
-                );
-                if (!retryPatchResp.ok) {
-                  const retryErr = await retryPatchResp.text();
-                  throw new Error(`Cloud Run service patch failed after 409: ${retryPatchResp.status} ${retryErr}`);
-                }
-                service = await retryPatchResp.json();
-              } else {
-                const errorText = await createResponse.text();
-                throw new Error(`Cloud Run API error (create after patch 404): ${createResponse.status} ${errorText}`);
-              }
-            } else {
-              service = await createResponse.json();
-            }
-          } else {
-            const err = await patchResp.text();
-            throw new Error(`Cloud Run service patch failed: ${patchResp.status} ${err}`);
-          }
-        } else {
-          service = await patchResp.json();
-        }
+        service = await patchResp.json();
       } else {
         const err = await getResp.text();
         throw new Error(`Failed to check existing service ${getResp.status} ${err}`)
@@ -805,7 +738,7 @@ EOF`
           console.log(`📊 Polling attempt ${i + 1}/30 for service URL...`);
           
           const statusResp = await fetch(
-            `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
+            `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`,
             {
               headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -895,7 +828,7 @@ EOF`
    * Set IAM policy to allow unauthenticated invocations (allUsers as run.invoker)
    */
   async allowUnauthenticated(serviceName: string): Promise<void> {
-    const url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}:setIamPolicy`;
+    const url = `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}:setIamPolicy`;
     const accessToken = await this.getAccessToken();
     const body = {
       policy: {
@@ -965,7 +898,7 @@ EOF`
     try {
       console.log(`🗑️ Deleting Cloud Run service: ${serviceName}`);
       // Use the correct endpoint for fully managed Cloud Run
-      const url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`;
+      const url = `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`;
       console.log(`[deleteService] DELETE URL:`, url);
       console.log(`[deleteService] projectId: ${this.projectId}, region: ${this.region}, serviceName: ${serviceName}`);
       const response = await fetch(url, {
@@ -994,7 +927,7 @@ EOF`
       console.log(`🔄 Restarting Cloud Run service: ${serviceName}`);
       
       // Get current service configuration
-      const getResponse = await this.cloudRunRequest('GET', `/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`);
+      const getResponse = await this.cloudRunRequest('GET', `/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`);
       
       if (!getResponse.ok) {
         throw new Error(`Failed to get service: ${getResponse.status}`);
@@ -1008,7 +941,7 @@ EOF`
         'run.googleapis.com/restart-timestamp': new Date().toISOString()
       };
       
-      const updateResponse = await this.cloudRunRequest('PUT', `/v1/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`, service);
+      const updateResponse = await this.cloudRunRequest('PUT', `/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}`, service);
       
       if (!updateResponse.ok) {
         throw new Error(`Failed to restart service: ${updateResponse.status}`);
@@ -1028,14 +961,14 @@ EOF`
    */
   private async cloudRunRequest(method: string, path: string, body?: any): Promise<Response> {
     // Construct the correct Cloud Run API URL
-    // If path starts with /v1/projects/... use as is, else treat as relative to /v1
+    // If path starts with /v2/projects/... use as is, else treat as relative to /v2
     let url: string;
-    if (path.startsWith('/v1/projects/')) {
+    if (path.startsWith('/v2/projects/')) {
       url = `https://run.googleapis.com${path}`;
-    } else if (path.startsWith('/v1/')) {
+    } else if (path.startsWith('/v2/')) {
       url = `https://run.googleapis.com${path}`;
     } else {
-      url = `https://run.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}${path.startsWith('/') ? path : '/' + path}`;
+      url = `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}${path.startsWith('/') ? path : '/' + path}`;
     }
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
