@@ -156,13 +156,7 @@ export class CloudRunService {
       // Step 3: Deploy to Cloud Run
       const { serviceUrl, serviceName } = await this.deployToCloudRun(request, imageUri);
 
-      // === Ensure unauthenticated invocations are allowed IMMEDIATELY after service creation ===
-      try {
-        await this.allowUnauthenticated(serviceName);
-        console.log('✅ Allowed unauthenticated invocations for Cloud Run service (set immediately after creation).');
-      } catch (err) {
-        console.warn('⚠️ Failed to set unauthenticated invoker policy:', err);
-      }
+      // (IAM policy is now set in deployToCloudRun after service is ready)
 
       console.log('🚀 Successfully deployed to Google Cloud Run:', serviceUrl);
 
@@ -747,11 +741,7 @@ EOF`
       }
       
       // Debug: Log the initial service response structure
-      console.log(`📋 Initial service response:`, JSON.stringify({
-        status: service.status,
-        metadata: service.metadata,
-        spec: service.spec
-      }, null, 2));
+      console.log(`📋 Initial service response:`, JSON.stringify(service));
       
       let serviceUrl = service.status?.url || service.status?.address?.url;
 
@@ -846,6 +836,13 @@ EOF`
       if (serviceUrl) {
         console.log('✅ Cloud Run service deployed successfully');
         console.log(`🌐 Service URL: ${serviceUrl}`);
+        // Set IAM policy here, after service is ready
+        try {
+          await this.allowUnauthenticated(serviceName);
+          console.log('✅ Allowed unauthenticated invocations for Cloud Run service (set after service is ready).');
+        } catch (err) {
+          console.warn('⚠️ Failed to set unauthenticated invoker policy:', err);
+        }
         return {
           serviceUrl,
           serviceName
