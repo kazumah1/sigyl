@@ -375,6 +375,43 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
   }
 }
 
+// Helper: Wait for MCP server to be ready and return tools
+async function waitForMCPReady(mcpUrl: string, apiKey: string, maxAttempts = 10, delayMs = 3000): Promise<any[]> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await fetch(mcpUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
+          'x-sigyl-api-key': apiKey
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/list',
+          params: {}
+        })
+      });
+      const text = await resp.text();
+      let toolsData: any = {};
+      const match = text.match(/data: (\{.*\})/);
+      if (match) {
+        toolsData = JSON.parse(match[1]);
+      } else {
+        try { toolsData = JSON.parse(text); } catch {}
+      }
+      if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools) && toolsData.result.tools.length > 0) {
+        return toolsData.result.tools;
+      }
+    } catch (e) {
+      // ignore, will retry
+    }
+    await new Promise(res => setTimeout(res, delayMs));
+  }
+  throw new Error('MCP server not ready or tools not available after waiting');
+}
+
 /**
  * Deploy MCP repository to Google Cloud Run with security validation and secrets management
  */
@@ -518,35 +555,10 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     try {
       // Use the canonical MCP server URL for tool fetching
       const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
-      console.log('[DEPLOY] Fetching tools from:', `${mcpBaseUrl}/mcp`);
-      const toolsResp = await fetch(`${mcpBaseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream',
-          'x-sigyl-api-key': process.env.SIGYL_MASTER_KEY || ''
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list',
-          params: {}
-        })
-      });
-      // Debug: Log the full response before parsing
-      const text = await toolsResp.text();
-      console.log('[DEPLOY] /mcp response:', text);
-      const match = text.match(/data: (\{.*\})/);
-      let toolsData: any = {};
-      if (match) {
-        toolsData = JSON.parse(match[1]);
-      } else {
-        try { toolsData = JSON.parse(text); } catch {}
-      }
-      if (typeof toolsData === 'object' && toolsData !== null && 'result' in toolsData && toolsData.result && Array.isArray(toolsData.result.tools)) {
-        tools = toolsData.result.tools;
-      }
-      // console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
+      const mcpUrl = `${mcpBaseUrl}/mcp`;
+      console.log('[DEPLOY] Waiting for MCP server to be ready at:', mcpUrl);
+      tools = await waitForMCPReady(mcpUrl, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
+      console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
         name: request.repoName,
@@ -566,7 +578,6 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
         optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
         ready: true // Set to true after successful deployment
       };
-      // console.log('[DEPLOY] Upserting mcp_packages with payload:', JSON.stringify(mcpPackagesPayload, null, 2));
       const { data: pkgRows, error: pkgError } = await supabase
         .from('mcp_packages')
         .upsert([
