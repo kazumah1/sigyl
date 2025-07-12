@@ -741,9 +741,9 @@ EOF`
       }
       
       // Debug: Log the initial service response structure
-      console.log(`📋 Initial service response:`, JSON.stringify(service));
+      console.log(`📋 Initial service response:`, JSON.stringify(service, null, 2));
       
-      let serviceUrl = service.status?.url || service.status?.address?.url;
+      let serviceUrl = service.uri || service.urls[0];
 
       // Prefer project-number-based URL if available in annotations
       const urlsAnnotation = service.metadata?.annotations?.['run.googleapis.com/urls'];
@@ -815,17 +815,6 @@ EOF`
           // As a fallback, construct the URL manually
           const constructedUrl = `https://${serviceName}-${process.env.GOOGLE_CLOUD_PROJECT_HASH || '946398050699'}-${this.region}.a.run.app`;
           console.log(`🔧 Attempting fallback URL construction: ${constructedUrl}`);
-          
-          // Test if the constructed URL is accessible
-          try {
-            const testResp = await fetch(constructedUrl, { method: 'HEAD' });
-            if (testResp.ok || testResp.status === 404) { // 404 is OK for HEAD requests
-              serviceUrl = constructedUrl;
-              console.log(`✅ Fallback URL verified: ${serviceUrl}`);
-            }
-          } catch (error) {
-            console.warn(`⚠️ Fallback URL test failed: ${error}`);
-          }
         }
         
         if (!serviceUrl) {
