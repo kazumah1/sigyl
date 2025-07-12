@@ -453,15 +453,6 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       await addNegToBackendService(backendServiceName, negName, region, project);
       await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
       await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
-
-      // === Ensure unauthenticated invocations are allowed BEFORE polling ===
-      try {
-        const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
-        await cloudRunService.allowUnauthenticated(cloudRunResult.serviceName!);
-        log('✅ Allowed unauthenticated invocations for Cloud Run service.');
-      } catch (err) {
-        log('⚠️ Failed to set unauthenticated invoker policy: ' + (err instanceof Error ? err.message : String(err)));
-      }
     }
 
     // === Insert/Upsert into mcp_packages ===

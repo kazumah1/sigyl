@@ -156,6 +156,14 @@ export class CloudRunService {
       // Step 3: Deploy to Cloud Run
       const { serviceUrl, serviceName } = await this.deployToCloudRun(request, imageUri);
 
+      // === Ensure unauthenticated invocations are allowed IMMEDIATELY after service creation ===
+      try {
+        await this.allowUnauthenticated(serviceName);
+        console.log('✅ Allowed unauthenticated invocations for Cloud Run service (set immediately after creation).');
+      } catch (err) {
+        console.warn('⚠️ Failed to set unauthenticated invoker policy:', err);
+      }
+
       console.log('🚀 Successfully deployed to Google Cloud Run:', serviceUrl);
 
       return {
@@ -838,13 +846,6 @@ EOF`
       if (serviceUrl) {
         console.log('✅ Cloud Run service deployed successfully');
         console.log(`🌐 Service URL: ${serviceUrl}`);
-        // Patch: Allow unauthenticated invocations
-        try {
-          await this.allowUnauthenticated(serviceName);
-          console.log('✅ Allowed unauthenticated invocations for Cloud Run service.');
-        } catch (err) {
-          console.warn('⚠️ Failed to set unauthenticated invoker policy:', err);
-        }
         return {
           serviceUrl,
           serviceName
