@@ -225,6 +225,7 @@ async function installRemoteServer(
 		fs.mkdirSync(path.dirname(configPath), { recursive: true });
 		fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 		console.log(chalk.green(`\u2705 Installed '${serverName}' for Claude Desktop.`));
+		console.log(chalk.yellow("\n🔄 Please restart Claude Desktop to load the new server."));
 		return;
 	}
 	if (client === "vscode") {
@@ -236,7 +237,7 @@ async function installRemoteServer(
 			process.exit(1);
 		}
 
-		// Write config file for VS Code (mcpServers field) using 'command' and 'args' (smithery style)
+		// Write config file for VS Code (mcpServers field) using 'command' and 'args'
 		const configPath = path.join(os.homedir(), ".vscode", "mcp_servers.json");
 		let config = { mcpServers: {} };
 		if (fs.existsSync(configPath)) {

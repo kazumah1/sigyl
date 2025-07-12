@@ -1,6 +1,6 @@
 {
   "name": "create-sigyl",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Project scaffolding wizard for Sigyl (npm create sigyl)",
   "bin": {
     "create-sigyl": "./index.js"
@@ -15,6 +15,6 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "@sigyl-dev/cli": "^1.4.1"
+    "@sigyl-dev/cli": "^1.4.3"
   }
 } 

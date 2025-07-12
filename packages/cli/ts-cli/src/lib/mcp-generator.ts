@@ -3,9 +3,6 @@ import { join } from "node:path"
 import * as yaml from "yaml"
 import { verboseLog } from "../logger"
 import type { ExpressEndpoint } from "./express-scanner"
-import express from "express"
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
-import cors from "cors"
 
 export interface MCPGenerationOptions {
 	appPort?: string
@@ -203,15 +200,11 @@ ${this.generateParameterHandling(endpoint)}
 			},
 			dependencies: {
 				"@modelcontextprotocol/sdk": "^1.10.1",
-				"zod": "^3.22.0",
-				"express": "^4.18.2",
-				"@types/express": "^4.17.33",
-				"cors": "^2.8.5"
+				"zod": "^3.22.0"
 			},
 			devDependencies: {
 				"typescript": "^5.0.0",
-				"@types/node": "^20.0.0",
-				"@types/cors": "^2.8.17"
+				"@types/node": "^20.0.0"
 			}
 		};
 		writeFileSync(join(this.outDir, "package.json"), JSON.stringify(packageJson, null, 2));
@@ -320,9 +313,7 @@ ${endpoints.map(endpoint => {
 			},
 			dependencies: {
 				"@modelcontextprotocol/sdk": "^1.10.1",
-				"zod": "^3.22.0",
-				"express": "^4.18.2",
-				"cors": "^2.8.5"
+				"zod": "^3.22.0"
 			}
 		};
 

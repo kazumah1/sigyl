@@ -1,9 +1,9 @@
 {
   "name": "@sigyl-dev/cli",
-  "version": "1.4.1",
+  "version": "1.4.3",
   "type": "commonjs",
   "private": false,
-  "description": "Official Sigyl CLI for installing and managing MCP (Model Context Protocol) packages. Zero-config installation for public packages, secure API-based authentication.",
+  "description": "Official Sigyl CLI for installing and managing MCP packages. Zero-config installation for public packages, secure API-based authentication.",
   "keywords": [
     "sigyl",
     "mcp",
@@ -18,7 +18,7 @@
     "api-client"
   ],
   "homepage": "https://sigyl.dev",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": {
     "name": "Sigyl Team",
     "email": "support@sigyl.com"
@@ -36,9 +36,7 @@
     "@modelcontextprotocol/sdk": "^1.10.1",
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
-    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
     "inquirer": "^8.2.6",
     "ora": "^8.2.0",
     "serve-handler": "^6.1.6",
@@ -47,7 +45,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
-    "@types/express": "^5.0.2",
     "@types/inquirer": "^8.2.11",
     "@types/node": "^20.0.0",
     "@types/serve-handler": "^6.1.4",

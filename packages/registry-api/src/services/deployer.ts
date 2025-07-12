@@ -555,9 +555,9 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     try {
       // Use the canonical MCP server URL for tool fetching
       const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
-      const mcpUrl = `${mcpBaseUrl}/mcp`;
-      console.log('[DEPLOY] Waiting for MCP server to be ready at:', mcpUrl);
-      tools = await waitForMCPReady(mcpUrl, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
+      const mcpToolUrl = `${cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl}/mcp`;
+      console.log('[DEPLOY] Waiting for MCP server to be ready at:', mcpToolUrl);
+      tools = await waitForMCPReady(mcpToolUrl, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
       console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
@@ -566,7 +566,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
         version: null,
         description: `MCP server for ${request.repoName}`,
         author_id: authorIdToUse,
-        source_api_url: `https://server.sigyl.dev/@${request.repoName}`,
+        source_api_url: mcpBaseUrl,
         service_name: cloudRunResult.serviceName || null,
         tags: null,
         logo_url: null,
@@ -736,9 +736,9 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
     let tools: any[] = [];
     try {
       // Use the canonical MCP server URL for tool fetching
-      const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
-      console.log('[REDEPLOY] Fetching tools from:', `${mcpBaseUrl}/mcp`);
-      const toolsResp = await fetch(`${mcpBaseUrl}/mcp`, {
+      const mcpToolUrl = `${mcpBaseUrl}/mcp`;
+      console.log('[REDEPLOY] Fetching tools from:', mcpToolUrl);
+      const toolsResp = await fetch(mcpToolUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

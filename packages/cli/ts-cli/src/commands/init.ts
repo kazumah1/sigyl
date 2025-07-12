@@ -3,11 +3,6 @@ import { writeFileSync, mkdirSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import * as yaml from "yaml"
 import ora from "ora"
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { z } from "zod"
-import express from "express"
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
-import cors from "cors"
 
 export interface InitOptions {
 	outDir: string
@@ -133,14 +128,10 @@ export default function createStatelessServer({
 		dependencies: {
 			"@modelcontextprotocol/sdk": "^1.10.1",
 			"zod": "^3.22.0",
-			"express": "^4.18.2",
-			"cors": "^2.8.5"
 		},
 		devDependencies: {
 			"typescript": "^5.0.0",
-			"@types/node": "^20.0.0",
-			"@types/express": "^4.17.17",
-			"@types/cors": "^2.8.17"
+			"@types/node": "^20.0.0"
 		}
 	};
 
@@ -219,9 +210,7 @@ function createStatelessServer({ config }) {
 		},
 		dependencies: {
 			"@modelcontextprotocol/sdk": "^1.10.1",
-			"zod": "^3.22.0",
-			"express": "^4.18.2",
-			"cors": "^2.8.5"
+			"zod": "^3.22.0"
 		}
 	};
 

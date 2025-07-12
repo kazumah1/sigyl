@@ -39,7 +39,7 @@ export class createMCPStdioProxy {
       // Use the endpoint as provided (do not append /mcp)
       const endpoint = this.endpoint;
 
-      // Create the transport URL with query parameters like Smithery
+      // Create the transport URL with query parameters
       const url = new URL(endpoint);
       
       // Add API key as query parameter
