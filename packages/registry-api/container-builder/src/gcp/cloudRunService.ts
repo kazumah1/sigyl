@@ -883,7 +883,7 @@ EOF`
   }
 
   /**
-   * Set IAM policy to allow unauthenticated invocations (allUsers as run.invoker)
+   * Set IAM policy to allow unauthenticated invocations (allUsers as run.invoker) for Cloud Run v2
    */
   async allowUnauthenticated(serviceName: string): Promise<void> {
     const url = `https://run.googleapis.com/v2/projects/${this.projectId}/locations/${this.region}/services/${serviceName}:setIamPolicy`;
@@ -896,7 +896,8 @@ EOF`
             members: ["allUsers"]
           }
         ]
-      }
+      },
+      updateMask: "policy"
     };
     const response = await fetch(url, {
       method: "POST",
