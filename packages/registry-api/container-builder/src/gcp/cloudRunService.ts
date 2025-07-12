@@ -896,8 +896,7 @@ EOF`
             members: ["allUsers"]
           }
         ]
-      },
-      updateMask: "policy"
+      }
     };
     const response = await fetch(url, {
       method: "POST",
