@@ -221,12 +221,6 @@ const fetch = require("node-fetch");
     const extractedName = serviceName.replace(/^sigyl-/, '').replace(/-[a-f0-9]{8}$/, '');
     console.log(`[PACKAGE] Extracted from service name "${serviceName}": "${extractedName}"`);
     
-    // Additional debugging: show all environment variables that might be relevant
-    const relevantEnvVars = Object.keys(process.env).filter(key => 
-      key.includes('PACKAGE') || key.includes('SERVICE') || key.includes('SIGYL') || key.includes('BRAVE')
-    );
-    console.log('[PACKAGE] Relevant env vars:', relevantEnvVars.map(key => `${key}=${process.env[key]}`).join(', '));
-    
     return extractedName;
   }
 
@@ -309,9 +303,6 @@ const fetch = require("node-fetch");
       });
 
       console.log(`[SECRETS] Injected ${Object.keys(userSecrets).length} secrets as environment variables`);
-      console.log(`[ENV] BRAVE_API_KEY exists: ${!!process.env.BRAVE_API_KEY}`);
-      console.log(`[ENV] BRAVEAPIKEY exists: ${!!process.env.BRAVEAPIKEY}`);
-      console.log(`[ENV] All env keys containing 'BRAVE': ${Object.keys(process.env).filter(k => k.includes('BRAVE')).join(', ')}`);
       
       // RESTORED: Use the original working StreamableHTTPServerTransport approach
       // Create the MCP server instance

@@ -76,10 +76,7 @@ export class MCPGenerator {
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { z } from "zod"
-import express from "express"
-import cors from "cors"
 
 // ============================================================================
 // SERVER CONFIGURATION
@@ -188,32 +185,7 @@ ${this.generateParameterHandling(endpoint)}
 	*/
 
 	return server.server;
-}
-
-// ============================================================================
-// SERVER STARTUP
-// ============================================================================
-
-const app = express()
-app.use(express.json())
-app.use(cors({ origin: "http://localhost:3001" }))
-
-app.post('/mcp', async (req, res) => {
-	const server = createStatelessServer({ config: {} })
-	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
-	res.on('close', () => {
-		transport.close()
-		server.close()
-	})
-	await server.connect(transport)
-	await transport.handleRequest(req, res, req.body)
-})
-
-const port = process.env.PORT || 8080
-app.listen(port, () => {
-	console.log("MCP Server listening on port " + port)
-})
-`;
+}`;
 
 		writeFileSync(join(this.outDir, "server.ts"), serverCode);
 		verboseLog("Generated TypeScript server");
@@ -276,11 +248,7 @@ app.listen(port, () => {
  *
  * To add a new tool manually, follow the template at the bottom of this file.
  */
-
-const express = require("express");
-const cors = require("cors");
 const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
-const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const { z } = require("zod");
 
 // ============================================================================
@@ -335,32 +303,7 @@ ${endpoints.map(endpoint => {
 	*/
 
 	return server.server;
-}
-
-// ============================================================================
-// SERVER STARTUP
-// ============================================================================
-
-const app = express();
-app.use(express.json());
-app.use(cors({ origin: "http://localhost:3001" }));
-
-app.post('/mcp', async (req, res) => {
-	const server = createStatelessServer({ config: {} });
-	const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-	res.on('close', () => {
-		transport.close();
-		server.close();
-	});
-	await server.connect(transport);
-	await transport.handleRequest(req, res, req.body);
-});
-
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-	console.log("MCP Server listening on port " + port);
-});
-`;
+}`;
 
 		writeFileSync(join(this.outDir, "server.js"), serverCode);
 		verboseLog("Generated JavaScript server");
