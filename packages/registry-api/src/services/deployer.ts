@@ -736,7 +736,7 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
     let tools: any[] = [];
     try {
       // Use the canonical MCP server URL for tool fetching
-      const mcpToolUrl = `${mcpBaseUrl}/mcp`;
+      const mcpToolUrl = `${cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl}/mcp`;
       console.log('[REDEPLOY] Fetching tools from:', mcpToolUrl);
       const toolsResp = await fetch(mcpToolUrl, {
         method: 'POST',
