@@ -1,6 +1,7 @@
 const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const fetch = require("node-fetch");
+// const { z } = require("zod");
 
 // 1. create the /mcp endpoint
 (async () => {
@@ -28,84 +29,84 @@ const fetch = require("node-fetch");
         }
       }
     
-    // console.log('[WRAPPER] getConfig');
-    // async function getConfig(packageName) {
-    //     let slug = packageName;
+    console.log('[WRAPPER] getConfig');
+    async function getConfig(packageName) {
+        let slug = packageName;
 
-    //     const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-    //     const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
-    //     console.log('[CONFIG] Fetching package config from:', url);
+        const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+        const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
+        console.log('[CONFIG] Fetching package config from:', url);
 
-    //     try {
-    //         const resp = await fetch(url, {
-    //             method: 'GET',
-    //             headers: { 'Content-Type': 'application/json' }
-    //         });
-    //         if (!resp.ok) {
-    //             console.error('[CONFIG] Failed to fetch config:', resp.status, resp.statusText);
-    //             return {};
-    //         }
-    //         const data = await resp.json();
-    //         if (data.success && data.data) {
-    //             return {
-    //                 required_secrets: data.data.required_secrets || [],
-    //                 optional_secrets: data.data.optional_secrets || []
-    //             };
-    //         }
-    //         return {};
-    //     } catch (err) {
-    //         console.error('[CONFIG] Error fetching config:', err);
-    //         return {};
-    //     }
-    // }
+        try {
+            const resp = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!resp.ok) {
+                console.error('[CONFIG] Failed to fetch config:', resp.status, resp.statusText);
+                return {};
+            }
+            const data = await resp.json();
+            if (data.success && data.data) {
+                return {
+                    required_secrets: data.data.required_secrets || [],
+                    optional_secrets: data.data.optional_secrets || []
+                };
+            }
+            return {};
+        } catch (err) {
+            console.error('[CONFIG] Error fetching config:', err);
+            return {};
+        }
+    }
 
-    // console.log('[WRAPPER] getUserSecrets');
-    // async function getUserSecrets(packageName, apiKey) {
-    //     if (!apiKey) {
-    //         console.warn('[SECRETS] No API key provided to getUserSecrets');
-    //         return {};
-    //     }
-    //     if (!packageName) {
-    //         console.warn('[SECRETS] No packageName provided to getUserSecrets');
-    //         return {};
-    //     }
+    console.log('[WRAPPER] getUserSecrets');
+    async function getUserSecrets(packageName, apiKey) {
+        if (!apiKey) {
+            console.warn('[SECRETS] No API key provided to getUserSecrets');
+            return {};
+        }
+        if (!packageName) {
+            console.warn('[SECRETS] No packageName provided to getUserSecrets');
+            return {};
+        }
 
-    //     const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-    //     // Only use the slug part for the endpoint
-    //     let slug = packageName;
+        const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+        // Only use the slug part for the endpoint
+        let slug = packageName;
 
-    //     const url = `${registryUrl}/api/v1/secrets/package/${encodeURIComponent(slug)}`;
-    //     console.log('[SECRETS] Fetching user secrets from:', url);
+        const url = `${registryUrl}/api/v1/secrets/package/${encodeURIComponent(slug)}`;
+        console.log('[SECRETS] Fetching user secrets from:', url);
 
-    //     try {
-    //         const resp = await fetch(url, {
-    //             method: 'GET',
-    //             headers: {
-    //                 'Authorization': `Bearer ${apiKey}`,
-    //                 'Content-Type': 'application/json'
-    //             }
-    //         });
-    //         if (!resp.ok) {
-    //             console.error('[SECRETS] Failed to fetch user secrets:', resp.status, resp.statusText);
-    //             return {};
-    //         }
-    //         const data = await resp.json();
-    //         if (data.success && Array.isArray(data.data)) {
-    //             // Convert array to key-value object
-    //             const secrets = {};
-    //             data.data.forEach(secret => {
-    //                 if (secret.key && secret.value) {
-    //                     secrets[secret.key] = secret.value;
-    //                 }
-    //             });
-    //             return secrets;
-    //         }
-    //         return {};
-    //     } catch (err) {
-    //         console.error('[SECRETS] Error fetching user secrets:', err);
-    //         return {};
-    //     }
-    // }
+        try {
+            const resp = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!resp.ok) {
+                console.error('[SECRETS] Failed to fetch user secrets:', resp.status, resp.statusText);
+                return {};
+            }
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.data)) {
+                // Convert array to key-value object
+                const secrets = {};
+                data.data.forEach(secret => {
+                    if (secret.key && secret.value) {
+                        secrets[secret.key] = secret.value;
+                    }
+                });
+                return secrets;
+            }
+            return {};
+        } catch (err) {
+            console.error('[SECRETS] Error fetching user secrets:', err);
+            return {};
+        }
+    }
 
     // console.log('[WRAPPER] createConfig');
     // async function createConfig(configJSON, userSecrets) {
@@ -206,16 +207,16 @@ const fetch = require("node-fetch");
         console.log('[PACKAGENAME] req.originalUrl:', req.originalUrl);
         console.log('[PACKAGENAME] req.url:', req.url);
         console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
-        // const packageName = 'sigyl-dev/google-maps';
+        const packageName = 'sigyl-dev/google-maps';
 
         // 2. use package name to get required + optional secrets
-        // const configJSON = await getConfig(packageName);
-        // console.log('[CONFIG] config:', configYaml);
+        const configJSON = await getConfig(packageName);
+        console.log('[CONFIG] config:', configJSON);
 
 
         // 3. use package name + api key to get user's secrets
-        // const userSecrets = await getUserSecrets(packageName, apiKey);
-        // console.log('[SECRETS] userSecrets:', userSecrets);
+        const userSecrets = await getUserSecrets(packageName, apiKey);
+        console.log('[SECRETS] userSecrets:', userSecrets);
 
         // 4. reformat secrets into z.object()
         // const { filledConfig } = await createConfig(configJSON, userSecrets);
