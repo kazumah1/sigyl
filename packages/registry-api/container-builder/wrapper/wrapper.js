@@ -128,7 +128,13 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
 
   // Create config with zod validation (from wrapper.js)
   async function createConfig(configJSON, userSecrets) {
+    console.log('[WRAPPER] createConfig called with:', {
+      configJSON: Array.isArray(configJSON) ? configJSON.length + ' items' : configJSON,
+      userSecrets: Object.keys(userSecrets || {}).length + ' secrets'
+    });
+    
     if (!Array.isArray(configJSON)) {
+        console.error('[WRAPPER] createConfig error: configJSON must be an array, got:', typeof configJSON);
         throw new Error("configJSON must be an array");
     }
 
@@ -192,11 +198,14 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
     }
 
     if (missingSecrets.length > 0) {
+        console.error('[WRAPPER] createConfig error: Missing required secrets:', missingSecrets);
         throw new Error(`Missing required secrets: ${missingSecrets.join(', ')}. Please configure these secrets in your Sigyl dashboard.`);
     }
 
     // Validate and fill with defaults
+    console.log('[WRAPPER] createConfig: Parsing config with zod...');
     const filledConfig = configSchema.parse(configValues);
+    console.log('[WRAPPER] createConfig: Config parsed successfully');
 
     return { configSchema, filledConfig };
   }
@@ -584,58 +593,81 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
 
   // Main MCP POST endpoint (from wrapper.js + working-wrapper.js pattern)
   app.post('/mcp', async (req, res) => {
+    console.log('[WRAPPER] =================================');
+    console.log('[WRAPPER] Received /mcp POST request');
+    console.log('[WRAPPER] Request headers:', JSON.stringify(req.headers, null, 2));
+    console.log('[WRAPPER] Request body length:', req.body ? JSON.stringify(req.body).length : 'no body');
+    
     // Get API key from header or query (from working-wrapper.js)
     const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
-    console.log('[MCP] Received /mcp POST');
-    console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
-    console.log('[MCP] apiKey from query:', req.query.apiKey);
-    console.log('[MCP] Using apiKey:', apiKey);
+    console.log('[WRAPPER] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
+    console.log('[WRAPPER] apiKey from query:', req.query.apiKey);
+    console.log('[WRAPPER] Using apiKey:', apiKey);
 
     // Validate API key (from working-wrapper.js)
+    console.log('[WRAPPER] Starting API key validation...');
     const valid = await isValidSigylApiKey(apiKey);
-    console.log('[MCP] isValidSigylApiKey result:', valid);
+    console.log('[WRAPPER] API key validation result:', valid);
     if (!valid) {
-      console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
+      console.warn('[WRAPPER] 401 Unauthorized: Invalid or missing API key');
       return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
     }
+    console.log('[WRAPPER] API key validation passed');
 
     try {
+      console.log('[WRAPPER] Starting main processing...');
+      
       // Get package name from Cloud Run URL
+      console.log('[WRAPPER] Extracting package name from Cloud Run URL...');
       const packageName = getPackageName(req);
-      console.log('[PACKAGENAME] Package name:', packageName);
+      console.log('[WRAPPER] Package name extracted:', packageName);
 
       // Get package config (from wrapper.js)
+      console.log('[WRAPPER] Fetching package config from registry...');
       const configJSON = await getConfig(packageName);
-      console.log('[CONFIG] config:', configJSON);
+      console.log('[WRAPPER] Package config received:', JSON.stringify(configJSON, null, 2));
 
       // Get user secrets (from wrapper.js)
+      console.log('[WRAPPER] Fetching user secrets...');
       const userSecrets = await getUserSecrets(packageName, apiKey);
-      console.log('[SECRETS] userSecrets:', userSecrets);
+      console.log('[WRAPPER] User secrets received:', JSON.stringify(userSecrets, null, 2));
 
       // Create config with zod validation (from wrapper.js)
+      console.log('[WRAPPER] Creating config with zod validation...');
       const { filledConfig } = await createConfig(configJSON.required_secrets || [], userSecrets);
-      console.log('[CONFIG] filledConfig:', filledConfig);
+      console.log('[WRAPPER] Config created successfully:', JSON.stringify(filledConfig, null, 2));
 
       // Create MCP server with config (from wrapper.js)
+      console.log('[WRAPPER] Creating MCP server with config...');
       const server = createStatelessServer({ config: filledConfig });
+      console.log('[WRAPPER] MCP server created successfully');
       
       // Create transport with session support
+      console.log('[WRAPPER] Creating HTTP transport...');
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: createSessionIdGenerator()
       });
+      console.log('[WRAPPER] Transport created successfully');
 
       // Handle cleanup (from working-wrapper.js)
       res.on('close', () => {
+        console.log('[WRAPPER] Response closed, cleaning up...');
         transport.close();
         server.close();
       });
 
       // Connect and handle request (from working-wrapper.js)
+      console.log('[WRAPPER] Connecting server to transport...');
       await server.connect(transport);
+      console.log('[WRAPPER] Server connected, handling request...');
       await transport.handleRequest(req, res, req.body);
+      console.log('[WRAPPER] Request handled successfully');
 
     } catch (error) {
-      console.error('MCP server error:', error);
+      console.error('[WRAPPER] ❌ ERROR CAUGHT IN MCP ENDPOINT:');
+      console.error('[WRAPPER] Error message:', error.message);
+      console.error('[WRAPPER] Error type:', error.constructor.name);
+      console.error('[WRAPPER] Error stack:', error.stack);
       
       // Send error event
       const errorEvent = {
@@ -661,6 +693,7 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
       
       // Check if it's a missing secrets error and provide helpful response
       if (error.message.includes('Missing required secrets')) {
+        console.log('[WRAPPER] Returning 400 for missing secrets');
         return res.status(400).json({ 
           error: 'Configuration Error',
           message: error.message,
@@ -668,6 +701,7 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
         });
       }
       
+      console.log('[WRAPPER] Returning 500 for internal server error');
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -683,6 +717,9 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
 
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
-    console.log(`MCP server with session support running on port ${PORT}`);
+    console.log('[WRAPPER] 🚀 MCP server with session support running on port', PORT);
+    console.log('[WRAPPER] Environment:', process.env.NODE_ENV || 'production');
+    console.log('[WRAPPER] Container ID:', process.env.HOSTNAME || 'unknown');
+    console.log('[WRAPPER] Registry URL:', REGISTRY_URL);
   });
 })(); 
