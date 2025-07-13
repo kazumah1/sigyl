@@ -224,7 +224,7 @@ const fetch = require("node-fetch");
         // console.log('[CONFIG] config:', filledConfig);
 
         // 5. pass z.object() into createStatelessServer() as config
-        const server = createStatelessServer({});
+        const server = createStatelessServer({config:{}});
         // 6. StreamableHTTPServerTransport instance
         // TODO: Session management
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
