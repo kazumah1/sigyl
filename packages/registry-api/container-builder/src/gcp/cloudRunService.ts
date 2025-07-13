@@ -277,6 +277,9 @@ RUN if [ -f package-lock.json ]; then \
       npm install; \
     fi && npm cache clean --force
 
+# install zod for wrapper
+RUN npm install zod
+
 ${config.language === 'typescript' ? `
 # Copy TypeScript configuration and source files
 COPY tsconfig.json ./
