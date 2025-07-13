@@ -33,6 +33,7 @@ const fetch = require("node-fetch");
         console.log('[PACKAGENAME] Hostname:', req.hostname);
         console.log('[PACKAGENAME] Path:', req.path);
         if (req.hostname.includes('sigyl-mcp-')) {
+            const hostname = req.hostname;
             console.log('[PACKAGENAME] Getting package name from sigyl-mcp-...');
             const match = hostname.match(/sigyl-mcp-(.+?)(?:-lrzo3avokq-uc\.a\.run\.app|\.a\.run\.app)/);
             if (match) {
