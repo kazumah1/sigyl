@@ -120,7 +120,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
-### Stage 3: Config & Secrets Management (wrappertest16.js) 🔄 IN PROGRESS
+### Stage 3: Config & Secrets Management (wrappertest17.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 
 **Features**:
@@ -278,10 +278,14 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 28. ✅ **Update cloudRunService.ts** - Change filename to wrappertest15.cjs
 29. ✅ **Upload to GCS** - Deploy new version
 30. ❌ **Test API key validation** - JSON-RPC handling still failing with "res.writeHead is not a function"
-31. 🔄 **Create wrappertest16.js** - Fix JSON-RPC handling by simplifying response (no mock transport)
-32. **Update cloudRunService.ts** - Change filename to wrappertest16.cjs
-33. **Upload to GCS** - Deploy new version
-34. **Test JSON-RPC** - Verify simplified JSON-RPC response works and database insertion succeeds
+31. ✅ **Create wrappertest16.js** - Fix JSON-RPC handling by simplifying response (no mock transport)
+32. ✅ **Update cloudRunService.ts** - Change filename to wrappertest16.cjs
+33. ✅ **Upload to GCS** - Deploy new version
+34. ✅ **Test JSON-RPC** - Database insertion now works! But Claude Desktop fails due to query parameter API key
+35. 🔄 **Create wrappertest17.js** - Add query parameter support for Claude Desktop API key format
+36. **Update cloudRunService.ts** - Change filename to wrappertest17.cjs
+37. **Upload to GCS** - Deploy new version
+38. **Test Claude Desktop** - Verify query parameter API key works and requests don't timeout
 
 ## 📝 Notes
 
