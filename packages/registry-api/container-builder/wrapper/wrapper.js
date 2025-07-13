@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const crypto = require("crypto");
 const { z } = require("zod");
 
-console.log("🚀 [WRAPPER-SESSION] Starting Session-Aware MCP Wrapper v2.0.0");
+console.log("🚀 [WRAPPER-SESSION] Starting Session-Aware MCP Wrapper v3.0.0");
 console.log("🚀 [WRAPPER-SESSION] This is the NEW session-based wrapper with database persistence");
 console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
 
