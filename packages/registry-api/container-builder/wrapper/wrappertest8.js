@@ -208,8 +208,8 @@ const fetch = require("node-fetch");
         // console.log('[PACKAGENAME] req.originalUrl:', req.originalUrl);
         // console.log('[PACKAGENAME] req.url:', req.url);
         // console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
-        const packageName = 'sigyl-dev/google-maps';
-        console.log('[PACKAGENAME] packageName:', packageName);
+        // const packageName = 'sigyl-dev/google-maps';
+        // console.log('[PACKAGENAME] packageName:', packageName);
 
         // 2. use package name to get required + optional secrets
         // const configJSON = await getConfig(packageName);
