@@ -2,8 +2,8 @@ const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const fetch = require("node-fetch");
 
-console.log("[WRAPPER-STAGE3] Starting MCP Wrapper v22.0.0");
-console.log("[WRAPPER-STAGE3] Stage 3: Fixed approach - use user's API key for secrets");
+console.log("[WRAPPER-STAGE3] Starting MCP Wrapper v23.0.0");
+console.log("[WRAPPER-STAGE3] Stage 3: Fixed package name extraction");
 console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
 
 (async () => {
@@ -93,14 +93,14 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
     }
   }
 
-  // Extract package name from request
+  // Extract package name from request - FIXED VERSION
   function extractPackageName(req) {
     // Try hostname first (Cloud Run pattern)
     const hostname = req.get("host") || req.hostname;
     console.log("[WRAPPER-STAGE3] Hostname:", hostname);
     
     if (hostname.includes("sigyl-mcp-")) {
-      // Extract everything between sigyl-mcp- and the first occurrence of -lrzo3avokq-uc.a.run.app
+      // Extract everything between sigyl-mcp- and the Cloud Run domain
       const match = hostname.match(/sigyl-mcp-(.+?)(?:-lrzo3avokq-uc\.a\.run\.app|\.a\.run\.app)/);
       if (match) {
         const packagePath = match[1];
@@ -180,7 +180,7 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
     res.json({
       status: "healthy",
       stage: "3",
-      version: "22.0.0",
+      version: "23.0.0",
       packageName,
       timestamp: new Date().toISOString(),
       environment: {
@@ -196,7 +196,7 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
     res.json({
       status: "healthy",
       stage: "3",
-      version: "22.0.0",
+      version: "23.0.0",
       packageName,
       timestamp: new Date().toISOString()
     });
@@ -212,5 +212,6 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
     console.log("[WRAPPER-STAGE3] ✅ Query parameter support");
     console.log("[WRAPPER-STAGE3] ✅ No SIGYL_API_KEY env var needed");
     console.log("[WRAPPER-STAGE3] ✅ Follows working-wrapper.js pattern");
+    console.log("[WRAPPER-STAGE3] ✅ Fixed package name extraction");
   });
 })(); 
