@@ -2,6 +2,40 @@
 
 ## 🎯 Current Status: MVP Ready for Launch + CLI/SDK Published
 
+### 🔧 LATEST UPDATE: Wrapper Development Strategy Overhaul (IN PROGRESS)
+
+**Problem**: Wrapper development has been plagued by deployment issues, caching problems, and complex dependencies causing failures.
+
+**New Strategy**: Staged development approach starting with bare minimum functionality:
+- ✅ **Development Plan Created**: `state/wrapper-development-plan.md` with comprehensive 6-stage approach
+- ✅ **Stage 1 Wrapper Created**: `wrappertest9.js` - bare minimum that should absolutely work
+- 🔄 **Next Steps**: Deploy Stage 1 → Test thoroughly → Add features incrementally
+
+**Previous Issue**: Brave Search server was using old pattern with `process.env` API key access instead of config-based injection.
+
+**Previous Solution**: Updated `third-party-mcps/Brave-Search/server.ts` to match Google Maps pattern:
+- ✅ Added `configSchema` with zod validation
+- ✅ Updated to use `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js`
+- ✅ Replaced `server.setRequestHandler()` with `server.tool()` pattern
+- ✅ API key now comes from `config.apiKey` instead of `process.env.BRAVE_API_KEY`
+- ✅ Proper `createStatelessServer({ config })` signature
+- ✅ Moved all functions inside `createBraveSearchTools()` for proper scoping
+- ✅ Debug logging now respects `config.debug` flag
+
+**Technical Changes**:
+- **Config Schema**: `configSchema = z.object({ debug: z.boolean(), apiKey: z.string() })`
+- **API Key Injection**: `const apiKey = config.apiKey || "PLACEHOLDER_WILL_BE_INJECTED_BY_WRAPPER"`
+- **Modern MCP Pattern**: Uses `server.tool()` with zod schemas for parameters
+- **Proper Error Handling**: Throws error if API key is missing or placeholder
+- **Scoped Functions**: All API functions now properly scoped within the config context
+
+**Benefits**:
+- 🔄 **Consistent Pattern**: Now matches Google Maps and other modern MCP servers
+- 🔐 **Config-Based Secrets**: Proper integration with wrapper's secret injection system
+- 🛠️ **Better Developer Experience**: Cleaner code structure and error handling
+- 📊 **Debug Support**: Conditional logging based on config flag
+- 🔧 **Maintainability**: Easier to update and maintain with consistent patterns
+
 ### 🚨 HIGH PRIORITY: Custom Domains for MCPs (IMPLEMENTED)
 
 **Problem Solved**: Raw Cloud Run URLs exposed competitive intelligence:
