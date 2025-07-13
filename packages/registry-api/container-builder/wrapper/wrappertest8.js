@@ -29,36 +29,36 @@ const fetch = require("node-fetch");
         }
       }
     
-    console.log('[WRAPPER] getConfig');
-    async function getConfig(packageName) {
-        let slug = packageName;
+    // console.log('[WRAPPER] getConfig');
+    // async function getConfig(packageName) {
+    //     let slug = packageName;
 
-        const registryUrl = 'https://api.sigyl.dev';
-        const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
-        console.log('[CONFIG] Fetching package config from:', url);
+    //     const registryUrl = 'https://api.sigyl.dev';
+    //     const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
+    //     console.log('[CONFIG] Fetching package config from:', url);
 
-        try {
-            const resp = await fetch(url, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            if (!resp.ok) {
-                console.error('[CONFIG] Failed to fetch config:', resp.status, resp.statusText);
-                return {};
-            }
-            const data = await resp.json();
-            if (data.success && data.data) {
-                return {
-                    required_secrets: data.data.required_secrets || [],
-                    optional_secrets: data.data.optional_secrets || []
-                };
-            }
-            return {};
-        } catch (err) {
-            console.error('[CONFIG] Error fetching config:', err);
-            return {};
-        }
-    }
+    //     try {
+    //         const resp = await fetch(url, {
+    //             method: 'GET',
+    //             headers: { 'Content-Type': 'application/json' }
+    //         });
+    //         if (!resp.ok) {
+    //             console.error('[CONFIG] Failed to fetch config:', resp.status, resp.statusText);
+    //             return {};
+    //         }
+    //         const data = await resp.json();
+    //         if (data.success && data.data) {
+    //             return {
+    //                 required_secrets: data.data.required_secrets || [],
+    //                 optional_secrets: data.data.optional_secrets || []
+    //             };
+    //         }
+    //         return {};
+    //     } catch (err) {
+    //         console.error('[CONFIG] Error fetching config:', err);
+    //         return {};
+    //     }
+    // }
 
     // console.log('[WRAPPER] getUserSecrets');
     // async function getUserSecrets(packageName, apiKey) {
@@ -211,8 +211,8 @@ const fetch = require("node-fetch");
         const packageName = 'sigyl-dev/google-maps';
 
         // 2. use package name to get required + optional secrets
-        const configJSON = await getConfig(packageName);
-        console.log('[CONFIG] config:', configJSON);
+        // const configJSON = await getConfig(packageName);
+        // console.log('[CONFIG] config:', configJSON);
 
 
         // 3. use package name + api key to get user's secrets
