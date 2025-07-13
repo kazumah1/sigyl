@@ -76,7 +76,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 
 ## 📋 Staged Development Plan
 
-### Stage 1: Bare Minimum Wrapper (wrappertest9.js)
+### Stage 1: Bare Minimum Wrapper (wrappertest10.js) ✅ COMPLETE
 **Goal**: Create the simplest possible wrapper that absolutely works.
 
 **Features**:
@@ -92,25 +92,31 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - ❌ No metrics
 
 **Success Criteria**:
-- Deploys successfully
-- Responds to health checks
-- Handles basic MCP requests
-- Clean logs with no errors
-- MCP server accepts placeholder API key and returns mock responses
+- ✅ Deploys successfully
+- ✅ Responds to health checks
+- ✅ Handles basic MCP requests
+- ✅ Clean logs with no errors
+- ✅ MCP server accepts placeholder API key and returns mock responses
+- ✅ Request processing completes successfully (200 status)
+- ✅ Proper resource cleanup after requests
 
-### Stage 2: Package Name Extraction
+### Stage 2: Package Name Extraction (wrappertest11.js) 🔄 IN PROGRESS
 **Goal**: Add dynamic package name detection.
 
 **Features**:
-- ✅ Path-based extraction (proxy requests)
-- ✅ Cloud Run URL extraction
-- ✅ Environment variable fallback
+- ✅ Path-based extraction (proxy requests: `/@owner/repo-name/mcp`)
+- ✅ Cloud Run URL extraction (hostname patterns)
+- ✅ Referer header extraction (fallback)
+- ✅ Environment variable fallback (`SIGYL_PACKAGE_NAME`)
+- ✅ Default fallback for testing
 - ✅ Comprehensive logging of extraction process
 
 **Success Criteria**:
 - Correctly identifies package names for all request types
 - Graceful fallback when extraction fails
 - Clear logging shows extraction process
+- Health checks include extracted package name
+- Maintains all Stage 1 functionality
 
 ### Stage 3: Config & Secrets Management
 **Goal**: Add configuration and user secrets support.
@@ -234,13 +240,19 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 1. ✅ **Create wrappertest9.js** - Bare minimum working wrapper
 2. ✅ **Update cloudRunService.ts** - Change filename to wrappertest9.cjs
 3. ✅ **Upload to GCS** - Deploy new version
-4. 🔄 **Test thoroughly** - Verify basic functionality works
+4. ✅ **Test thoroughly** - Verify basic functionality works
    - ✅ Container builds and starts successfully
    - ✅ API key validation works
-   - ❌ MCP server fails due to missing API key in config
-   - ❌ Database not updated due to MCP server failure
-5. 🔄 **Fix Stage 1 issues** - Add default config with placeholder API key
-6. **Move to Stage 2** - Add package name extraction
+   - ✅ MCP server accepts placeholder API key and returns mock responses
+   - ✅ Request handling works (200 status codes)
+   - ✅ Clean shutdown and resource management
+5. ✅ **Fix Stage 1 issues** - Add default config with placeholder API key
+6. ✅ **Verify database insertion** - Check if package was added to mcp_packages table
+7. ✅ **Move to Stage 2** - Add package name extraction
+8. 🔄 **Create wrappertest11.js** - Package name extraction functionality
+9. **Update cloudRunService.ts** - Change filename to wrappertest11.cjs
+10. **Upload to GCS** - Deploy new version
+11. **Test package name extraction** - Verify it works with different request patterns
 
 ## 📝 Notes
 
