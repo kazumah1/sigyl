@@ -184,12 +184,28 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
             configValues[field.name] = userSecrets[field.name];
         } else if (field.default !== undefined) {
             configValues[field.name] = field.default;
+        } else if (field.required !== false) {
+            // Provide placeholder values for required fields during deployment/health checks
+            switch (field.type) {
+                case "string":
+                    configValues[field.name] = `placeholder-${field.name}`;
+                    break;
+                case "boolean":
+                    configValues[field.name] = false;
+                    break;
+                case "number":
+                    configValues[field.name] = 0;
+                    break;
+                default:
+                    configValues[field.name] = `placeholder-${field.name}`;
+            }
+            console.log(`[WRAPPER] createConfig: Using placeholder value for required field '${field.name}': ${configValues[field.name]}`);
         }
     }
 
     const configSchema = z.object(zodShape);
 
-    // Check for missing required secrets before validation
+    // Check for missing required secrets (now just for logging, not blocking)
     const missingSecrets = [];
     for (const field of configJSON) {
         if (field.required !== false && !configValues.hasOwnProperty(field.name)) {
@@ -198,8 +214,7 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
     }
 
     if (missingSecrets.length > 0) {
-        console.error('[WRAPPER] createConfig error: Missing required secrets:', missingSecrets);
-        throw new Error(`Missing required secrets: ${missingSecrets.join(', ')}. Please configure these secrets in your Sigyl dashboard.`);
+        console.warn('[WRAPPER] createConfig warning: Missing required secrets (using placeholders):', missingSecrets);
     }
 
     // Validate and fill with defaults
@@ -404,13 +419,35 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
   // Get package name from Cloud Run URL or fallback methods
   function getPackageName(req) {
     // Priority order:
-    // 1. Extract from Cloud Run URL (most reliable)
-    // 2. Environment variable (set during deployment)
-    // 3. Request header (if client specifies)
-    // 4. URL path parameter
-    // 5. Default fallback
+    // 1. Extract from request path (for proxy requests through server.sigyl.dev)
+    // 2. Extract from Cloud Run URL (for direct Cloud Run requests)
+    // 3. Environment variable (set during deployment)
+    // 4. Request header (if client specifies)
+    // 5. URL path parameter
+    // 6. Default fallback
     
-    // First, try to extract from Cloud Run URL
+    // First, try to extract from request path (for proxy requests)
+    // Format: /@owner/repo-name/mcp
+    // Example: /@sigyl-dev/google-maps/mcp -> sigyl-dev/Google-Maps
+    const path = req.path || req.url || '';
+    console.log(`[PACKAGENAME] Request path: ${path}`);
+    
+    const pathMatch = path.match(/^\/@([^\/]+)\/([^\/]+)\/mcp$/);
+    if (pathMatch) {
+      const owner = pathMatch[1]; // e.g., "sigyl-dev"
+      const repo = pathMatch[2]; // e.g., "google-maps"
+      
+      // Convert repo name to title case
+      const repoTitleCase = repo.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join('-');
+      
+      const packageName = `${owner}/${repoTitleCase}`;
+      console.log(`[PACKAGENAME] Successfully extracted package name from path: ${path} -> ${packageName}`);
+      return packageName;
+    }
+    
+    // Second, try to extract from Cloud Run URL
     // Format: https://sigyl-mcp-{owner}-{repo-name}-{hash}.{region}.run.app
     // Example: https://sigyl-mcp-sigyl-dev-brave-search-946398050699.us-central1.run.app
     // Should extract: sigyl-dev/Brave-Search
