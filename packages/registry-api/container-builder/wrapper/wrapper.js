@@ -395,10 +395,15 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
     // Should extract: sigyl-dev/Brave-Search
     
     const host = req.headers.host || req.headers['x-forwarded-host'] || process.env.HOST;
+    console.log(`[PACKAGENAME] Host header: ${host}`);
     if (host) {
-      const match = host.match(/^sigyl-mcp-(.+)-(\d+)\.(.+)\.run\.app$/);
+      // Updated regex to handle the actual Cloud Run URL format
+      // Format: sigyl-mcp-{owner}-{repo-name}-{hash}-{region}.a.run.app
+      // Example: sigyl-mcp-sigyl-dev-brave-search-lrzo3avokq-uc.a.run.app
+      const match = host.match(/^sigyl-mcp-(.+)-([a-z0-9]+)-([a-z0-9]+)\.a\.run\.app$/);
       if (match) {
         const urlPart = match[1]; // e.g., "sigyl-dev-brave-search"
+        console.log(`[PACKAGENAME] Extracted URL part: ${urlPart}`);
         
         // Split by hyphens and reconstruct owner/repo format
         const parts = urlPart.split('-');
@@ -414,9 +419,13 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
           ).join('-'); // "Brave-Search"
           
           const packageName = `${owner}/${repo}`;
-          console.log(`[PACKAGE] Extracted package name from Cloud Run URL: ${host} -> ${packageName}`);
+          console.log(`[PACKAGENAME] Successfully extracted package name from Cloud Run URL: ${host} -> ${packageName}`);
           return packageName;
+        } else {
+          console.log(`[PACKAGENAME] Cloud Run URL regex did not match: ${host}`);
         }
+      } else {
+        console.log(`[PACKAGENAME] No host header found`);
       }
     }
     
