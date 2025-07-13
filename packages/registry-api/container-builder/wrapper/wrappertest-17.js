@@ -47,11 +47,11 @@ const fetch = require("node-fetch");
                 // Split by hyphens and reconstruct
                 const parts = packagePath.split("-");
                 if (parts.length >= 3 && parts[0] === "sigyl" && parts[1] === "dev") {
-                    // Format: sigyl-dev-brave-search -> sigyl-dev/Brave-Search
+                    // Format: sigyl-dev-brave-search -> sigyl-dev/brave-search
                     const orgPart = `${parts[0]}-${parts[1]}`; // sigyl-dev
                     const packagePart = parts.slice(2).map(part => 
-                    part.charAt(0).toUpperCase() + part.slice(1)
-                    ).join("-"); // Brave-Search
+                    part.charAt(0).toLowerCase() + part.slice(1)
+                    ).join("-"); // brave-search
                     const formattedName = `${orgPart}/${packagePart}`;
                     console.log("[PACKAGENAME] Converted to:", formattedName);
                     return formattedName;

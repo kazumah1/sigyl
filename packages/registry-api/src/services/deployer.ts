@@ -569,7 +569,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
         name: request.repoName,
-        slug: request.repoName,
+        slug: request.repoName.toLowerCase(),
         version: null,
         description: `MCP server for ${request.repoName}`,
         author_id: authorIdToUse,
