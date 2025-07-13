@@ -84,9 +84,14 @@ console.log("[WRAPPER-STAGE1] Timestamp:", new Date().toISOString());
 
       console.log("[WRAPPER-STAGE1] API key validation passed");
 
-      // Step 3: Create MCP server with empty config (no secrets yet)
+      // Step 3: Create MCP server with default config (Stage 1 - minimal config)
       console.log("[WRAPPER-STAGE1] Creating MCP server...");
-      const server = createStatelessServer({ config: {} });
+      const defaultConfig = {
+        apiKey: "PLACEHOLDER_WILL_BE_INJECTED_BY_WRAPPER",
+        debug: false
+      };
+      console.log("[WRAPPER-STAGE1] Using default config:", defaultConfig);
+      const server = createStatelessServer({ config: defaultConfig });
       console.log("[WRAPPER-STAGE1] MCP server created");
 
       // Step 4: Create transport
