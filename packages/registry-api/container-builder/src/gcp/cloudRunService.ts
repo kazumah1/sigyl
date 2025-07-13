@@ -226,7 +226,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest4.cjs'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest5.cjs'
             ],
             dir: request.subdirectory || '.'
           },
@@ -257,9 +257,6 @@ RUN if [ -f package-lock.json ]; then \
       npm install; \
     fi && npm cache clean --force
 
-# install zod for wrapper
-RUN npm install zod
-
 ${config.language === 'typescript' ? `
 # Copy TypeScript configuration and source files
 COPY tsconfig.json ./
@@ -282,7 +279,7 @@ COPY . .
 COPY ./wrapper/wrapper.cjs ./wrapper.cjs
 
 # Install wrapper dependencies
-RUN npm install express http-proxy-middleware node-fetch@2
+RUN npm install express http-proxy-middleware node-fetch@2 zod
 
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production

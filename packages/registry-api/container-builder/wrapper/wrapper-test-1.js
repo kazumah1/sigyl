@@ -172,20 +172,20 @@ const fetch = require("node-fetch");
     // }
 
     // Handle GET requests for health checks (Claude Desktop sends these)
-    // app.get('/mcp', async (req, res) => {
-    //     try {
-    //     res.json({
-    //         status: 'ready',
-    //         transport: 'http',
-    //         endpoint: '/mcp',
-    //         package: req.originalUrl,
-    //         timestamp: new Date().toISOString()
-    //     });
-    //     } catch (error) {
-    //     console.error('[MCP] GET health check failed:', error);
-    //     res.status(500).json({ error: 'Health check failed' });
-    //     }
-    // });
+    app.get('/mcp', async (req, res) => {
+        try {
+        res.json({
+            status: 'ready',
+            transport: 'http',
+            endpoint: '/mcp',
+            package: req.originalUrl,
+            timestamp: new Date().toISOString()
+        });
+        } catch (error) {
+        console.error('[MCP] GET health check failed:', error);
+        res.status(500).json({ error: 'Health check failed' });
+        }
+    });
 
     console.log('[WRAPPER] /mcp POST');
     app.post('/mcp', async (req, res) => {
