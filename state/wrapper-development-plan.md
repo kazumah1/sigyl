@@ -120,7 +120,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
-### Stage 3: Config & Secrets Management (wrappertest15.js) 🔄 IN PROGRESS
+### Stage 3: Config & Secrets Management (wrappertest16.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 
 **Features**:
@@ -274,10 +274,14 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 24. ✅ **Update cloudRunService.ts** - Change filename to wrappertest14.cjs
 25. ✅ **Upload to GCS** - Deploy new version
 26. ❌ **Test JSON-RPC** - Database insertion still failing due to API key validation endpoint issue
-27. 🔄 **Create wrappertest15.js** - Fix API key validation endpoint (restore correct endpoint)
-28. **Update cloudRunService.ts** - Change filename to wrappertest15.cjs
-29. **Upload to GCS** - Deploy new version
-30. **Test API key validation** - Verify correct endpoint works and database insertion succeeds
+27. ✅ **Create wrappertest15.js** - Fix API key validation endpoint (restore correct endpoint)
+28. ✅ **Update cloudRunService.ts** - Change filename to wrappertest15.cjs
+29. ✅ **Upload to GCS** - Deploy new version
+30. ❌ **Test API key validation** - JSON-RPC handling still failing with "res.writeHead is not a function"
+31. 🔄 **Create wrappertest16.js** - Fix JSON-RPC handling by simplifying response (no mock transport)
+32. **Update cloudRunService.ts** - Change filename to wrappertest16.cjs
+33. **Upload to GCS** - Deploy new version
+34. **Test JSON-RPC** - Verify simplified JSON-RPC response works and database insertion succeeds
 
 ## 📝 Notes
 
