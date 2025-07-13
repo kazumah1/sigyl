@@ -120,7 +120,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
-### Stage 3: Config & Secrets Management (wrappertest12.js) 🔄 IN PROGRESS
+### Stage 3: Config & Secrets Management (wrappertest13.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 
 **Features**:
@@ -260,10 +260,16 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 10. ✅ **Upload to GCS** - Deploy new version
 11. ✅ **Test package name extraction** - Verify it works with different request patterns
 12. ✅ **Move to Stage 3** - Add config/secrets management
-13. 🔄 **Create wrappertest12.js** - Config/secrets management functionality
-14. **Update cloudRunService.ts** - Change filename to wrappertest12.cjs
-15. **Upload to GCS** - Deploy new version
-16. **Test secrets fetching** - Verify it works with real API keys from database
+13. ✅ **Create wrappertest12.js** - Config/secrets management functionality
+14. ✅ **Update cloudRunService.ts** - Change filename to wrappertest12.cjs
+15. ✅ **Upload to GCS** - Deploy new version
+16. 🔄 **Test secrets fetching** - Verify it works with real API keys from database
+17. ✅ **Fix API key validation** - Add master key support for deployment validation
+18. ✅ **Update deployer** - Pass SIGYL_MASTER_KEY to Cloud Run environment
+19. 🔄 **Create wrappertest13.js** - New version with master key validation fix
+20. **Update cloudRunService.ts** - Change filename to wrappertest13.cjs
+21. **Upload to GCS** - Deploy new version
+22. **Test deployment** - Verify API key validation works and database insertion succeeds
 
 ## 📝 Notes
 

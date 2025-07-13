@@ -226,7 +226,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest12.cjs'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest13.cjs'
             ],
             dir: request.subdirectory || '.'
           },

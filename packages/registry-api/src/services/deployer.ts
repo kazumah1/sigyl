@@ -446,7 +446,8 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       NODE_ENV: 'production',
       MCP_TRANSPORT: 'http',
       MCP_ENDPOINT: '/mcp',
-      PORT: '8080'
+      PORT: '8080',
+      SIGYL_MASTER_KEY: process.env.SIGYL_MASTER_KEY || ''
     };
 
     // Initialize Cloud Run service

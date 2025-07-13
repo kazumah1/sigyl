@@ -2,7 +2,7 @@ const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const fetch = require("node-fetch");
 
-console.log("[WRAPPER-STAGE3] Starting MCP Wrapper v12.0.0");
+console.log("[WRAPPER-STAGE3] Starting MCP Wrapper v13.0.0");
 console.log("[WRAPPER-STAGE3] Stage 3: Config/Secrets Management + Package Name Extraction + API Key Validation + Basic Server Creation");
 console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
 
@@ -158,7 +158,7 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
     res.json({
       status: "healthy",
       stage: "3",
-      version: "12.0.0",
+      version: "13.0.0",
       packageName,
       features: {
         "api-key-validation": true,
