@@ -31,6 +31,7 @@ const fetch = require("node-fetch");
 
     async function getPackageName(req) {
         console.log('[PACKAGENAME] Hostname:', req.hostname);
+        console.log('[PACKAGENAME] Path:', req.path);
         if (req.hostname.includes('sigyl-mcp-')) {
             console.log('[PACKAGENAME] Getting package name from sigyl-mcp-...');
             const match = hostname.match(/sigyl-mcp-(.+?)(?:-lrzo3avokq-uc\.a\.run\.app|\.a\.run\.app)/);
@@ -58,9 +59,11 @@ const fetch = require("node-fetch");
             }
         } else {
             console.log('[PACKAGENAME] Getting package name from server.sigyl.dev...');
-            const match = req.hostname.match(/server\.sigyl\.dev\/@([^\/]+\/[^\/]+)/);
-            const packageName = match ? match[1] : null;
-            return packageName;
+            const match = req.path.match(/^\/@([^\/]+\/[^\/]+)\/mcp/);
+            if (match) {
+                return match[1]; // e.g., "sigyl-dev/google-maps"
+            }
+            return null;
         }
     }
     
