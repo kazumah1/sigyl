@@ -11,6 +11,7 @@ const { z } = require("zod");
     app.use(express.json())
 
     // API key validation function
+    console.log('[WRAPPER] isValidSigylApiKey');
     async function isValidSigylApiKey(key) {
         if (!key) return false;
         try {
@@ -27,7 +28,8 @@ const { z } = require("zod");
           return false;
         }
       }
-
+    
+    console.log('[WRAPPER] getConfig');
     async function getConfig(packageName) {
         let slug = packageName;
 
@@ -58,6 +60,7 @@ const { z } = require("zod");
         }
     }
 
+    console.log('[WRAPPER] getUserSecrets');
     async function getUserSecrets(packageName, apiKey) {
         if (!apiKey) {
             console.warn('[SECRETS] No API key provided to getUserSecrets');
@@ -105,6 +108,7 @@ const { z } = require("zod");
         }
     }
 
+    console.log('[WRAPPER] createConfig');
     async function createConfig(configJSON, userSecrets) {
         if (!Array.isArray(configJSON)) {
             throw new Error("configJSON must be an array");
@@ -168,21 +172,22 @@ const { z } = require("zod");
     }
 
     // Handle GET requests for health checks (Claude Desktop sends these)
-    app.get('/mcp', async (req, res) => {
-        try {
-        res.json({
-            status: 'ready',
-            transport: 'http',
-            endpoint: '/mcp',
-            package: req.baseUrl,
-            timestamp: new Date().toISOString()
-        });
-        } catch (error) {
-        console.error('[MCP] GET health check failed:', error);
-        res.status(500).json({ error: 'Health check failed' });
-        }
-    });
+    // app.get('/mcp', async (req, res) => {
+    //     try {
+    //     res.json({
+    //         status: 'ready',
+    //         transport: 'http',
+    //         endpoint: '/mcp',
+    //         package: req.originalUrl,
+    //         timestamp: new Date().toISOString()
+    //     });
+    //     } catch (error) {
+    //     console.error('[MCP] GET health check failed:', error);
+    //     res.status(500).json({ error: 'Health check failed' });
+    //     }
+    // });
 
+    console.log('[WRAPPER] /mcp POST');
     app.post('/mcp', async (req, res) => {
         // -- accepts api key
         const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
@@ -202,23 +207,23 @@ const { z } = require("zod");
         console.log('[PACKAGENAME] req.originalUrl:', req.originalUrl);
         console.log('[PACKAGENAME] req.url:', req.url);
         console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
-        const packageName = 'sigyl-dev/google-maps';
+        // const packageName = 'sigyl-dev/google-maps';
 
         // 2. use package name to get required + optional secrets
-        const configJSON = await getConfig(packageName);
-        console.log('[CONFIG] config:', configYaml);
+        // const configJSON = await getConfig(packageName);
+        // console.log('[CONFIG] config:', configYaml);
 
 
         // 3. use package name + api key to get user's secrets
-        const userSecrets = await getUserSecrets(packageName, apiKey);
-        console.log('[SECRETS] userSecrets:', userSecrets);
+        // const userSecrets = await getUserSecrets(packageName, apiKey);
+        // console.log('[SECRETS] userSecrets:', userSecrets);
 
         // 4. reformat secrets into z.object()
-        const { filledConfig } = await createConfig(configJSON, userSecrets);
-        console.log('[CONFIG] config:', filledConfig);
+        // const { filledConfig } = await createConfig(configJSON, userSecrets);
+        // console.log('[CONFIG] config:', filledConfig);
 
         // 5. pass z.object() into createStatelessServer() as config
-        const server = createStatelessServer({ config: filledConfig });
+        const server = createStatelessServer({});
         // 6. StreamableHTTPServerTransport instance
         // TODO: Session management
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
