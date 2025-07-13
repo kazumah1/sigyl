@@ -141,16 +141,17 @@ const fetch = require("node-fetch");
         }
     }
     async function createConfig(configJSON, userSecrets) {
-        if (!Array.isArray(configJSON)) {
-            throw new Error("configJSON must be an array");
+        // Expecting configJSON to be a JSON schema object
+        if (!configJSON || typeof configJSON !== "object" || configJSON.type !== "object" || !configJSON.properties) {
+            throw new Error("configJSON must be a JSON schema object with properties");
         }
 
         const zodShape = {};
         const configValues = {};
+        const requiredFields = Array.isArray(configJSON.required) ? configJSON.required : [];
 
-        for (const field of configJSON) {
+        for (const [fieldName, field] of Object.entries(configJSON.properties)) {
             let zodType;
-            // 1. Type
             switch (field.type) {
                 case "string":
                     if (field.enum) {
@@ -163,40 +164,34 @@ const fetch = require("node-fetch");
                     zodType = z.boolean();
                     break;
                 case "number":
+                case "integer":
                     zodType = z.number();
                     break;
                 default:
                     zodType = z.any();
             }
 
-            // 2. Description
             if (field.description) {
                 zodType = zodType.describe(field.description);
             }
-
-            // 3. Default
             if (field.default !== undefined) {
                 zodType = zodType.default(field.default);
             }
-
-            // 4. Required/Optional
-            if (field.required === false) {
+            if (!requiredFields.includes(fieldName)) {
                 zodType = zodType.optional();
             }
 
-            zodShape[field.name] = zodType;
+            zodShape[fieldName] = zodType;
 
-            // 5. Fill config value
-            if (userSecrets && userSecrets[field.name] !== undefined) {
-                configValues[field.name] = userSecrets[field.name];
+            // Fill config value
+            if (userSecrets && userSecrets[fieldName] !== undefined) {
+                configValues[fieldName] = userSecrets[fieldName];
             } else if (field.default !== undefined) {
-                configValues[field.name] = field.default;
+                configValues[fieldName] = field.default;
             }
         }
 
         const configSchema = z.object(zodShape);
-
-        // Validate and fill with defaults
         const filledConfig = configSchema.parse(configValues);
 
         return { configSchema, filledConfig };
