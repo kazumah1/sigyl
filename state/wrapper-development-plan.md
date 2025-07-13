@@ -100,7 +100,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - ✅ Request processing completes successfully (200 status)
 - ✅ Proper resource cleanup after requests
 
-### Stage 2: Package Name Extraction (wrappertest11.js) 🔄 IN PROGRESS
+### Stage 2: Package Name Extraction (wrappertest11.js) ✅ COMPLETE
 **Goal**: Add dynamic package name detection.
 
 **Features**:
@@ -112,26 +112,32 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - ✅ Comprehensive logging of extraction process
 
 **Success Criteria**:
-- Correctly identifies package names for all request types
-- Graceful fallback when extraction fails
-- Clear logging shows extraction process
+- ✅ Correctly identifies package names for all request types
+- ✅ Graceful fallback when extraction fails
+- ✅ Clear logging shows extraction process
+- ✅ Successfully extracts from Cloud Run hostname patterns
+- ✅ Maintains all Stage 1 functionality
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
-### Stage 3: Config & Secrets Management
+### Stage 3: Config & Secrets Management (wrappertest12.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 
 **Features**:
-- ✅ Fetch package config from registry
-- ✅ Fetch user secrets by package + API key
-- ✅ Create config object without zod
-- ✅ Placeholder values during deployment
-- ✅ Proper error handling for missing secrets
+- ✅ Database secrets fetching via Sigyl API
+- ✅ API key injection from mcp_secrets table
+- ✅ Config validation and conversion
+- ✅ Fallback to placeholder values when no secrets found
+- ✅ Secure secret handling with environment-based auth
+- ✅ Comprehensive logging of secret fetching process
+- ✅ Support for multiple secret types (apiKey, token, key)
 
 **Success Criteria**:
-- Successfully fetches and applies user configuration
-- Handles missing secrets gracefully
-- Works during deployment health checks
+- Fetches real API keys from database based on package name
+- Injects configuration into MCP servers
+- Handles missing secrets gracefully with placeholder fallback
+- Maintains security best practices
+- Provides detailed logging of secret management process
 
 ### Stage 4: Enhanced Error Handling
 **Goal**: Improve error handling and user feedback.
@@ -249,10 +255,15 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 5. ✅ **Fix Stage 1 issues** - Add default config with placeholder API key
 6. ✅ **Verify database insertion** - Check if package was added to mcp_packages table
 7. ✅ **Move to Stage 2** - Add package name extraction
-8. 🔄 **Create wrappertest11.js** - Package name extraction functionality
-9. **Update cloudRunService.ts** - Change filename to wrappertest11.cjs
-10. **Upload to GCS** - Deploy new version
-11. **Test package name extraction** - Verify it works with different request patterns
+8. ✅ **Create wrappertest11.js** - Package name extraction functionality
+9. ✅ **Update cloudRunService.ts** - Change filename to wrappertest11.cjs
+10. ✅ **Upload to GCS** - Deploy new version
+11. ✅ **Test package name extraction** - Verify it works with different request patterns
+12. ✅ **Move to Stage 3** - Add config/secrets management
+13. 🔄 **Create wrappertest12.js** - Config/secrets management functionality
+14. **Update cloudRunService.ts** - Change filename to wrappertest12.cjs
+15. **Upload to GCS** - Deploy new version
+16. **Test secrets fetching** - Verify it works with real API keys from database
 
 ## 📝 Notes
 
