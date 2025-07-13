@@ -161,9 +161,9 @@ const crypto = require("crypto");
     }
   }
 
-  // Get secrets for user
-  async function getSecrets(userId, apiKey) {
-    const cacheKey = `secrets_${userId}`;
+  // Get secrets for user and specific package
+  async function getSecrets(userId, apiKey, packageName) {
+    const cacheKey = `secrets_${userId}_${packageName}`;
     const cached = secretsCache.get(cacheKey);
     
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -171,17 +171,36 @@ const crypto = require("crypto");
     }
 
     try {
-      const response = await fetch(`${REGISTRY_URL}/api/v1/secrets`, {
+      // Use the wrapper endpoint that returns decrypted secrets filtered by mcp_server_id
+      const response = await fetch(`${REGISTRY_URL}/api/v1/secrets/wrapper/${encodeURIComponent(packageName)}`, {
         headers: {
           'Authorization': `Bearer ${apiKey}`
         }
       });
 
       if (!response.ok) {
+        console.warn(`No secrets found for package ${packageName} (mcp_server_id)`);
         return {};
       }
 
-      const secrets = await response.json();
+      const secretsResponse = await response.json();
+      
+      // Handle the API response format: { success: true, data: [...] }
+      if (!secretsResponse.success || !secretsResponse.data) {
+        console.warn(`Invalid secrets response for package ${packageName}`);
+        return {};
+      }
+      
+      // Convert array of {key, value} to environment variable format
+      const secrets = {};
+      secretsResponse.data.forEach(secret => {
+        if (secret.key && secret.value) {
+          secrets[secret.key] = secret.value;
+        }
+      });
+      
+      console.log(`[SECRETS] Loaded ${Object.keys(secrets).length} secrets for package ${packageName}: [${Object.keys(secrets).join(', ')}]`);
+      
       secretsCache.set(cacheKey, {
         data: secrets,
         timestamp: Date.now()
@@ -189,9 +208,59 @@ const crypto = require("crypto");
 
       return secrets;
     } catch (error) {
-      console.error('Error fetching secrets:', error);
+      console.error(`Error fetching secrets for package ${packageName}:`, error);
       return {};
     }
+  }
+
+  // Get package name from Cloud Run URL or fallback methods
+  function getPackageName(req) {
+    // Priority order:
+    // 1. Extract from Cloud Run URL (most reliable)
+    // 2. Environment variable (set during deployment)
+    // 3. Request header (if client specifies)
+    // 4. URL path parameter
+    // 5. Default fallback
+    
+    // First, try to extract from Cloud Run URL
+    // Format: https://sigyl-mcp-{owner}-{repo-name}-{hash}.{region}.run.app
+    // Example: https://sigyl-mcp-sigyl-dev-brave-search-946398050699.us-central1.run.app
+    // Should extract: sigyl-dev/Brave-Search
+    
+    const host = req.headers.host || req.headers['x-forwarded-host'] || process.env.HOST;
+    if (host) {
+      const match = host.match(/^sigyl-mcp-(.+)-(\d+)\.(.+)\.run\.app$/);
+      if (match) {
+        const urlPart = match[1]; // e.g., "sigyl-dev-brave-search"
+        
+        // Split by hyphens and reconstruct owner/repo format
+        const parts = urlPart.split('-');
+        if (parts.length >= 3) {
+          // Find the split point - typically after the first two parts for owner
+          // e.g., "sigyl-dev-brave-search" -> ["sigyl", "dev", "brave", "search"]
+          // Should become: "sigyl-dev/Brave-Search"
+          
+          // For now, assume first two parts are owner, rest is repo
+          const owner = parts.slice(0, 2).join('-'); // "sigyl-dev"
+          const repo = parts.slice(2).map(part => 
+            part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+          ).join('-'); // "Brave-Search"
+          
+          const packageName = `${owner}/${repo}`;
+          console.log(`[PACKAGE] Extracted package name from Cloud Run URL: ${host} -> ${packageName}`);
+          return packageName;
+        }
+      }
+    }
+    
+    // Fallback to other methods
+    const fallbackName = process.env.PACKAGE_NAME || 
+                        req.headers['x-package-name'] || 
+                        req.params.packageName || 
+                        'unknown-package';
+    
+    console.log(`[PACKAGE] Using fallback package name: ${fallbackName}`);
+    return fallbackName;
   }
 
   // Custom session ID generator for MCP transport
@@ -297,7 +366,7 @@ const crypto = require("crypto");
           wrapperVersion: '2.0.0-session',
           containerId: process.env.HOSTNAME || 'unknown',
           environment: process.env.NODE_ENV || 'production',
-          packageName: process.env.PACKAGE_NAME || 'unknown'
+          packageName: getPackageName(req)
         }
       };
 
@@ -332,10 +401,11 @@ const crypto = require("crypto");
     // Create session if it doesn't exist
     const sessionState = await getSessionState(req.sessionContext.sessionId);
     if (!sessionState) {
+      const packageName = getPackageName(req);
       await createSession(
         req.sessionContext.sessionId,
         userData.id,
-        process.env.PACKAGE_NAME || 'unknown',
+        packageName,
         {
           clientIp: req.ip || req.connection.remoteAddress,
           userAgent: req.headers['user-agent']
@@ -363,7 +433,8 @@ const crypto = require("crypto");
   app.use('/mcp', async (req, res, next) => {
     try {
       // Get secrets for the user
-      const secrets = await getSecrets(req.user.id, req.apiKey);
+      const packageName = getPackageName(req);
+      const secrets = await getSecrets(req.user.id, req.apiKey, packageName);
       
       // Create MCP server with user's secrets
       const server = createStatelessServer(secrets);
@@ -389,7 +460,7 @@ const crypto = require("crypto");
           wrapperVersion: '2.0.0-session',
           containerId: process.env.HOSTNAME || 'unknown',
           environment: process.env.NODE_ENV || 'production',
-          packageName: process.env.PACKAGE_NAME || 'unknown'
+          packageName: getPackageName(req)
         }
       };
       

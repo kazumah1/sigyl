@@ -360,6 +360,49 @@ router.get('/deployment/:userId', async (req, res) => {
   }
 });
 
+// Get secrets for MCP wrapper by mcp_server_id (requires auth)
+// This endpoint is used by the wrapper to fetch decrypted secrets for a specific package
+router.get('/wrapper/:mcpServerId', requireHybridAuth, async (req, res) => {
+  try {
+    const userId = req.user!.user_id;
+    const mcpServerId = req.params.mcpServerId;
+
+    console.log(`[SECRETS] Wrapper fetching secrets for user ${userId}, mcp_server_id: ${mcpServerId}`);
+
+    const { data, error } = await supabase
+      .from('mcp_secrets')
+      .select('key, value')
+      .eq('user_id', userId)
+      .eq('mcp_server_id', mcpServerId);
+
+    if (error) throw error;
+
+    // Decrypt values
+    const secrets = data.map(secret => ({
+      key: secret.key,
+      value: decrypt(secret.value)
+    }));
+
+    console.log(`[SECRETS] Found ${secrets.length} secrets for mcp_server_id ${mcpServerId}: [${secrets.map(s => s.key).join(', ')}]`);
+
+    const response: APIResponse<Array<{ key: string; value: string }>> = {
+      success: true,
+      data: secrets,
+      message: `Secrets retrieved for MCP server ${mcpServerId}`
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting wrapper secrets:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Failed to retrieve wrapper secrets'
+    };
+    res.status(500).json(response);
+  }
+});
+
 // Get secrets for MCP package (for pre-filling Connect form)
 router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
   try {
