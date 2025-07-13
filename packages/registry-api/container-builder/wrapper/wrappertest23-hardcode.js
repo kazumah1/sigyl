@@ -16,7 +16,7 @@ console.log("[WRAPPER-HARDCODE] Timestamp:", new Date().toISOString());
 
   // HARDCODED VALUES FOR TESTING
   const HARDCODED_API_KEY = "sk_405327c43f71f79b4a958b8dcd445a08e09dfd444e2528b0d9c9675ab129ebeb";
-  const HARDCODED_PACKAGE_NAME = "sigyl/dev-brave-search";
+  const HARDCODED_PACKAGE_NAME = "sigyl-dev/Brave-Search";
 
   // API key validation function (always returns true for hardcoded key)
   async function isValidSigylApiKey(key) {

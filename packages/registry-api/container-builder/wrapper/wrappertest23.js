@@ -105,12 +105,31 @@ console.log("[WRAPPER-STAGE3] Timestamp:", new Date().toISOString());
       if (match) {
         const packagePath = match[1];
         console.log("[WRAPPER-STAGE3] Extracted package path:", packagePath);
+        
+        // Convert to proper format: sigyl-dev/Brave-Search
+        // The packagePath might be "sigyl-dev-brave-search" from hostname
+        // We need to convert it to "sigyl-dev/Brave-Search"
+        if (packagePath.includes("-")) {
+          // Split by hyphens and reconstruct
+          const parts = packagePath.split("-");
+          if (parts.length >= 3 && parts[0] === "sigyl" && parts[1] === "dev") {
+            // Format: sigyl-dev-brave-search -> sigyl-dev/Brave-Search
+            const orgPart = `${parts[0]}-${parts[1]}`; // sigyl-dev
+            const packagePart = parts.slice(2).map(part => 
+              part.charAt(0).toUpperCase() + part.slice(1)
+            ).join("-"); // Brave-Search
+            const formattedName = `${orgPart}/${packagePart}`;
+            console.log("[WRAPPER-STAGE3] Converted to:", formattedName);
+            return formattedName;
+          }
+        }
+        
         return packagePath;
       }
     }
     
     // Fallback to environment variable
-    const fallback = process.env.SIGYL_PACKAGE_NAME || "sigyl/dev";
+    const fallback = process.env.SIGYL_PACKAGE_NAME || "sigyl-dev/dev";
     console.log("[WRAPPER-STAGE3] Using fallback package name:", fallback);
     return fallback;
   }

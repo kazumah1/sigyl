@@ -120,6 +120,12 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
+**Package Name Format Fix (wrappertest23.js)**:
+- ✅ **Fixed Format**: Convert `sigyl-dev-brave-search` → `sigyl-dev/Brave-Search`
+- ✅ **Database Compatibility**: Matches `mcp_server_id` column format in `mcp_secrets` table
+- ✅ **Proper Casing**: Package names use Title Case (Brave-Search, not brave-search)
+- ✅ **Organization Format**: Uses hyphen in org part (sigyl-dev, not sigyl/dev)
+
 ### Stage 3: Config & Secrets Management (wrappertest18.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 

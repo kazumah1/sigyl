@@ -19,6 +19,12 @@
 - ✅ **Fixed approach**: User's validated API key is used to fetch secrets from database
 - ✅ **Follows working-wrapper.js pattern**: Same validation and authentication flow
 
+**Package Name Format Fix (wrappertest23.js)**:
+- ✅ **Fixed Format**: Convert `sigyl-dev-brave-search` → `sigyl-dev/Brave-Search`
+- ✅ **Database Compatibility**: Matches `mcp_server_id` column format in `mcp_secrets` table
+- ✅ **Proper Casing**: Package names use Title Case (Brave-Search, not brave-search)
+- ✅ **Organization Format**: Uses hyphen in org part (sigyl-dev, not sigyl/dev)
+
 **Previous Issue**: Brave Search server was using old pattern with `process.env` API key access instead of config-based injection.
 
 **Previous Solution**: Updated `third-party-mcps/Brave-Search/server.ts` to match Google Maps pattern:
