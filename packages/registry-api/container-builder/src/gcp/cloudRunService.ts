@@ -220,33 +220,13 @@ export class CloudRunService {
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.3: Diagnostics before downloading wrapper.js
-          {
-            name: 'gcr.io/cloud-builders/gcloud',
-            entrypoint: 'bash',
-            args: [
-              '-c',
-              'echo "=== PWD (before download) ===" && pwd && echo "=== ROOT DIR (before download) ===" && ls -l && echo "=== RECURSIVE LS (before download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
-            ],
-            dir: request.subdirectory || '.'
-          },
-          // Step 2.4: Create wrapper directory and download wrapper.cjs from GCS bucket (using bash)
+          // Step 2.1: Create wrapper directory and download wrapper.cjs from GCS bucket (using bash)
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
               'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrapper.cjs'
-            ],
-            dir: request.subdirectory || '.'
-          },
-          // Step 2.5: Diagnostics after downloading wrapper.js
-          {
-            name: 'gcr.io/cloud-builders/gcloud',
-            entrypoint: 'bash',
-            args: [
-              '-c',
-              'echo "=== PWD (after download) ===" && pwd && echo "=== ROOT DIR (after download) ===" && ls -l && echo "=== RECURSIVE LS (after download) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
             dir: request.subdirectory || '.'
           },
