@@ -33,7 +33,7 @@ const fetch = require("node-fetch");
     async function getConfig(packageName) {
         let slug = packageName;
 
-        const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+        const registryUrl = 'https://api.sigyl.dev';
         const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
         console.log('[CONFIG] Fetching package config from:', url);
 
@@ -60,53 +60,53 @@ const fetch = require("node-fetch");
         }
     }
 
-    console.log('[WRAPPER] getUserSecrets');
-    async function getUserSecrets(packageName, apiKey) {
-        if (!apiKey) {
-            console.warn('[SECRETS] No API key provided to getUserSecrets');
-            return {};
-        }
-        if (!packageName) {
-            console.warn('[SECRETS] No packageName provided to getUserSecrets');
-            return {};
-        }
+    // console.log('[WRAPPER] getUserSecrets');
+    // async function getUserSecrets(packageName, apiKey) {
+    //     if (!apiKey) {
+    //         console.warn('[SECRETS] No API key provided to getUserSecrets');
+    //         return {};
+    //     }
+    //     if (!packageName) {
+    //         console.warn('[SECRETS] No packageName provided to getUserSecrets');
+    //         return {};
+    //     }
 
-        const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-        // Only use the slug part for the endpoint
-        let slug = packageName;
+    //     const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+    //     // Only use the slug part for the endpoint
+    //     let slug = packageName;
 
-        const url = `${registryUrl}/api/v1/secrets/package/${encodeURIComponent(slug)}`;
-        console.log('[SECRETS] Fetching user secrets from:', url);
+    //     const url = `${registryUrl}/api/v1/secrets/package/${encodeURIComponent(slug)}`;
+    //     console.log('[SECRETS] Fetching user secrets from:', url);
 
-        try {
-            const resp = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!resp.ok) {
-                console.error('[SECRETS] Failed to fetch user secrets:', resp.status, resp.statusText);
-                return {};
-            }
-            const data = await resp.json();
-            if (data.success && Array.isArray(data.data)) {
-                // Convert array to key-value object
-                const secrets = {};
-                data.data.forEach(secret => {
-                    if (secret.key && secret.value) {
-                        secrets[secret.key] = secret.value;
-                    }
-                });
-                return secrets;
-            }
-            return {};
-        } catch (err) {
-            console.error('[SECRETS] Error fetching user secrets:', err);
-            return {};
-        }
-    }
+    //     try {
+    //         const resp = await fetch(url, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Authorization': `Bearer ${apiKey}`,
+    //                 'Content-Type': 'application/json'
+    //             }
+    //         });
+    //         if (!resp.ok) {
+    //             console.error('[SECRETS] Failed to fetch user secrets:', resp.status, resp.statusText);
+    //             return {};
+    //         }
+    //         const data = await resp.json();
+    //         if (data.success && Array.isArray(data.data)) {
+    //             // Convert array to key-value object
+    //             const secrets = {};
+    //             data.data.forEach(secret => {
+    //                 if (secret.key && secret.value) {
+    //                     secrets[secret.key] = secret.value;
+    //                 }
+    //             });
+    //             return secrets;
+    //         }
+    //         return {};
+    //     } catch (err) {
+    //         console.error('[SECRETS] Error fetching user secrets:', err);
+    //         return {};
+    //     }
+    // }
 
     // console.log('[WRAPPER] createConfig');
     // async function createConfig(configJSON, userSecrets) {
@@ -172,20 +172,20 @@ const fetch = require("node-fetch");
     // }
 
     // Handle GET requests for health checks (Claude Desktop sends these)
-    app.get('/mcp', async (req, res) => {
-        try {
-        res.json({
-            status: 'ready',
-            transport: 'http',
-            endpoint: '/mcp',
-            package: req.originalUrl,
-            timestamp: new Date().toISOString()
-        });
-        } catch (error) {
-        console.error('[MCP] GET health check failed:', error);
-        res.status(500).json({ error: 'Health check failed' });
-        }
-    });
+    // app.get('/mcp', async (req, res) => {
+    //     try {
+    //     res.json({
+    //         status: 'ready',
+    //         transport: 'http',
+    //         endpoint: '/mcp',
+    //         package: req.originalUrl,
+    //         timestamp: new Date().toISOString()
+    //     });
+    //     } catch (error) {
+    //     console.error('[MCP] GET health check failed:', error);
+    //     res.status(500).json({ error: 'Health check failed' });
+    //     }
+    // });
 
     console.log('[WRAPPER] /mcp POST');
     app.post('/mcp', async (req, res) => {
@@ -195,7 +195,7 @@ const fetch = require("node-fetch");
         console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
         console.log('[MCP] apiKey from query:', req.query.apiKey);
         console.log('[MCP] Using apiKey:', apiKey);
-        console.log('[MCP] req:', req);
+        // console.log('[MCP] req:', req);
 
         // -- validate api key
         const valid = await isValidSigylApiKey(apiKey);
