@@ -195,6 +195,7 @@ const fetch = require("node-fetch");
         console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
         console.log('[MCP] apiKey from query:', req.query.apiKey);
         console.log('[MCP] Using apiKey:', apiKey);
+        console.log('[MCP] req:', req);
 
         // -- validate api key
         const valid = await isValidSigylApiKey(apiKey);
@@ -204,9 +205,9 @@ const fetch = require("node-fetch");
         }
 
         // -- somehow get package name
-        console.log('[PACKAGENAME] req.originalUrl:', req.originalUrl);
-        console.log('[PACKAGENAME] req.url:', req.url);
-        console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
+        // console.log('[PACKAGENAME] req.originalUrl:', req.originalUrl);
+        // console.log('[PACKAGENAME] req.url:', req.url);
+        // console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
         const packageName = 'sigyl-dev/google-maps';
 
         // 2. use package name to get required + optional secrets
@@ -215,8 +216,8 @@ const fetch = require("node-fetch");
 
 
         // 3. use package name + api key to get user's secrets
-        const userSecrets = await getUserSecrets(packageName, apiKey);
-        console.log('[SECRETS] userSecrets:', userSecrets);
+        // const userSecrets = await getUserSecrets(packageName, apiKey);
+        // console.log('[SECRETS] userSecrets:', userSecrets);
 
         // 4. reformat secrets into z.object()
         // const { filledConfig } = await createConfig(configJSON, userSecrets);
