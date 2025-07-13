@@ -494,7 +494,6 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
 
     // === Insert/Upsert into mcp_packages ===
     let packageId: string | null = null;
-    let tools: any[] = [];
     // Parse configSchema for secrets
     let requiredSecrets: any[] = [];
     let optionalSecrets: any[] = [];
@@ -552,46 +551,78 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
     }
     // console.log('[DEPLOY] Computed requiredSecrets:', JSON.stringify(requiredSecrets, null, 2));
     // console.log('[DEPLOY] Computed optionalSecrets:', JSON.stringify(optionalSecrets, null, 2));
+    
+    // === Create package first with configSchema info ===
+    const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
+    const mcpPackagesPayload = {
+      name: request.repoName,
+      slug: request.repoName,
+      version: null,
+      description: `MCP server for ${request.repoName}`,
+      author_id: authorIdToUse,
+      source_api_url: mcpBaseUrl,
+      service_name: cloudRunResult.serviceName || null,
+      tags: null,
+      logo_url: null,
+      screenshots: null,
+      tools: [] as any[], // Start with empty tools, will be populated later
+      category: 'general',
+      verified: false,
+      required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
+      optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
+      ready: false // Set to false initially, will be updated after tool fetching
+    };
+    
+    console.log('[DEPLOY] Creating package with configSchema info:', JSON.stringify(mcpPackagesPayload, null, 2));
+    
+    const { data: pkgRows, error: pkgError } = await supabase
+      .from('mcp_packages')
+      .upsert([
+        mcpPackagesPayload
+      ], { onConflict: 'source_api_url' })
+      .select();
+    
+    if (pkgRows && pkgRows.length > 0) {
+      packageId = pkgRows[0].id;
+      console.log('[DEPLOY] Package created with ID:', packageId);
+    }
+    
+    if (pkgError) {
+      console.error('❌ Failed to upsert mcp_packages:', pkgError);
+      return {
+        success: false,
+        error: `Failed to create package: ${pkgError.message}`
+      };
+    }
+    
+    // === Now try to fetch tools (but don't fail if server needs API keys) ===
+    let tools: any[] = [];
     try {
       // Use the canonical MCP server URL for tool fetching
-      const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
       const mcpToolUrl = `${cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl}/mcp`;
-      console.log('[DEPLOY] Waiting for MCP server to be ready at:', mcpToolUrl);
-      tools = await waitForMCPReady(mcpToolUrl, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
+      console.log('[DEPLOY] Attempting to fetch tools from:', mcpToolUrl);
+      
+      // Try to fetch tools, but don't fail deployment if it doesn't work
+      tools = await waitForMCPReady(mcpToolUrl, process.env.SIGYL_MASTER_KEY || '', 3, 2000); // Reduced attempts and delay
       console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
-      // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
-      const mcpPackagesPayload = {
-        name: request.repoName,
-        slug: request.repoName,
-        version: null,
-        description: `MCP server for ${request.repoName}`,
-        author_id: authorIdToUse,
-        source_api_url: mcpBaseUrl,
-        service_name: cloudRunResult.serviceName || null,
-        tags: null,
-        logo_url: null,
-        screenshots: null,
-        tools: tools as any[],
-        category: 'general',
-        verified: false,
-        required_secrets: requiredSecrets.length > 0 ? requiredSecrets : null,
-        optional_secrets: optionalSecrets.length > 0 ? optionalSecrets : null,
-        ready: true // Set to true after successful deployment
-      };
-      const { data: pkgRows, error: pkgError } = await supabase
-        .from('mcp_packages')
-        .upsert([
-          mcpPackagesPayload
-        ], { onConflict: 'source_api_url' })
-        .select();
-      if (pkgRows && pkgRows.length > 0) {
-        packageId = pkgRows[0].id;
+      
+      // Update package with tools and set ready=true
+      if (tools.length > 0) {
+        await supabase
+          .from('mcp_packages')
+          .update({ 
+            tools: tools as any[], 
+            ready: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', packageId);
+        console.log('[DEPLOY] Package updated with tools and marked as ready');
       }
-      if (pkgError) {
-        console.error('❌ Failed to upsert mcp_packages:', pkgError);
-      }
+      
     } catch (err) {
-      console.error('❌ Error fetching or inserting tools:', err);
+      console.log('[DEPLOY] Could not fetch tools (server may need API keys configured):', err instanceof Error ? err.message : String(err));
+      console.log('[DEPLOY] Package created successfully but tools will be fetched later when server is properly configured');
+      // Don't fail deployment - package is created and can be configured later
     }
     // === Insert tools into mcp_tools table ===
     if (cloudRunResult.deploymentUrl && packageId && tools.length > 0) {

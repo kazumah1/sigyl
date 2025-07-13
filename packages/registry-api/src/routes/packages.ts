@@ -119,9 +119,19 @@ router.post('/id/:id/increment-downloads', async (req: Request, res: Response) =
 router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
+    
+    console.log(`🔍 [PACKAGES-API] === PACKAGE RETRIEVAL REQUEST ===`);
+    console.log(`🔍 [PACKAGES-API] Slug: ${slug}`);
+    console.log(`🔍 [PACKAGES-API] Request Headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`🔍 [PACKAGES-API] User Agent: ${req.headers['user-agent']}`);
+    console.log(`🔍 [PACKAGES-API] Authorization: ${req.headers.authorization ? 'Present' : 'Missing'}`);
+    console.log(`🔍 [PACKAGES-API] Timestamp: ${new Date().toISOString()}`);
+    
     console.log(`[packages.ts] /:slug route called with slug=`, slug);
     
     if (!slug || slug.trim().length === 0) {
+      console.log(`❌ [PACKAGES-API] Invalid package slug: empty or missing`);
+      console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
       const response: APIResponse<null> = {
         success: false,
         error: 'Invalid package slug',
@@ -140,6 +150,8 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
     }
     
     if (!packageData) {
+      console.log(`❌ [PACKAGES-API] Package not found for slug: ${slug}`);
+      console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
       const response: APIResponse<null> = {
         success: false,
         error: 'Package not found',
@@ -148,6 +160,11 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
+    console.log(`✅ [PACKAGES-API] Package found: ${packageData.name}`);
+    console.log(`✅ [PACKAGES-API] Package ID: ${packageData.id}`);
+    console.log(`✅ [PACKAGES-API] Required Secrets: ${JSON.stringify(packageData.required_secrets || [])}`);
+    console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
+
     const response: APIResponse<typeof packageData> = {
       success: true,
       data: packageData,
@@ -155,6 +172,7 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
     };
     return res.json(response);
   } catch (error) {
+    console.error('❌ [PACKAGES-API] Error retrieving package:', error);
     const response: APIResponse<null> = {
       success: false,
       error: 'Failed to retrieve package by slug or name',
