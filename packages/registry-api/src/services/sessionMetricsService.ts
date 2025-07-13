@@ -418,7 +418,6 @@ export class SessionMetricsService {
    */
   private generateSearchSignals(events: any[], processedEvents: any[]): SessionAnalytics['search_signals'] {
     const errorRate = processedEvents.filter(e => !e.success).length / processedEvents.length;
-    const avgResponseTime = processedEvents.reduce((sum, e) => sum + e.response_time_ms, 0) / processedEvents.length;
     
     return {
       user_engagement_score: this.calculateEngagementScore(events),

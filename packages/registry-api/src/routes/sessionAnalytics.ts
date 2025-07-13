@@ -122,7 +122,7 @@ router.post('/session-exists', async (req: Request, res: Response) => {
 // POST /api/v1/session-analytics/create-session - Create new session
 router.post('/create-session', async (req: Request, res: Response) => {
   try {
-    const { session_id, metadata } = req.body;
+    const { session_id } = req.body;
     
     if (!session_id) {
       return res.status(400).json({
