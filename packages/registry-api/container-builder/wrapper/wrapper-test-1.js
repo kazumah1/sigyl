@@ -1,7 +1,6 @@
 const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const fetch = require("node-fetch");
-const { z } = require("zod");
 
 // 1. create the /mcp endpoint
 (async () => {
