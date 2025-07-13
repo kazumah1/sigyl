@@ -156,7 +156,7 @@ router.post('/create-session', async (req: Request, res: Response) => {
 // POST /api/v1/session-analytics/update-activity - Update session activity
 router.post('/update-activity', async (req: Request, res: Response) => {
   try {
-    const { session_id, last_activity } = req.body;
+    const { session_id } = req.body;
     
     if (!session_id) {
       return res.status(400).json({
