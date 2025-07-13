@@ -376,7 +376,7 @@ export async function removePathRuleFromUrlMap(urlMapName: string, path: string,
 }
 
 // Helper: Wait for MCP server to be ready and return tools
-async function waitForMCPReady(mcpUrl: string, apiKey: string, maxAttempts = 10, delayMs = 3000): Promise<any[]> {
+async function waitForMCPReady(mcpUrl: string, repoName: string, apiKey: string, maxAttempts = 10, delayMs = 3000): Promise<any[]> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const resp = await fetch(mcpUrl, {
@@ -384,7 +384,8 @@ async function waitForMCPReady(mcpUrl: string, apiKey: string, maxAttempts = 10,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json, text/event-stream',
-          'x-sigyl-api-key': apiKey
+          'x-sigyl-api-key': apiKey,
+          'x-sigyl-package-name': repoName
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -559,7 +560,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       const mcpBaseUrl = `https://server.sigyl.dev/@${request.repoName}`;
       const mcpToolUrl = `${cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl}/mcp`;
       console.log('[DEPLOY] Waiting for MCP server to be ready at:', mcpToolUrl);
-      tools = await waitForMCPReady(mcpToolUrl, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
+      tools = await waitForMCPReady(mcpToolUrl, request.repoName, process.env.SIGYL_MASTER_KEY || '', 10, 3000);
       console.log('[DEPLOY] Tools fetched from MCP server:', JSON.stringify(tools, null, 2));
       // Upsert mcp_packages with tools, author_id, required_secrets, and optional_secrets
       const mcpPackagesPayload = {
