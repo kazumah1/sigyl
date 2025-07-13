@@ -120,7 +120,7 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 - Health checks include extracted package name
 - Maintains all Stage 1 functionality
 
-### Stage 3: Config & Secrets Management (wrappertest13.js) 🔄 IN PROGRESS
+### Stage 3: Config & Secrets Management (wrappertest15.js) 🔄 IN PROGRESS
 **Goal**: Add configuration and user secrets support.
 
 **Features**:
@@ -266,10 +266,18 @@ The wrapper is the critical bridge between user requests and MCP servers. It mus
 16. 🔄 **Test secrets fetching** - Verify it works with real API keys from database
 17. ✅ **Fix API key validation** - Add master key support for deployment validation
 18. ✅ **Update deployer** - Pass SIGYL_MASTER_KEY to Cloud Run environment
-19. 🔄 **Create wrappertest13.js** - New version with master key validation fix
-20. **Update cloudRunService.ts** - Change filename to wrappertest13.cjs
-21. **Upload to GCS** - Deploy new version
-22. **Test deployment** - Verify API key validation works and database insertion succeeds
+19. ✅ **Create wrappertest13.js** - New version with master key validation fix
+20. ✅ **Update cloudRunService.ts** - Change filename to wrappertest13.cjs
+21. ✅ **Upload to GCS** - Deploy new version
+22. ✅ **Test deployment** - Verify API key validation works and database insertion succeeds
+23. ✅ **Create wrappertest14.js** - Add JSON-RPC support for tools/list requests
+24. ✅ **Update cloudRunService.ts** - Change filename to wrappertest14.cjs
+25. ✅ **Upload to GCS** - Deploy new version
+26. ❌ **Test JSON-RPC** - Database insertion still failing due to API key validation endpoint issue
+27. 🔄 **Create wrappertest15.js** - Fix API key validation endpoint (restore correct endpoint)
+28. **Update cloudRunService.ts** - Change filename to wrappertest15.cjs
+29. **Upload to GCS** - Deploy new version
+30. **Test API key validation** - Verify correct endpoint works and database insertion succeeds
 
 ## 📝 Notes
 
