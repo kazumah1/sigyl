@@ -183,6 +183,18 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
 
     const configSchema = z.object(zodShape);
 
+    // Check for missing required secrets before validation
+    const missingSecrets = [];
+    for (const field of configJSON) {
+        if (field.required !== false && !configValues.hasOwnProperty(field.name)) {
+            missingSecrets.push(field.name);
+        }
+    }
+
+    if (missingSecrets.length > 0) {
+        throw new Error(`Missing required secrets: ${missingSecrets.join(', ')}. Please configure these secrets in your Sigyl dashboard.`);
+    }
+
     // Validate and fill with defaults
     const filledConfig = configSchema.parse(configValues);
 
@@ -646,6 +658,15 @@ console.log("🚀 [WRAPPER-SESSION] Timestamp:", new Date().toISOString());
       };
       
       setImmediate(() => sendRawSessionEvent(errorEvent));
+      
+      // Check if it's a missing secrets error and provide helpful response
+      if (error.message.includes('Missing required secrets')) {
+        return res.status(400).json({ 
+          error: 'Configuration Error',
+          message: error.message,
+          type: 'missing_secrets'
+        });
+      }
       
       res.status(500).json({ error: 'Internal server error' });
     }
