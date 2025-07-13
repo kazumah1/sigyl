@@ -11,29 +11,29 @@ const fetch = require("node-fetch");
     app.use(express.json())
 
     // API key validation function
-    console.log('[WRAPPER] isValidSigylApiKey');
-    async function isValidSigylApiKey(key) {
-        if (!key) return false;
-        try {
-          const resp = await fetch('https://api.sigyl.dev/api/v1/keys/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey: key })
-          });
-          if (!resp.ok) return false;
-          const data = await resp.json();
-          return data && data.valid === true;
-        } catch (err) {
-          console.error('API key validation error:', err);
-          return false;
-        }
-      }
+    // console.log('[WRAPPER] isValidSigylApiKey');
+    // async function isValidSigylApiKey(key) {
+    //     if (!key) return false;
+    //     try {
+    //       const resp = await fetch('https://api.sigyl.dev/api/v1/keys/validate', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify({ apiKey: key })
+    //       });
+    //       if (!resp.ok) return false;
+    //       const data = await resp.json();
+    //       return data && data.valid === true;
+    //     } catch (err) {
+    //       console.error('API key validation error:', err);
+    //       return false;
+    //     }
+    //   }
     
     // console.log('[WRAPPER] getConfig');
     // async function getConfig(packageName) {
     //     let slug = packageName;
 
-    //     const registryUrl = 'https://api.sigyl.dev';
+    //     const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
     //     const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
     //     console.log('[CONFIG] Fetching package config from:', url);
 
@@ -172,20 +172,20 @@ const fetch = require("node-fetch");
     // }
 
     // Handle GET requests for health checks (Claude Desktop sends these)
-    // app.get('/mcp', async (req, res) => {
-    //     try {
-    //     res.json({
-    //         status: 'ready',
-    //         transport: 'http',
-    //         endpoint: '/mcp',
-    //         package: req.originalUrl,
-    //         timestamp: new Date().toISOString()
-    //     });
-    //     } catch (error) {
-    //     console.error('[MCP] GET health check failed:', error);
-    //     res.status(500).json({ error: 'Health check failed' });
-    //     }
-    // });
+    app.get('/mcp', async (req, res) => {
+        try {
+        res.json({
+            status: 'ready',
+            transport: 'http',
+            endpoint: '/mcp',
+            package: req.originalUrl,
+            timestamp: new Date().toISOString()
+        });
+        } catch (error) {
+        console.error('[MCP] GET health check failed:', error);
+        res.status(500).json({ error: 'Health check failed' });
+        }
+    });
 
     console.log('[WRAPPER] /mcp POST');
     app.post('/mcp', async (req, res) => {
@@ -195,7 +195,7 @@ const fetch = require("node-fetch");
         console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
         console.log('[MCP] apiKey from query:', req.query.apiKey);
         console.log('[MCP] Using apiKey:', apiKey);
-        // console.log('[MCP] req:', req);
+        // console.log('[MCP] req:', req.body);
 
         // -- validate api key
         const valid = await isValidSigylApiKey(apiKey);
@@ -209,7 +209,6 @@ const fetch = require("node-fetch");
         // console.log('[PACKAGENAME] req.url:', req.url);
         // console.log('[PACKAGENAME] req.baseUrl:', req.baseUrl);
         // const packageName = 'sigyl-dev/google-maps';
-        // console.log('[PACKAGENAME] packageName:', packageName);
 
         // 2. use package name to get required + optional secrets
         // const configJSON = await getConfig(packageName);
