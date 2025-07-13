@@ -9,7 +9,15 @@
 **New Strategy**: Staged development approach starting with bare minimum functionality:
 - ✅ **Development Plan Created**: `state/wrapper-development-plan.md` with comprehensive 6-stage approach
 - ✅ **Stage 1 Wrapper Created**: `wrappertest9.js` - bare minimum that should absolutely work
-- 🔄 **Next Steps**: Deploy Stage 1 → Test thoroughly → Add features incrementally
+- ✅ **Stage 3 Wrapper Created**: `wrappertest20.js` - advanced wrapper with secret injection and multi-key support
+- ✅ **Environment Variable Fix**: Added `SIGYL_API_KEY` to Cloud Run deployment environment variables
+- 🔄 **Next Steps**: Deploy Stage 3 → Test thoroughly → Add features incrementally
+
+**Latest Fix**: Wrapper was failing to fetch secrets because we were using the wrong approach. Fixed by following `working-wrapper.js` pattern:
+- ✅ **Created wrappertest22.js**: Uses user's API key from request (not environment variable)
+- ✅ **Removed SIGYL_API_KEY env var**: No longer needed in Cloud Run deployment
+- ✅ **Fixed approach**: User's validated API key is used to fetch secrets from database
+- ✅ **Follows working-wrapper.js pattern**: Same validation and authentication flow
 
 **Previous Issue**: Brave Search server was using old pattern with `process.env` API key access instead of config-based injection.
 

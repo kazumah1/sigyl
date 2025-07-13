@@ -448,6 +448,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       MCP_ENDPOINT: '/mcp',
       PORT: '8080',
       SIGYL_MASTER_KEY: process.env.SIGYL_MASTER_KEY || ''
+      // SIGYL_API_KEY removed - now uses user's API key from request
     };
 
     // Initialize Cloud Run service
@@ -697,7 +698,9 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
       NODE_ENV: 'production',
       MCP_TRANSPORT: 'http',
       MCP_ENDPOINT: '/mcp',
-      PORT: '8080'
+      PORT: '8080',
+      SIGYL_MASTER_KEY: process.env.SIGYL_MASTER_KEY || ''
+      // SIGYL_API_KEY removed - now uses user's API key from request
     };
     const cloudRunService = new CloudRunService(CLOUD_RUN_CONFIG);
     log('🔒 Redeploying with security validation...');
