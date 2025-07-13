@@ -58,11 +58,7 @@ const fetch = require("node-fetch");
                 }
             }
         } else {
-            console.log('[PACKAGENAME] Getting package name from server.sigyl.dev...');
-            const match = req.path.match(/^\/@([^\/]+\/[^\/]+)\/mcp/);
-            if (match) {
-                return match[1]; // e.g., "sigyl-dev/google-maps"
-            }
+            console.log('[PACKAGENAME] Error: Not a sigyl-mcp-... hostname');
             return null;
         }
     }

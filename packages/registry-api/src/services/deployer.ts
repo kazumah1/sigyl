@@ -253,7 +253,7 @@ export async function waitForNegReadyOnBackendService(backendServiceName: string
 }
 
 // Helper: Add Path Rule to URL Map
-export async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string) {
+export async function addPathRuletoUrlMap(urlMapName: string, path: string, backendServiceName: string, project: string, serviceHost: string) {
   await initGoogleClients();
   // Get the current URL map
   const urlMapRes = await compute.urlMaps.get({
@@ -277,7 +277,8 @@ export async function addPathRuletoUrlMap(urlMapName: string, path: string, back
       service: backendServiceUrl,
       routeAction: {
         urlRewrite: {
-          pathPrefixRewrite: '/mcp'
+          pathPrefixRewrite: '/mcp',
+          hostRewrite: serviceHost
         }
       }
     });
@@ -299,13 +300,14 @@ export async function retryAddPathRuleToUrlMap(
   path: string,
   backendServiceName: string,
   project: string,
+  serviceHost: string,
   maxAttempts = 10,
   delayMs = 5000
 ) {
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project);
+      await addPathRuletoUrlMap(urlMapName, path, backendServiceName, project, serviceHost);
       return;
     } catch (err: any) {
       lastError = err;
@@ -485,6 +487,8 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       const region = CLOUD_RUN_CONFIG.region;
       const project = CLOUD_RUN_CONFIG.projectId;
       const path = `/@${request.repoName}/mcp`;
+      const serviceUrl = cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl || '';
+      const serviceHost = new URL(serviceUrl).host;
 
       await Promise.all([
         createBackendService(backendServiceName, project),
@@ -492,7 +496,7 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       ]);
       await addNegToBackendService(backendServiceName, negName, region, project);
       await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
-      await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
+      await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project, serviceHost);
     }
 
     // === Insert/Upsert into mcp_packages ===
@@ -729,13 +733,15 @@ export async function redeployRepo(request: RedeploymentRequest, onLog?: LogCall
     const region = CLOUD_RUN_CONFIG.region;
     const project = CLOUD_RUN_CONFIG.projectId;
     const path = `/@${request.repoName}/mcp`;
+    const serviceUrl = cloudRunResult.deploymentUrl || cloudRunResult.serviceUrl || '';
+    const serviceHost = new URL(serviceUrl).host;
     await Promise.all([
       createBackendService(backendServiceName, project),
       createNeg(negName, region, project, cloudRunResult.serviceName || ''),
     ]);
     await addNegToBackendService(backendServiceName, negName, region, project);
     await waitForNegReadyOnBackendService(backendServiceName, negName, region, project);
-    await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project);
+    await retryAddPathRuleToUrlMap(urlMapName, path, backendServiceName, project, serviceHost);
 
     // === Now fetch tools from the deployed server ===
     let tools: any[] = [];
