@@ -409,6 +409,14 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
     const userId = req.user!.user_id;
     const packageName = req.params.packageName;
 
+    console.log(`🔍 [SECRETS-API] === PACKAGE SECRETS REQUEST ===`);
+    console.log(`🔍 [SECRETS-API] User ID: ${userId}`);
+    console.log(`🔍 [SECRETS-API] Package Name: ${packageName}`);
+    console.log(`🔍 [SECRETS-API] Request Headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`🔍 [SECRETS-API] User Agent: ${req.headers['user-agent']}`);
+    console.log(`🔍 [SECRETS-API] Authorization: ${req.headers.authorization ? 'Present' : 'Missing'}`);
+    console.log(`🔍 [SECRETS-API] Timestamp: ${new Date().toISOString()}`);
+
     console.log(`[SECRETS] Fetching secrets for user ${userId}, package: ${packageName}`);
 
     // Extract keywords from package name to find relevant secrets
@@ -447,11 +455,11 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error(`[SECRETS] Database error for package ${packageName}:`, error);
+      console.error(`❌ [SECRETS-API] Database error for package ${packageName}:`, error);
       throw error;
     }
 
-    console.log(`[SECRETS] Found ${data?.length || 0} matching secrets for package ${packageName}`);
+    console.log(`✅ [SECRETS-API] Found ${data?.length || 0} matching secrets for package ${packageName}`);
     
     // Decrypt values and return them for pre-filling
     const secrets = (data || []).map(secret => {
@@ -463,7 +471,8 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
       };
     });
 
-    console.log(`[SECRETS] Returning ${secrets.length} secrets: [${secrets.map(s => s.key).join(', ')}]`);
+    console.log(`✅ [SECRETS-API] Returning ${secrets.length} secrets: [${secrets.map(s => s.key).join(', ')}]`);
+    console.log(`🔍 [SECRETS-API] === END PACKAGE SECRETS REQUEST ===`);
 
     const response: APIResponse<Array<{ key: string; value: string; description?: string }>> = {
       success: true,
@@ -473,7 +482,7 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error getting package secrets:', error);
+    console.error('❌ [SECRETS-API] Error getting package secrets:', error);
     const response: APIResponse<null> = {
       success: false,
       error: 'Internal Server Error',

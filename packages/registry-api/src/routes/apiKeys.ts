@@ -334,20 +334,42 @@ router.get('/profile/me', requireHybridAuth, async (req: Request, res: Response)
 
 router.post('/validate', async (req: Request, res: Response) => {
   const { apiKey } = req.body;
+  
+  console.log(`🔍 [API-KEY-VALIDATE] === API KEY VALIDATION REQUEST ===`);
+  console.log(`🔍 [API-KEY-VALIDATE] Request Headers:`, JSON.stringify(req.headers, null, 2));
+  console.log(`🔍 [API-KEY-VALIDATE] User Agent: ${req.headers['user-agent']}`);
+  console.log(`🔍 [API-KEY-VALIDATE] API Key Present: ${!!apiKey}`);
+  console.log(`🔍 [API-KEY-VALIDATE] API Key Length: ${apiKey?.length || 0}`);
+  console.log(`🔍 [API-KEY-VALIDATE] API Key Prefix: ${apiKey ? apiKey.substring(0, 10) + '...' : 'None'}`);
+  console.log(`🔍 [API-KEY-VALIDATE] Timestamp: ${new Date().toISOString()}`);
+  
   if (!apiKey) {
+    console.log(`❌ [API-KEY-VALIDATE] Missing API Key`);
+    console.log(`🔍 [API-KEY-VALIDATE] === END VALIDATION REQUEST ===`);
     return res.status(400).json({ valid: false, error: 'Missing API Key'});
   }
+  
   try {
+    console.log(`🔍 [API-KEY-VALIDATE] Validating API key with APIKeyService...`);
     const user = await APIKeyService.validateAPIKey(apiKey);
+    
     if (user) {
+      console.log(`✅ [API-KEY-VALIDATE] API key validation successful`);
+      console.log(`✅ [API-KEY-VALIDATE] User ID: ${user.user_id}`);
+      console.log(`✅ [API-KEY-VALIDATE] Key ID: ${user.key_id}`);
+      console.log(`✅ [API-KEY-VALIDATE] Permissions: ${JSON.stringify(user.permissions)}`);
+      console.log(`🔍 [API-KEY-VALIDATE] === END VALIDATION REQUEST ===`);
       return res.json({ valid: true, user_id: user.user_id });
     } else {
+      console.log(`❌ [API-KEY-VALIDATE] API key validation failed - Invalid key`);
+      console.log(`🔍 [API-KEY-VALIDATE] === END VALIDATION REQUEST ===`);
       return res.json({ valid: false, error: 'Invalid API Key' });
     }
   } catch (error) {
-    console.error('Error validating API key:', error);
+    console.error('❌ [API-KEY-VALIDATE] Error validating API key:', error);
+    console.log(`🔍 [API-KEY-VALIDATE] === END VALIDATION REQUEST ===`);
     return res.status(500).json({ valid: false, error: 'Failed to validate API key' });
   }
-})
+});
 
 export default router; 
