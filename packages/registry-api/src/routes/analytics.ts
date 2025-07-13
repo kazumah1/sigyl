@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../config/database';
 import { requireHybridAuth } from '../middleware/auth';
 import { APIKeyService } from '../services/apiKeyService';
+import { MetricsService, RawMetricsData } from '../services/metricsService';
 import { APIResponse } from '../types';
 
 const router = Router();
@@ -464,7 +465,7 @@ router.get('/llm-costs/:userId', requireHybridAuth, async (req: Request, res: Re
 // POST /api/v1/analytics/mcp-metrics - Receive metrics from deployed MCP wrappers
 router.post('/mcp-metrics', async (req: Request, res: Response) => {
   try {
-    const metricsData = req.body;
+    const rawMetricsData: RawMetricsData = req.body;
     
     // Lightweight authentication to avoid rate limiting
     const profileId = await authenticateMetrics(req);
@@ -477,16 +478,16 @@ router.post('/mcp-metrics', async (req: Request, res: Response) => {
       });
     }
     
-    console.log(`[METRICS] Received metrics for profile: ${profileId}`);
-    console.log(`[METRICS] Package: ${metricsData.package_name}`);
-    console.log(`[METRICS] Event: ${metricsData.event_type}`);
+    console.log(`[METRICS] Received raw metrics for profile: ${profileId}`);
+    console.log(`[METRICS] Package: ${rawMetricsData.package_name}`);
+    console.log(`[METRICS] Event: ${rawMetricsData.event_type}`);
     
-    // Validate required fields
-    if (!metricsData.event_type || !metricsData.package_name || !metricsData.timestamp) {
+    // Validate required fields for raw metrics
+    if (!rawMetricsData.event_type || !rawMetricsData.package_name || !rawMetricsData.timestamp) {
       console.warn('[METRICS] Missing required fields:', {
-        event_type: !!metricsData.event_type,
-        package_name: !!metricsData.package_name,
-        timestamp: !!metricsData.timestamp
+        event_type: !!rawMetricsData.event_type,
+        package_name: !!rawMetricsData.package_name,
+        timestamp: !!rawMetricsData.timestamp
       });
       return res.status(400).json({
         success: false,
@@ -495,60 +496,26 @@ router.post('/mcp-metrics', async (req: Request, res: Response) => {
       });
     }
 
-    // Store metrics in the database
-    const { data, error } = await supabase
-      .from('mcp_metrics')
-      .insert({
-        user_id: profileId,
-        package_name: metricsData.package_name,
-        event_type: metricsData.event_type,
-        mcp_method: metricsData.mcp_method,
-        tool_name: metricsData.tool_name,
-        success: metricsData.success,
-        error_type: metricsData.error_type,
-        response_time_ms: metricsData.response_time_ms,
-        client_ip: metricsData.client_ip,
-        user_agent: metricsData.user_agent,
-        has_secrets: metricsData.has_secrets,
-        secret_count: metricsData.secret_count,
-        performance_tier: metricsData.performance_tier,
-        hour_of_day: metricsData.hour_of_day,
-        day_of_week: metricsData.day_of_week,
-        request_size_bytes: metricsData.request_size_bytes,
-        user_satisfaction_signal: metricsData.user_satisfaction_signal,
-        complexity_score: metricsData.complexity_score,
-        experiment_variant: metricsData.experiment_variant,
-        memory_usage_mb: metricsData.memory_usage_mb,
-        cpu_time_ms: metricsData.cpu_time_ms,
-        metadata: {
-          // Store any additional fields in metadata JSON column
-          original_timestamp: metricsData.timestamp,
-          wrapper_version: metricsData.wrapper_version,
-          // Store LLM usage data if provided
-          ...(metricsData.llm_usage && { llm_usage: metricsData.llm_usage }),
-          additional_data: metricsData
-        },
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    // Use MetricsService to process and store the raw metrics
+    const metricsService = new MetricsService();
+    const result = await metricsService.processAndStoreMetrics(rawMetricsData, profileId);
 
-    if (error) {
-      console.error('[METRICS] Error storing MCP metrics:', error);
-      console.error('[METRICS] Failed metrics data:', JSON.stringify(metricsData, null, 2));
+    if (!result.success) {
+      console.error('[METRICS] MetricsService processing failed:', result.error);
+      console.error('[METRICS] Failed raw metrics data:', JSON.stringify(rawMetricsData, null, 2));
       // Don't fail the request - metrics are not critical for MCP operation
       return res.status(200).json({
         success: true,
-        message: 'Metrics received (storage failed but acknowledged)'
+        message: 'Metrics received (processing failed but acknowledged)'
       });
     }
 
-    console.log(`[METRICS] Successfully stored metric with ID: ${data.id}`);
+    console.log(`[METRICS] Successfully processed and stored metric with ID: ${result.metric_id}`);
 
     const response: APIResponse<{ metric_id: string }> = {
       success: true,
-      data: { metric_id: data.id },
-      message: 'MCP metrics stored successfully'
+      data: { metric_id: result.metric_id! },
+      message: 'MCP metrics processed and stored successfully'
     };
 
     return res.json(response);

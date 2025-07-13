@@ -17,6 +17,7 @@ import analyticsRouter from './routes/analytics';
 import mcpServersRouter from './routes/mcpServers';
 import profilesRouter from './routes/profiles';
 import docsRouter from './routes/docs';
+import sessionAnalyticsRouter from './routes/sessionAnalytics';
 import { APIResponse } from './types';
 import {
   generalRateLimit,
@@ -99,6 +100,7 @@ app.use('/api/v1/contact', contactRouter);
 app.use('/api/v1/emails', emailsRouter);
 app.use('/api/v1/mcp', mcpProxyRouter);
 app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/session-analytics', sessionAnalyticsRouter);
 app.use('/api/v1/mcp-servers', mcpServersRouter);
 app.use('/api/v1/profiles', profilesRouter);
 app.use('/api/v1/docs', docsRouter);

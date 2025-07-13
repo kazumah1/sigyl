@@ -55,6 +55,87 @@
 
 **Status**: ✅ **PRODUCTION READY**
 
+### ✅ COMPLETED - Session-Based Metrics System (LATEST)
+
+**Problem Solved**: Previous metrics system was still too rigid and didn't capture full client-server interactions:
+- ❌ Event classification hardcoded in wrapper  
+- ❌ No session/conversation tracking
+- ❌ Limited extensibility for new metrics
+- ❌ Missing multi-turn interaction analysis
+
+**Solution Implemented**: Complete session-based analytics with conversation tracking:
+- ✅ **Session Tracking**: MCP session management with `Mcp-Session-Id` headers
+- ✅ **Raw Data Collection**: Wrapper captures complete request/response pairs with zero processing
+- ✅ **Backend Classification**: All event types and error analysis done in registry API
+- ✅ **Conversation Analysis**: Multi-turn interaction tracking, user intent classification, satisfaction signals
+- ✅ **Future-Proof**: Can change any analytics logic without touching deployed packages
+
+**Key Features**:
+- 🎯 **Complete Request/Response Capture**: Every detail stored for future algorithm development
+- 📊 **Session Analytics**: Conversation flow, user intent, completion status, satisfaction signals
+- 🤖 **LLM Usage Tracking**: Token usage, cost analysis, model identification across sessions
+- 🔍 **Search Algorithm Ready**: User engagement scores, package effectiveness, retry patterns
+- ⚡ **Performance Analysis**: Response time tiers, bottleneck identification, optimization suggestions
+
+**Migration Path**: 
+- ✅ Current production: `wrapper.js` → `MetricsService` → `mcp_metrics` table
+- 🧪 New system (testing): `wrapper-session.js` → `SessionMetricsService` → `raw_session_events` + `session_analytics` tables  
+- 🔄 When ready: Rename `wrapper-session.js` to `wrapper.js` for production deployment
+
+**Resumability & Scaling Solution**:
+- ✅ **Database-Backed Sessions**: Moved from in-memory Maps to database storage for session state
+- ✅ **Cloud Run Scaling Compatible**: Session state persists across container restarts/scaling
+- ✅ **MCP Resumability Support**: Event sequence tracking enables `Last-Event-ID` header support
+- ✅ **Session Management APIs**: Added backend routes for session lifecycle management
+- 🎯 **Production Ready**: Supports high-availability deployments with automatic scaling
+
+**Technical Implementation**:
+- **MetricsService**: `packages/registry-api/src/services/metricsService.ts`
+  - Processes raw metrics data into structured analytics
+  - Enhanced LLM cost tracking with latest model pricing
+  - Request complexity analysis and user intent categorization
+  - Performance bottleneck detection and analysis
+  - Comprehensive error pattern recognition
+- **Session-Aware Wrapper**: `packages/registry-api/container-builder/wrapper/wrapper-session.js`
+  - Only collects raw facts: request/response data, timing, system metrics
+  - No processing logic - just data collection and transmission
+  - Captures full request/response bodies for deep analysis
+  - Version 3.0 with simplified, focused responsibilities
+- **Updated Analytics API**: Enhanced `/api/v1/analytics/mcp-metrics` endpoint
+  - Uses MetricsService for all processing
+  - Stores rich metadata for algorithm development
+  - Backward compatible with existing data structure
+
+**Data Collection Enhancements**:
+- **Raw Request/Response Capture**: Full MCP request and response bodies for analysis
+- **LLM Usage Detection**: Enhanced token counting and cost calculation for GPT-4o, Claude-3.5, etc.
+- **Request Analysis**: Complexity scoring, tool chaining detection, user intent categorization
+- **Performance Analysis**: Bottleneck identification, timing breakdowns, resource usage
+- **Error Pattern Recognition**: Comprehensive error categorization and analysis
+
+**Algorithm Development Benefits**:
+- **Rich Dataset**: Complete request/response data for training search algorithms
+- **User Intent Signals**: Categorized user behavior patterns (data_retrieval, analysis, generation)
+- **Quality Metrics**: Success rates, error patterns, performance characteristics
+- **Usage Patterns**: Tool chaining, complexity scoring, user satisfaction signals
+- **Cost Analytics**: Detailed LLM usage and cost tracking for optimization
+
+**Deployment Strategy**:
+- **Gradual Rollout**: New wrapper v3.0 ready for deployment pipeline updates
+- **Backward Compatibility**: Existing analytics endpoints continue working
+- **No Downtime**: Metrics processing enhancement without service interruption
+- **Future Deployment**: Next deployment cycle will use new wrapper automatically
+
+**Benefits Achieved**:
+- 🚀 **Rapid Iteration**: Change metrics logic without redeploying packages
+- 📊 **Enhanced Analytics**: Comprehensive data collection for algorithm development
+- 🔍 **Deep Insights**: Request/response analysis, LLM usage, performance bottlenecks
+- 🧠 **Algorithm Ready**: Rich dataset for building Google-style MCP search algorithms
+- ⚡ **Performance**: Centralized processing with better caching and optimization
+- 🔧 **Maintainability**: Single source of truth for all metrics logic
+
+**Status**: ✅ **READY FOR DEPLOYMENT** - New wrapper and metrics service ready for next deployment cycle
+
 ### ✅ COMPLETED - Core Platform Features
 - **Registry API**: Full MCP package management with Supabase backend
 - **Container Builder**: Google Cloud Run deployment with enhanced security
