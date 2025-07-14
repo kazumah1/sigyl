@@ -17,6 +17,7 @@ import analyticsRouter from './routes/analytics';
 import mcpServersRouter from './routes/mcpServers';
 import profilesRouter from './routes/profiles';
 import docsRouter from './routes/docs';
+import notificationsRouter from './routes/notifications';
 import sessionAnalyticsRouter from './routes/sessionAnalytics';
 import { APIResponse } from './types';
 import {
@@ -104,6 +105,7 @@ app.use('/api/v1/session-analytics', sessionAnalyticsRouter);
 app.use('/api/v1/mcp-servers', mcpServersRouter);
 app.use('/api/v1/profiles', profilesRouter);
 app.use('/api/v1/docs', docsRouter);
+app.use('/internal', notificationsRouter);
 
 // API documentation endpoint
 app.get('/api', (_req, res) => {
