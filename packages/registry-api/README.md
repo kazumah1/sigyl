@@ -175,4 +175,4 @@ Ensure these are set in your deployment environment:
 This API is designed to work with:
 - **CLI Tool** (`packages/cli`) - Uses API for package registration
 - **Container Builder** (`packages/container-builder`) - Deploys packages via API
-- **Web Frontend** (`packages/web-frontend`) - Displays packages from API 
+- **Web Frontend** (`packages/web`) - Displays packages from API 

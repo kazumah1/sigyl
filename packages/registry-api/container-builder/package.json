@@ -1,5 +1,5 @@
 {
-  "name": "@sigil/container-builder",
+  "name": "@sigyl/container-builder",
   "version": "0.1.0",
   "description": "MCP container building and deployment service",
   "main": "dist/index.js",
@@ -32,10 +32,10 @@
     "deployment",
     "sigil"
   ],
-  "author": "Sigil Platform",
+  "author": "Sigyl Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sigil-platform/sigil-mcp.git"
+    "url": "https://github.com/sigyl-dev/sigyl.git"
   }
 } 
