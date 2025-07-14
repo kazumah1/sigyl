@@ -5,27 +5,29 @@ const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
-const { Redis } = require('@upstash/redis');
+// const { Redis } = require('@upstash/redis');
 const cors = require('cors');
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN
-});
+// const redis = new Redis({
+//   url: process.env.UPSTASH_REDIS_REST_URL,
+//   token: process.env.UPSTASH_REDIS_REST_TOKEN
+// });
 
-async function getSession(sessionId) {
-  const data = await redis.get(`mcp:session:${sessionId}`);
-  console.log('[MCP] Session data:', data);
-  return data || null;
-}
+const servers = {};
 
-async function setSession(sessionId, sessionData) {
-  await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
-  console.log('[MCP] Session data set:', sessionData);
-}
+// async function getSession(sessionId) {
+//   const data = await redis.get(`mcp:session:${sessionId}`);
+//   console.log('[MCP] Session data:', data);
+//   return data || null;
+// }
 
-async function deleteSession(sessionId) {
-  await redis.del(`mcp:session:${sessionId}`);
-}
+// async function setSession(sessionId, sessionData) {
+//   await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
+//   console.log('[MCP] Session data set:', sessionData);
+// }
+
+// async function deleteSession(sessionId) {
+//   await redis.del(`mcp:session:${sessionId}`);
+// }
 
 // 1. create the /mcp endpoint
 (async () => {
@@ -35,10 +37,6 @@ async function deleteSession(sessionId) {
     const app = express();
     app.use(express.json())
 
-    app.use(cors({
-        origin: ['https://app.sigyl.dev', 'https://app.sigyl.dev/', 'https://server.sigyl.dev', 'https://server.sigyl.dev/', 'https://localhost:3000', 'http://localhost:3000', 'http://localhost:3000/', 'https://www.sigyl.dev', 'https://www.sigyl.dev/'],
-        exposedHeaders: ['mcp-session-id', 'mcp-session-id-source', 'mcp-session-id-source-value', 'mcp-session-id-source-value-value'],
-    }));
 
     // Add metrics middleware after express.json()
     // app.use((req, res, next) => {
@@ -356,87 +354,57 @@ async function deleteSession(sessionId) {
 
     app.post('/mcp', async (req, res) => {
         // Robust session ID extraction
-        let sessionId =
-          req.headers['mcp-session-id'] ||
-          req.headers['MCP-Session-Id'] ||
-          (req.body && req.body.sessionId) ||
-          (req.query && req.query.sessionId);
-        let sessionIdSource = 'none';
-        if (req.headers['mcp-session-id']) sessionIdSource = 'header (mcp-session-id)';
-        else if (req.headers['MCP-Session-Id']) sessionIdSource = 'header (MCP-Session-Id)';
-        else if (req.body && req.body.sessionId) sessionIdSource = 'body.sessionId';
-        else if (req.query && req.query.sessionId) sessionIdSource = 'query.sessionId';
-        console.log(`[MCP] Session ID: ${sessionId} (from ${sessionIdSource})`);
+        let sessionId = req.headers['mcp-session-id']
+        console.log(`[MCP] Session ID: ${sessionId})`);
 
         let apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
-        let sessionData = sessionId ? await getSession(sessionId) : null;
-        let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
-        if (sessionData) {
-            console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
-            ({ apiKey, valid, isMaster, filledConfig } = sessionData);
-        } else {
-            // Only log if sessionId was provided but not found
-            if (sessionId) console.log('[MCP] No sessionData found for sessionId:', sessionId);
-            ({ valid, isMaster } = await isValidSigylApiKey(apiKey));
-        }
+        // let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
+
+        let { valid, isMaster } = await isValidSigylApiKey(apiKey);
+
         if (!valid) {
-            console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
-            return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
+            res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
+            return;
         }
-        if (!sessionData && !isMaster) {
-            packageName = await getPackageName(req);
-            configJSON = await getConfig(packageName);
-            userSecrets = await getUserSecrets(packageName, apiKey);
-            ({ filledConfig } = await createConfig(configJSON, userSecrets));
-        } else if (isMaster && !sessionData) {
-            filledConfig = {};
-        }
-        let transport;
+
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
-            if (server && server.tools) {
-                console.log('[MCP] Tools loaded (stateless):', JSON.stringify(server.tools, null, 2));
-            } else {
-                console.log('[MCP] No tools loaded (stateless)');
-            }
             await transport.handleRequest(req, res, req.body);
             return;
         }
-        if (sessionId && sessionData) {
-            transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: () => sessionId
-            });
-            transport.onclose = () => {
-                deleteSession(sessionId);
-                console.log('[MCP] Session closed and deleted from Redis:', sessionId);
-            };
-            const server = createStatelessServer({ config: filledConfig });
-            await server.connect(transport);
+
+        let packageName;
+        let configJSON;
+        let userSecrets;
+        let filledConfig;
+        
+        let transport;
+        if (sessionId && servers[sessionId]) {
+            console.log('[MCP] Loaded sessionData from servers for sessionId:', sessionId);
+            transport = servers[sessionId];
         } else if (!sessionId && isInitializeRequest(req.body)) {
-            console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
-            transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: undefined
-            });
-            console.log('[MCP] transport:', transport);
-            console.log('[MCP] transport.sessionId:', transport.sessionId);
-            setSession(transport.sessionId, {
-                apiKey,
-                valid,
-                isMaster,
-                filledConfig
+            packageName = await getPackageName(req);
+            configJSON = await getConfig(packageName);
+            userSecrets = await getUserSecrets(packageName, apiKey);
+            ({ filledConfig } = await createConfig(configJSON, userSecrets));
+            transport = new StreamableHTTPServerTransport({ 
+                sessionIdGenerator: () => randomUUID(),
+                onsessioninitialized: (sessionId) => {
+                    servers[sessionId] = transport;
+                }
             });
             transport.onclose = () => {
                 if (transport.sessionId) {
-                    deleteSession(transport.sessionId);
-                    console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
+                    delete servers[transport.sessionId];
+                    console.log('[MCP] Session closed and deleted from servers:', transport.sessionId);
                 }
             };
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
+            await transport.handleRequest(req, res, req.body);
         } else {
-            console.warn('[MCP] 400 Bad Request: No valid session ID provided');
             res.status(400).json({
                 jsonrpc: '2.0',
                 error: {
@@ -452,28 +420,13 @@ async function deleteSession(sessionId) {
 
     // Reusable handler for GET and DELETE requests
     const handleSessionRequest = async (req, res) => {
-        const sessionId = req.headers['mcp-session-id'] || req.headers['MCP-Session-Id'];
-        if (sessionId) {
-            console.log(`[MCP] Session request with session ID: ${sessionId}`);
-        } else {
-            console.log(`[MCP] Session request with NO session ID`);
-        }
-        const sessionData = sessionId ? await getSession(sessionId) : null;
-        if (!sessionId || !sessionData) {
+        const sessionId = req.headers['mcp-session-id'];
+        if (!sessionId || !servers[sessionId]) {
             res.status(400).send('Invalid or missing session ID');
             return;
         }
         // Recreate transport/server from session data
-        const { filledConfig } = sessionData;
-        const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined
-        });
-        transport.onclose = async () => {
-            await deleteSession(sessionId);
-            console.log('[MCP] Session closed and deleted from Redis:', sessionId);
-        };
-        const server = createStatelessServer({ config: filledConfig });
-        await server.connect(transport);
+        const transport = servers[sessionId];
         await transport.handleRequest(req, res);
     };
 
