@@ -370,7 +370,7 @@ const servers = {};
         let packageName;
         let configJSON;
         let userSecrets;
-        let filledConfig;
+        let filledConfig = {};
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
