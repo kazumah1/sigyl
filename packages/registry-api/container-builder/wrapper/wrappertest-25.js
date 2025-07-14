@@ -5,6 +5,24 @@ const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
+const { Redis } = require('@upstash/redis');
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN
+});
+
+async function getSession(sessionId) {
+  const data = await redis.get(`mcp:session:${sessionId}`);
+  return data ? JSON.parse(data) : null;
+}
+
+async function setSession(sessionId, sessionData) {
+  await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
+}
+
+async function deleteSession(sessionId) {
+  await redis.del(`mcp:session:${sessionId}`);
+}
 
 // 1. create the /mcp endpoint
 (async () => {
@@ -214,9 +232,6 @@ const { randomUUID } = require("crypto");
         }
     }
 
-    // Map to store transports by session ID
-    const transports = {};
-
     app.post('/mcp', async (req, res) => {
         const sessionId = req.headers['mcp-session-id'];
         if (sessionId) {
@@ -229,52 +244,46 @@ const { randomUUID } = require("crypto");
         console.log('[MCP] Received /mcp POST');
 
         // -- validate api key
-        const { valid, isMaster } = await isValidSigylApiKey(apiKey);
+        let sessionData = sessionId ? await getSession(sessionId) : null;
+        let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
+        if (sessionData) {
+            // Use cached session data
+            ({ apiKey, valid, isMaster, filledConfig } = sessionData);
+        } else {
+            // Validate API key
+            ({ valid, isMaster } = await isValidSigylApiKey(apiKey));
+        }
         if (!valid) {
             console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
             return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
         }
         // -- get package name
-        let packageName;
-        if (!isMaster) {
+        if (!sessionData && !isMaster) {
             console.log('[PACKAGENAME] Getting package name...');
             packageName = await getPackageName(req);
             console.log('[PACKAGENAME] Package name:', packageName);
-        } else {
-            console.log('[PACKAGENAME] Bypassing package name due to master key');
         }
-
         // 2. use package name to get required + optional secrets
-        let configJSON;
-        if (!isMaster) {
+        if (!sessionData && !isMaster) {
             console.log('[CONFIG] Getting config...');
             configJSON = await getConfig(packageName);
             console.log('[CONFIG] config:', configJSON);
-        } else {
-            console.log('[CONFIG] Bypassing config fetching due to master key');
         }
-
         // 3. use package name + api key to get user's secrets
-        let userSecrets;
-        if (!isMaster) {
+        if (!sessionData && !isMaster) {
             console.log('[SECRETS] Getting user secrets...');
             userSecrets = await getUserSecrets(packageName, apiKey);
             console.log('[SECRETS] userSecrets:', userSecrets);
-        } else {
-            console.log('[SECRETS] Bypassing user secrets due to master key');
         }
-
         // 4. reformat secrets into z.object()
-        let filledConfig;
-        if (!isMaster) {
+        if (!sessionData && !isMaster) {
             console.log('[CONFIG] Creating config...');
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
             console.log('[CONFIG] filled config:', filledConfig);
-        } else {
+        } else if (isMaster && !sessionData) {
             filledConfig = {};
             console.log('[CONFIG] Bypassing config filling due to master key');
         }
-
         // -- MCP session/stateless management
         let transport;
         if (isMaster) {
@@ -286,22 +295,37 @@ const { randomUUID } = require("crypto");
             await transport.handleRequest(req, res, req.body);
             return;
         }
-        if (sessionId && transports[sessionId]) {
-            // Reuse existing transport
-            transport = transports[sessionId];
+        if (sessionId && sessionData) {
+            // Recreate transport/server from session data
+            transport = new StreamableHTTPServerTransport({
+                sessionIdGenerator: () => sessionId,
+                onsessioninitialized: (sid) => {},
+            });
+            transport.onclose = async () => {
+                await deleteSession(sessionId);
+                console.log('[MCP] Session closed and deleted from Redis:', sessionId);
+            };
+            const server = createStatelessServer({ config: filledConfig });
+            await server.connect(transport);
         } else if (!sessionId && isInitializeRequest(req.body)) {
             // New initialization request
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
-                onsessioninitialized: (sid) => {
-                    transports[sid] = transport;
-                    console.log('[MCP] Session initialized:', sid);
+                onsessioninitialized: async (sid) => {
+                    // Store session in Redis
+                    await setSession(sid, {
+                        apiKey,
+                        valid,
+                        isMaster,
+                        filledConfig
+                    });
+                    console.log('[MCP] Session initialized and stored in Redis:', sid);
                 },
             });
-            transport.onclose = () => {
+            transport.onclose = async () => {
                 if (transport.sessionId) {
-                    delete transports[transport.sessionId];
-                    console.log('[MCP] Session closed:', transport.sessionId);
+                    await deleteSession(transport.sessionId);
+                    console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
             };
             // Create the MCP server instance
@@ -331,11 +355,23 @@ const { randomUUID } = require("crypto");
         } else {
             console.log(`[MCP] Session request with NO session ID`);
         }
-        if (!sessionId || !transports[sessionId]) {
+        const sessionData = sessionId ? await getSession(sessionId) : null;
+        if (!sessionId || !sessionData) {
             res.status(400).send('Invalid or missing session ID');
             return;
         }
-        const transport = transports[sessionId];
+        // Recreate transport/server from session data
+        const { filledConfig } = sessionData;
+        const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => sessionId,
+            onsessioninitialized: (sid) => {},
+        });
+        transport.onclose = async () => {
+            await deleteSession(sessionId);
+            console.log('[MCP] Session closed and deleted from Redis:', sessionId);
+        };
+        const server = createStatelessServer({ config: filledConfig });
+        await server.connect(transport);
         await transport.handleRequest(req, res);
     };
 

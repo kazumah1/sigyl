@@ -226,7 +226,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-24.cjs'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-25.cjs'
             ],
             dir: request.subdirectory || '.'
           },
@@ -279,7 +279,7 @@ COPY . .
 COPY ./wrapper/wrapper.cjs ./wrapper.cjs
 
 # Install wrapper dependencies
-RUN npm install express http-proxy-middleware node-fetch@2 zod
+RUN npm install express http-proxy-middleware node-fetch@2 zod @upstash/redis
 
 # Prune devDependencies for smaller image (after build)
 RUN npm prune --production
