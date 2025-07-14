@@ -23,12 +23,12 @@ const Index = () => {
     {
       icon: Zap,
       title: "Lightning Fast",
-      description: "Deploy in seconds with our optimized infrastructure and global edge network."
+      description: "Deploy in minutes with our optimized infrastructure and global edge network."
     },
     {
       icon: Globe,
       title: "Global Scale",
-      description: "99.9% uptime SLA with automatic scaling across multiple regions worldwide."
+      description: "99.9% uptime with automatic scaling across multiple regions worldwide."
     }
   ];
 
@@ -56,7 +56,7 @@ const Index = () => {
       <PageHeader />
       <HeroSection
         title="deploying servers for the world of AI agents."
-        subtitle="fast deployment, enterprise MCP hosting, & registry"
+        subtitle="open source, free, and enterprise quality MCP community"
         buttons={
           <>
             <Button 
@@ -156,26 +156,26 @@ const Index = () => {
                   <span className="text-gray-200 text-xs sm:text-sm ml-2 sm:ml-4 font-semibold tracking-wide">SIGYL Stats</span>
                 </div>
                 <div className="p-6 sm:p-8 lg:p-12 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:divide-y-0 lg:divide-x divide-white/10 bg-transparent rounded-b-2xl sm:rounded-b-3xl">
-                  {/* Uptime SLA */}
+                  {/* Uptime */}
                   <div className="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3">
                     <Shield className="w-6 sm:w-7 h-6 sm:h-7 text-white/80 stroke-2 drop-shadow" style={{fill:'none'}} />
                     <span className="text-2xl sm:text-3xl font-bold text-white">99.9%</span>
-                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Uptime SLA</div>
+                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Uptime</div>
                     <div className="text-xs sm:text-sm text-gray-400">Enterprise reliability</div>
                   </div>
-                  {/* Deploy Time */}
+                  {/* Deploy */}
                   <div className="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3">
                     <Zap className="w-6 sm:w-7 h-6 sm:h-7 text-white/80 stroke-2 drop-shadow" style={{fill:'none'}} />
-                    <span className="text-2xl sm:text-3xl font-bold text-white">&lt; 2min</span>
-                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Deploy Time</div>
+                    <span className="text-2xl sm:text-3xl font-bold text-white">1 Click</span>
+                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Deploy</div>
                     <div className="text-xs sm:text-sm text-gray-400">From zero to live</div>
                   </div>
-                  {/* Integrations */}
+                  {/* Hosting */}
                   <div className="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3">
                     <Globe className="w-6 sm:w-7 h-6 sm:h-7 text-white/80 stroke-2 drop-shadow" style={{fill:'none'}} />
-                    <span className="text-2xl sm:text-3xl font-bold text-white">9000+</span>
-                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Integrations</div>
-                    <div className="text-xs sm:text-sm text-gray-400">APIs &amp; tools</div>
+                    <span className="text-2xl sm:text-3xl font-bold text-white">Unlimited</span>
+                    <div className="text-sm sm:text-base text-gray-200 font-semibold">Hosting</div>
+                    <div className="text-xs sm:text-sm text-gray-400">MCP Servers</div>
                   </div>
                   {/* Support */}
                   <div className="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3">
