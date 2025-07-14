@@ -417,7 +417,7 @@ async function deleteSession(sessionId) {
         } else if (!sessionId && isInitializeRequest(req.body)) {
             console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
             transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: () => randomUUID()
+                sessionIdGenerator: undefined
             });
             console.log('[MCP] transport:', transport);
             console.log('[MCP] transport.sessionId:', transport.sessionId);
@@ -452,7 +452,7 @@ async function deleteSession(sessionId) {
 
     // Reusable handler for GET and DELETE requests
     const handleSessionRequest = async (req, res) => {
-        const sessionId = req.headers['mcp-session-id'];
+        const sessionId = req.headers['mcp-session-id'] || req.headers['MCP-Session-Id'];
         if (sessionId) {
             console.log(`[MCP] Session request with session ID: ${sessionId}`);
         } else {
@@ -466,8 +466,7 @@ async function deleteSession(sessionId) {
         // Recreate transport/server from session data
         const { filledConfig } = sessionData;
         const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => sessionId,
-            onsessioninitialized: (sid) => {},
+            sessionIdGenerator: undefined
         });
         transport.onclose = async () => {
             await deleteSession(sessionId);
