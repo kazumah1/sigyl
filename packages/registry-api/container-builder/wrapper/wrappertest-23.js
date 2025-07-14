@@ -315,26 +315,19 @@ const { randomUUID } = require("crypto");
             if (method === 'initialize') {
                 console.log('[SESSION] Initializing session');
                 const sessionId = generateSessionId();
+                console.log('[SESSION] Session ID for initialize:', sessionId);
                 sessions.set(sessionId, { created: Date.now() });
 
                 res.set('Mcp-Session-Id', sessionId);
                 res.set('MCP-Protocol-Version', '2025-06-18');
 
                 console.log('[SESSION] Sending initialize response');
-                const serverResponse = await transport.handleRequest(req, res, req.body);
-                console.log('[SESSION] Server response:', serverResponse);
-
-                const { capabilities, tools, serverInfo } = serverResponse;
-
-                console.log('[SESSION] Sending initialize response');
-                return res.json({
-                    jsonrpc: "2.0", 
-                    id: req.body.id,
-                    result: { capabilities, tools, serverInfo }
-                });
+                await transport.handleRequest(req, res, req.body);
+                return;
             } else {
                 console.log('[SESSION] Handling request');
                 const sessionId = req.headers['mcp-session-id'];
+                console.log('[SESSION] Session ID for request:', sessionId);
                 if (!sessionId || !sessions.has(sessionId)) {
                     return res.status(400).json({ error: 'Missing or invalid session'})
                 }
