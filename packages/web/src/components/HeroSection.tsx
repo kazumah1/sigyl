@@ -39,7 +39,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, butto
           <h1 className="hero-heading text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-white drop-shadow-xl mb-6" style={{letterSpacing:'-0.03em', textShadow:'0 4px 32px #0008'}}>
             {title}
           </h1>
-          <p className="hero-subheading text-lg sm:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-lg" style={{textShadow:'0 2px 16px #0006'}}>
+          <p className="hero-subheading text-center whitespace-nowrap mb-8 mx-auto drop-shadow-lg" style={{
+            textShadow: '0 2px 16px #0006',
+            fontSize: 'clamp(1rem, 3vw, 1.6rem)',
+            maxWidth: '100vw',
+            color: 'rgba(255,255,255,0.9)'
+          }}>
             {subtitle}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
