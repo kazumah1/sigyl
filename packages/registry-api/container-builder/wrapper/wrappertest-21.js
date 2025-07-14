@@ -31,14 +31,12 @@ const { z } = require("zod");
 
     async function getPackageName(req) {
         console.log('[PACKAGENAME] Hostname:', req.hostname);
-        console.log('[PACKAGENAME] Path:', req.path);
         if (req.hostname.includes('sigyl-mcp-')) {
             const hostname = req.hostname;
             console.log('[PACKAGENAME] Getting package name from sigyl-mcp-...');
             const match = hostname.match(/sigyl-mcp-(.+?)(?:-lrzo3avokq-uc\.a\.run\.app|\.a\.run\.app)/);
             if (match) {
                 const packagePath = match[1];
-                console.log("[PACKAGENAME] Extracted package path:", packagePath);
                 
                 // Convert to proper format: sigyl-dev/Brave-Search
                 // The packagePath might be "sigyl-dev-brave-search" from hostname
@@ -53,7 +51,6 @@ const { z } = require("zod");
                     part.charAt(0).toLowerCase() + part.slice(1)
                     ).join("-"); // brave-search
                     const formattedName = `${orgPart}/${packagePart}`;
-                    console.log("[PACKAGENAME] Converted to:", formattedName);
                     return formattedName;
                 }
                 }
@@ -288,7 +285,7 @@ const { z } = require("zod");
             console.log('[CONFIG] Creating config...');
             // Assign to the outer variable
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
-            console.log('[CONFIG] config:', filledConfig);
+            console.log('[CONFIG] filled config:', filledConfig);
         } else {
             filledConfig = {};
             console.log('[CONFIG] Bypassing config filling due to master key');

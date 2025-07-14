@@ -1417,8 +1417,6 @@ const MCPPackagePage = () => {
               </DialogHeader>
               <div className="space-y-4">
                 {/* Render required secrets */}
-                {pkg && pkg.secrets && Array.isArray(pkg.secrets) ? (
-                  <>
                     {pkg.secrets.filter(s => s.required).map(secret => (
                       <div key={secret.name}>
                         <Label htmlFor={secret.name}>
@@ -1477,77 +1475,6 @@ const MCPPackagePage = () => {
                         </div>
                       </div>
                     )}
-                  </>
-                ) : (
-                  // Common API key fields for packages without predefined secrets
-                  <>
-                    <div>
-                      <Label htmlFor="API_KEY">API Key <span className="text-red-400">*</span></Label>
-                      <Input
-                        id="API_KEY"
-                        name="API_KEY"
-                        value={secretFields.API_KEY || ''}
-                        onChange={handleSecretChange}
-                        placeholder="Enter your API key"
-                        className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
-                      />
-                      {secretErrors.API_KEY && <div className="text-red-400 text-xs mt-1">{secretErrors.API_KEY}</div>}
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        className={`flex items-center gap-2 px-3 py-1 rounded-md border border-white/20 bg-white/10 text-white text-sm mt-2 hover:bg-white/10 hover:text-white transition focus:outline-none`}
-                        onClick={() => setShowOptionalSecrets((v) => !v)}
-                        aria-expanded={showOptionalSecrets}
-                      >
-                        {showOptionalSecrets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        {showOptionalSecrets ? 'Hide additional API keys' : 'Show additional API keys'}
-                      </button>
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${showOptionalSecrets ? 'mt-4' : 'max-h-0'}`}
-                        style={showOptionalSecrets ? {} : { maxHeight: 0 }}
-                      >
-                        {showOptionalSecrets && (
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="BRAVE_API_KEY">Brave API Key (optional)</Label>
-                              <Input
-                                id="BRAVE_API_KEY"
-                                name="BRAVE_API_KEY"
-                                value={secretFields.BRAVE_API_KEY || ''}
-                                onChange={handleSecretChange}
-                                placeholder="Enter your Brave Search API key"
-                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="OPENAI_API_KEY">OpenAI API Key (optional)</Label>
-                              <Input
-                                id="OPENAI_API_KEY"
-                                name="OPENAI_API_KEY"
-                                value={secretFields.OPENAI_API_KEY || ''}
-                                onChange={handleSecretChange}
-                                placeholder="Enter your OpenAI API key"
-                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="ANTHROPIC_API_KEY">Anthropic API Key (optional)</Label>
-                              <Input
-                                id="ANTHROPIC_API_KEY"
-                                name="ANTHROPIC_API_KEY"
-                                value={secretFields.ANTHROPIC_API_KEY || ''}
-                                onChange={handleSecretChange}
-                                placeholder="Enter your Anthropic API key"
-                                className="mt-1 bg-white/10 border-white/20 text-white placeholder-white placeholder:text-white/50"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
                 <DialogFooter>
                   <Button
                     onClick={async () => {
@@ -1567,7 +1494,6 @@ const MCPPackagePage = () => {
                 </DialogFooter>
               </div>
             </>
-          )}
           {installStep === 2 && (
             <div className="flex flex-col h-full min-h-[380px] px-2" style={{height: '100%'}}>
               <div className="text-xl font-semibold mb-4 text-center text-white">Choose Installation Method</div>

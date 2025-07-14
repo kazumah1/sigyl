@@ -412,67 +412,26 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
     console.log(`🔍 [SECRETS-API] === PACKAGE SECRETS REQUEST ===`);
     console.log(`🔍 [SECRETS-API] User ID: ${userId}`);
     console.log(`🔍 [SECRETS-API] Package Name: ${packageName}`);
-    console.log(`🔍 [SECRETS-API] Request Headers:`, JSON.stringify(req.headers, null, 2));
-    console.log(`🔍 [SECRETS-API] User Agent: ${req.headers['user-agent']}`);
-    console.log(`🔍 [SECRETS-API] Authorization: ${req.headers.authorization ? 'Present' : 'Missing'}`);
-    console.log(`🔍 [SECRETS-API] Timestamp: ${new Date().toISOString()}`);
-
-    console.log(`[SECRETS] Fetching secrets for user ${userId}, package: ${packageName}`);
-
-    // Extract keywords from package name to find relevant secrets
-    // Examples: 
-    // - "brave-search" -> look for secrets with "BRAVE" in key
-    // - "openai-gpt" -> look for secrets with "OPENAI" in key
-    // - "github-repo" -> look for secrets with "GITHUB" in key
-    const packageKeywords = packageName
-      .toLowerCase()
-      .split(/[-_\s]+/)
-      .filter(word => word.length > 2)
-      .map(word => word.toUpperCase());
-
-    console.log(`[SECRETS] Extracted keywords from "${packageName}": [${packageKeywords.join(', ')}]`);
-
-    // Build dynamic query to find secrets that match any of the keywords
-    let query = supabase
+    // Only fetch secrets for this user and this package (mcp_server_id)
+    const { data, error } = await supabase
       .from('mcp_secrets')
       .select('key, value, description')
-      .eq('user_id', userId);
-
-    // Create OR conditions for each keyword
-    if (packageKeywords.length > 0) {
-      const orConditions = packageKeywords
-        .map(keyword => `key.ilike.%${keyword}%`)
-        .concat(packageKeywords.map(keyword => `description.ilike.%${keyword}%`))
-        .join(',');
-      
-      console.log(`[SECRETS] Using OR conditions: ${orConditions}`);
-      query = query.or(orConditions);
-    } else {
-      // Fallback: exact package name match
-      query = query.or(`key.ilike.%${packageName}%,description.ilike.%${packageName}%`);
-    }
-
-    const { data, error } = await query;
+      .eq('user_id', userId)
+      .eq('mcp_server_id', packageName);
 
     if (error) {
       console.error(`❌ [SECRETS-API] Database error for package ${packageName}:`, error);
       throw error;
     }
 
-    console.log(`✅ [SECRETS-API] Found ${data?.length || 0} matching secrets for package ${packageName}`);
-    
     // Decrypt values and return them for pre-filling
     const secrets = (data || []).map(secret => {
-      console.log(`[SECRETS] Decrypting secret: ${secret.key}`);
       return {
         key: secret.key,
         value: decrypt(secret.value),
         description: secret.description
       };
     });
-
-    console.log(`✅ [SECRETS-API] Returning ${secrets.length} secrets: [${secrets.map(s => s.key).join(', ')}]`);
-    console.log(`🔍 [SECRETS-API] === END PACKAGE SECRETS REQUEST ===`);
 
     const response: APIResponse<Array<{ key: string; value: string; description?: string }>> = {
       success: true,
@@ -517,14 +476,12 @@ router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
         continue; // Skip invalid secrets
       }
 
-      // Validate key format
-      if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
-        continue; // Skip invalid keys
-      }
+      // Accept any key format (do not require uppercase/underscore)
+      // If you want to add further validation, do it here
 
       const encryptedValue = encrypt(value);
 
-      // Use upsert to avoid duplicates
+      // Use upsert to avoid duplicates, based on user_id, mcp_server_id, key
       const { data, error } = await supabase
         .from('mcp_secrets')
         .upsert({ 
@@ -534,7 +491,7 @@ router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
           description: description || `Auto-saved for ${packageName}`,
           mcp_server_id: packageName // Use package name as mcp_server_id for organization
         }, {
-          onConflict: 'user_id,key'
+          onConflict: 'user_id,mcp_server_id,key'
         })
         .select('*')
         .single();
