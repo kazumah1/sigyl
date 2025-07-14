@@ -226,7 +226,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-26.cjs'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-27.cjs'
             ],
             dir: request.subdirectory || '.'
           },
@@ -581,11 +581,6 @@ EOF`
                 }
               ],
               env: [
-                { name: 'NODE_ENV', value: 'production' },
-                { name: 'MCP_TRANSPORT', value: 'http' },
-                { name: 'MCP_ENDPOINT', value: '/mcp' },
-                { name: 'UPSTASH_REDIS_REST_URL', value: process.env.UPSTASH_REDIS_REST_URL },
-                { name: 'UPSTASH_REDIS_REST_TOKEN', value: process.env.UPSTASH_REDIS_REST_TOKEN },
                 // Do NOT set PORT here, and filter it from user envs
                 ...Object.entries(request.environmentVariables)
                   .filter(([name]) => name !== 'PORT')

@@ -13,7 +13,7 @@ const redis = new Redis({
 
 async function getSession(sessionId) {
   const data = await redis.get(`mcp:session:${sessionId}`);
-  return data ? JSON.parse(data) : null;
+  return data || null;
 }
 
 async function setSession(sessionId, sessionData) {
