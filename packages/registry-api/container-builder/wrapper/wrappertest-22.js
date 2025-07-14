@@ -2,9 +2,16 @@ const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
+const { randomUUID } = require("crypto");
 
 // 1. create the /mcp endpoint
 (async () => {
+    // session management Map
+    const sessions = new Map();
+    function generateSessionId() {
+        return randomUUID();
+    }
+
     console.log('[WRAPPER] Starting wrapper...');
     const createStatelessServer = (await import("./server.js")).default;
 
@@ -30,7 +37,6 @@ const { z } = require("zod");
       }
 
     async function getPackageName(req) {
-        console.log('[PACKAGENAME] Hostname:', req.hostname);
         if (req.hostname.includes('sigyl-mcp-')) {
             const hostname = req.hostname;
             console.log('[PACKAGENAME] Getting package name from sigyl-mcp-...');
@@ -38,9 +44,7 @@ const { z } = require("zod");
             if (match) {
                 const packagePath = match[1];
                 
-                // Convert to proper format: sigyl-dev/Brave-Search
-                // The packagePath might be "sigyl-dev-brave-search" from hostname
-                // We need to convert it to "sigyl-dev/Brave-Search"
+                // Convert to proper format: sigyl-dev/brave-search
                 if (packagePath.includes("-")) {
                 // Split by hyphens and reconstruct
                 const parts = packagePath.split("-");
@@ -237,9 +241,6 @@ const { z } = require("zod");
         // -- accepts api key
         const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
         console.log('[MCP] Received /mcp POST');
-        console.log('[MCP] x-sigyl-api-key header:', req.headers['x-sigyl-api-key']);
-        console.log('[MCP] apiKey from query:', req.query.apiKey);
-        console.log('[MCP] Using apiKey:', apiKey);
 
         // -- validate api key
         const { valid, isMaster } = await isValidSigylApiKey(apiKey);
@@ -247,8 +248,7 @@ const { z } = require("zod");
             console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
             return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
         }
-
-        // -- somehow get package name
+        // -- get package name
         let packageName;
         if (!isMaster) {
             console.log('[PACKAGENAME] Getting package name...');
@@ -310,8 +310,41 @@ const { z } = require("zod");
         // 7. connect
         await server.connect(transport);
 
-        // 8. handle requests
-        await transport.handleRequest(req, res, req.body);
+        const method = req.body?.method;
+        if (!isMaster) {
+            if (method === 'initialize') {
+                console.log('[SESSION] Initializing session');
+                const sessionId = generateSessionId();
+                sessions.set(sessionId, { created: Date.now() });
+
+                res.set('Mcp-Session-Id', sessionId);
+                res.set('MCP-Protocol-Version', '2025-06-18');
+
+                console.log('[SESSION] Sending initialize response');
+                const serverResponse = await transport.handleRequest(req, res, req.body);
+                console.log('[SESSION] Server response:', serverResponse);
+
+                const { capabilities, tools, serverInfo } = serverResponse;
+
+                console.log('[SESSION] Sending initialize response');
+                return res.json({
+                    jsonrpc: "2.0", 
+                    id: req.body.id,
+                    result: { capabilities, tools, serverInfo }
+                });
+            } else {
+                console.log('[SESSION] Handling request');
+                const sessionId = req.headers['mcp-session-id'];
+                if (!sessionId || !sessions.has(sessionId)) {
+                    return res.status(400).json({ error: 'Missing or invalid session'})
+                }
+                // 8. handle requests
+                await transport.handleRequest(req, res, req.body);
+            }
+        } else {
+            console.log('[SESSION] Handling request as master');
+            await transport.handleRequest(req, res, req.body);
+        }
     });
 
     // 11. listen
