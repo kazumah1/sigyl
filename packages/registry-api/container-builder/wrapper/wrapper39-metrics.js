@@ -5,29 +5,26 @@ const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
-// const { Redis } = require('@upstash/redis');
-const cors = require('cors');
-// const redis = new Redis({
-//   url: process.env.UPSTASH_REDIS_REST_URL,
-//   token: process.env.UPSTASH_REDIS_REST_TOKEN
-// });
+const { Redis } = require('@upstash/redis');
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN
+});
 
-const servers = {};
+async function getSession(sessionId) {
+  const data = await redis.get(`mcp:session:${sessionId}`);
+  console.log('[MCP] Session data:', data);
+  return data || null;
+}
 
-// async function getSession(sessionId) {
-//   const data = await redis.get(`mcp:session:${sessionId}`);
-//   console.log('[MCP] Session data:', data);
-//   return data || null;
-// }
+async function setSession(sessionId, sessionData) {
+  await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
+  console.log('[MCP] Session data set:', sessionData);
+}
 
-// async function setSession(sessionId, sessionData) {
-//   await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
-//   console.log('[MCP] Session data set:', sessionData);
-// }
-
-// async function deleteSession(sessionId) {
-//   await redis.del(`mcp:session:${sessionId}`);
-// }
+async function deleteSession(sessionId) {
+  await redis.del(`mcp:session:${sessionId}`);
+}
 
 // 1. create the /mcp endpoint
 (async () => {
@@ -39,118 +36,118 @@ const servers = {};
 
 
     // Add metrics middleware after express.json()
-    // app.use((req, res, next) => {
-    //   if (req.path !== '/mcp' && req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
-    //     return next();
-    //   }
+    app.use((req, res, next) => {
+      if (req.path !== '/mcp' && req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
+        return next();
+      }
 
-    //   const startTime = Date.now();
-    //   const chunks = [];
-    //   const oldWrite = res.write;
-    //   const oldEnd = res.end;
+      const startTime = Date.now();
+      const chunks = [];
+      const oldWrite = res.write;
+      const oldEnd = res.end;
 
-    //   res.write = function(chunk, ...args) {
-    //     chunks.push(Buffer.from(chunk));
-    //     return oldWrite.apply(res, [chunk, ...args]);
-    //   };
+      res.write = function(chunk, ...args) {
+        chunks.push(Buffer.from(chunk));
+        return oldWrite.apply(res, [chunk, ...args]);
+      };
 
-    //   res.end = function(chunk, ...args) {
-    //     if (chunk) {
-    //       chunks.push(Buffer.from(chunk));
-    //     }
-    //     oldEnd.apply(res, [chunk, ...args]);
-    //   };
+      res.end = function(chunk, ...args) {
+        if (chunk) {
+          chunks.push(Buffer.from(chunk));
+        }
+        oldEnd.apply(res, [chunk, ...args]);
+      };
 
-    //   res.on('finish', async () => {
-    //     try {
-    //       let sessionId = req.headers['mcp-session-id'];
-    //       let eventSequence = 1;
-    //       let isStateless = false;
+      res.on('finish', async () => {
+        try {
+          let sessionId = req.headers['mcp-session-id'];
+          let eventSequence = 1;
+          let isStateless = false;
 
-    //       if (!sessionId) {
-    //         sessionId = randomUUID(); // One-time ID for metrics
-    //         isStateless = true;
-    //         eventSequence = 1;
-    //       }
+          if (!sessionId) {
+            sessionId = randomUUID(); // One-time ID for metrics
+            isStateless = true;
+            eventSequence = 1;
+          }
 
-    //       const sessionData = await getSession(sessionId);
-    //       if (!sessionData || sessionData.isMaster) return; // Skip master
+          const sessionData = await getSession(sessionId);
+          if (!sessionData || sessionData.isMaster) return; // Skip master
 
-    //       try {
-    //         eventSequence = await redis.incr(`mcp:session:${sessionId}:sequence`);
-    //       } catch (err) {
-    //         console.error('[METRICS] Redis sequence error:', err);
-    //       }
+          try {
+            eventSequence = await redis.incr(`mcp:session:${sessionId}:sequence`);
+          } catch (err) {
+            console.error('[METRICS] Redis sequence error:', err);
+          }
 
-    //       const responseBody = Buffer.concat(chunks).toString('utf8');
-    //       let parsedBody = responseBody;
-    //       if (res.getHeader('content-type')?.includes('application/json')) {
-    //         try {
-    //           parsedBody = JSON.parse(responseBody);
-    //         } catch {}
-    //       }
+          const responseBody = Buffer.concat(chunks).toString('utf8');
+          let parsedBody = responseBody;
+          if (res.getHeader('content-type')?.includes('application/json')) {
+            try {
+              parsedBody = JSON.parse(responseBody);
+            } catch {}
+          }
 
-    //       const rawEvent = {
-    //         session_id: sessionId,
-    //         event_sequence: eventSequence,
-    //         timestamp: new Date().toISOString(),
-    //         package_name: await getPackageName(req) || 'unknown',
-    //         user_api_key: sessionData?.apiKey || (req.headers['x-sigyl-api-key'] || req.query.apiKey) || 'anonymous',
-    //         client_ip: req.ip || req.connection.remoteAddress,
-    //         user_agent: req.headers['user-agent'],
-    //         request: {
-    //           method: req.method,
-    //           headers: { ...req.headers },
-    //           body: req.body,
-    //           url: req.url,
-    //           query_params: req.query,
-    //           size_bytes: Buffer.byteLength(JSON.stringify(req.body), 'utf8')
-    //         },
-    //         response: {
-    //           status_code: res.statusCode,
-    //           headers: res.getHeaders(),
-    //           body: parsedBody,
-    //           size_bytes: Buffer.byteLength(responseBody),
-    //           duration_ms: Date.now() - startTime
-    //         },
-    //         system: {
-    //           memory_usage_mb: process.memoryUsage().heapUsed / 1024 / 1024,
-    //           cpu_time_ms: process.cpuUsage().user / 1000,
-    //           secrets_count: Object.keys(sessionData.filledConfig).length,
-    //           secrets_keys: Object.keys(sessionData.filledConfig),
-    //           environment: process.env.NODE_ENV || 'production',
-    //           wrapper_version: '25.0.0-metrics'
-    //         },
-    //         error: res.statusCode >= 400 ? {
-    //           occurred: true,
-    //           message: parsedBody?.error || 'Unknown error',
-    //           stack: parsedBody?.stack,
-    //           type: parsedBody?.errorType || 'http_error'
-    //         } : undefined
-    //       };
+          const rawEvent = {
+            session_id: sessionId,
+            event_sequence: eventSequence,
+            timestamp: new Date().toISOString(),
+            package_name: await getPackageName(req) || 'unknown',
+            user_api_key: sessionData?.apiKey || (req.headers['x-sigyl-api-key'] || req.query.apiKey) || 'anonymous',
+            client_ip: req.ip || req.connection.remoteAddress,
+            user_agent: req.headers['user-agent'],
+            request: {
+              method: req.method,
+              headers: { ...req.headers },
+              body: req.body,
+              url: req.url,
+              query_params: req.query,
+              size_bytes: Buffer.byteLength(JSON.stringify(req.body), 'utf8')
+            },
+            response: {
+              status_code: res.statusCode,
+              headers: res.getHeaders(),
+              body: parsedBody,
+              size_bytes: Buffer.byteLength(responseBody),
+              duration_ms: Date.now() - startTime
+            },
+            system: {
+              memory_usage_mb: process.memoryUsage().heapUsed / 1024 / 1024,
+              cpu_time_ms: process.cpuUsage().user / 1000,
+              secrets_count: Object.keys(sessionData.filledConfig).length,
+              secrets_keys: Object.keys(sessionData.filledConfig),
+              environment: process.env.NODE_ENV || 'production',
+              wrapper_version: '25.0.0-metrics'
+            },
+            error: res.statusCode >= 400 ? {
+              occurred: true,
+              message: parsedBody?.error || 'Unknown error',
+              stack: parsedBody?.stack,
+              type: parsedBody?.errorType || 'http_error'
+            } : undefined
+          };
 
-    //       const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-    //       await fetch(`${registryUrl}/api/v1/session-analytics/events`, {
-    //         method: 'POST',
-    //         headers: {
-    //           'Content-Type': 'application/json',
-    //           'Authorization': `Bearer ${process.env.SIGYL_MASTER_KEY}`
-    //         },
-    //         body: JSON.stringify(rawEvent)
-    //       });
+          const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+          await fetch(`${registryUrl}/api/v1/session-analytics/events`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.SIGYL_MASTER_KEY}`
+            },
+            body: JSON.stringify(rawEvent)
+          });
 
-    //       if (isStateless) {
-    //         console.log(`[METRICS] Sent stateless event with temp ID ${sessionId}`);
-    //       } else {
-    //         console.log(`[METRICS] Sent event ${eventSequence} for session ${sessionId}`);
-    //       }
-    //     } catch (err) {
-    //       console.error('[METRICS] Error sending event:', err);
-    //     }
-    //   });
+          if (isStateless) {
+            console.log(`[METRICS] Sent stateless event with temp ID ${sessionId}`);
+          } else {
+            console.log(`[METRICS] Sent event ${eventSequence} for session ${sessionId}`);
+          }
+        } catch (err) {
+          console.error('[METRICS] Error sending event:', err);
+        }
+      });
 
-    //   next();
-    // });
+      next();
+    });
 
     // API key validation function
     async function isValidSigylApiKey(key) {
@@ -355,7 +352,7 @@ const servers = {};
     app.post('/mcp', async (req, res) => {
         // Robust session ID extraction
         let sessionId = req.headers['mcp-session-id']
-        console.log(`[MCP] Session ID: ${sessionId})`);
+        console.log(`[MCP] Session ID: ${sessionId}`);
 
         let apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
         // let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
@@ -367,21 +364,35 @@ const servers = {};
             return;
         }
         let transport;
+        let server;
         let packageName;
         let configJSON;
         let userSecrets;
         let filledConfig = {};
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-            const server = createStatelessServer({ config: filledConfig });
+            server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
             await transport.handleRequest(req, res, req.body);
             return;
         }
 
-        if (sessionId && servers[sessionId]) {
-            console.log('[MCP] Loaded sessionData from servers for sessionId:', sessionId);
-            transport = servers[sessionId];
+        if (sessionId && await getSession(sessionId)) {
+            console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
+            filledConfig = await getSession(sessionId);
+            transport = new StreamableHTTPServerTransport({ 
+                sessionIdGenerator: undefined,
+                onsessioninitialized: async (sessionId) => {
+                    await setSession(sessionId, filledConfig);
+                }
+            });
+            transport.onclose = async () => {
+                if (transport.sessionId) {
+                    await deleteSession(transport.sessionId);
+                    console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
+                }
+            };
+            server = createStatelessServer({ config: filledConfig });
         } else if (!sessionId && isInitializeRequest(req.body)) {
             packageName = await getPackageName(req);
             configJSON = await getConfig(packageName);
@@ -389,19 +400,17 @@ const servers = {};
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => randomUUID(),
-                onsessioninitialized: (sessionId) => {
-                    servers[sessionId] = transport;
+                onsessioninitialized: async (sessionId) => {
+                    await setSession(sessionId, filledConfig);
                 }
             });
-            transport.onclose = () => {
+            transport.onclose = async () => {
                 if (transport.sessionId) {
-                    delete servers[transport.sessionId];
-                    console.log('[MCP] Session closed and deleted from servers:', transport.sessionId);
+                    await deleteSession(transport.sessionId);
+                    console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
             };
-            const server = createStatelessServer({ config: filledConfig });
-            await server.connect(transport);
-            await transport.handleRequest(req, res, req.body);
+            server = createStatelessServer({ config: filledConfig });
         } else {
             res.status(400).json({
                 jsonrpc: '2.0',
@@ -413,18 +422,33 @@ const servers = {};
             });
             return;
         }
+        await server.connect(transport);
         await transport.handleRequest(req, res, req.body);
     });
 
     // Reusable handler for GET and DELETE requests
     const handleSessionRequest = async (req, res) => {
         const sessionId = req.headers['mcp-session-id'];
-        if (!sessionId || !servers[sessionId]) {
+        if (!sessionId || !await getSession(sessionId)) {
             res.status(400).send('Invalid or missing session ID');
             return;
         }
         // Recreate transport/server from session data
-        const transport = servers[sessionId];
+        const filledConfig = await getSession(sessionId);
+        const transport = new StreamableHTTPServerTransport({ 
+            sessionIdGenerator: undefined,
+            onsessioninitialized: async (sessionId) => {
+                await setSession(sessionId, filledConfig);
+            }
+        });
+        transport.onclose = async () => {
+            if (transport.sessionId) {
+                await deleteSession(transport.sessionId);
+                console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
+            }
+        };
+        const server = createStatelessServer({ config: filledConfig });
+        await server.connect(transport);
         await transport.handleRequest(req, res);
     };
 
