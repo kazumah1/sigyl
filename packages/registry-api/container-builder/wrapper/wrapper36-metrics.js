@@ -366,7 +366,7 @@ const servers = {};
             res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
             return;
         }
-
+        let transport;
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
@@ -379,8 +379,7 @@ const servers = {};
         let configJSON;
         let userSecrets;
         let filledConfig;
-        
-        let transport;
+
         if (sessionId && servers[sessionId]) {
             console.log('[MCP] Loaded sessionData from servers for sessionId:', sessionId);
             transport = servers[sessionId];
