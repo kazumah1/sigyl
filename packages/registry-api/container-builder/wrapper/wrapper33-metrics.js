@@ -1,5 +1,5 @@
 const express = require("express");
-const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp");
+const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
 const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
