@@ -13,13 +13,11 @@ const redis = new Redis({
 
 async function getSession(sessionId) {
   const data = await redis.get(`mcp:session:${sessionId}`);
-  console.log('[MCP] Session data:', data);
-  return data || null;
+  return data ? JSON.parse(data) : null;
 }
 
 async function setSession(sessionId, sessionData) {
   await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
-  console.log('[MCP] Session data set:', sessionData);
 }
 
 async function deleteSession(sessionId) {
@@ -33,120 +31,6 @@ async function deleteSession(sessionId) {
 
     const app = express();
     app.use(express.json())
-
-    // Add metrics middleware after express.json()
-    app.use((req, res, next) => {
-      if (req.path !== '/mcp' && req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
-        return next();
-      }
-
-      const startTime = Date.now();
-      const chunks = [];
-      const oldWrite = res.write;
-      const oldEnd = res.end;
-
-      res.write = function(chunk, ...args) {
-        chunks.push(Buffer.from(chunk));
-        return oldWrite.apply(res, [chunk, ...args]);
-      };
-
-      res.end = function(chunk, ...args) {
-        if (chunk) {
-          chunks.push(Buffer.from(chunk));
-        }
-        oldEnd.apply(res, [chunk, ...args]);
-      };
-
-      res.on('finish', async () => {
-        try {
-          let sessionId = req.headers['mcp-session-id'];
-          let eventSequence = 1;
-          let isStateless = false;
-
-          if (!sessionId) {
-            sessionId = randomUUID(); // One-time ID for metrics
-            isStateless = true;
-            eventSequence = 1;
-          }
-
-          const sessionData = await getSession(sessionId);
-          if (!sessionData || sessionData.isMaster) return; // Skip master
-
-          try {
-            eventSequence = await redis.incr(`mcp:session:${sessionId}:sequence`);
-          } catch (err) {
-            console.error('[METRICS] Redis sequence error:', err);
-          }
-
-          const responseBody = Buffer.concat(chunks).toString('utf8');
-          let parsedBody = responseBody;
-          if (res.getHeader('content-type')?.includes('application/json')) {
-            try {
-              parsedBody = JSON.parse(responseBody);
-            } catch {}
-          }
-
-          const rawEvent = {
-            session_id: sessionId,
-            event_sequence: eventSequence,
-            timestamp: new Date().toISOString(),
-            package_name: await getPackageName(req) || 'unknown',
-            user_api_key: sessionData?.apiKey || (req.headers['x-sigyl-api-key'] || req.query.apiKey) || 'anonymous',
-            client_ip: req.ip || req.connection.remoteAddress,
-            user_agent: req.headers['user-agent'],
-            request: {
-              method: req.method,
-              headers: { ...req.headers },
-              body: req.body,
-              url: req.url,
-              query_params: req.query,
-              size_bytes: Buffer.byteLength(JSON.stringify(req.body), 'utf8')
-            },
-            response: {
-              status_code: res.statusCode,
-              headers: res.getHeaders(),
-              body: parsedBody,
-              size_bytes: Buffer.byteLength(responseBody),
-              duration_ms: Date.now() - startTime
-            },
-            system: {
-              memory_usage_mb: process.memoryUsage().heapUsed / 1024 / 1024,
-              cpu_time_ms: process.cpuUsage().user / 1000,
-              secrets_count: Object.keys(sessionData.filledConfig).length,
-              secrets_keys: Object.keys(sessionData.filledConfig),
-              environment: process.env.NODE_ENV || 'production',
-              wrapper_version: '25.0.0-metrics'
-            },
-            error: res.statusCode >= 400 ? {
-              occurred: true,
-              message: parsedBody?.error || 'Unknown error',
-              stack: parsedBody?.stack,
-              type: parsedBody?.errorType || 'http_error'
-            } : undefined
-          };
-
-          const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-          await fetch(`${registryUrl}/api/v1/session-analytics/events`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.SIGYL_MASTER_KEY}`
-            },
-            body: JSON.stringify(rawEvent)
-          });
-
-          if (isStateless) {
-            console.log(`[METRICS] Sent stateless event with temp ID ${sessionId}`);
-          } else {
-            console.log(`[METRICS] Sent event ${eventSequence} for session ${sessionId}`);
-          }
-        } catch (err) {
-          console.error('[METRICS] Error sending event:', err);
-        }
-      });
-
-      next();
-    });
 
     // API key validation function
     async function isValidSigylApiKey(key) {
@@ -349,57 +233,70 @@ async function deleteSession(sessionId) {
     }
 
     app.post('/mcp', async (req, res) => {
-        // Robust session ID extraction
-        let sessionId =
-          req.headers['mcp-session-id'] ||
-          req.headers['MCP-Session-Id'] ||
-          (req.body && req.body.sessionId) ||
-          (req.query && req.query.sessionId);
-        let sessionIdSource = 'none';
-        if (req.headers['mcp-session-id']) sessionIdSource = 'header (mcp-session-id)';
-        else if (req.headers['MCP-Session-Id']) sessionIdSource = 'header (MCP-Session-Id)';
-        else if (req.body && req.body.sessionId) sessionIdSource = 'body.sessionId';
-        else if (req.query && req.query.sessionId) sessionIdSource = 'query.sessionId';
-        console.log(`[MCP] Session ID: ${sessionId} (from ${sessionIdSource})`);
+        const sessionId = req.headers['mcp-session-id'];
+        if (sessionId) {
+            console.log(`[MCP] Incoming call with session ID: ${sessionId}`);
+        } else {
+            console.log(`[MCP] Incoming call with NO session ID (likely initialize)`);
+        }
+        // -- accepts api key
+        const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
+        console.log('[MCP] Received /mcp POST');
 
-        let apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
+        // -- validate api key
         let sessionData = sessionId ? await getSession(sessionId) : null;
         let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
         if (sessionData) {
-            console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
+            // Use cached session data
             ({ apiKey, valid, isMaster, filledConfig } = sessionData);
         } else {
-            // Only log if sessionId was provided but not found
-            if (sessionId) console.log('[MCP] No sessionData found for sessionId:', sessionId);
+            // Validate API key
             ({ valid, isMaster } = await isValidSigylApiKey(apiKey));
         }
         if (!valid) {
             console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
             return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
         }
+        // -- get package name
         if (!sessionData && !isMaster) {
+            console.log('[PACKAGENAME] Getting package name...');
             packageName = await getPackageName(req);
+            console.log('[PACKAGENAME] Package name:', packageName);
+        }
+        // 2. use package name to get required + optional secrets
+        if (!sessionData && !isMaster) {
+            console.log('[CONFIG] Getting config...');
             configJSON = await getConfig(packageName);
+            console.log('[CONFIG] config:', configJSON);
+        }
+        // 3. use package name + api key to get user's secrets
+        if (!sessionData && !isMaster) {
+            console.log('[SECRETS] Getting user secrets...');
             userSecrets = await getUserSecrets(packageName, apiKey);
+            console.log('[SECRETS] userSecrets:', userSecrets);
+        }
+        // 4. reformat secrets into z.object()
+        if (!sessionData && !isMaster) {
+            console.log('[CONFIG] Creating config...');
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
+            console.log('[CONFIG] filled config:', filledConfig);
         } else if (isMaster && !sessionData) {
             filledConfig = {};
+            console.log('[CONFIG] Bypassing config filling due to master key');
         }
+        // -- MCP session/stateless management
         let transport;
         if (isMaster) {
+            // Master key: stateless mode, no session
+            console.log('[MCP] Master key used: running in stateless mode (no session management)');
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
-            if (server && server.tools) {
-                console.log('[MCP] Tools loaded (stateless):', JSON.stringify(server.tools, null, 2));
-            } else {
-                console.log('[MCP] No tools loaded (stateless)');
-            }
             await transport.handleRequest(req, res, req.body);
             return;
         }
-        console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
         if (sessionId && sessionData) {
+            // Recreate transport/server from session data
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: (sid) => {},
@@ -411,9 +308,11 @@ async function deleteSession(sessionId) {
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
         } else if (!sessionId && isInitializeRequest(req.body)) {
+            // New initialization request
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: async (sid) => {
+                    // Store session in Redis
                     await setSession(sid, {
                         apiKey,
                         valid,
@@ -429,10 +328,11 @@ async function deleteSession(sessionId) {
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
             };
+            // Create the MCP server instance
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
         } else {
-            console.warn('[MCP] 400 Bad Request: No valid session ID provided');
+            // Invalid request
             res.status(400).json({
                 jsonrpc: '2.0',
                 error: {
@@ -443,6 +343,7 @@ async function deleteSession(sessionId) {
             });
             return;
         }
+        // Handle the request
         await transport.handleRequest(req, res, req.body);
     });
 
