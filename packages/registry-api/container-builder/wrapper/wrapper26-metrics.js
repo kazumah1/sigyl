@@ -6,7 +6,6 @@ const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
 const { Redis } = require('@upstash/redis');
-const { LetterText } = require("lucide-react");
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN
