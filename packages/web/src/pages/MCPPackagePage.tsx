@@ -1494,6 +1494,7 @@ const MCPPackagePage = () => {
                 </DialogFooter>
               </div>
             </>
+          )}
           {installStep === 2 && (
             <div className="flex flex-col h-full min-h-[380px] px-2" style={{height: '100%'}}>
               <div className="text-xl font-semibold mb-4 text-center text-white">Choose Installation Method</div>
