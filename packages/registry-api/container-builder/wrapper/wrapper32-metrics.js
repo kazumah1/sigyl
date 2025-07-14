@@ -1,11 +1,12 @@
 const express = require("express");
-const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
+const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp");
 const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
 const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
 const { Redis } = require('@upstash/redis');
+const cors = require('cors');
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN
@@ -33,6 +34,11 @@ async function deleteSession(sessionId) {
 
     const app = express();
     app.use(express.json())
+
+    app.use(cors({
+        origin: ['https://app.sigyl.dev', 'https://app.sigyl.dev/', 'https://server.sigyl.dev', 'https://server.sigyl.dev/', 'https://localhost:3000', 'http://localhost:3000', 'http://localhost:3000/', 'https://www.sigyl.dev', 'https://www.sigyl.dev/'],
+        exposedHeaders: ['mcp-session-id', 'mcp-session-id-source', 'mcp-session-id-source-value', 'mcp-session-id-source-value-value'],
+    }));
 
     // Add metrics middleware after express.json()
     // app.use((req, res, next) => {
@@ -398,34 +404,32 @@ async function deleteSession(sessionId) {
             await transport.handleRequest(req, res, req.body);
             return;
         }
-        console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
         if (sessionId && sessionData) {
             transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: () => sessionId,
-                onsessioninitialized: (sid) => {},
+                sessionIdGenerator: () => sessionId
             });
-            transport.onclose = async () => {
-                await deleteSession(sessionId);
+            transport.onclose = () => {
+                deleteSession(sessionId);
                 console.log('[MCP] Session closed and deleted from Redis:', sessionId);
             };
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
         } else if (!sessionId && isInitializeRequest(req.body)) {
+            console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
             transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: () => randomUUID(),
-                onsessioninitialized: async (sid) => {
-                    await setSession(sid, {
-                        apiKey,
-                        valid,
-                        isMaster,
-                        filledConfig
-                    });
-                    console.log('[MCP] Session initialized and stored in Redis:', sid);
-                },
+                sessionIdGenerator: () => randomUUID()
             });
-            transport.onclose = async () => {
+            console.log('[MCP] transport:', transport);
+            console.log('[MCP] transport.sessionId:', transport.sessionId);
+            setSession(transport.sessionId, {
+                apiKey,
+                valid,
+                isMaster,
+                filledConfig
+            });
+            transport.onclose = () => {
                 if (transport.sessionId) {
-                    await deleteSession(transport.sessionId);
+                    deleteSession(transport.sessionId);
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
             };
