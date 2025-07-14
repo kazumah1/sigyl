@@ -46,7 +46,6 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
-    "@types/react-helmet": "^6.1.11",
     "@types/serve-handler": "^6.1.4",
     "lerna": "^8.0.0",
     "prettier": "^3.0.0",
@@ -61,7 +60,6 @@
     "gsap": "^3.13.0",
     "js-yaml": "^4.1.0",
     "octokit": "^5.0.3",
-    "react-helmet": "^6.1.0",
     "serve-handler": "^6.1.6",
     "zod": "^3.25.67"
   }

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Star, Zap, Shield, Users, Globe, Settings, Headphones } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import { Helmet } from 'react-helmet';
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -39,33 +38,6 @@ const Pricing = () => {
               className="w-full max-w-md"
               dangerouslySetInnerHTML={{ __html: `<div class=\"tenor-gif-embed\" data-postid=\"22954713\" data-share-method=\"host\" data-aspect-ratio=\"1\" data-width=\"100%\"><a href=\"https://tenor.com/view/rickroll-roll-rick-never-gonna-give-you-up-never-gonna-gif-22954713\">Rickroll Never Gonna Give You Up GIF</a>from <a href=\"https://tenor.com/search/rickroll-gifs\">Rickroll GIFs</a></div>` }}
             />
-            <Helmet>
-              <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-              <style>{`
-                .tenor-gif-popover, .tenor-gif-popover *,
-                .tenor-gif-embed > div[style*='absolute'],
-                .tenor-gif-embed > div[style*='top: 0'],
-                .tenor-gif-embed > div[style*='top:0'],
-                .tenor-gif-embed > div[style*='top:0px'],
-                .tenor-gif-embed > div[style*='top: 0px'],
-                .tenor-gif-embed > div[style*='z-index'],
-                .tenor-gif-embed > div[style*='display: flex'],
-                .tenor-gif-embed > div[style*='justify-content: flex-end'],
-                .tenor-gif-embed > div[style*='right: 0'],
-                .tenor-gif-embed > div[style*='right:0'],
-                .tenor-gif-embed > div[style*='right:0px'],
-                .tenor-gif-embed > div[style*='right: 0px'] {
-                  display: none !important;
-                  pointer-events: none !important;
-                  opacity: 0 !important;
-                  visibility: hidden !important;
-                }
-                /* Hide all direct children of .tenor-gif-embed except the first (the GIF itself) */
-                .tenor-gif-embed > div:not(:first-child) {
-                  display: none !important;
-                }
-              `}</style>
-            </Helmet>
           </div>
 
           {/* Pricing Cards */}
