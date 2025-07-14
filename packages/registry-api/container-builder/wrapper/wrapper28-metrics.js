@@ -348,6 +348,11 @@ async function deleteSession(sessionId) {
 
     app.post('/mcp', async (req, res) => {
         const sessionId = req.headers['mcp-session-id'];
+        console.log('--- Incoming /mcp POST ---');
+        console.log('Method:', req.method);
+        console.log('Path:', req.path);
+        console.log('Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('Body:', JSON.stringify(req.body, null, 2));
         if (sessionId) {
             console.log(`[MCP] Incoming call with session ID: ${sessionId}`);
         } else {
@@ -361,14 +366,17 @@ async function deleteSession(sessionId) {
         let sessionData = sessionId ? await getSession(sessionId) : null;
         let valid, isMaster, packageName, configJSON, userSecrets, filledConfig;
         if (sessionData) {
+            console.log('[MCP] Loaded sessionData from Redis:', JSON.stringify(sessionData, null, 2));
             // Use cached session data
             ({ apiKey, valid, isMaster, filledConfig } = sessionData);
         } else {
+            console.log('[MCP] No sessionData found for sessionId:', sessionId);
             // Validate API key
             ({ valid, isMaster } = await isValidSigylApiKey(apiKey));
         }
         if (!valid) {
             console.warn('[MCP] 401 Unauthorized: Invalid or missing API key');
+            console.warn('[MCP] Request details:', JSON.stringify({ headers: req.headers, body: req.body }, null, 2));
             return res.status(401).json({ error: 'Invalid or missing Sigyl API Key' });
         }
         // -- get package name
@@ -381,19 +389,19 @@ async function deleteSession(sessionId) {
         if (!sessionData && !isMaster) {
             console.log('[CONFIG] Getting config...');
             configJSON = await getConfig(packageName);
-            console.log('[CONFIG] config:', configJSON);
+            console.log('[CONFIG] config:', JSON.stringify(configJSON, null, 2));
         }
         // 3. use package name + api key to get user's secrets
         if (!sessionData && !isMaster) {
             console.log('[SECRETS] Getting user secrets...');
             userSecrets = await getUserSecrets(packageName, apiKey);
-            console.log('[SECRETS] userSecrets:', userSecrets);
+            console.log('[SECRETS] userSecrets:', JSON.stringify(userSecrets, null, 2));
         }
         // 4. reformat secrets into z.object()
         if (!sessionData && !isMaster) {
             console.log('[CONFIG] Creating config...');
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
-            console.log('[CONFIG] filled config:', filledConfig);
+            console.log('[CONFIG] filled config:', JSON.stringify(filledConfig, null, 2));
         } else if (isMaster && !sessionData) {
             filledConfig = {};
             console.log('[CONFIG] Bypassing config filling due to master key');
@@ -403,14 +411,21 @@ async function deleteSession(sessionId) {
         if (isMaster) {
             // Master key: stateless mode, no session
             console.log('[MCP] Master key used: running in stateless mode (no session management)');
+            console.log('[MCP] filledConfig for stateless:', JSON.stringify(filledConfig, null, 2));
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
+            // Log the tools loaded by the MCP server if possible
+            if (server && server.tools) {
+                console.log('[MCP] Tools loaded (stateless):', JSON.stringify(server.tools, null, 2));
+            }
             await transport.handleRequest(req, res, req.body);
             return;
         }
         if (sessionId && sessionData) {
             // Recreate transport/server from session data
+            console.log('[MCP] Recreating transport/server from sessionData');
+            console.log('[MCP] filledConfig:', JSON.stringify(filledConfig, null, 2));
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: (sid) => {},
@@ -421,8 +436,12 @@ async function deleteSession(sessionId) {
             };
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
+            if (server && server.tools) {
+                console.log('[MCP] Tools loaded (session):', JSON.stringify(server.tools, null, 2));
+            }
         } else if (!sessionId && isInitializeRequest(req.body)) {
             // New initialization request
+            console.log('[MCP] New initialization request');
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: async (sid) => {
@@ -445,8 +464,13 @@ async function deleteSession(sessionId) {
             // Create the MCP server instance
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
+            if (server && server.tools) {
+                console.log('[MCP] Tools loaded (init):', JSON.stringify(server.tools, null, 2));
+            }
         } else {
             // Invalid request
+            console.warn('[MCP] 400 Bad Request: No valid session ID provided');
+            console.warn('[MCP] Request details:', JSON.stringify({ headers: req.headers, body: req.body }, null, 2));
             res.status(400).json({
                 jsonrpc: '2.0',
                 error: {
@@ -459,6 +483,12 @@ async function deleteSession(sessionId) {
         }
         // Handle the request
         await transport.handleRequest(req, res, req.body);
+        // Log the response sent to the client
+        if (res && res._getData) {
+            try {
+                console.log('[MCP] Response sent:', res._getData());
+            } catch {}
+        }
     });
 
     // Reusable handler for GET and DELETE requests
