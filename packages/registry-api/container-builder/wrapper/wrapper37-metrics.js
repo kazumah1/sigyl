@@ -367,6 +367,10 @@ const servers = {};
             return;
         }
         let transport;
+        let packageName;
+        let configJSON;
+        let userSecrets;
+        let filledConfig;
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             const server = createStatelessServer({ config: filledConfig });
@@ -374,11 +378,6 @@ const servers = {};
             await transport.handleRequest(req, res, req.body);
             return;
         }
-
-        let packageName;
-        let configJSON;
-        let userSecrets;
-        let filledConfig;
 
         if (sessionId && servers[sessionId]) {
             console.log('[MCP] Loaded sessionData from servers for sessionId:', sessionId);
