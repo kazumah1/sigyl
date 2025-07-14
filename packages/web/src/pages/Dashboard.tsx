@@ -337,7 +337,7 @@ const Dashboard = () => {
                         className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
                         onClick={() => navigate('/pricing')}
                       >
-                        Unlock With Enterprise
+                        Coming Soon
                       </Button>
                     </div>
                   </div>
@@ -609,7 +609,7 @@ const Dashboard = () => {
                         className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
                         onClick={() => navigate('/pricing')}
                       >
-                        Unlock With Enterprise
+                        Coming Soon
                   </Button>
                     </div>
                   </div>
