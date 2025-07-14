@@ -13,11 +13,13 @@ const redis = new Redis({
 
 async function getSession(sessionId) {
   const data = await redis.get(`mcp:session:${sessionId}`);
+  console.log('[MCP] Session data:', data);
   return data || null;
 }
 
 async function setSession(sessionId, sessionData) {
   await redis.set(`mcp:session:${sessionId}`, JSON.stringify(sessionData), { ex: 3600 }); // 1 hour expiry
+  console.log('[MCP] Session data set:', sessionData);
 }
 
 async function deleteSession(sessionId) {
@@ -396,6 +398,7 @@ async function deleteSession(sessionId) {
             await transport.handleRequest(req, res, req.body);
             return;
         }
+        console.log('[MCP] isInitializeRequest(req.body):', isInitializeRequest(req.body));
         if (sessionId && sessionData) {
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => sessionId,
@@ -407,11 +410,6 @@ async function deleteSession(sessionId) {
             };
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
-            if (server && server.tools) {
-                console.log('[MCP] Tools loaded (session):', JSON.stringify(server.tools, null, 2));
-            } else {
-                console.log('[MCP] No tools loaded (session)');
-            }
         } else if (!sessionId && isInitializeRequest(req.body)) {
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
@@ -433,11 +431,6 @@ async function deleteSession(sessionId) {
             };
             const server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
-            if (server && server.tools) {
-                console.log('[MCP] Tools loaded (init):', JSON.stringify(server.tools, null, 2));
-            } else {
-                console.log('[MCP] No tools loaded (init)');
-            }
         } else {
             console.warn('[MCP] 400 Bad Request: No valid session ID provided');
             res.status(400).json({
