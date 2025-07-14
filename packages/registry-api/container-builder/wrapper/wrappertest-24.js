@@ -1,17 +1,13 @@
 const express = require("express");
 const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
+const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
 
 // 1. create the /mcp endpoint
 (async () => {
-    // session management Map
-    const sessions = new Map();
-    function generateSessionId() {
-        return randomUUID();
-    }
-
     console.log('[WRAPPER] Starting wrapper...');
     const createStatelessServer = (await import("./server.js")).default;
 
@@ -143,8 +139,6 @@ const { randomUUID } = require("crypto");
     }
     async function createConfig(configJSON, userSecrets) {
         // Accepts configJSON with required_secrets and optional_secrets arrays
-        console.log('[CONFIG] configJSON:', configJSON);
-        console.log('[CONFIG] userSecrets:', userSecrets);
         try {
         if (!configJSON || (typeof configJSON !== "object") || (!Array.isArray(configJSON.required_secrets) && !Array.isArray(configJSON.optional_secrets))) {
             throw new Error("configJSON must have required_secrets and/or optional_secrets arrays");
@@ -220,24 +214,16 @@ const { randomUUID } = require("crypto");
         }
     }
 
-    // Handle GET requests for health checks (Claude Desktop sends these)
-    app.get('/mcp', async (req, res) => {
-        try {
-            const packageName = await getPackageName(req);
-            res.json({
-                status: 'ready',
-                transport: 'http',
-                endpoint: '/mcp',
-                package: packageName,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-        console.error('[MCP] GET health check failed:', error);
-        res.status(500).json({ error: 'Health check failed' });
-        }
-    });
+    // Map to store transports by session ID
+    const transports = {};
 
     app.post('/mcp', async (req, res) => {
+        const sessionId = req.headers['mcp-session-id'];
+        if (sessionId) {
+            console.log(`[MCP] Incoming call with session ID: ${sessionId}`);
+        } else {
+            console.log(`[MCP] Incoming call with NO session ID (likely initialize)`);
+        }
         // -- accepts api key
         const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
         console.log('[MCP] Received /mcp POST');
@@ -268,7 +254,6 @@ const { randomUUID } = require("crypto");
             console.log('[CONFIG] Bypassing config fetching due to master key');
         }
 
-
         // 3. use package name + api key to get user's secrets
         let userSecrets;
         if (!isMaster) {
@@ -283,7 +268,6 @@ const { randomUUID } = require("crypto");
         let filledConfig;
         if (!isMaster) {
             console.log('[CONFIG] Creating config...');
-            // Assign to the outer variable
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
             console.log('[CONFIG] filled config:', filledConfig);
         } else {
@@ -291,54 +275,75 @@ const { randomUUID } = require("crypto");
             console.log('[CONFIG] Bypassing config filling due to master key');
         }
 
-        // 5. pass z.object() into createStatelessServer() as config
-        console.log('[SERVER] Creating server...');
-        const server = createStatelessServer({ config: filledConfig });
-        // 6. StreamableHTTPServerTransport instance
-        // TODO: Session management
-        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-        
-        // handle close
-        res.on('close', () => {
-            transport.close();
-            server.close();
-        });
-
-        // 9. collect metrics (request, response, timing, errors, user info, etc.)
-        //    -- send metrics to backend endpoint asynchronously
-
-        // 7. connect
-        await server.connect(transport);
-
-        const method = req.body?.method;
-        if (!isMaster) {
-            if (method === 'initialize') {
-                console.log('[SESSION] Initializing session');
-                const sessionId = generateSessionId();
-                console.log('[SESSION] Session ID for initialize:', sessionId);
-                sessions.set(sessionId, { created: Date.now() });
-
-                res.set('Mcp-Session-Id', sessionId);
-                res.set('MCP-Protocol-Version', '2025-06-18');
-
-                console.log('[SESSION] Sending initialize response');
-                await transport.handleRequest(req, res, req.body);
-                return;
-            } else {
-                console.log('[SESSION] Handling request');
-                const sessionId = req.headers['mcp-session-id'];
-                console.log('[SESSION] Session ID for request:', sessionId);
-                if (!sessionId || !sessions.has(sessionId)) {
-                    return res.status(400).json({ error: 'Missing or invalid session'})
-                }
-                // 8. handle requests
-                await transport.handleRequest(req, res, req.body);
-            }
-        } else {
-            console.log('[SESSION] Handling request as master');
+        // -- MCP session/stateless management
+        let transport;
+        if (isMaster) {
+            // Master key: stateless mode, no session
+            console.log('[MCP] Master key used: running in stateless mode (no session management)');
+            transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+            const server = createStatelessServer({ config: filledConfig });
+            await server.connect(transport);
             await transport.handleRequest(req, res, req.body);
+            return;
         }
+        if (sessionId && transports[sessionId]) {
+            // Reuse existing transport
+            transport = transports[sessionId];
+        } else if (!sessionId && isInitializeRequest(req.body)) {
+            // New initialization request
+            transport = new StreamableHTTPServerTransport({
+                sessionIdGenerator: () => randomUUID(),
+                onsessioninitialized: (sid) => {
+                    transports[sid] = transport;
+                    console.log('[MCP] Session initialized:', sid);
+                },
+            });
+            transport.onclose = () => {
+                if (transport.sessionId) {
+                    delete transports[transport.sessionId];
+                    console.log('[MCP] Session closed:', transport.sessionId);
+                }
+            };
+            // Create the MCP server instance
+            const server = createStatelessServer({ config: filledConfig });
+            await server.connect(transport);
+        } else {
+            // Invalid request
+            res.status(400).json({
+                jsonrpc: '2.0',
+                error: {
+                    code: -32000,
+                    message: 'Bad Request: No valid session ID provided',
+                },
+                id: null,
+            });
+            return;
+        }
+        // Handle the request
+        await transport.handleRequest(req, res, req.body);
     });
+
+    // Reusable handler for GET and DELETE requests
+    const handleSessionRequest = async (req, res) => {
+        const sessionId = req.headers['mcp-session-id'];
+        if (sessionId) {
+            console.log(`[MCP] Session request with session ID: ${sessionId}`);
+        } else {
+            console.log(`[MCP] Session request with NO session ID`);
+        }
+        if (!sessionId || !transports[sessionId]) {
+            res.status(400).send('Invalid or missing session ID');
+            return;
+        }
+        const transport = transports[sessionId];
+        await transport.handleRequest(req, res);
+    };
+
+    // Handle GET requests for server-to-client notifications via SSE
+    app.get('/mcp', handleSessionRequest);
+
+    // Handle DELETE requests for session termination
+    app.delete('/mcp', handleSessionRequest);
 
     // 11. listen
     const PORT = 8080;
