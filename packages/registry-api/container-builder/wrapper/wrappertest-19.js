@@ -142,6 +142,8 @@ const { z } = require("zod");
     }
     async function createConfig(configJSON, userSecrets) {
         // Accepts configJSON with required_secrets and optional_secrets arrays
+        console.log('[CONFIG] configJSON:', configJSON);
+        console.log('[CONFIG] userSecrets:', userSecrets);
         if (!configJSON || (typeof configJSON !== "object") || (!Array.isArray(configJSON.required_secrets) && !Array.isArray(configJSON.optional_secrets))) {
             throw new Error("configJSON must have required_secrets and/or optional_secrets arrays");
         }
