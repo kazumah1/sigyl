@@ -379,11 +379,19 @@ async function deleteSession(sessionId) {
 
         if (sessionId && await getSession(sessionId)) {
             console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
-            filledConfig = await getSession(sessionId);
+            ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId));
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: undefined,
                 onsessioninitialized: async (sessionId) => {
-                    await setSession(sessionId, filledConfig);
+                    await setSession(sessionId, {
+                        filledConfig: filledConfig,
+                        isMaster: isMaster,
+                        apiKey: apiKey,
+                        packageName: packageName,
+                        configJSON: configJSON,
+                        userSecrets: userSecrets,
+                        valid: valid
+                    });
                 }
             });
             transport.onclose = async () => {
@@ -401,7 +409,15 @@ async function deleteSession(sessionId) {
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: async (sessionId) => {
-                    await setSession(sessionId, filledConfig);
+                    await setSession(sessionId, {
+                        filledConfig: filledConfig,
+                        isMaster: false,
+                        apiKey: apiKey,
+                        packageName: packageName,
+                        configJSON: configJSON,
+                        userSecrets: userSecrets,
+                        valid: valid
+                    });
                 }
             });
             transport.onclose = async () => {
@@ -434,11 +450,19 @@ async function deleteSession(sessionId) {
             return;
         }
         // Recreate transport/server from session data
-        const filledConfig = await getSession(sessionId);
+        const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId);
         const transport = new StreamableHTTPServerTransport({ 
             sessionIdGenerator: undefined,
             onsessioninitialized: async (sessionId) => {
-                await setSession(sessionId, filledConfig);
+                await setSession(sessionId, {
+                    filledConfig: filledConfig,
+                    isMaster: isMaster,
+                    apiKey: apiKey,
+                    packageName: packageName,
+                    configJSON: configJSON,
+                    userSecrets: userSecrets,
+                    valid: valid
+                });
             }
         });
         transport.onclose = async () => {
