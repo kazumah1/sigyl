@@ -226,7 +226,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-25.cjs'
+              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrappertest-26.cjs'
             ],
             dir: request.subdirectory || '.'
           },
@@ -287,12 +287,6 @@ RUN npm prune --production
 # Change ownership to non-root user
 RUN chown -R mcpuser:mcpuser /app
 USER mcpuser
-
-# Environment variables
-ENV NODE_ENV=production
-ENV MCP_TRANSPORT=http
-ENV MCP_ENDPOINT=/mcp
-ENV PORT=8080
 
 # Expose port
 EXPOSE 8080
@@ -590,6 +584,8 @@ EOF`
                 { name: 'NODE_ENV', value: 'production' },
                 { name: 'MCP_TRANSPORT', value: 'http' },
                 { name: 'MCP_ENDPOINT', value: '/mcp' },
+                { name: 'UPSTASH_REDIS_REST_URL', value: process.env.UPSTASH_REDIS_REST_URL },
+                { name: 'UPSTASH_REDIS_REST_TOKEN', value: process.env.UPSTASH_REDIS_REST_TOKEN },
                 // Do NOT set PORT here, and filter it from user envs
                 ...Object.entries(request.environmentVariables)
                   .filter(([name]) => name !== 'PORT')
@@ -1067,14 +1063,6 @@ COPY . .
 # Change ownership to non-root user
 RUN chown -R mcpuser:mcpuser /app
 USER mcpuser
-
-# MCP-specific environment variables
-ENV NODE_ENV=production
-ENV MCP_TRANSPORT=http
-ENV MCP_ENDPOINT=/mcp
-ENV FORCE_HTTPS=true
-ENV SESSION_SECURE=true
-ENV REQUIRE_TOKEN_VALIDATION=true
 
 # Health check for Cloud Run
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\

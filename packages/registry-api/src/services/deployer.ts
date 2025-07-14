@@ -450,8 +450,9 @@ export async function deployRepo(request: DeploymentRequest, onLog?: LogCallback
       MCP_TRANSPORT: 'http',
       MCP_ENDPOINT: '/mcp',
       PORT: '8080',
-      SIGYL_MASTER_KEY: process.env.SIGYL_MASTER_KEY || ''
-      // SIGYL_API_KEY removed - now uses user's API key from request
+      SIGYL_MASTER_KEY: process.env.SIGYL_MASTER_KEY || '',
+      UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL || '',
+      UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || ''
     };
 
     // Initialize Cloud Run service
