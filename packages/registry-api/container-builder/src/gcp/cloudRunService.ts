@@ -260,8 +260,8 @@ RUN if [ -f package-lock.json ]; then \
 ${config.language === 'typescript' ? `
 # Copy TypeScript configuration and source files
 COPY tsconfig.json ./
-COPY *.ts ./
 COPY sigyl.yaml ./
+COPY . .
 
 # Build TypeScript - compile to JavaScript
 RUN npm run build
@@ -270,6 +270,7 @@ RUN echo "=== Files after TypeScript compilation ===" && ls -la /app && echo "==
 ` : `
 # For JavaScript projects, just copy sigyl.yaml (if present)
 COPY sigyl.yaml ./
+COPY . ./
 `}
 
 # Copy any remaining files (in case there are other assets)
