@@ -33,12 +33,6 @@ const Pricing = () => {
             </p>
           </div>
           {/* Rickroll GIF Embed */}
-          <div className="flex justify-center mb-12">
-            <div
-              className="w-full max-w-md"
-              dangerouslySetInnerHTML={{ __html: `<div class=\"tenor-gif-embed\" data-postid=\"22954713\" data-share-method=\"host\" data-aspect-ratio=\"1\" data-width=\"100%\"><a href=\"https://tenor.com/view/rickroll-roll-rick-never-gonna-give-you-up-never-gonna-gif-22954713\">Rickroll Never Gonna Give You Up GIF</a>from <a href=\"https://tenor.com/search/rickroll-gifs\">Rickroll GIFs</a></div>` }}
-            />
-          </div>
 
           {/* Pricing Cards */}
           <div className="flex justify-center">
