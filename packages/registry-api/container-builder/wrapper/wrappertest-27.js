@@ -6,6 +6,7 @@ const fetch = require("node-fetch");
 const { z } = require("zod");
 const { randomUUID } = require("crypto");
 const { Redis } = require('@upstash/redis');
+const { LetterText } = require("lucide");
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN
@@ -13,7 +14,7 @@ const redis = new Redis({
 
 async function getSession(sessionId) {
   const data = await redis.get(`mcp:session:${sessionId}`);
-  return data ? JSON.parse(data) : null;
+  return data || null;
 }
 
 async function setSession(sessionId, sessionData) {
@@ -240,7 +241,7 @@ async function deleteSession(sessionId) {
             console.log(`[MCP] Incoming call with NO session ID (likely initialize)`);
         }
         // -- accepts api key
-        const apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
+        let apiKey = req.headers['x-sigyl-api-key'] || req.query.apiKey;
         console.log('[MCP] Received /mcp POST');
 
         // -- validate api key

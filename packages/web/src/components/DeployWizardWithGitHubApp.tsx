@@ -504,13 +504,13 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                         </Badge>
                       )}
                       {selectedRepo.has_sigyl && (
-                        <Badge className="text-xs border-white/20 text-white rounded-md">
+                        <Badge className="text-xs bg-white/20 text-white rounded-md hover:bg-white/20 hover:text-white">
                           <Settings className="w-3 h-3 mr-1" />
                           Sigyl Ready
                         </Badge>
                       )}
                       {selectedRepo.has_mcp && !selectedRepo.has_sigyl && (
-                        <Badge className="text-xs border-white/20 text-white rounded-md">
+                        <Badge className="text-xs bg-white/20 text-white rounded-md hover:bg-white/20 hover:text-white">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           MCP Ready
                         </Badge>
