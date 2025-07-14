@@ -238,7 +238,7 @@ export class CloudRunService {
               '-c',
               `cat > Dockerfile << 'EOF'
 # Sigyl MCP Server - Node.js Runtime
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -1037,7 +1037,7 @@ export function generateMCPDockerfile(_packageJson?: any): string {
   return `# Legacy MCP Server Dockerfile for Google Cloud Run deployment
 # Migrating to Sigyl schema - use 'runtime: node' or 'runtime: container'
 
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
