@@ -134,6 +134,63 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
+
+  /* Highlight text effect */
+  .highlight-text {
+    position: relative;
+    color: white;
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .highlight-text::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,1) var(--highlight-progress, 0), transparent 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.2s ease;
+    z-index: 1;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+  }
+
+  /* Slower scroll behavior for the highlight section */
+  .scroll-slow {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scroll snap for the highlight section */
+  .scroll-snap-section {
+    scroll-snap-type: y mandatory;
+    scroll-snap-stop: always;
+  }
+
+  /* Enhanced scroll behavior for the highlight section */
+  .scroll-highlight-section {
+    scroll-behavior: smooth;
+    transition: all 0.3s ease;
+  }
+
+  /* Text animation for the highlight section */
+  @keyframes textReveal {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .highlight-text {
+    animation: textReveal 1s ease-out forwards;
+  }
 }
 
 .btn-secondary {

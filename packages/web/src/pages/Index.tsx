@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Shield, Zap, Globe } from "lucide-react";
@@ -10,9 +10,39 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import MarkerHighlight from "@/components/MarkerHighlight";
+import ScrollHighlightSection from "@/components/ScrollHighlightSection";
+import SigylScrollHighlight from "@/components/SigylScrollHighlight";
 
 const Index = () => {
   const navigate = useNavigate();
+  const scrollSectionRef = useRef<HTMLDivElement>(null);
+  const [markerProgress, setMarkerProgress] = React.useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!scrollSectionRef.current) return;
+      
+      const rect = scrollSectionRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      // Calculate scroll progress within the section
+      const progress = Math.max(0, Math.min(1, 
+        (windowHeight - rect.top) / windowHeight
+      ));
+      setMarkerProgress(progress);
+      
+      // Apply highlight effect based on scroll progress
+      const highlightElement = scrollSectionRef.current.querySelector('.highlight-text') as HTMLElement;
+      if (highlightElement) {
+        highlightElement.style.setProperty('--highlight-progress', progress.toString());
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Call once on mount
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const features = [
     {
@@ -52,11 +82,11 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden scroll-snap-section">
       <PageHeader />
       <HeroSection
         title="deploying servers for the world of AI agents."
-        subtitle="open source, free, and enterprise quality MCP community"
+        subtitle="always free, enterprise grade MCP development community"
         buttons={
           <>
             <Button 
@@ -79,6 +109,7 @@ const Index = () => {
           </>
         }
       />
+      <SigylScrollHighlight />
       {/* Liquid Glass Blobs */}
       <div className="liquid-glass-blob blob-1" />
       <div className="liquid-glass-blob blob-2" />
