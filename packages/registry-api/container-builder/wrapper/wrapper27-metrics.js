@@ -57,7 +57,7 @@ async function deleteSession(sessionId) {
 
       res.on('finish', async () => {
         try {
-          const sessionId = req.headers['mcp-session-id'];
+          let sessionId = req.headers['mcp-session-id'];
           let eventSequence = 1;
           let isStateless = false;
 
