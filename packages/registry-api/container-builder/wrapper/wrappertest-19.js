@@ -141,16 +141,16 @@ const fetch = require("node-fetch");
         }
     }
     async function createConfig(configJSON, userSecrets) {
-        // Expecting configJSON to be a JSON schema object
-        if (!configJSON || typeof configJSON !== "object" || configJSON.type !== "object" || !configJSON.properties) {
-            throw new Error("configJSON must be a JSON schema object with properties");
+        // Accepts configJSON with required_secrets and optional_secrets arrays
+        if (!configJSON || (typeof configJSON !== "object") || (!Array.isArray(configJSON.required_secrets) && !Array.isArray(configJSON.optional_secrets))) {
+            throw new Error("configJSON must have required_secrets and/or optional_secrets arrays");
         }
 
         const zodShape = {};
         const configValues = {};
-        const requiredFields = Array.isArray(configJSON.required) ? configJSON.required : [];
 
-        for (const [fieldName, field] of Object.entries(configJSON.properties)) {
+        // Helper to convert a field to zod type
+        function fieldToZod(field, isRequired) {
             let zodType;
             switch (field.type) {
                 case "string":
@@ -170,30 +170,45 @@ const fetch = require("node-fetch");
                 default:
                     zodType = z.any();
             }
-
             if (field.description) {
                 zodType = zodType.describe(field.description);
             }
             if (field.default !== undefined) {
                 zodType = zodType.default(field.default);
             }
-            if (!requiredFields.includes(fieldName)) {
+            if (!isRequired) {
                 zodType = zodType.optional();
             }
+            return zodType;
+        }
 
-            zodShape[fieldName] = zodType;
-
-            // Fill config value
-            if (userSecrets && userSecrets[fieldName] !== undefined) {
-                configValues[fieldName] = userSecrets[fieldName];
-            } else if (field.default !== undefined) {
-                configValues[fieldName] = field.default;
+        // Add required fields
+        if (Array.isArray(configJSON.required_secrets)) {
+            for (const field of configJSON.required_secrets) {
+                zodShape[field.name] = fieldToZod(field, true);
+                // Fill config value
+                if (userSecrets && userSecrets[field.name] !== undefined) {
+                    configValues[field.name] = userSecrets[field.name];
+                } else if (field.default !== undefined) {
+                    configValues[field.name] = field.default;
+                }
+            }
+        }
+        // Add optional fields
+        if (Array.isArray(configJSON.optional_secrets)) {
+            for (const field of configJSON.optional_secrets) {
+                zodShape[field.name] = fieldToZod(field, false);
+                // Fill config value
+                if (userSecrets && userSecrets[field.name] !== undefined) {
+                    configValues[field.name] = userSecrets[field.name];
+                } else if (field.default !== undefined) {
+                    configValues[field.name] = field.default;
+                }
             }
         }
 
         const configSchema = z.object(zodShape);
         const filledConfig = configSchema.parse(configValues);
-
         return { configSchema, filledConfig };
     }
 
