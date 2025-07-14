@@ -144,6 +144,7 @@ const { z } = require("zod");
         // Accepts configJSON with required_secrets and optional_secrets arrays
         console.log('[CONFIG] configJSON:', configJSON);
         console.log('[CONFIG] userSecrets:', userSecrets);
+        try {
         if (!configJSON || (typeof configJSON !== "object") || (!Array.isArray(configJSON.required_secrets) && !Array.isArray(configJSON.optional_secrets))) {
             throw new Error("configJSON must have required_secrets and/or optional_secrets arrays");
         }
@@ -209,9 +210,13 @@ const { z } = require("zod");
             }
         }
 
-        const configSchema = z.object(zodShape);
-        const filledConfig = configSchema.parse(configValues);
-        return { configSchema, filledConfig };
+            const configSchema = z.object(zodShape);
+            const filledConfig = configSchema.parse(configValues);
+            return { configSchema, filledConfig };
+        } catch (err) {
+            console.error('[CONFIG] Error creating config:', err);
+            return { configSchema: null, filledConfig: {} };
+        }
     }
 
     // Handle GET requests for health checks (Claude Desktop sends these)
