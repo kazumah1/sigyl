@@ -59,6 +59,81 @@ import { APIKeyService, APIKey } from '@/services/apiKeyService';
 import { SecretsService } from '@/services/secretsService';
 import { deployMCPWithApp, fetchBranchesWithApp } from '@/lib/githubApp';
 
+// ToolAccordion: Renders clickable tool cards with input schema details
+const ToolAccordion: React.FC<{ tools: any[] }> = ({ tools }) => {
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+
+  const handleToggle = (idx: number) => {
+    setOpenIndex(openIndex === idx ? null : idx);
+  };
+
+  return (
+    <div className="space-y-4">
+      {tools.map((tool, index) => {
+        const toolName = tool?.tool_name || tool?.name || `Tool ${index + 1}`;
+        const toolDescription = typeof tool === 'string'
+          ? 'This tool provides additional functionality for the MCP server.'
+          : tool?.description || 'Tool functionality and usage details would be displayed here.';
+        const inputSchema = tool?.input_schema || tool?.inputSchema;
+        const properties = inputSchema?.properties || {};
+        const required = Array.isArray(inputSchema?.required) ? inputSchema.required : [];
+        const hasSchema = inputSchema && Object.keys(properties).length > 0;
+
+        return (
+          <div
+            key={index}
+            className={`p-4 bg-white/10 rounded-lg border border-white/20 transition-all duration-200 cursor-pointer ${openIndex === index ? 'ring-2 ring-white/30' : ''}`}
+            onClick={() => handleToggle(index)}
+            tabIndex={0}
+            role="button"
+            aria-expanded={openIndex === index}
+            aria-controls={`tool-schema-${index}`}
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                {toolName}
+              </h4>
+              <span className="ml-2 text-gray-400 text-xs">{openIndex === index ? '▲' : '▼'}</span>
+            </div>
+            <p className="text-gray-400 text-sm mb-2">{toolDescription}</p>
+            {openIndex === index && (
+              <div id={`tool-schema-${index}`} className="mt-2">
+                {hasSchema ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm border border-white/10 rounded">
+                      <thead>
+                        <tr className="bg-white/10">
+                          <th className="px-3 py-2 text-left text-white">Parameter</th>
+                          <th className="px-3 py-2 text-left text-white">Type</th>
+                          <th className="px-3 py-2 text-left text-white">Required</th>
+                          <th className="px-3 py-2 text-left text-white">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(properties).map(([param, def]: [string, any]) => (
+                          <tr key={param} className="border-t border-white/10">
+                            <td className="px-3 py-2 text-white font-mono">{param}</td>
+                            <td className="px-3 py-2 text-gray-200">{def.type || '-'}</td>
+                            <td className="px-3 py-2 text-gray-200">{required.includes(param) ? 'Yes' : 'No'}</td>
+                            <td className="px-3 py-2 text-gray-400">{def.description || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-xs italic mt-2">No input parameters documented for this tool.</div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const MCPPackagePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -1191,26 +1266,7 @@ const MCPPackagePage = () => {
                   </CardHeader>
                   <CardContent>
                     {pkg.tools && pkg.tools.length > 0 ? (
-                      <div className="space-y-4">
-                        {pkg.tools.map((tool, index) => {
-                          const toolName = (tool as any)?.tool_name || `Tool ${index + 1}`;
-                          const toolDescription = typeof tool === 'string' 
-                            ? 'This tool provides additional functionality for the MCP server.'
-                            : (tool as any)?.description || 'Tool functionality and usage details would be displayed here.';
-
-                          return (
-                            <div key={index} className="p-4 bg-white/10 rounded-lg border border-white/20">
-                              <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                                <Code className="w-4 h-4" />
-                                {toolName}
-                              </h4>
-                              <p className="text-gray-400 text-sm">
-                                {toolDescription}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <ToolAccordion tools={pkg.tools} />
                     ) : (
                       <div className="text-center py-8 text-gray-400">
                         <Code className="w-12 h-12 mx-auto mb-4 opacity-50" />

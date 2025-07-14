@@ -241,9 +241,9 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                 >
                   {pkg.name}
                 </CardTitle>
-                <CardDescription className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {/* <CardDescription className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {pkg.version && `v${pkg.version}`} • {pkg.downloads_count} downloads
-                </CardDescription>
+                </CardDescription> */}
               </div>
             </div>
           </div>
