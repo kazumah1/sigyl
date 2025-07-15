@@ -1,6 +1,5 @@
 const express = require("express");
-const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
-const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+const { StreamableHTTPServerTransport, EventStore } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
@@ -369,6 +368,7 @@ async function deleteSession(sessionId) {
         let configJSON;
         let userSecrets;
         let filledConfig = {};
+        let streamId;
         if (isMaster) {
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             server = createStatelessServer({ config: filledConfig });
@@ -379,9 +379,12 @@ async function deleteSession(sessionId) {
 
         if (sessionId && await getSession(sessionId)) {
             console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
-            ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId));
+            ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster, streamId } = await getSession(sessionId));
+            const eventStore = new EventStore(
+                streamId
+            )
             transport = new StreamableHTTPServerTransport({ 
-                sessionIdGenerator: undefined,
+                sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
@@ -390,12 +393,24 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid
+                        valid: valid,
+                        streamId: streamId
                     });
-                }
+                },
+                eventStore: eventStore
             });
             transport.onclose = async () => {
                 if (transport.sessionId) {
+                    setSession(transport.sessionId, {
+                        filledConfig: filledConfig,
+                        isMaster: isMaster,
+                        apiKey: apiKey,
+                        packageName: packageName,
+                        configJSON: configJSON,
+                        userSecrets: userSecrets,
+                        valid: valid,
+                        streamId: transport.eventStore.streamId
+                    })
                     await deleteSession(transport.sessionId);
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
@@ -406,6 +421,10 @@ async function deleteSession(sessionId) {
             configJSON = await getConfig(packageName);
             userSecrets = await getUserSecrets(packageName, apiKey);
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
+            streamId = randomUUID();
+            const eventStore = new EventStore(
+                streamId
+            )
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: async (sessionId) => {
@@ -416,12 +435,24 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid
+                        valid: valid,
+                        streamId: streamId
                     });
-                }
+                },
+                eventStore: eventStore
             });
             transport.onclose = async () => {
                 if (transport.sessionId) {
+                    setSession(sessionId, {                        
+                        filledConfig: filledConfig,
+                        isMaster: false,
+                        apiKey: apiKey,
+                        packageName: packageName,
+                        configJSON: configJSON,
+                        userSecrets: userSecrets,
+                        valid: valid,
+                        streamId: transport.eventStore.streamId
+                    });
                     await deleteSession(transport.sessionId);
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
                 }
@@ -450,9 +481,12 @@ async function deleteSession(sessionId) {
             return;
         }
         // Recreate transport/server from session data
-        const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId);
+        const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster, streamId } = await getSession(sessionId);
+        const eventStore = new EventStore(
+            streamId
+        )
         const transport = new StreamableHTTPServerTransport({ 
-            sessionIdGenerator: undefined,
+            sessionIdGenerator: () => sessionId,
             onsessioninitialized: async (sessionId) => {
                 await setSession(sessionId, {
                     filledConfig: filledConfig,
@@ -461,12 +495,24 @@ async function deleteSession(sessionId) {
                     packageName: packageName,
                     configJSON: configJSON,
                     userSecrets: userSecrets,
-                    valid: valid
+                    valid: valid,
+                    streamId: streamId
                 });
-            }
+            },
+            eventStore: eventStore
         });
         transport.onclose = async () => {
             if (transport.sessionId) {
+                setSession(transport.sessionId, {
+                    filledConfig: filledConfig,
+                    isMaster: isMaster,
+                    apiKey: apiKey,
+                    packageName: packageName,
+                    configJSON: configJSON,
+                    userSecrets: userSecrets,
+                    valid: valid,
+                    streamId: transport.eventStore.streamId
+                });
                 await deleteSession(transport.sessionId);
                 console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
             }

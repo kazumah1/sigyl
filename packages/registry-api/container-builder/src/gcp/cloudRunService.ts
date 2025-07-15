@@ -192,6 +192,7 @@ export class CloudRunService {
     const imageName = request.repoName.replace('/', '-').toLowerCase();
     const imageTag = `${Date.now()}-${request.branch}`;
     const imageUri = `gcr.io/${this.projectId}/sigyl-mcp-node/${imageName}:${imageTag}`;
+    const WRAPPER_FILENAME = process.env.WRAPPER_FILENAME || 'wrapper.cjs';
     
     console.log(`🔨 Building Node.js runtime image: ${imageUri}`);
     
@@ -226,7 +227,7 @@ export class CloudRunService {
             entrypoint: 'bash',
             args: [
               '-c',
-              'mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/wrapper40-metrics.cjs'
+              `mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/${WRAPPER_FILENAME}`
             ],
             dir: request.subdirectory || '.'
           },
@@ -365,14 +366,15 @@ EOF`
     const imageName = request.repoName.replace('/', '-').toLowerCase();
     const imageTag = `${Date.now()}-${request.branch}`;
     const imageUri = `gcr.io/${this.projectId}/sigyl-mcp-container/${imageName}:${imageTag}`;
-    
+
     console.log(`🔨 Building container runtime image: ${imageUri}`);
-    
+
     const dockerfilePath = config.build?.dockerfile || 'Dockerfile';
-    
+    const WRAPPER_FILENAME = process.env.WRAPPER_FILENAME || 'wrapper.cjs';
+
     try {
       const accessToken = await this.getAccessToken();
-      
+
       // Create Cloud Build configuration that downloads source from GitHub using token
       const buildConfig = {
         steps: [
@@ -395,47 +397,50 @@ EOF`
               'tar -xzf source.tar.gz --strip-components=1 && rm source.tar.gz'
             ]
           },
-          // Step 2.3: Diagnostics before copying wrapper.js
+          // Step 2.1: Create wrapper directory and download wrapper.cjs from GCS bucket (using bash)
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== PWD (before copy) ===" && pwd && echo "=== ROOT DIR (before copy) ===" && ls -l && echo "=== RECURSIVE LS (before copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+              `mkdir -p wrapper && curl -o wrapper/wrapper.cjs https://storage.googleapis.com/sigyl-artifacts/${WRAPPER_FILENAME}`
             ],
             dir: request.subdirectory || '.'
           },
-          // Step 2.4: Copy wrapper.js into the extracted repo root before Docker build, with diagnostics
+          // Step 2.2: Diagnostics before patching Dockerfile
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== PWD (in copy step) ===" && pwd && echo "=== ROOT DIR (in copy step, before copy) ===" && ls -l && mkdir -p wrapper && cp /workspace/packages/registry-api/container-builder/wrapper/wrapper.js wrapper/wrapper.js && echo "=== WRAPPER DIR (after copy) ===" && ls -l wrapper'
+              'echo "=== PWD (before patch) ===" && pwd && echo "=== ROOT DIR (before patch) ===" && ls -l && echo "=== RECURSIVE LS (before patch) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
             ],
             dir: request.subdirectory || '.'
           },
-          // Step 2.5: Diagnostics after copying wrapper.js
+          // Step 2.3: Patch the Dockerfile using dockerfilePatcher.js
+          {
+            name: 'node',
+            entrypoint: 'node',
+            args: [
+              (request.subdirectory ? `${request.subdirectory}/` : '') + 'packages/registry-api/container-builder/src/gcp/dockerfilePatcher.js',
+              dockerfilePath
+            ],
+            dir: request.subdirectory || '.',
+            env: [
+              `WRAPPER_FILENAME=${WRAPPER_FILENAME}`
+            ]
+          },
+          // Step 2.4: Diagnostics after patching Dockerfile
           {
             name: 'gcr.io/cloud-builders/gcloud',
             entrypoint: 'bash',
             args: [
               '-c',
-              'echo "=== PWD (after copy) ===" && pwd && echo "=== ROOT DIR (after copy) ===" && ls -l && echo "=== RECURSIVE LS (after copy) ===" && ls -lR . && if [ -f .dockerignore ]; then echo "=== .dockerignore contents ===" && cat .dockerignore; else echo ".dockerignore not found"; fi'
+              'echo "=== PWD (after patch) ===" && pwd && echo "=== ROOT DIR (after patch) ===" && ls -l && echo "=== RECURSIVE LS (after patch) ===" && ls -lR . && if [ -f Dockerfile ]; then echo "=== Dockerfile contents ===" && cat Dockerfile; else echo "Dockerfile not found"; fi'
             ],
             dir: request.subdirectory || '.'
           },
-          // Step 2.6: Diagnostics before Docker build to confirm build context and files
-          {
-            name: 'gcr.io/cloud-builders/gcloud',
-            entrypoint: 'bash',
-            args: [
-              '-c',
-              'echo "=== PWD (before docker build) ===" && pwd && echo "=== ROOT DIR (before docker build) ===" && ls -l && echo "=== RECURSIVE LS (before docker build) ===" && ls -lR .'
-            ],
-            dir: request.subdirectory || '.'
-          },
-          // Step 3: Build using existing Dockerfile
+          // Step 3: Build using patched Dockerfile
           {
             name: 'gcr.io/cloud-builders/docker',
             args: [
@@ -456,7 +461,7 @@ EOF`
       };
 
       console.log('📦 Submitting build to Google Cloud Build...');
-      
+
       const buildResponse = await fetch(
         `https://cloudbuild.googleapis.com/v1/projects/${this.projectId}/builds`,
         {
@@ -475,18 +480,18 @@ EOF`
       }
 
       const operation = await buildResponse.json() as any;
-      
+
       // Poll for build completion
       console.log('⏳ Waiting for build to complete...');
       const buildId = operation.metadata?.build?.id;
-      
+
       if (!buildId) {
         throw new Error('No build ID returned from Cloud Build');
       }
 
       // Wait for build to complete
       await this.waitForBuildCompletion(buildId, accessToken);
-      
+
       console.log('✅ Container runtime image built and pushed successfully');
       return imageUri;
 
