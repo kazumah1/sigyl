@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { CloudRunService, CloudRunConfig } from '../../container-builder/src/gcp/cloudRunService';
 import { PackageService } from '../services/packageService';
+import { requirePermissions } from '../middleware/auth';
 
 const router = express.Router();
 const packageService = new PackageService();
@@ -17,7 +18,7 @@ const CLOUD_RUN_CONFIG: CloudRunConfig = {
  * Get deployment logs
  * GET /api/v1/deployments/:id/logs
  */
-router.get('/:id/logs', async (req: Request, res: Response) => {
+router.get('/:id/logs', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { limit = 100, since } = req.query;

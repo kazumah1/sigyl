@@ -410,7 +410,7 @@ const Secrets = () => {
               <div>
                 <h4 className="font-medium text-yellow-400 mb-1">Security Notice</h4>
                 <p className="text-sm text-gray-400">
-                  Your secrets are encrypted at rest and only accessible during deployment. 
+                  Your secrets are encrypted at rest and only accessible during deployment.
                   Never share your secret values or commit them to version control.
                 </p>
               </div>

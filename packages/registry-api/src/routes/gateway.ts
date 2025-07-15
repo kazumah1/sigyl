@@ -1,3 +1,7 @@
+// ENFORCEMENT: All endpoints must only use the API key for validation/identification.
+// All privileged logic (DB writes, updates, etc.) must use SIGYL_MASTER_KEY or internal credentials.
+// For /connect and /:sessionId/*, validate the API key and use it only for identification, not for backend logic.
+// /cleanup must be admin-only. Do not add permission-based logic for user keys.
 import express from 'express';
 import { GatewayService } from '../services/gatewayService';
 import { APIResponse } from '../types';

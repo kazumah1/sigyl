@@ -11,7 +11,7 @@ const router = Router();
  */
 router.post('/', requireHybridAuth, async (req: Request, res: Response) => {
   try {
-    const { name, permissions, expires_at }: CreateAPIKeyRequest = req.body;
+    const { name, permissions, expires_at, scopes }: CreateAPIKeyRequest = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -22,12 +22,22 @@ router.post('/', requireHybridAuth, async (req: Request, res: Response) => {
     }
 
     // Validate permissions
-    const validPermissions = ['read', 'write', 'admin'];
+    const validPermissions = ['user', 'read', 'write', 'admin'];
     if (permissions && permissions.some(p => !validPermissions.includes(p))) {
       return res.status(400).json({
         success: false,
         error: 'Invalid permissions',
         message: `Valid permissions are: ${validPermissions.join(', ')}`
+      });
+    }
+
+    // Validate scope
+    const validScopes = ['sdk', 'cli', 'admin'];
+    if (scopes && scopes.some(s => !validScopes.includes(s))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid scope',
+        message: `Valid scopes are: ${validScopes.join(', ')}`
       });
     }
 
@@ -48,7 +58,8 @@ router.post('/', requireHybridAuth, async (req: Request, res: Response) => {
       { 
         name, 
         permissions: permissions || [], 
-        ...(expires_at && { expires_at })
+        ...(expires_at && { expires_at }),
+        scopes: scopes || ['sdk', 'cli']
       }
     );
 
@@ -61,6 +72,7 @@ router.post('/', requireHybridAuth, async (req: Request, res: Response) => {
           name: keyData.name,
           key_prefix: keyData.key_prefix,
           permissions: keyData.permissions,
+          scopes: keyData.scopes,
           expires_at: keyData.expires_at,
           created_at: keyData.created_at
         }

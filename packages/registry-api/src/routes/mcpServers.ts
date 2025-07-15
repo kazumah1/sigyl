@@ -1,3 +1,6 @@
+// ENFORCEMENT: All endpoints using requireHybridAuth only use the API key for validation/identification.
+// All privileged logic (DB writes, updates, etc.) uses SIGYL_MASTER_KEY or internal credentials.
+// No permission-based logic grants access based on the user key’s permissions.
 import { Router, Request, Response } from 'express';
 import { supabase } from '../config/database';
 import { requireHybridAuth } from '../middleware/auth';

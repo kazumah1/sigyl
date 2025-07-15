@@ -4,7 +4,7 @@ import { UserInstallationService } from '../services/userInstallationService';
 import { InstallationService } from '../services/installationService';
 import { fetchMCPYaml, fetchSigylYaml } from '../services/yaml';
 import fetch from 'node-fetch';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requirePermissions } from '../middleware/auth';
 import { supabase } from '../config/database';
 
 interface GitHubTokenResponse {
@@ -515,7 +515,7 @@ router.get('/installations/:installationId', async (req: Request, res: Response)
 });
 
 // Deploy MCP from GitHub repository
-router.post('/installations/:installationId/deploy', async (req: Request, res: Response) => {
+router.post('/installations/:installationId/deploy', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {}, subdirectory } = req.body;
@@ -576,7 +576,7 @@ router.post('/installations/:installationId/deploy', async (req: Request, res: R
   }
 });
 
-router.post('/installations/:installationId/redeploy', async (req: Request, res: Response) => {
+router.post('/installations/:installationId/redeploy', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const { installationId } = req.params;
     const { repoUrl, owner, repo, branch = 'main', userId, selectedSecrets, environmentVariables = {} } = req.body;
