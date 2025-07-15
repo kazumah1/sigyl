@@ -358,75 +358,53 @@ const MCPPackagePage = () => {
   // Get the correct token for API authentication
   // Priority: GitHub App token > Supabase JWT token
   const getAuthToken = async () => {
-    console.log('🔍 getAuthToken: Starting authentication check...');
-    
     try {
-      console.log('🔍 getAuthToken: activeGitHubAccount:', activeGitHubAccount);
-      console.log('🔍 getAuthToken: session exists:', !!session);
       
       // First check if we have a valid GitHub App session
       if (activeGitHubAccount) {
         const githubAppToken = localStorage.getItem('github_app_access_token');
-        console.log('🔍 getAuthToken: GitHub App token from localStorage:', githubAppToken ? `${githubAppToken.substring(0, 20)}... (length: ${githubAppToken.length})` : 'null');
         
         if (githubAppToken && 
             githubAppToken !== 'restored_token' && 
             githubAppToken !== 'db_restored_token' &&
             githubAppToken.length > 20 && // Ensure it's a real token, not a placeholder
             (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_'))) {
-          console.log('🔑 Using GitHub App token for authentication');
           return githubAppToken;
-        } else {
-          console.log('❌ GitHub App token is invalid or placeholder:', {
-            isPlaceholder: githubAppToken === 'restored_token' || githubAppToken === 'db_restored_token',
-            length: githubAppToken ? githubAppToken.length : 'null',
-            hasValidPrefix: githubAppToken ? (githubAppToken.startsWith('gho_') || githubAppToken.startsWith('ghp_') || githubAppToken.startsWith('github_pat_')) : false
-          });
         }
-      } else {
-        console.log('❌ No active GitHub account');
       }
       
       // Fall back to Supabase session token - try session first, then refresh if needed
       let supabaseToken = session?.access_token;
-      console.log('🔍 getAuthToken: Supabase token from session:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
       
       // If session token is invalid or expired, try to refresh the session
       if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
-        console.log('🔍 getAuthToken: Session token invalid, attempting to refresh session...');
         try {
           const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
           if (refreshedSession && !error) {
             supabaseToken = refreshedSession.access_token;
-            console.log('🔍 getAuthToken: Refreshed Supabase token:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
-          } else {
-            console.log('❌ Failed to refresh session:', error?.message);
           }
         } catch (refreshError) {
-          console.log('❌ Session refresh exception:', refreshError);
+          // Session refresh failed, will continue to localStorage fallback
         }
       }
       
       // If still no valid token, try localStorage as last resort
       if (!supabaseToken || supabaseToken === 'db_restored_token' || supabaseToken.split('.').length !== 3) {
-        console.log('🔍 getAuthToken: Session refresh failed, checking localStorage...');
         try {
           const supabaseAuthData = localStorage.getItem('sb-zcudhsyvfrlfgqqhjrqv-auth-token');
           if (supabaseAuthData) {
             const parsedAuth = JSON.parse(supabaseAuthData);
             supabaseToken = parsedAuth.access_token;
-            console.log('🔍 getAuthToken: Supabase token from localStorage:', supabaseToken ? `${supabaseToken.substring(0, 20)}... (length: ${supabaseToken.length})` : 'null');
           }
         } catch (error) {
-          console.log('❌ Failed to parse Supabase auth from localStorage:', error);
+          // Failed to parse localStorage auth data
         }
       }
       
       if (supabaseToken && supabaseToken.split('.').length === 3) {
-        console.log('🔑 Using Supabase JWT token for authentication');
         return supabaseToken;
-      } else if (supabaseToken) {
-        console.log('❌ Supabase token is not a valid JWT (wrong number of parts):', supabaseToken.split('.').length);
+              } else if (supabaseToken) {
+          // Invalid JWT format
       }
 
       console.error('❌ No valid authentication token found');
@@ -718,19 +696,14 @@ const MCPPackagePage = () => {
         return;
       }
 
-      // DEBUG: Log what we're working with
-      console.log('=== SAVE PACKAGE SECRETS DEBUG ===');
-      console.log('Package name:', pkg.name);
-      console.log('Package secrets:', pkg.secrets);
-      console.log('Secret fields:', secretFields);
-      console.log('User:', user);
+      // Prepare secrets from the form fields
 
       // Prepare secrets array from the form fields
       const secretsToSave: Array<{ key: string; value: string; description?: string }> = [];
       
       if (pkg.secrets && Array.isArray(pkg.secrets)) {
         // Handle dynamic secrets from package definition
-        console.log('Processing dynamic secrets from package definition');
+
         pkg.secrets.forEach(secret => {
           const value = secretFields[secret.name];
           if (value && value.trim()) {
@@ -743,7 +716,7 @@ const MCPPackagePage = () => {
         });
       } else {
         // Fallback for old hardcoded fields
-        console.log('Processing hardcoded secret fields');
+
         if (secretFields.WEATHER_API_KEY) {
           secretsToSave.push({
             key: 'WEATHER_API_KEY',
@@ -762,7 +735,7 @@ const MCPPackagePage = () => {
 
       // NEW: Also capture any other non-empty fields that might have been entered
       // This handles cases where packages don't have predefined secrets but users enter API keys
-      console.log('Processing any other non-empty secret fields');
+
       Object.entries(secretFields).forEach(([key, value]) => {
         // Skip fields we already processed above
         const alreadyProcessed = pkg.secrets?.some(s => s.name === key) || 
@@ -777,14 +750,10 @@ const MCPPackagePage = () => {
         }
       });
 
-      console.log('Secrets to save:', secretsToSave);
-
       if (secretsToSave.length > 0) {
         const result = await SecretsService.savePackageSecrets(token, pkg.name, secretsToSave);
-        console.log('Save result:', result);
         toast.success(`Saved ${secretsToSave.length} secret${secretsToSave.length > 1 ? 's' : ''} for ${pkg.name}`);
       } else {
-        console.log('No secrets to save - this is the problem!');
         toast.error('No secrets found to save. Please check your input.');
       }
     } catch (error) {
@@ -920,15 +889,8 @@ const MCPPackagePage = () => {
     setLogoUploading(true);
     setLogoUploadError(null);
 
-    // LOGGING STARTS HERE
-    console.log('--- LOGO UPLOAD DEBUG ---');
-    console.log('pkg.id:', pkg.id);
-    console.log('user.id:', user?.id);
-    console.log('pkg.author_id:', pkg.author_id);
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${pkg.id}/logo.${fileExt}`;
-    console.log('filePath:', filePath);
-    // LOGGING ENDS HERE
+          const fileExt = file.name.split('.').pop();
+      const filePath = `${pkg.id}/logo.${fileExt}`;
 
     try {
       // Only allow PNG/JPG

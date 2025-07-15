@@ -10,7 +10,7 @@ echo "=============================================="
 echo ""
 
 # Configuration
-GOOGLE_CLOUD_PROJECT="sigyll"
+GOOGLE_CLOUD_PROJECT="sigyl"
 GOOGLE_CLOUD_REGION="us-central1"
 FRONTEND_BUILD_DIR="packages/web/dist"
 API_SERVICE_NAME="sigil-registry-api"
