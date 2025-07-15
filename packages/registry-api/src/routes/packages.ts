@@ -397,7 +397,7 @@ router.post('/:id/increment-downloads', async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/packages/:id/rate - Rate a package
-router.post('/:id/rate', requirePermissions(['write']), async (req: Request, res: Response) => {
+router.post('/:id/rate', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { rating } = req.body;
