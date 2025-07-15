@@ -1,1 +1,0 @@
-- 	**SDK Class**: `SigylSDK` for advanced usage 

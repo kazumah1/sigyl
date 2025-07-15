@@ -1,7 +1,7 @@
 {
-  "name": "@mcp-platform/registry-api",
+  "name": "@sigyl/registry-api",
   "version": "0.1.0",
-  "description": "MCP Registry API - Express server for MCP package registry",
+  "description": "Sigyl Registry API - Express server for MCP package registry and deployment",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -26,7 +26,7 @@
     "@google-cloud/cloudbuild": "^5.1.0",
     "@google-cloud/run": "^2.1.0",
     "@octokit/rest": "^20.1.2",
-    "@sigil/container-builder": "file:../container-builder",
+    "@sigyl/container-builder": "file:container-builder",
     "@supabase/supabase-js": "^2.38.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node-fetch": "^2.6.12",

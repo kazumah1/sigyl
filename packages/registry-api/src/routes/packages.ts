@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { PackageService } from '../services/packageService';
-import { requirePermissions, optionalAuth, requireSupabaseAuth } from '../middleware/auth';
+import { requirePermissions, optionalAuth, requireSupabaseAuth, requireAdminOrMasterKey } from '../middleware/auth';
 import { APIResponse, CreatePackageRequest, PackageSearchQuery } from '../types';
 import { supabase } from '../config/database';
 
@@ -183,7 +183,7 @@ router.get('/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/packages - Create a new package (requires write permission)
-router.post('/', requirePermissions(['write']), async (req: Request, res: Response) => {
+router.post('/', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const validatedData = createPackageSchema.parse(req.body);
     
@@ -257,8 +257,8 @@ router.get('/search', optionalAuth, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/packages/admin/all - Admin endpoint for getting all packages (requires admin permission)
-router.get('/admin/all', requirePermissions(['admin']), async (_req: Request, res: Response) => {
+// GET /api/v1/packages/admin/all - Admin endpoint for getting all packages (requires admin or master key)
+router.get('/admin/all', requireAdminOrMasterKey, async (_req: Request, res: Response) => {
   try {
     const packages = await packageService.getAllPackages();
     
@@ -397,7 +397,7 @@ router.post('/:id/increment-downloads', async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/packages/:id/rate - Rate a package
-router.post('/:id/rate', requirePermissions(['write']), async (req: Request, res: Response) => {
+router.post('/:id/rate', requirePermissions(['user']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { rating } = req.body;

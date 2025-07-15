@@ -92,6 +92,7 @@ export interface APIKey {
   key_prefix: string;
   name: string;
   permissions: string[];
+  scopes: ('sdk' | 'cli' | 'admin')[];
   is_active: boolean;
   last_used?: string;
   expires_at?: string;
@@ -103,6 +104,7 @@ export interface CreateAPIKeyRequest {
   name: string;
   permissions?: string[];
   expires_at?: string;
+  scopes?: ('sdk' | 'cli' | 'admin')[];
 }
 
 export interface APIKeyUsage {
@@ -122,9 +124,10 @@ export interface AuthenticatedUser {
   user_id: string;
   permissions: string[];
   is_active: boolean;
+  scopes?: ('sdk' | 'cli' | 'admin')[];
 }
 
-export type Permission = 'read' | 'write' | 'admin';
+export type Permission = 'read' | 'write' | 'admin' | 'user';
 
 export interface APIKeyStats {
   total_requests: number;

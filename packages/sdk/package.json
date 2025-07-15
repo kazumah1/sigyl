@@ -1,5 +1,5 @@
 {
-  "name": "@sigyl-dev/sdk",
+  "name": "@sigyl/sdk",
   "version": "1.0.8",
   "description": "Sigyl SDK",
   "main": "dist/index.js",

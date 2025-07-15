@@ -21,6 +21,12 @@ async function authenticateSessionMetrics(req: Request): Promise<string | null> 
     const authenticatedUser = await APIKeyService.validateAPIKey(apiKey);
     if (!authenticatedUser) return null;
     
+    // Detect master key
+    if (apiKey === process.env.SIGYL_MASTER_KEY) {
+      console.log('[AUTH] Using system user for master key metrics');
+      return 'b3cd592e-3304-41ef-a275-349d7b3f651e';
+    }
+    
     return authenticatedUser.user_id;
   } catch (error) {
     console.error('[SESSION_METRICS] Authentication error:', error);

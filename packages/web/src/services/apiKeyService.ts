@@ -9,6 +9,7 @@ export interface APIKey {
   name: string;
   key_prefix: string;
   permissions: string[];
+  scopes: ('sdk' | 'cli' | 'admin')[]; // <-- added
   is_active: boolean;
   last_used?: string;
   expires_at?: string;
@@ -19,6 +20,7 @@ export interface CreateAPIKeyRequest {
   name: string;
   permissions?: string[];
   expires_at?: string;
+  scopes?: ('sdk' | 'cli' | 'admin')[]; // <-- added
 }
 
 export interface CreateAPIKeyResponse {

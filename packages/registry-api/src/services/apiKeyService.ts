@@ -142,8 +142,9 @@ export class APIKeyService {
         key_hash: keyHash,
         key_prefix: keyPrefix,
         name: request.name,
-        permissions: request.permissions || ['read'],
-        expires_at: request.expires_at || null
+        permissions: request.permissions || ['user'],
+        expires_at: request.expires_at || null,
+        scopes: request.scopes || ['sdk', 'cli']
       })
       .select()
       .single();

@@ -353,7 +353,8 @@ const SecretsManager: React.FC<SecretsManagerProps> = ({ workspaceId, mcpServerI
       setIsCreatingApiKey(true);
       const request: CreateAPIKeyRequest = {
         name: newKeyName,
-        permissions: ['read', 'write'],
+        permissions: ['user'],
+        scopes: ['sdk', 'cli'] // <-- added
       };
       
       const result = await APIKeyService.createAPIKey(token, request);

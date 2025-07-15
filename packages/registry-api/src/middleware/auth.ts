@@ -409,6 +409,50 @@ async function validateSupabaseJWT(token: string): Promise<any> {
  */
 export const requireHybridAuth = authenticateHybrid({ required: true });
 
+/**
+ * Middleware to require admin scope or master key
+ */
+export const requireAdminOrMasterKey = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        error: 'API key required',
+        message: 'Please provide an API key in the Authorization header'
+      });
+    }
+    const apiKey = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : authHeader;
+
+    // Allow master key
+    if (apiKey === process.env.SIGYL_MASTER_KEY) {
+      req.user = { user_id: 'master', key_id: 'master', permissions: ['admin'], is_active: true, scopes: ['admin'] };
+      return next();
+    }
+
+    // Validate API key
+    const authenticatedUser = await APIKeyService.validateAPIKey(apiKey);
+    if (!authenticatedUser || !authenticatedUser.scopes || !authenticatedUser.scopes.includes('admin')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Admin access required',
+        message: 'This endpoint requires an admin API key or the master key.'
+      });
+    }
+    req.user = authenticatedUser;
+    next();
+  } catch (error) {
+    console.error('Admin/master key enforcement error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication failed',
+      message: 'An error occurred during admin/master key enforcement.'
+    });
+  }
+};
+
 // Supabase JWT-only authentication middleware
 export const requireSupabaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
