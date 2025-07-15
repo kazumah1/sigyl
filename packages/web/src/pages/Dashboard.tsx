@@ -335,7 +335,7 @@ const Dashboard = () => {
                       </div>
                       <Button 
                         className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
-                        onClick={() => navigate('/pricing')}
+  g                        onClick={() => navigate('/contact')}
                       >
                         Coming Soon
                       </Button>
@@ -607,7 +607,7 @@ const Dashboard = () => {
                       </div>
                       <Button 
                         className="btn-modern font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg"
-                        onClick={() => navigate('/pricing')}
+                        onClick={() => navigate('/contact')}
                       >
                         Coming Soon
                   </Button>
@@ -757,7 +757,7 @@ const Dashboard = () => {
                   <div className="text-center mt-12">
                     <Button 
                       className="btn-modern font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
-                      onClick={() => navigate('/pricing')}
+                      onClick={() => navigate('/contact')}
                     >
                       Contact Enterprise Support
                     </Button>

@@ -106,6 +106,21 @@ const Index = () => {
             >
               Registry
             </Button>
+            <a
+              href="https://calendly.com/sigyl-dev/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+              className="w-full sm:w-auto"
+            >
+              <Button
+                size="lg"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 sm:px-8 py-3 sm:py-4 rounded-md text-lg border border-blue-400 min-h-[48px] shadow-lg"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
+              >
+                Book a call
+              </Button>
+            </a>
           </>
         }
       />

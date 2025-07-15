@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 
 const reasons = [
   { value: 'demo', label: 'Demo' },
@@ -64,6 +65,22 @@ const Contact = () => {
       <PageHeader />
       <div className="min-h-screen bg-black flex items-center justify-center px-4 pt-32 pb-20 font-sans">
         <div className="w-full max-w-xl mx-auto">
+          <div className="flex justify-center mb-8">
+            <a
+              href="https://calendly.com/sigyl-dev/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+              className="w-full"
+            >
+              <Button
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg text-lg shadow-lg border border-blue-400 mb-2"
+                style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', fontSize: '1.08rem' }}
+              >
+                Talk to us right now
+              </Button>
+            </a>
+          </div>
           <form
             className="backdrop-blur-lg bg-[#101014] border border-white/10 shadow-2xl rounded-2xl px-10 py-12 flex flex-col gap-7"
             style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
