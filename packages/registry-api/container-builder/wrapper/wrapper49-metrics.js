@@ -1,5 +1,5 @@
 const express = require("express");
-const { StreamableHTTPServerTransport, EventStore } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
+const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
 const fetch = require("node-fetch");
 const { z } = require("zod");
@@ -286,6 +286,7 @@ async function deleteSession(sessionId) {
                     case "boolean":
                         return false;
                     case "number":
+                        return 0;
                     case "integer":
                         return 0;
                     default:
@@ -358,7 +359,11 @@ async function deleteSession(sessionId) {
                 zodShape[field.name] = fieldToZod(field, true);
                 // Fill config value
                 if (userSecrets && userSecrets[field.name] !== undefined) {
-                    configValues[field.name] = userSecrets[field.name];
+                    let value = userSecrets[field.name];
+                    if ((field.type === "number" || field.type === "integer") && typeof value === "string") {
+                        value = Number(value);
+                    }
+                    configValues[field.name] = value;
                 } else if (field.default !== undefined) {
                     configValues[field.name] = field.default;
                 }
@@ -370,7 +375,11 @@ async function deleteSession(sessionId) {
                 zodShape[field.name] = fieldToZod(field, false);
                 // Fill config value
                 if (userSecrets && userSecrets[field.name] !== undefined) {
-                    configValues[field.name] = userSecrets[field.name];
+                    let value = userSecrets[field.name];
+                    if ((field.type === "number" || field.type === "integer") && typeof value === "string") {
+                        value = Number(value);
+                    }
+                    configValues[field.name] = value;
                 } else if (field.default !== undefined) {
                     configValues[field.name] = field.default;
                 }
@@ -406,15 +415,17 @@ async function deleteSession(sessionId) {
         let configJSON;
         let userSecrets;
         let filledConfig = {};
-        let streamId;
         if (isMaster) {
             // Master key: fill config with placeholders for all required/optional secrets
             console.log('[MCP] Master key detected');
             packageName = await getPackageName(req);
             console.log('[PACKAGENAME] Package name:', packageName);
             configJSON = await getConfig(packageName);
+            console.log('[CONFIG] Config JSON:', configJSON);
             const placeholderSecrets = await createPlaceholderSecrets(configJSON);
+            console.log('[CONFIG] Placeholder secrets:', placeholderSecrets);
             ({ filledConfig } = await createConfig(configJSON, placeholderSecrets));
+            console.log('[CONFIG] Filled config:', filledConfig);
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
@@ -424,10 +435,7 @@ async function deleteSession(sessionId) {
 
         if (sessionId && await getSession(sessionId)) {
             console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
-            ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster, streamId } = await getSession(sessionId));
-            const eventStore = new EventStore(
-                streamId
-            )
+            ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId));
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
@@ -438,11 +446,9 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid,
-                        streamId: streamId
+                        valid: valid
                     });
-                },
-                eventStore: eventStore
+                }
             });
             transport.onclose = async () => {
                 if (transport.sessionId) {
@@ -453,8 +459,7 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid,
-                        streamId: transport.eventStore.streamId
+                        valid: valid
                     })
                     await deleteSession(transport.sessionId);
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
@@ -465,12 +470,10 @@ async function deleteSession(sessionId) {
             packageName = await getPackageName(req);
             console.log('[PACKAGENAME] Package name:', packageName);
             configJSON = await getConfig(packageName);
+            console.log('[CONFIG] Config JSON:', configJSON);
             userSecrets = await getUserSecrets(packageName, apiKey);
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
-            streamId = randomUUID();
-            const eventStore = new EventStore(
-                streamId
-            )
+            console.log('[CONFIG] Filled config:', filledConfig);
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: async (sessionId) => {
@@ -481,11 +484,9 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid,
-                        streamId: streamId
+                        valid: valid
                     });
-                },
-                eventStore: eventStore
+                }
             });
             transport.onclose = async () => {
                 if (transport.sessionId) {
@@ -496,8 +497,7 @@ async function deleteSession(sessionId) {
                         packageName: packageName,
                         configJSON: configJSON,
                         userSecrets: userSecrets,
-                        valid: valid,
-                        streamId: transport.eventStore.streamId
+                        valid: valid
                     });
                     await deleteSession(transport.sessionId);
                     console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
@@ -527,10 +527,7 @@ async function deleteSession(sessionId) {
             return;
         }
         // Recreate transport/server from session data
-        const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster, streamId } = await getSession(sessionId);
-        const eventStore = new EventStore(
-            streamId
-        )
+        const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId);
         const transport = new StreamableHTTPServerTransport({ 
             sessionIdGenerator: () => sessionId,
             onsessioninitialized: async (sessionId) => {
@@ -541,11 +538,9 @@ async function deleteSession(sessionId) {
                     packageName: packageName,
                     configJSON: configJSON,
                     userSecrets: userSecrets,
-                    valid: valid,
-                    streamId: streamId
+                    valid: valid
                 });
-            },
-            eventStore: eventStore
+            }
         });
         transport.onclose = async () => {
             if (transport.sessionId) {
@@ -556,8 +551,7 @@ async function deleteSession(sessionId) {
                     packageName: packageName,
                     configJSON: configJSON,
                     userSecrets: userSecrets,
-                    valid: valid,
-                    streamId: transport.eventStore.streamId
+                    valid: valid
                 });
                 await deleteSession(transport.sessionId);
                 console.log('[MCP] Session closed and deleted from Redis:', transport.sessionId);
