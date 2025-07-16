@@ -407,6 +407,17 @@ EOF`
             ],
             dir: request.subdirectory || '.'
           },
+          // Step 2.1.5: Copy dockerfilePatcher.js into the build context (if not already present)
+          {
+            name: 'gcr.io/cloud-builders/cp',
+            args: [
+              '/workspace/dockerfilePatcher.js',
+              (request.subdirectory ? `${request.subdirectory}/` : '') + 'dockerfilePatcher.js'
+            ],
+            // This step assumes dockerfilePatcher.js is uploaded as an extra file in the build context
+            // If not, you may need to add it to the repo or download it from a remote location
+            dir: request.subdirectory || '.'
+          },
           // Step 2.2: Diagnostics before patching Dockerfile
           {
             name: 'gcr.io/cloud-builders/gcloud',
@@ -417,12 +428,12 @@ EOF`
             ],
             dir: request.subdirectory || '.'
           },
-          // Step 2.3: Patch the Dockerfile using dockerfilePatcher.js
+          // Step 2.3: Patch the Dockerfile using dockerfilePatcher.js (now local)
           {
             name: 'node',
             entrypoint: 'node',
             args: [
-              (request.subdirectory ? `${request.subdirectory}/` : '') + 'packages/registry-api/container-builder/src/gcp/dockerfilePatcher.js',
+              (request.subdirectory ? `${request.subdirectory}/` : '') + 'dockerfilePatcher.js',
               dockerfilePath
             ],
             dir: request.subdirectory || '.',

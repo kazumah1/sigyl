@@ -395,38 +395,56 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                       Showing {packages.length > 0 ? ((currentPage - 1) * pageSize + 1) : 0}
                       -{(currentPage - 1) * pageSize + packages.length} of {totalPackages} results
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className="px-3 py-1"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
-                      >
-                        Previous
-                      </Button>
-                      {/* Page numbers */}
-                      {Array.from({ length: Math.ceil(totalPackages / pageSize) }, (_, i) => i + 1).map(pageNum => (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? 'default' : 'outline'}
-                          className={`px-3 py-1 ${currentPage === pageNum ? 'bg-white text-black' : ''}`}
-                          onClick={() => setCurrentPage(pageNum)}
-                          style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
-                        >
-                          {pageNum}
-                        </Button>
-                      ))}
-                      <Button
-                        variant="outline"
-                        className="px-3 py-1"
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                        disabled={currentPage >= Math.ceil(totalPackages / pageSize)}
-                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
-                      >
-                        Next
-                      </Button>
-                    </div>
+                    {(() => {
+                      const totalPages = Math.max(1, Math.ceil(totalPackages / pageSize));
+                      if (totalPages === 1) {
+                        // Only one page, show just the current page number (or nothing)
+                        return (
+                          <Button
+                            variant="default"
+                            className="px-3 py-1 bg-white text-black"
+                            disabled
+                            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                          >
+                            1
+                          </Button>
+                        );
+                      }
+                      return (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="px-3 py-1"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                          >
+                            Previous
+                          </Button>
+                          {/* Page numbers */}
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? 'default' : 'outline'}
+                              className={`px-3 py-1 ${currentPage === pageNum ? 'bg-white text-black' : ''}`}
+                              onClick={() => setCurrentPage(pageNum)}
+                              style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                            >
+                              {pageNum}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="outline"
+                            className="px-3 py-1"
+                            onClick={() => setCurrentPage((p) => p + 1)}
+                            disabled={currentPage >= totalPages}
+                            style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      );
+                    })()}
                   </div>
                   </>
                 )}
