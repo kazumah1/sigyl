@@ -457,6 +457,7 @@ async function deleteSession(sessionId) {
                 }
             };
             server = createStatelessServer({ config: filledConfig });
+            res.set('mcp-session-id', sessionId);
         } else if (!sessionId && isInitializeRequest(req.body)) {
             packageName = await getPackageName(req);
             console.log('[PACKAGENAME] Package name:', packageName);
@@ -465,8 +466,9 @@ async function deleteSession(sessionId) {
             userSecrets = await getUserSecrets(packageName, apiKey);
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
             console.log('[CONFIG] Filled config:', filledConfig);
+            const sessionId = randomUUID();
             transport = new StreamableHTTPServerTransport({ 
-                sessionIdGenerator: () => randomUUID(),
+                sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
@@ -495,6 +497,7 @@ async function deleteSession(sessionId) {
                 }
             };
             server = createStatelessServer({ config: filledConfig });
+            res.set('mcp-session-id', sessionId);
         } else {
             res.status(400).json({
                 jsonrpc: '2.0',
@@ -549,6 +552,7 @@ async function deleteSession(sessionId) {
             }
         };
         const server = createStatelessServer({ config: filledConfig });
+        res.set('mcp-session-id', sessionId);
         await server.connect(transport);
         await transport.handleRequest(req, res);
     };
