@@ -414,7 +414,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
-                            className={`px-3 py-1 ${currentPage === 1 ? 'bg-white text-black hover:bg-gray-100 border-white/20' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
+                            className={`px-3 py-1 ${currentPage === 1 ? 'bg-white/10 text-white hover:bg-white/20 border-white/20' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
                             style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
@@ -426,7 +426,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                             <Button
                               key={pageNum}
                               variant={currentPage === pageNum ? 'default' : 'outline'}
-                              className={`px-3 py-1 ${currentPage === pageNum ? 'bg-white text-black' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
+                              className={`px-3 py-1 ${currentPage === pageNum ? 'bg-white text-black hover:bg-gray-100 border-white/20' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
                               onClick={() => setCurrentPage(pageNum)}
                               style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
                             >
@@ -435,7 +435,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                           ))}
                           <Button
                             variant="outline"
-                            className={`px-3 py-1 ${currentPage === totalPages ? 'bg-white text-black hover:bg-gray-100 border-white/20' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
+                            className={`px-3 py-1 ${currentPage === totalPages ? 'bg-white/10 text-white hover:bg-white/20 border-white/20' : 'bg-black/60 border border-white/10 text-white hover:bg-white/5 hover:border-white/20 hover:text-white'}`}
                             onClick={() => setCurrentPage((p) => p + 1)}
                             disabled={currentPage >= totalPages}
                             style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
