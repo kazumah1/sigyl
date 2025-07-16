@@ -188,6 +188,9 @@ async function deleteSession(sessionId) {
                     return formattedName;
                 }
                 }
+            } else {
+                console.log('[PACKAGENAME] Error: No match found for sigyl-mcp-... hostname', hostname);
+                return null;
             }
         } else {
             console.log('[PACKAGENAME] Error: Not a sigyl-mcp-... hostname');
@@ -406,7 +409,9 @@ async function deleteSession(sessionId) {
         let streamId;
         if (isMaster) {
             // Master key: fill config with placeholders for all required/optional secrets
+            console.log('[MCP] Master key detected');
             packageName = await getPackageName(req);
+            console.log('[PACKAGENAME] Package name:', packageName);
             configJSON = await getConfig(packageName);
             const placeholderSecrets = await createPlaceholderSecrets(configJSON);
             ({ filledConfig } = await createConfig(configJSON, placeholderSecrets));
