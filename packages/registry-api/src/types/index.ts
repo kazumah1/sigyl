@@ -73,6 +73,7 @@ export interface APIResponse<T> {
 export interface PackageWithDetails extends MCPPackage {
   deployments: MCPDeployment[];
   tools: MCPTool[];
+  slug?: string;
 }
 
 // API Key Management Types
