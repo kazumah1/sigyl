@@ -270,7 +270,7 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
       </div>
       <div className="flex items-center justify-between px-6 pb-4 pt-0 mt-auto">
         <div className="text-sm text-gray-400" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {new Date(pkg.created_at).toLocaleDateString()}
+          {/* {new Date(pkg.created_at).toLocaleDateString()} */}
         </div>
         <div className="text-sm text-gray-400 group-hover:text-white transition-colors" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           View details →
