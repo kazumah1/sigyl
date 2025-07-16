@@ -430,6 +430,7 @@ async function deleteSession(sessionId) {
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
+                    res.set('mcp-session-id', sessionId);
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
                         isMaster: isMaster,
@@ -457,7 +458,6 @@ async function deleteSession(sessionId) {
                 }
             };
             server = createStatelessServer({ config: filledConfig });
-            res.set('mcp-session-id', sessionId);
         } else if (!sessionId && isInitializeRequest(req.body)) {
             packageName = await getPackageName(req);
             console.log('[PACKAGENAME] Package name:', packageName);
@@ -470,6 +470,7 @@ async function deleteSession(sessionId) {
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
+                    res.set('mcp-session-id', sessionId);
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
                         isMaster: false,
@@ -497,7 +498,6 @@ async function deleteSession(sessionId) {
                 }
             };
             server = createStatelessServer({ config: filledConfig });
-            res.set('mcp-session-id', sessionId);
         } else {
             res.status(400).json({
                 jsonrpc: '2.0',
@@ -525,6 +525,7 @@ async function deleteSession(sessionId) {
         const transport = new StreamableHTTPServerTransport({ 
             sessionIdGenerator: () => sessionId,
             onsessioninitialized: async (sessionId) => {
+                res.set('mcp-session-id', sessionId);
                 await setSession(sessionId, {
                     filledConfig: filledConfig,
                     isMaster: isMaster,
@@ -552,7 +553,7 @@ async function deleteSession(sessionId) {
             }
         };
         const server = createStatelessServer({ config: filledConfig });
-        res.set('mcp-session-id', sessionId);
+        
         await server.connect(transport);
         await transport.handleRequest(req, res);
     };
