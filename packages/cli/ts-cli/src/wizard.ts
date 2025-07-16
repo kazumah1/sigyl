@@ -1,9 +1,9 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { initTemplate } from "./commands/init";
-import { integrateWithExpress } from "./commands/integrate";
 import inspectCommand from "./commands/inspect";
 import { existsSync, rmSync } from "node:fs";
+import { scanAndGenerate } from "./commands/scan";
 
 export async function runWizard() {
   console.log(chalk.cyan("\nWelcome to the Sigyl Interactive Wizard!\n"));
@@ -16,8 +16,8 @@ export async function runWizard() {
         message: "What do you want to do?",
         choices: [
           { name: "Generate a blank template", value: "init" },
-          { name: "Generate from express app", value: "integrate" },
-          { name: "Run inspector", value: "inspect" },
+          { name: "Generate from express app", value: "scan" },
+          { name: "Run inspector", value: "inspscanect" },
           { name: "Exit", value: "exit" }
         ]
       }
@@ -33,14 +33,13 @@ export async function runWizard() {
         exit = true;
         break;
       }
-      case "integrate": {
-        const { directory, out, endpoint, language } = await inquirer.prompt([
+      case "scan": {
+        const { directory, out, language } = await inquirer.prompt([
           { type: "input", name: "directory", message: "Express app directory:", default: "." },
           { type: "input", name: "out", message: "Output directory:", default: "template-server" },
-          { type: "input", name: "endpoint", message: "MCP endpoint path:", default: "/mcp" },
           { type: "list", name: "language", message: "Server language:", choices: ["typescript", "javascript"], default: "typescript" }
         ]);
-        await integrateWithExpress({ directory, outDir: out, serverLanguage: language, endpoint });
+        await scanAndGenerate(directory, { outDir: out, serverLanguage: language });
         exit = true;
         break;
       }

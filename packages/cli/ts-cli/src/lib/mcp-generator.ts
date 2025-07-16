@@ -95,6 +95,13 @@ export default function createStatelessServer({
 	// These tools were automatically generated from your Express application.
 	// Each tool corresponds to an endpoint in your Express app.
 
+	/**
+	 * IMPORTANT: This MCP tool calls your Express API at the address below.
+	 * To change the API base URL (host/port), set the APP_BASE_URL environment variable when starting this server,
+	 * or edit the code below. Default is http://localhost:3000.
+	 * Example for local development: APP_BASE_URL=http://myhost:4000 node server.js
+	 */
+	const APP_BASE_URL = \`http://localhost:${'${config.appPort || 3000}'}\` || process.env.APP_BASE_URL;
 ${endpoints.map(endpoint => {
 	const toolName = this.generateToolName(endpoint)
 	const shape = this.generateZodShapeObject(endpoint)
@@ -108,14 +115,7 @@ ${endpoints.map(endpoint => {
 		${shape},
 		async (args) => {
 			// ===== REQUEST CONFIGURATION =====
-			/**
-			 * IMPORTANT: This MCP tool calls your Express API at the address below.
-			 * To change the API base URL (host/port), set the APP_BASE_URL environment variable when starting this server,
-			 * or edit the code below. Default is http://localhost:3000
-			 * Example: APP_BASE_URL=http://myhost:4000 node server.js
-			 */
-			const baseUrl = process.env.APP_BASE_URL || \`http://localhost:${'${config.appPort || 3000}'}\`;
-			const url = \`${'${baseUrl}'}${'${endpoint.path}'}\`;
+			const url = \`${'${APP_BASE_URL}'}${endpoint.path}\`;
 			const method = "${'${endpoint.method.toUpperCase()}'}";
 			
 			// Build request options
