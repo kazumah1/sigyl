@@ -382,6 +382,72 @@ router.delete('/:id', requireSupabaseAuth, async (req: Request, res: Response) =
   }
 });
 
+router.get('/service/:slug(*)', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    
+    console.log(`🔍 [PACKAGES-API] === PACKAGE RETRIEVAL REQUEST ===`);
+    console.log(`🔍 [PACKAGES-API] Slug: ${slug}`);
+    console.log(`🔍 [PACKAGES-API] Request Headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`🔍 [PACKAGES-API] User Agent: ${req.headers['user-agent']}`);
+    console.log(`🔍 [PACKAGES-API] Authorization: ${req.headers.authorization ? 'Present' : 'Missing'}`);
+    console.log(`🔍 [PACKAGES-API] Timestamp: ${new Date().toISOString()}`);
+    
+    console.log(`[packages.ts] /service/:slug route called with slug=`, slug);
+    
+    if (!slug || slug.trim().length === 0) {
+      console.log(`❌ [PACKAGES-API] Invalid package slug: empty or missing`);
+      console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Invalid package slug',
+        message: 'Package slug is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Try by slug first
+    console.log(`[packages.ts] Calling getPackageBySlug with slug=`, slug);
+    let packageData = await packageService.getPackageByServiceName(slug);
+    // Fallback: try by name if not found by slug
+    if (!packageData) {
+      console.log(`[packages.ts] getPackageBySlug returned null, calling getPackageByName with name=`, slug);
+      packageData = await packageService.getPackageByName(slug);
+    }
+    
+    if (!packageData) {
+      console.log(`❌ [PACKAGES-API] Package not found for slug: ${slug}`);
+      console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
+      const response: APIResponse<null> = {
+        success: false,
+        error: 'Package not found',
+        message: 'No package found with the given slug or name'
+      };
+      return res.status(404).json(response);
+    }
+
+    console.log(`✅ [PACKAGES-API] Package found: ${packageData.name}`);
+    console.log(`✅ [PACKAGES-API] Package ID: ${packageData.id}`);
+    console.log(`✅ [PACKAGES-API] Required Secrets: ${JSON.stringify(packageData.required_secrets || [])}`);
+    console.log(`🔍 [PACKAGES-API] === END PACKAGE REQUEST ===`);
+
+    const response: APIResponse<typeof packageData> = {
+      success: true,
+      data: packageData,
+      message: 'Package retrieved by slug or name'
+    };
+    return res.json(response);
+  } catch (error) {
+    console.error('❌ [PACKAGES-API] Error retrieving package:', error);
+    const response: APIResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve package by slug or name',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+    return res.status(500).json(response);
+  }
+});
+
 // POST /api/v1/packages/:id/increment-downloads - Increment downloads count for a package
 router.post('/:id/increment-downloads', async (req: Request, res: Response) => {
   try {

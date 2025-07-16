@@ -170,30 +170,9 @@ async function deleteSession(sessionId) {
         if (req.hostname.includes('sigyl-mcp-')) {
             const hostname = req.hostname;
             console.log('[PACKAGENAME] Getting package name from sigyl-mcp-...', hostname);
-            const match = hostname.match(/sigyl-mcp-(.+?)(?:-lrzo3avokq-uc\.a\.run\.app|\.a\.run\.app)/);
-            if (match) {
-                const packagePath = match[1];
-                
-                // Convert to proper format: sigyl-dev/brave-search
-                if (packagePath.includes("-")) {
-                // Split by hyphens and reconstruct
-                const parts = packagePath.split("-");
-                if (parts.length >= 3 && parts[0] === "sigyl" && parts[1] === "dev") {
-                    // Format: sigyl-dev-brave-search -> sigyl-dev/brave-search
-                    const orgPart = `${parts[0]}-${parts[1]}`; // sigyl-dev
-                    const packagePart = parts.slice(2).map(part => 
-                    part.charAt(0).toLowerCase() + part.slice(1)
-                    ).join("-"); // brave-search
-                    const formattedName = `${orgPart}/${packagePart}`;
-                    return formattedName;
-                }
-                }
-            } else {
-                console.log('[PACKAGENAME] Error: No match found for sigyl-mcp-... hostname', hostname);
-                return null;
-            }
+            return hostname.replace('-lrzo3avokq-uc.a.run.app', '');
         } else {
-            console.log('[PACKAGENAME] Error: Not a sigyl-mcp-... hostname');
+            console.log('[PACKAGENAME] Error: Not a sigyl-mcp-... hostname', hostname);
             return null;
         }
     }
@@ -202,7 +181,7 @@ async function deleteSession(sessionId) {
         let slug = packageName;
 
         const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-        const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
+        const url = `${registryUrl}/api/v1/packages/service/${encodeURIComponent(slug)}`;
         console.log('[CONFIG] Fetching package config from:', url);
 
         try {
