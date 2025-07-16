@@ -66,19 +66,19 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
     deploymentUrl?: string
     tools?: Array<{ tool_name?: string; description?: string }>
   } | null>(null)
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize] = useState(12)
+  const [totalPackages, setTotalPackages] = useState(0)
   
   const { user } = useAuth()
   const navigate = useNavigate()
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load packages based on search and filters
+  // Load packages based on search, filters, and pagination
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      if (searchTerm || selectedCategory !== 'all') {
-        searchPackages();
-      } else {
-        loadPackages();
-      }
+      searchPackages();
     }, 800); // Increased debounce to 800ms
 
     return () => {
@@ -87,35 +87,29 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
         abortControllerRef.current.abort();
       }
     };
+  }, [searchTerm, selectedCategory, currentPage, pageSize]);
+
+  // Reset to first page when search term or category changes
+  useEffect(() => {
+    setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
 
-  const loadPackages = async () => {
-    setLoading(true);
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    try {
-      const [allPackages, popular, trending] = await Promise.all([
-        MarketplaceService.getAllPackages({ signal: controller.signal }),
-        MarketplaceService.getPopularPackages(6, { signal: controller.signal }),
-        MarketplaceService.getTrendingPackages(6, { signal: controller.signal })
-      ]);
-      setPackages(allPackages);
-      setPopularPackages(popular);
-      setTrendingPackages(trending);
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Failed to load packages:', error);
-        toast.error('Failed to load MCP packages');
+  // Load popular and trending packages (not paginated)
+  useEffect(() => {
+    const loadPopularTrending = async () => {
+      try {
+        const [popular, trending] = await Promise.all([
+          MarketplaceService.getPopularPackages(6),
+          MarketplaceService.getTrendingPackages(6)
+        ]);
+        setPopularPackages(popular);
+        setTrendingPackages(trending);
+      } catch (error: any) {
+        // ignore errors here
       }
-    } finally {
-      setLoading(false);
-      setIsLoaded(true);
-    }
-  };
+    };
+    loadPopularTrending();
+  }, []);
 
   const searchPackages = async () => {
     setLoading(true);
@@ -128,20 +122,25 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
     try {
       const filters: MarketplaceFilters = {
         q: searchTerm || undefined,
-        limit: 50
+        limit: pageSize,
+        offset: (currentPage - 1) * pageSize
       };
       if (selectedCategory !== 'all') {
         filters.tags = [selectedCategory];
       }
       const result = await MarketplaceService.searchPackages(filters, { signal: controller.signal });
       setPackages(result.packages);
+      setTotalPackages(result.total || 0);
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Failed to search MCP packages', error);
         toast.error('Failed to search MCP packages');
       }
+      setPackages([]);
+      setTotalPackages(0);
     } finally {
       setLoading(false);
+      setIsLoaded(true);
     }
   };
 
@@ -386,9 +385,50 @@ export const MCPExplorer: React.FC<MCPExplorerProps> = ({ searchBarRef }) => {
                     </span>
                   </div>
                 ) : (
+                  <>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {packages.map((pkg, index) => renderPackageCard(pkg, index))}
                   </div>
+                  {/* Pagination Controls */}
+                  <div className="flex flex-col items-center mt-8">
+                    <div className="text-gray-400 mb-2" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      Showing {packages.length > 0 ? ((currentPage - 1) * pageSize + 1) : 0}
+                      -{(currentPage - 1) * pageSize + packages.length} of {totalPackages} results
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="px-3 py-1"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                      >
+                        Previous
+                      </Button>
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.ceil(totalPackages / pageSize) }, (_, i) => i + 1).map(pageNum => (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          className={`px-3 py-1 ${currentPage === pageNum ? 'bg-white text-black' : ''}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                          style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        className="px-3 py-1"
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                        disabled={currentPage >= Math.ceil(totalPackages / pageSize)}
+                        style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif' }}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                  </>
                 )}
 
                 {!loading && packages.length === 0 && (

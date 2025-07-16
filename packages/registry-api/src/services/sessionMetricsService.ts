@@ -167,9 +167,9 @@ export class SessionMetricsService {
       }
       
       // Trigger async session analysis if this looks like a session end
-      if (this.isSessionEndEvent(event)) {
-        setImmediate(() => this.processSessionAnalytics(event.session_id));
-      }
+      // if (this.isSessionEndEvent(event)) {
+      //   setImmediate(() => this.processSessionAnalytics(event.session_id));
+      // }
       
       return { success: true };
     } catch (error) {
