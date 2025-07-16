@@ -407,23 +407,24 @@ router.get('/wrapper/:mcpServerId', requireHybridAuth, async (req, res) => {
 });
 
 // Get secrets for MCP package (for pre-filling Connect form)
-router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
+// packageName is now expected to be the slug
+router.get('/package/:slug', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
-    const packageName = req.params.packageName;
+    const slug = req.params.slug;
 
     console.log(`🔍 [SECRETS-API] === PACKAGE SECRETS REQUEST ===`);
     console.log(`🔍 [SECRETS-API] User ID: ${userId}`);
-    console.log(`🔍 [SECRETS-API] Package Name: ${packageName}`);
+    console.log(`🔍 [SECRETS-API] Slug: ${slug}`);
     // Only fetch secrets for this user and this package (mcp_server_id)
     const { data, error } = await supabase
       .from('mcp_secrets')
       .select('key, value, description')
       .eq('user_id', userId)
-      .eq('mcp_server_id', packageName);
+      .eq('mcp_server_id', slug);
 
     if (error) {
-      console.error(`❌ [SECRETS-API] Database error for package ${packageName}:`, error);
+      console.error(`❌ [SECRETS-API] Database error for slug ${slug}:`, error);
       throw error;
     }
 
@@ -455,10 +456,11 @@ router.get('/package/:packageName', requireHybridAuth, async (req, res) => {
 });
 
 // Save secrets for MCP package (from Connect popup)
-router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
+// packageName is now expected to be the slug
+router.post('/package/:slug', requireHybridAuth, async (req, res) => {
   try {
     const userId = req.user!.user_id;
-    const packageName = req.params.packageName;
+    const slug = req.params.slug;
     const { secrets } = req.body; // Array of { key, value, description }
 
     if (!secrets || !Array.isArray(secrets)) {
@@ -491,8 +493,8 @@ router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
           user_id: userId, 
           key, 
           value: encryptedValue,
-          description: description || `Auto-saved for ${packageName}`,
-          mcp_server_id: packageName // Use package name as mcp_server_id for organization
+          description: description || `Auto-saved for ${slug}`,
+          mcp_server_id: slug // Use slug as mcp_server_id for organization
         }, {
           onConflict: 'user_id,mcp_server_id,key'
         })
@@ -515,7 +517,7 @@ router.post('/package/:packageName', requireHybridAuth, async (req, res) => {
     const response: APIResponse<{ secrets: any[] }> = {
       success: true,
       data: { secrets: savedSecrets },
-      message: `Saved ${savedSecrets.length} secrets for ${packageName}`
+      message: `Saved ${savedSecrets.length} secrets for ${slug}`
     };
 
     res.status(201).json(response);

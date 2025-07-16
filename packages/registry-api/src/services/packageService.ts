@@ -479,10 +479,12 @@ export class PackageService {
         throw new Error('Failed to fetch package details');
       }
   
+      // Always include slug in the returned object if present
       return {
         ...packageData,
         deployments: deployments || [],
-        tools: tools || []
+        tools: tools || [],
+        slug: packageData.slug
       };
   }
 

@@ -177,11 +177,33 @@ async function deleteSession(sessionId) {
         }
     }
     
-    async function getConfig(packageName) {
-        let slug = packageName;
-
+    async function getSlugFromServiceName(serviceName) {
+        if (!serviceName) return null;
         const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-        const url = `${registryUrl}/api/v1/packages/service/${encodeURIComponent(slug)}`;
+        const url = `${registryUrl}/api/v1/packages/service/${encodeURIComponent(serviceName)}`;
+        try {
+            const resp = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            if (data.success && data.data && data.data.slug) {
+                return data.data.slug;
+            }
+            return null;
+        } catch (err) {
+            console.error('[SLUG] Error fetching slug from service_name:', err);
+            return null;
+        }
+    }
+
+    async function getConfig(packageName) {
+        // packageName is now service_name; fetch slug first
+        let slug = await getSlugFromServiceName(packageName);
+        if (!slug) slug = packageName; // fallback for legacy
+        const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
+        const url = `${registryUrl}/api/v1/packages/${encodeURIComponent(slug)}`;
         console.log('[CONFIG] Fetching package config from:', url);
 
         try {
@@ -216,11 +238,10 @@ async function deleteSession(sessionId) {
             console.warn('[SECRETS] No packageName provided to getUserSecrets');
             return {};
         }
-
+        // packageName is now service_name; fetch slug first
+        let slug = await getSlugFromServiceName(packageName);
+        if (!slug) slug = packageName; // fallback for legacy
         const registryUrl = process.env.SIGYL_REGISTRY_URL || 'https://api.sigyl.dev';
-        // Only use the slug part for the endpoint
-        let slug = packageName;
-
         const url = `${registryUrl}/api/v1/secrets/package/${encodeURIComponent(slug)}`;
         console.log('[SECRETS] Fetching user secrets from:', url);
 
