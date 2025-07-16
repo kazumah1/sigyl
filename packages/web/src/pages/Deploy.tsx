@@ -50,9 +50,6 @@ const Deploy = () => {
             <h1 className="hero-heading text-4xl sm:text-5xl lg:text-6xl font-bold mb-4" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', letterSpacing: '-0.02em', lineHeight: '1.08' }}>
               Deploy Your MCP Server
             </h1>
-            <p className="hero-subheading text-lg sm:text-xl text-gray-300 font-normal mb-8" style={{ fontFamily: 'Space Grotesk, Inter, system-ui, sans-serif', lineHeight: '1.5' }}>
-              Connect your GitHub repository and deploy your MCP server with enterprise-grade reliability. Get started in minutes with our streamlined deployment process.
-            </p>
           </div>
           {/* Glassy Card for Account Selector and Wizard */}
           <div className="w-full max-w-2xl bg-white/5 backdrop-blur-lg border border-white/15 rounded-2xl shadow-2xl mx-auto p-8 flex flex-col gap-8" style={{ boxShadow: '0 8px 32px 0 rgba(0,0,0,0.28)' }}>

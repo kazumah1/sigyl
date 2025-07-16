@@ -124,14 +124,14 @@ const Index = () => {
           </>
         }
       />
-      <SigylScrollHighlight />
+      {/* <SigylScrollHighlight /> */}
       {/* Liquid Glass Blobs */}
       <div className="liquid-glass-blob blob-1" />
       <div className="liquid-glass-blob blob-2" />
       <div className="liquid-glass-blob blob-3" />
       {/* Dashboard Preview - Enhanced Mobile Responsiveness */}
-      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 relative z-10">
-        <div className="container mx-auto text-center">
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
           {/* Painterly wrapper with @Test_5.png background - now clearly visible */}
           <div className="dashboard-painterly-wrapper relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col items-center" style={{background: 'rgba(0,0,0,0.10)'}}>
             <img src="/Test_5.png" alt="Painterly Background" className="absolute inset-0 w-full h-full object-cover z-0" style={{borderRadius:'1rem sm:1.5rem', opacity:1, filter:'blur(1px) brightness(0.85)'}} />

@@ -20,7 +20,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ title, subtitle, butto
       {/* Fullscreen image with centered content */}
       <section className="relative w-full h-screen min-h-[600px] flex items-center justify-center overflow-hidden select-none">
         <img
-          src="/SIGYL_BACKDROP.png"
+          src="/Test_1.png"
           alt="SIGYL Backdrop"
           className="absolute inset-0 w-full h-full object-cover object-center z-0"
           style={{ filter: 'none' }}
