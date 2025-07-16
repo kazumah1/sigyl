@@ -15,6 +15,7 @@ export interface MCPPackage {
   logo_url?: string;
   screenshots?: string[] | string;
   ready?: boolean;
+  prioritize?: boolean; // Added for prioritized display
 }
 
 export interface MCPDeployment {
@@ -49,6 +50,7 @@ export interface PackageWithDetails extends MCPPackage {
   logo_url?: string;
   screenshots?: string[] | string;
   ready?: boolean;
+  prioritize?: boolean; // Added for prioritized display
 }
 
 export interface PackageSearchResult {

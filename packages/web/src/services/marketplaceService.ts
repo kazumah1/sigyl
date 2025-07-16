@@ -1,6 +1,15 @@
 // Marketplace service for MCP discovery and installation
 import { MCPPackage, PackageWithDetails, PackageSearchResult } from '@/types/marketplace'
 
+// Helper: Sort prioritized packages first
+function sortPrioritizedFirst<T extends { prioritize?: boolean }>(packages: T[]): T[] {
+  return [...packages].sort((a, b) => {
+    const aVal = a.prioritize ? 1 : 0;
+    const bVal = b.prioritize ? 1 : 0;
+    return bVal - aVal;
+  });
+}
+
 // Registry API configuration
 const REGISTRY_API_BASE = import.meta.env.VITE_REGISTRY_API_URL || 'http://localhost:3000/api/v1'
 
@@ -43,8 +52,8 @@ export class MarketplaceService {
       }
 
       const result = await response.json()
-      // Only return ready packages
-      result.data.packages = result.data.packages?.filter((p: any) => p.ready === true) || [];
+      // Only return ready packages, prioritized first
+      result.data.packages = sortPrioritizedFirst(result.data.packages?.filter((p: any) => p.ready === true) || []);
       return result.data
     } catch (error) {
       if (error.name === 'AbortError') throw error;
@@ -71,7 +80,7 @@ export class MarketplaceService {
       }
 
       const result = await response.json()
-      return result.data?.filter(p => p.ready === true) || []
+      return sortPrioritizedFirst(result.data?.filter(p => p.ready === true) || [])
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch all packages:', error)
@@ -199,10 +208,14 @@ export class MarketplaceService {
   static async getPopularPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
       const allPackages = await this.getAllPackages(options)
-      // Only ready packages
-      return allPackages
-        .filter(p => p.ready === true)
-        .sort((a, b) => (b.downloads_count || 0) - (a.downloads_count || 0))
+      // Only ready packages, prioritized first, then by downloads
+      return sortPrioritizedFirst(allPackages)
+        .sort((a, b) => {
+          // Prioritize first, then downloads
+          const prio = (b.prioritize ? 1 : 0) - (a.prioritize ? 1 : 0);
+          if (prio !== 0) return prio;
+          return (b.downloads_count || 0) - (a.downloads_count || 0);
+        })
         .slice(0, limit)
     } catch (error) {
       if (error.name === 'AbortError') throw error;
@@ -220,8 +233,8 @@ export class MarketplaceService {
         tags: [category],
         limit
       }, options)
-      // Only ready packages
-      return result.packages?.filter((p: any) => p.ready === true) || [];
+      // Only ready packages, prioritized first
+      return sortPrioritizedFirst(result.packages?.filter((p: any) => p.ready === true) || []);
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       console.error('Failed to fetch packages by category:', error)
@@ -235,10 +248,12 @@ export class MarketplaceService {
   static async getTrendingPackages(limit: number = 6, options?: { signal?: AbortSignal }): Promise<MCPPackage[]> {
     try {
       const allPackages = await this.getAllPackages(options)
-      // Only ready packages
-      return allPackages
-        .filter(p => p.ready === true)
+      // Only ready packages, prioritized first, then by trending score
+      return sortPrioritizedFirst(allPackages)
         .sort((a, b) => {
+          // Prioritize first, then trending score
+          const prio = (b.prioritize ? 1 : 0) - (a.prioritize ? 1 : 0);
+          if (prio !== 0) return prio;
           const aScore = (a.downloads_count || 0) * (new Date(a.created_at).getTime() / Date.now())
           const bScore = (b.downloads_count || 0) * (new Date(b.created_at).getTime() / Date.now())
           return bScore - aScore
