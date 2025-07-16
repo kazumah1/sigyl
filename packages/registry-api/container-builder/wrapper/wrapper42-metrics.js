@@ -271,6 +271,41 @@ async function deleteSession(sessionId) {
             return {};
         }
     }
+
+    async function createPlaceholderSecrets(configJSON) {
+        // Build placeholder secrets object
+        const placeholderSecrets = {};
+        if (configJSON && (Array.isArray(configJSON.required_secrets) || Array.isArray(configJSON.optional_secrets))) {
+            const fillField = (field) => {
+                switch (field.type) {
+                    case "string":
+                        return "__MASTER_PLACEHOLDER__";
+                    case "boolean":
+                        return false;
+                    case "number":
+                    case "integer":
+                        return 0;
+                    default:
+                        if (field.enum && Array.isArray(field.enum) && field.enum.length > 0) {
+                            return field.enum[0];
+                        }
+                        return null;
+                }
+            };
+            if (Array.isArray(configJSON.required_secrets)) {
+                for (const field of configJSON.required_secrets) {
+                    placeholderSecrets[field.name] = fillField(field);
+                }
+            }
+            if (Array.isArray(configJSON.optional_secrets)) {
+                for (const field of configJSON.optional_secrets) {
+                    placeholderSecrets[field.name] = fillField(field);
+                }
+            }
+        }
+        return placeholderSecrets;
+    }
+
     async function createConfig(configJSON, userSecrets) {
         // Accepts configJSON with required_secrets and optional_secrets arrays
         try {
@@ -370,6 +405,11 @@ async function deleteSession(sessionId) {
         let filledConfig = {};
         let streamId;
         if (isMaster) {
+            // Master key: fill config with placeholders for all required/optional secrets
+            packageName = await getPackageName(req);
+            configJSON = await getConfig(packageName);
+            const placeholderSecrets = await createPlaceholderSecrets(configJSON);
+            ({ filledConfig } = await createConfig(configJSON, placeholderSecrets));
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
@@ -418,6 +458,7 @@ async function deleteSession(sessionId) {
             server = createStatelessServer({ config: filledConfig });
         } else if (!sessionId && isInitializeRequest(req.body)) {
             packageName = await getPackageName(req);
+            console.log('[PACKAGENAME] Package name:', packageName);
             configJSON = await getConfig(packageName);
             userSecrets = await getUserSecrets(packageName, apiKey);
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
