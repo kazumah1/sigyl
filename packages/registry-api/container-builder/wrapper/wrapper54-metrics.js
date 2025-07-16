@@ -427,10 +427,10 @@ async function deleteSession(sessionId) {
         if (sessionId && await getSession(sessionId)) {
             console.log('[MCP] Loaded sessionData from Redis for sessionId:', sessionId);
             ({ filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId));
+            res.set('mcp-session-id', sessionId);
             transport = new StreamableHTTPServerTransport({ 
-                sessionIdGenerator: () => sessionId,
+                sessionIdGenerator: undefined, // <-- FIXED: use undefined for resumed sessions
                 onsessioninitialized: async (sessionId) => {
-                    res.set('mcp-session-id', sessionId);
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
                         isMaster: isMaster,
@@ -467,10 +467,10 @@ async function deleteSession(sessionId) {
             ({ filledConfig } = await createConfig(configJSON, userSecrets));
             console.log('[CONFIG] Filled config:', filledConfig);
             const sessionId = randomUUID();
+            res.set('mcp-session-id', sessionId);
             transport = new StreamableHTTPServerTransport({ 
                 sessionIdGenerator: () => sessionId,
                 onsessioninitialized: async (sessionId) => {
-                    res.set('mcp-session-id', sessionId);
                     await setSession(sessionId, {
                         filledConfig: filledConfig,
                         isMaster: false,
@@ -522,10 +522,10 @@ async function deleteSession(sessionId) {
         }
         // Recreate transport/server from session data
         const { filledConfig, apiKey, packageName, configJSON, userSecrets, valid, isMaster } = await getSession(sessionId);
+        res.set('mcp-session-id', sessionId);
         const transport = new StreamableHTTPServerTransport({ 
             sessionIdGenerator: () => sessionId,
             onsessioninitialized: async (sessionId) => {
-                res.set('mcp-session-id', sessionId);
                 await setSession(sessionId, {
                     filledConfig: filledConfig,
                     isMaster: isMaster,
