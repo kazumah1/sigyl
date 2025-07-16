@@ -20,6 +20,15 @@ export async function getInstallationAccessToken(appJwt: string, installationId:
 
 export async function listRepos(token: string) {
   const octokit = new Octokit({ auth: token });
-  const { data } = await octokit.rest.apps.listReposAccessibleToInstallation();
-  return data.repositories;
+  let repos: any[] = [];
+  let page = 1;
+  let fetched = 0;
+  const perPage = 100;
+  do {
+    const { data } = await octokit.rest.apps.listReposAccessibleToInstallation({ per_page: perPage, page });
+    repos = repos.concat(data.repositories);
+    fetched = data.repositories.length;
+    page++;
+  } while (fetched === perPage);
+  return repos;
 }

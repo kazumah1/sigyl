@@ -55,6 +55,8 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
   const [subdirectory, setSubdirectory] = useState('')
   const [branches, setBranches] = useState<string[]>([])
   const [loadingBranches, setLoadingBranches] = useState(false)
+  // UI state for lazy loading
+  const [showOtherRepos, setShowOtherRepos] = useState(false);
 
   // Use the installationId from the activeGitHubAccount prop if provided, else fallback to AuthContext
   const installationId = activeGitHubAccount?.installationId ?? authInstallationId;
@@ -372,47 +374,65 @@ const DeployWizardWithGitHubApp: React.FC<DeployWizardWithGitHubAppProps> = ({ o
                   </div>
                 )}
 
-                {/* MCP-Only Repositories */}
-                {mcpRepos.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <CheckCircle className="w-5 h-5 text-white" />
-                      <h3 className="text-lg font-semibold text-white">MCP-Ready Repositories</h3>
-                      <Badge variant="secondary" className="ml-auto bg-white/10 text-white">{mcpRepos.length}</Badge>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {mcpRepos.map((repo) => (
-                        <RepoCard
-                          key={repo.id}
-                          repo={repo}
-                          isSelected={selectedRepo?.id === repo.id}
-                          onSelect={setSelectedRepo}
-                          configType="mcp"
-                        />
-                      ))}
-                    </div>
+                {/* Button to show/hide other repos */}
+                {(mcpRepos.length > 0 || regularRepos.length > 0) && (
+                  <div className="mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowOtherRepos(v => !v)}
+                      className="w-full border-white/20 text-white bg-black hover:bg-white/10"
+                    >
+                      {showOtherRepos ? 'Hide Other Repositories' : `Show ${mcpRepos.length + regularRepos.length} Other Repositories`}
+                    </Button>
                   </div>
                 )}
 
-                {/* Regular Repositories */}
-                {regularRepos.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Github className="w-5 h-5 text-white" />
-                      <h3 className="text-lg font-semibold text-white">Other Repositories</h3>
-                      <Badge variant="outline" className="ml-auto border-white/20 text-white">{regularRepos.length}</Badge>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {regularRepos.map((repo) => (
-                        <RepoCard
-                          key={repo.id}
-                          repo={repo}
-                          isSelected={selectedRepo?.id === repo.id}
-                          onSelect={setSelectedRepo}
-                          configType="none"
-                        />
-                      ))}
-                    </div>
+                {/* Lazy loaded MCP-Only and Regular Repositories */}
+                {showOtherRepos && (
+                  <div className="space-y-6 mt-4">
+                    {/* MCP-Only Repositories */}
+                    {mcpRepos.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                          <h3 className="text-lg font-semibold text-white">MCP-Ready Repositories</h3>
+                          <Badge variant="secondary" className="ml-auto bg-white/10 text-white">{mcpRepos.length}</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                          {mcpRepos.map((repo) => (
+                            <RepoCard
+                              key={repo.id}
+                              repo={repo}
+                              isSelected={selectedRepo?.id === repo.id}
+                              onSelect={setSelectedRepo}
+                              configType="mcp"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regular Repositories */}
+                    {regularRepos.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Github className="w-5 h-5 text-white" />
+                          <h3 className="text-lg font-semibold text-white">Other Repositories</h3>
+                          <Badge variant="outline" className="ml-auto border-white/20 text-white">{regularRepos.length}</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                          {regularRepos.map((repo) => (
+                            <RepoCard
+                              key={repo.id}
+                              repo={repo}
+                              isSelected={selectedRepo?.id === repo.id}
+                              onSelect={setSelectedRepo}
+                              configType="none"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
