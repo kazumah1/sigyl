@@ -417,15 +417,6 @@ async function deleteSession(sessionId) {
         let filledConfig = {};
         if (isMaster) {
             // Master key: fill config with placeholders for all required/optional secrets
-            console.log('[MCP] Master key detected');
-            packageName = await getPackageName(req);
-            console.log('[PACKAGENAME] Package name:', packageName);
-            configJSON = await getConfig(packageName);
-            console.log('[CONFIG] Config JSON:', configJSON);
-            const placeholderSecrets = await createPlaceholderSecrets(configJSON);
-            console.log('[CONFIG] Placeholder secrets:', placeholderSecrets);
-            ({ filledConfig } = await createConfig(configJSON, placeholderSecrets));
-            console.log('[CONFIG] Filled config:', filledConfig);
             transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
             server = createStatelessServer({ config: filledConfig });
             await server.connect(transport);
