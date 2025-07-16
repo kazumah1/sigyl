@@ -429,11 +429,11 @@ export class SessionMetricsService {
   }
   
   // Helper methods for analysis
-  private isSessionEndEvent(event: RawSessionEvent): boolean {
-    return event.request.method === 'close' || 
-           event.error?.occurred === true ||
-           event.response.status_code >= 500;
-  }
+  // private isSessionEndEvent(event: RawSessionEvent): boolean {
+  //   return event.request.method === 'close' || 
+  //          event.error?.occurred === true ||
+  //          event.response.status_code >= 500;
+  // }
   
   private calculateComplexityScore(event: any): number {
     let score = 1;
